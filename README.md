@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/logo.svg" alt="Radiant Sentinel — sentinela regulatória para IFs brasileiras" width="480"/>
+
 # Radiant Sentinel
 
 ### *Sentinela regulatória para Instituições Financeiras brasileiras.*
@@ -278,7 +280,7 @@ Esse repositório foi construído com uma stack de agentes IA:
 
 ## ✦ Licença
 
-Proprietário · © 2026 Radiant Risk Solutions (marca da Fortvna) · Henrique Costa
+<strong>© 2026 Fortvna Risk Solutions</strong> · Marca *Radiant Risk Solutions* · Produto *Radiant Sentinel* · Henrique Costa
 
 Repositório privado. Acesso por convite.
 
