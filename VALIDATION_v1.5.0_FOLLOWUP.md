@@ -12,16 +12,17 @@
 **Estado pós-validação 12 (v1.5.0 + fixes):**
 - ✅ 213 test runs (164 únicos + 49 subtests table-driven)
 - ✅ Race detector clean, vet clean
-- ✅ 4 findings críticos (P0) encontrados e corrigidos:
+- ✅ 3 findings críticos (P0) corrigidos:
   - **F12.2** — cmd/api não inicializava hardening (crossdoc engine + R1 admin/limiter/cache + W4 cache)
   - **F12.5** — Engine goroutines sem panic recover
-  - **F12.8** — Ordem de middleware errada (Recoverer/Logger invertidos)
   - **F12.19** — Nil pointer dereference potencial em triggerRadarScan
 - ✅ 3 findings médios (P1) corrigidos:
   - **F12.6** — Migration 004 com `INSERT OR IGNORE` quebrava em Postgres
+  - **F12.8** — Ordem de middleware errada (Recoverer/Logger invertidos)
   - **F12.11** — `AllRaw()` dead code (removido conforme memory pattern)
-  - **F12.17** — Self-inconsistency "11 commits Sprint 6" → real 10
-- 🟢 6 findings baixos (documentados como Sprint 7 backlog, não bloqueiam)
+- 🟢 1 finding baixo corrigido + 5 em Sprint 7 backlog:
+  - Corrigido: **F12.17** — Self-inconsistency "11 commits Sprint 6" → real 10
+  - Backlog: F12.1, F12.10, F12.14, F12.21, F12.22
 
 ## 🔴 Findings CRÍTICOS (P0) — corrigidos
 

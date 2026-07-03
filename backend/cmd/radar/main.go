@@ -61,7 +61,8 @@ func main() {
 	svc.SetLogger(logger)
 
 	logger.Info("radar worker started",
-		"db", resolvedDB,
+		// Validação 14 (F14.1): NÃO logar DSN (pode conter password Postgres).
+		// Logger apenas backend name (sqlite/postgres) — não loga path/host.
 		"backend", db.Backend(resolvedDB),
 		"interval", interval.String(),
 		"once", *once,

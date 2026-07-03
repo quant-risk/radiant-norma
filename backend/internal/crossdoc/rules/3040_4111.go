@@ -11,6 +11,7 @@ package rules
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 )
@@ -189,22 +190,18 @@ func iterateXMLElements(xmlContent, parentTag string) <-chan xmlLine {
 	return out
 }
 
+// indexFrom retorna posição absoluta de sub em s começando de from.
+// Usa strings.Index internamente (Go stdlib).
+//
+// Validação 14 (F14.3): removido wrapper customizado `indexOf` que
+// reinventava strings.Index byte-by-byte. Memory pattern.
 func indexFrom(s, sub string, from int) int {
 	if from >= len(s) {
 		return -1
 	}
-	idx := indexOf(sub, s[from:])
+	idx := strings.Index(s[from:], sub)
 	if idx == -1 {
 		return -1
 	}
 	return idx + from
-}
-
-func indexOf(sub, s string) int {
-	for i := 0; i+len(sub) <= len(s); i++ {
-		if s[i:i+len(sub)] == sub {
-			return i
-		}
-	}
-	return -1
 }

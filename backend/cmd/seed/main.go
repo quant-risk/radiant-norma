@@ -55,16 +55,26 @@ func main() {
 	jsonPath := flag.String("json", "../_catalogos/criticas.json", "caminho do criticas.json")
 	leiautesPath := flag.String("leiautes", "../_catalogos/leiautes.json", "caminho do leiautes.json")
 	xsdPath := flag.String("xsd", "../_catalogos/3040_generated.xsd", "caminho do 3040_generated.xsd")
-	dbPath := flag.String("db", "radiant.db", "caminho do banco SQLite")
+	// Validação 14 (F14.9 follow-up): consistência com cmd/api/worker/radar.
+	// DATABASE_URL env tem prioridade; -db flag é retrocompat.
+	dbPath := flag.String("db", "", "DSN (SQLite path ou postgres://...). DATABASE_URL env sobrescreve.")
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	slog.SetDefault(logger)
 
 	// DB + migrations
-	d, err := db.Open(*dbPath)
+	// Validação 14 (F14.9 follow-up): DATABASE_URL > -db flag.
+	resolvedDB := *dbPath
+	if envDB := os.Getenv("DATABASE_URL"); envDB != "" {
+		resolvedDB = envDB
+	}
+	if resolvedDB == "" {
+		resolvedDB = "radiant.db"
+	}
+	d, err := db.Open(resolvedDB)
 	if err != nil {
-		logger.Error("open db", "err", err)
+		logger.Error("open db", "err", err, "backend", db.Backend(resolvedDB))
 		os.Exit(1)
 	}
 	defer d.Close()

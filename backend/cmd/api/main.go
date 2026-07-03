@@ -99,6 +99,15 @@ func main() {
 	// (que sairia sem dar chance pro Shutdown rodar).
 	serverErr := make(chan error, 1)
 	go func() {
+		// Validação 14 (F14.2): panic recover (defense in depth).
+		// ListenAndServe raramente panica, mas se panic o servidor
+		// morre sem avisar. Recover + log + exit.
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error("server goroutine panic", "panic", r)
+				os.Exit(1)
+			}
+		}()
 		logger.Info("api listening", "addr", addr)
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErr <- err
