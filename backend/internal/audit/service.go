@@ -119,8 +119,13 @@ func (s *Service) Registry() *rules.Registry {
 // que ainda não estão em vigor). O applyRegra decide se roda cada uma
 // baseado no flag `enabled` da Critica.
 //
-// Usa sql.NullString/sql.NullTime para campos opcionais (gravidade,
-// data_base_inicio, mensagem_erro) — registros antigos podem ter NULL.
+// Usa sql.NullString/sql.NullTime para campos opcionais (regra, descricao,
+// gravidade, data_base_inicio, mensagem_erro) — registros antigos ou
+// inseridos sem esses campos podem ter NULL.
+//
+// Sprint 6 v1.5.0 (F8 — descoberto via TestListRules_ByCadoc com INSERT
+// sem descricao): `regra` e `descricao` foram adicionados à lista de
+// NullString (mesmo padrão do bug latente do v1.4.0 em auditlog.Verify).
 // Sem isso, Scan falha com "converting NULL to string is unsupported"
 // e a validação inteira quebra (L2-LOAD).
 func (s *Service) LoadCriticas(ctx context.Context, cadocCode string) ([]Critica, error) {
@@ -139,11 +144,17 @@ func (s *Service) LoadCriticas(ctx context.Context, cadocCode string) ([]Critica
 	var out []Critica
 	for rows.Next() {
 		var c Critica
-		var grav, msg sql.NullString
+		var regra, desc, grav, msg sql.NullString
 		var dbi sql.NullTime
-		if err := rows.Scan(&c.ID, &c.CadocCode, &c.Sheet, &c.Codigo, &c.Regra, &c.Descricao,
-			&grav, &dbi, &msg, &c.Enabled); err != nil {
+		if err := rows.Scan(&c.ID, &c.CadocCode, &c.Sheet, &c.Codigo,
+			&regra, &desc, &grav, &dbi, &msg, &c.Enabled); err != nil {
 			return nil, err
+		}
+		if regra.Valid {
+			c.Regra = regra.String
+		}
+		if desc.Valid {
+			c.Descricao = desc.String
 		}
 		if grav.Valid {
 			c.Gravidade = grav.String
