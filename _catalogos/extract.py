@@ -96,6 +96,16 @@ def extract_criticas_from_sheet(sheet_rows: list, sheet_name: str, cadoc_code: s
     header = [str(c or "").strip().lower() for c in sheet_rows[header_idx]]
     codigo_col = detect_code_column(header)
 
+    # Detecta coluna de data-base inicio
+    data_inicio_col = -1
+    for i, h in enumerate(header):
+        if "data" in h and "inic" in h:
+            data_inicio_col = i
+            break
+        if h in ("vigência inicial", "vigencia inicial", "data-base início", "data-base inicio"):
+            data_inicio_col = i
+            break
+
     for row in sheet_rows[header_idx + 1:]:
         if not row or codigo_col >= len(row) or row[codigo_col] is None:
             continue
@@ -116,10 +126,67 @@ def extract_criticas_from_sheet(sheet_rows: list, sheet_name: str, cadoc_code: s
                 val = row[i]
                 if isinstance(val, str):
                     val = val.strip()
+                # Normaliza data-base inicio
+                if i == data_inicio_col:
+                    val = normalize_date(val)
                 record[h] = val
         if len(record) > 3:  # tem pelo menos cadoc + sheet + codigo + 1 campo
             criticas.append(record)
     return criticas
+
+
+def normalize_date(val):
+    """Normaliza data para ISO 8601 (YYYY-MM-DD).
+
+    Suporta:
+    - int 201501 → "2015-01-01"
+    - float Excel serial (43862.0) → "2020-02-05"
+    - "AAAA-MM" → "AAAA-MM-01"
+    - "AAAA-MM-DD" → mantém
+    - datetime.date → ISO
+    - None → None
+    """
+    if val is None:
+        return None
+    if isinstance(val, str):
+        s = val.strip()
+        if not s or s.lower() in ("nan", "none", "null", "n/a"):
+            return None
+        # AAAAMM (6 dígitos sem hífen) - mas int seria mais comum
+        if re.match(r"^\d{6}$", s):
+            return f"{s[:4]}-{s[4:6]}-01"
+        # AAAA-MM
+        if re.match(r"^\d{4}-\d{2}$", s):
+            return f"{s}-01"
+        # AAAA-MM-DD
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", s):
+            return s
+        return s  # formato desconhecido, mantém
+    if isinstance(val, int):
+        # Provavelmente AAAAMM
+        if 190001 <= val <= 210012:
+            s = str(val)
+            if len(s) == 6:
+                return f"{s[:4]}-{s[4:6]}-01"
+        return str(val)
+    if isinstance(val, float):
+        if val != val:  # NaN
+            return None
+        # Excel serial date (1900-01-01 = 1)
+        if 1 <= val <= 100000:
+            try:
+                import datetime as _dt
+                # Excel bug: treats 1900-02-29 as valid; use 1899-12-30 as base
+                base = _dt.date(1899, 12, 30)
+                delta = _dt.timedelta(days=int(val))
+                return (base + delta).isoformat()
+            except Exception:
+                return str(val)
+        return str(val)
+    # datetime / date
+    if hasattr(val, "isoformat"):
+        return val.isoformat()[:10]
+    return str(val)
 
 
 def extract_criticas(sheets, cadoc_code: str) -> list:
@@ -165,7 +232,7 @@ def main():
     log("\n--- CRÍTICAS ---")
     criticas_files = [
         ("3040", "3040/SCR3040_Criticas.xls"),
-        ("3050", "3050/Criticas_TXB_V9.xlsx"),
+        ("3050", "3050/Criticas_TXB_V11.xlsx"),  # V11 (Sprint 2 C.1) — mais recente que V9
         ("2061-DLO", "_referencias/Criticas_Processamento_2061_2071.xlsx"),
         ("2070-DDR", "2070-DDR/2070_DDR_Criticas.xlsx"),
     ]
@@ -182,6 +249,14 @@ def main():
             log(f"    ✓ {len(criticas)} críticas extraídas")
             for c in criticas[:2]:
                 log(f"      ex: {c.get('codigo')} — {c.get('regra', c.get('crítica', c.get('critica', '')))[:60]}")
+
+    # Carrega DRM críticas (extraídas do PDF — Sprint 2 C.2)
+    drm_path = OUT / "drm_criticas_raw.json"
+    if drm_path.exists():
+        log(f"  → 2060-DRM: {drm_path.name} (extraído do PDF em Sprint 2)")
+        drm_data = json.loads(drm_path.read_text(encoding="utf-8"))
+        criticas_total["2060-DRM"] = drm_data["criticas"]
+        log(f"    ✓ {len(drm_data['criticas'])} críticas DRM adicionadas")
 
     # === LEIAUTES ===
     log("\n--- LEIAUTES ---")

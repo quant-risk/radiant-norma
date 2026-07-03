@@ -31,17 +31,19 @@ cadocs/
     └── README.md       # Documentação do catálogo
 ```
 
-**Inventário (atualizado 2026-07-03 13h55):** 134 arquivos · 56 MB.
+**Inventário (atualizado 2026-07-03 14h30):** 137 arquivos · 60 MB.
 - **Leiautes oficiais:** 3040 (XLS), 3042, 3044 (PDF), 3050, 2030 DRSAC, 2060, 2061, 2062, 2070 (DDR), 2160, 2170
-- **Instruções de preenchimento:** todas, incluindo múltiplas versões históricas (DRM v2…v11)
-- **XSDs:** 3045, 3026, 3050 TXB V4
+- **Instruções de preenchimento:** todas, incluindo múltiplas versões históricas (DRM v2…v11, DLO 2018/2024/2025)
+- **XSDs:** 3045, 3026, 3050 TXB V4 + **★ 3040_generated.xsd** (gerado pelo xsdgen)
 - **XMLs de exemplo:** 3040 (3000 clientes + cessão), 3026
-- **Críticas (planilhas):** 3040 (361 regras), 3050 (191), 2061 DLO (518), 2070 DDR (11) — **1.081 regras no total**
+- **Críticas (planilhas):** 3040 (361), 3050 V11 (170), 2061 DLO (518), 2070 DDR (11), **2060 DRM (22 extraídas do PDF)** — **1.082 regras**
+- **★ 3044 schema JSON** extraído do manual + 17 regras T01-T19
 - **Normativos:** 18 cartas-circulares, circulares e DRO 5050
 - **STA:** manuais Web + WS + FAQ + 2 apresentações
 - **BCValidador:** manual técnico oficial Deinf/Dine4 v1.3
 - **Concorrentes:** 29 páginas (Mitra, Matera, cadoc.ai, etc.)
-- **★ Catálogo estruturado:** JSON pronto para Sentinel Audit
+- **★ Catálogo estruturado:** JSON pronto para Sentinel Audit (1.099 regras totais com 3044)
+- **★ Spike técnico Go:** `tools/xsdgen/` + `tools/sentinel-audit/` rodando
 
 ---
 

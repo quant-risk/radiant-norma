@@ -1,0 +1,188 @@
+{
+  "_metadata": {
+    "description": "Críticas do CADOC 2060 (DRM) extraídas do PDF oficial",
+    "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf (BACEN/Desig, Jan/2025)",
+    "data_extracao": "2026-07-03T14:15:54",
+    "autor": "Mavis · Radiant Risk Solutions",
+    "uso": "Sentinel Audit L2 — DRM validation",
+    "total_criticas": 22
+  },
+  "criticas": [
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "2282",
+      "tipo": "Inconsistência",
+      "descricao": "Verifica se não é informado item do DRM para o grupo de informações Cosif com valores diferentes de zero.",
+      "base_confrontada": "Cosif",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "2283",
+      "tipo": "Inconsistência",
+      "descricao": "zero.",
+      "base_confrontada": "Cosif",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4552",
+      "tipo": "Inconsistência",
+      "descricao": "",
+      "base_confrontada": "DRM",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4553",
+      "tipo": "Inconsistência",
+      "descricao": "Verifica-se a existência de valor declarado para o fator de risco FF1 no AFC. Não deveria haver valor declarado.",
+      "base_confrontada": "DRM",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4588",
+      "tipo": "Inconsistência",
+      "descricao": "rubricas contábeis (documento 4060/4010): 1.1.0.00.00.00-2 (Disponibilidades), 1.2.0.00.00.00-5 (Aplicações interfinanceiras",
+      "base_confrontada": "Cosif",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4589",
+      "tipo": "Inconsistência",
+      "descricao": "JM7 e JM9, do item A10. Para o Cosif, considera-se o saldo da rubrica contábil (documento 4060/4010): 1.2.6.00.00.00-7",
+      "base_confrontada": "Cosif",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4590",
+      "tipo": "Inconsistência",
+      "descricao": "(documento 4060/4010): 1.9.8.90.20.00-7 (Ouro). Eventuais diferenças poderão ser admitidas, de acordo com critérios",
+      "base_confrontada": null,
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4591",
+      "tipo": "Inconsistência",
+      "descricao": "1.1.3.00.00.00-3 (Reservas livres), 1.4.2.28.00.00-7 (Reservas compulsórias em espécie no BCB) e 1.4.5.00.00.00-6 (Recursos",
+      "base_confrontada": null,
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4592",
+      "tipo": "Inconsistência",
+      "descricao": "Renda Variável), 1.3.6.10.80.00-5 (Títulos dados em garantia em operações em Bolsa - Títulos de Renda Variável),",
+      "base_confrontada": "Cosif",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4593",
+      "tipo": "Inconsistência",
+      "descricao": "outros resultados abrangentes - Títulos e Valores Mobiliários) + 3.2.1.30.13.00-1 (Ativos financeiros - Valor justo no resultado",
+      "base_confrontada": "Cosif",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4594",
+      "tipo": "Inconsistência",
+      "descricao": "Condição para alerta: qualquer ocorrência, exceto para valores relacionados ao saldo da conta Cosif 1.3.1.30.00.00-2",
+      "base_confrontada": "DRM",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4595",
+      "tipo": "Inconsistência",
+      "descricao": "para alerta: qualquer ocorrência.",
+      "base_confrontada": "DRM",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4596",
+      "tipo": "Inconsistência",
+      "descricao": "moeda, e (2) utiliza-se o somatório dos valores alocados nos vértices, mapeados nos fatores de risco do item A50, exceto as",
+      "base_confrontada": "Cosif",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4597",
+      "tipo": "Inconsistência",
+      "descricao": "estrangeiras. Para o Cosif, considera-se o saldo das rubricas contábeis (documento 4060/4010): 4.1.0.00.00.00-9 (Depósitos)",
+      "base_confrontada": null,
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4598",
+      "tipo": "Inconsistência",
+      "descricao": "4.1.2.00.00.00-3 (Depósitos de Poupança) e 6.1.1.60.00.00-8 (APE - Recursos de associados poupadores). Eventuais",
+      "base_confrontada": "Cosif",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4599",
+      "tipo": "Inconsistência",
+      "descricao": "de risco do item P20, exceto as moedas estrangeiras. Para o Cosif, considera-se o saldo da rubrica contábil 4.2.0.00.00.00-2",
+      "base_confrontada": null,
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4600",
+      "tipo": "Inconsistência",
+      "descricao": "item P30, exceto as moedas estrangeiras. Para o Cosif, considera-se o saldo das rubricas contábeis (documento 4060/4010):",
+      "base_confrontada": "Cosif",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4601",
+      "tipo": "Inconsistência",
+      "descricao": "para os fatores de risco JM1, JM2, JM3, JM4, JM5, JM7 e JM9, respetivamente em relação aos fatores de risco ME1, ME2,",
+      "base_confrontada": "DRM",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4602",
+      "tipo": "Inconsistência",
+      "descricao": "item A10 e P10, verifica-se a existência de correspondência entre os fatores de risco JM1, JM2, JM3, JM4, JM5, JM7 e JM9, e",
+      "base_confrontada": "DRM",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4741",
+      "tipo": "Inconsistência",
+      "descricao": "",
+      "base_confrontada": "DRM",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4748",
+      "tipo": "Inconsistência",
+      "descricao": "Verifica se há valor diferente de zero no item P30 (OBRIGAÇÕES POR EMPRÉSTIMOS E REPASSES) na Carteira de Negociação.",
+      "base_confrontada": "DRM",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    },
+    {
+      "cadoc": "2060-DRM",
+      "codigo": "4755",
+      "tipo": "Inconsistência",
+      "descricao": "Verifica se há valor diferente de zero nos itens A50 e/ou P50 na Carteira de Negociação.",
+      "base_confrontada": "DRM",
+      "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf"
+    }
+  ]
+}

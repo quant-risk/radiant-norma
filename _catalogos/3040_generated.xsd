@@ -1,0 +1,560 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- XSD gerado automaticamente por Radiant Sentinel xsdgen a partir de leiautes.json (SCR3040_Leiaute.xls) -->
+<!-- NÃO É OFICIAL — BACEN só publica XSD de 3045 e 3026 -->
+<!-- Use com cautela: tipos BACEN foram mapeados genericamente para xs:string/decimal -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+
+  <!-- Identificação do código -->
+  <xs:element name="xml" type="xs:string" minOccurs="1"/>
+  <!-- Atributos de instrução de processamento --> Version
+  <xs:attribute name="Version" type="xs:string" use="required"/>
+  <!-- Atributos de instrução de processamento --> Encoding
+  <xs:attribute name="Encoding" type="xs:string" use="required"/>
+  <!-- Elemento de demarcação de documento 3040 -->
+  <xs:element name="Doc3040" type="xs:string" minOccurs="1"/>
+  <!-- Total de clientes --> TotalCli
+  <xs:attribute name="TotalCli" type="xs:string" use="required"/>
+  <!-- Atributos do documento 3040 --> DtBase
+  <xs:attribute name="DtBase" type="xs:string" use="required"/>
+  <!-- Atributos do documento 3040 --> CNPJ
+  <xs:attribute name="CNPJ" type="xs:string" use="required"/>
+  <!-- Atributos do documento 3040 --> Parte
+  <xs:attribute name="Parte" type="xs:string" use="required"/>
+  <!-- Atributos do documento 3040 --> Remessa
+  <xs:attribute name="Remessa" type="xs:string" use="required"/>
+  <!-- Atributos do documento 3040 --> TpArq
+  <xs:attribute name="TpArq" type="xs:string" use="required"/>
+  <!-- Atributos do documento 3040 --> NomeResp
+  <xs:attribute name="NomeResp" type="xs:string" use="required"/>
+  <!-- Atributos do documento 3040 --> EmailResp
+  <xs:attribute name="EmailResp" type="xs:string" use="required"/>
+  <!-- Atributos do documento 3040 --> TelResp
+  <xs:attribute name="TelResp" type="xs:string" use="required"/>
+  <!-- Atributos do documento 3040 --> MetodApPE
+  <xs:attribute name="MetodApPE" type="xs:string" use="required"/>
+  <!-- Atributos do documento 3040 --> MetodDifTJE
+  <xs:attribute name="MetodDifTJE" type="xs:string" use="required"/>
+  <!-- Atributos do documento 3040 --> TpFundo
+  <xs:attribute name="TpFundo" type="xs:string" use="required"/>
+
+<!-- Para cada cliente (Cli) -->
+<xs:complexType name="Cli">
+  <xs:sequence>
+    <xs:element name="Cli" type="Cli" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+</xs:complexType>
+
+  <!-- Elemento de demarcação de informações do Cliente -->
+  <xs:element name="Cli" type="xs:string" minOccurs="1"/>
+  <!-- Código do cliente --> Cd
+  <xs:attribute name="Cd" type="xs:string" use="required"/>
+  <!-- Tipo do cliente --> Tp
+  <xs:attribute name="Tp" type="xs:string" use="required"/>
+  <!-- Autorização --> Autorzc
+  <xs:attribute name="Autorzc" type="xs:string" use="required"/>
+  <!-- Porte do cliente --> PorteCli
+  <xs:attribute name="PorteCli" type="xs:string" use="required"/>
+  <!-- Tipo de controle --> TpCtrl
+  <xs:attribute name="TpCtrl" type="xs:string" use="optional"/>
+  <!-- Início do relacionamento com o cliente --> IniRelactCli
+  <xs:attribute name="IniRelactCli" type="xs:string" use="required"/>
+  <!-- Faturamento anual PJ ou Renda mensal PF --> FatAnual
+  <xs:attribute name="FatAnual" type="xs:decimal" use="optional"/>
+  <!-- Conglomerado econômico --> CongEcon
+  <xs:attribute name="CongEcon" type="xs:string" use="optional"/>
+  <!-- Classificação de risco do cliente --> ClassCli
+  <xs:attribute name="ClassCli" type="xs:string" use="required"/>
+  <!-- Nome do Cliente --> NomeCli
+  <xs:attribute name="NomeCli" type="xs:string" use="optional"/>
+  <!-- Tipo de identificação do Cliente no exterior --> TpIdentExt
+  <xs:attribute name="TpIdentExt" type="xs:string" use="optional"/>
+  <!-- Identificação do cliente no exterior --> CodExt
+  <xs:attribute name="CodExt" type="xs:string" use="optional"/>
+  <!-- CNPJ da líder --> IdLiderBR
+  <xs:attribute name="IdLiderBR" type="xs:string" use="optional"/>
+  <!-- Código do país --> IdPais
+  <xs:attribute name="IdPais" type="xs:string" use="optional"/>
+
+<!-- Para cada operação do cliente (Op) -->
+<xs:complexType name="Op">
+  <xs:sequence>
+    <xs:element name="Op" type="Op" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+</xs:complexType>
+
+  <!-- Elemento de demarcação de informações da Operação -->
+  <xs:element name="Op" type="xs:string" minOccurs="1"/>
+  <!-- Detalhamento do cliente --> DetCli
+  <xs:attribute name="DetCli" type="xs:string" use="optional"/>
+  <!-- Identificação padronizada da operação de crédito (a partir de Maio/2020) --> IPOC
+  <xs:attribute name="IPOC" type="xs:string" use="required"/>
+  <!-- Código do contrato --> Contrt
+  <xs:attribute name="Contrt" type="xs:string" use="required"/>
+  <!-- Modalidade da operação --> Mod
+  <xs:attribute name="Mod" type="xs:string" use="required"/>
+  <!-- Conta Cosif --> Cosif
+  <xs:attribute name="Cosif" type="xs:string" use="required"/>
+  <!-- Origem dos recursos --> OrigemRec
+  <xs:attribute name="OrigemRec" type="xs:string" use="required"/>
+  <!-- Taxa referencial ou indexador --> Indx
+  <xs:attribute name="Indx" type="xs:string" use="required"/>
+  <!-- Percentual do indexador --> PercIndx
+  <xs:attribute name="PercIndx" type="xs:decimal" use="required"/>
+  <!-- Variação cambial --> VarCamb
+  <xs:attribute name="VarCamb" type="xs:string" use="required"/>
+  <!-- CEP --> CEP
+  <xs:attribute name="CEP" type="xs:string" use="required"/>
+  <!-- Taxa efetiva anual --> TaxEft
+  <xs:attribute name="TaxEft" type="xs:decimal" use="required"/>
+  <!-- Data de contratação da operação --> DtContr
+  <xs:attribute name="DtContr" type="xs:string" use="required"/>
+  <!-- Valor contratado --> VlrContr
+  <xs:attribute name="VlrContr" type="xs:decimal" use="required"/>
+  <!-- Natureza da operação --> NatuOp
+  <xs:attribute name="NatuOp" type="xs:string" use="required"/>
+  <!-- Data de vencimento da operação --> DtVencOp
+  <xs:attribute name="DtVencOp" type="xs:string" use="required"/>
+  <!-- Classificação de risco da operação --> ClassOp
+  <xs:attribute name="ClassOp" type="xs:string" use="required"/>
+  <!-- Provisão constituída --> ProvConsttd
+  <xs:attribute name="ProvConsttd" type="xs:decimal" use="required"/>
+  <!-- Dias de atraso da parcela mais atrasada --> DiaAtraso
+  <xs:attribute name="DiaAtraso" type="xs:decimal" use="required"/>
+  <!-- Característica especial --> CaracEspecial
+  <xs:attribute name="CaracEspecial" type="xs:string" use="optional"/>
+  <!-- Data da próxima prestação a vencer --> DtaProxParcela
+  <xs:attribute name="DtaProxParcela" type="xs:string" use="optional"/>
+  <!-- Valor da próxima prestação a vencer --> VlrProxParcela
+  <xs:attribute name="VlrProxParcela" type="xs:decimal" use="optional"/>
+  <!-- Quantidade de prestações do contrato --> QtdParcelas
+  <xs:attribute name="QtdParcelas" type="xs:decimal" use="optional"/>
+  <!-- Valor dos Vencimentos -->
+  <xs:element name="Venc" type="xs:decimal" minOccurs="0"/>
+  <!-- Código dos Vencimentos --> vCOD
+  <xs:attribute name="vCOD" type="xs:string" use="optional"/>
+  <!-- Elemento de demarcação de informações de garantias -->
+  <xs:element name="Gar" type="xs:string" minOccurs="0"/>
+  <!-- Situação da garantia (NR1) --> SitGar
+  <xs:attribute name="SitGar" type="xs:string" use="optional"/>
+  <!-- Tipo da garantia --> Tp
+  <xs:attribute name="Tp" type="xs:string" use="required"/>
+  <!-- Subtipo da garantia --> Tp (concatenado)
+  <xs:attribute name="Tp (concatenado)" type="xs:string" use="required"/>
+  <!-- Identificação da garantia do garantidor (NR1) --> Ident
+  <xs:attribute name="Ident" type="xs:string" use="optional"/>
+  <!-- Tipo de Valor da Garantia (NR1) --> TpVlrGar
+  <xs:attribute name="TpVlrGar" type="xs:string" use="required"/>
+  <!-- Percentual de garantia --> PercGar
+  <xs:attribute name="PercGar" type="xs:decimal" use="optional"/>
+  <!-- Valor original da garantia --> VlrOrig
+  <xs:attribute name="VlrOrig" type="xs:decimal" use="optional"/>
+  <!-- Valor reavaliado da garantia na data de reavaliação (NR1) --> VlrData
+  <xs:attribute name="VlrData" type="xs:decimal" use="optional"/>
+  <!-- Percentual reavaliado da garantia na data de reavaliação (NR1) --> PercData
+  <xs:attribute name="PercData" type="xs:decimal" use="optional"/>
+  <!-- Data de reavaliação --> DtReav
+  <xs:attribute name="DtReav" type="xs:string" use="optional"/>
+  <!-- Compartilhamento da garantia (NR1) --> Compart
+  <xs:attribute name="Compart" type="xs:string" use="optional"/>
+  <!-- Elemento de demarcação de informações adicionais -->
+  <xs:element name="Inf" type="xs:string" minOccurs="0"/>
+  <!-- Tipo da informação --> Tp
+  <xs:attribute name="Tp" type="xs:string" use="optional"/>
+  <!-- Subtipo da informação --> Tp (concatenado)
+  <xs:attribute name="Tp (concatenado)" type="xs:string" use="optional"/>
+  <!-- Código --> Cd
+  <xs:attribute name="Cd" type="xs:string" use="optional"/>
+  <!-- Identificação --> Ident
+  <xs:attribute name="Ident" type="xs:string" use="optional"/>
+  <!-- Valor --> Valor
+  <xs:attribute name="Valor" type="xs:decimal" use="optional"/>
+  <!-- Percentual --> Perc
+  <xs:attribute name="Perc" type="xs:decimal" use="optional"/>
+  <!-- Quantidade de registros --> Qtd
+  <xs:attribute name="Qtd" type="xs:string" use="optional"/>
+  <!-- Elemento de demarcação de informações do Sicor -->
+  <xs:element name="Sicor" type="xs:string" minOccurs="0"/>
+  <!-- Número de referência BACEN da cédula --> RefBacen
+  <xs:attribute name="RefBacen" type="xs:string" use="optional"/>
+  <!-- Ordem da destinação de financiamento --> Ordem
+  <xs:attribute name="Ordem" type="xs:decimal" use="optional"/>
+  <!-- Saldo médio diário total --> VlrSaldoTot
+  <xs:attribute name="VlrSaldoTot" type="xs:decimal" use="optional"/>
+  <!-- Saldo médio diário vincendo total --> VlrSaldoVinc
+  <xs:attribute name="VlrSaldoVinc" type="xs:decimal" use="optional"/>
+  <!-- Situação da operação --> Situacao
+  <xs:attribute name="Situacao" type="xs:string" use="optional"/>
+  <!-- Tipo de bônus/rebate --> TpBonusRebate
+  <xs:attribute name="TpBonusRebate" type="xs:string" use="optional"/>
+  <!-- Valor do bônus/rebate --> VlrBonusRebate
+  <xs:attribute name="VlrBonusRebate" type="xs:decimal" use="optional"/>
+  <!-- Data de pagamento do bônus/rebate --> DtBonusRebate
+  <xs:attribute name="DtBonusRebate" type="xs:string" use="optional"/>
+  <!-- Elemento de demarcação de informações de contabilização de instrumentos financeiros -->
+  <xs:element name="ContInstFin" type="xs:string" minOccurs="0"/>
+  <!-- Forma de mensuração contábil --> CtgCont
+  <xs:attribute name="CtgCont" type="xs:string" use="optional"/>
+  <!-- Quantidade de títulos adquirida --> QtdInst
+  <xs:attribute name="QtdInst" type="xs:decimal" use="optional"/>
+  <!-- Custo Amortizado --> CstAmort
+  <xs:attribute name="CstAmort" type="xs:decimal" use="optional"/>
+  <!-- Valor de Mercado --> VlrMercado
+  <xs:attribute name="VlrMercado" type="xs:decimal" use="optional"/>
+  <!-- Elemento de demarcação de grupo de IPOCs conectados -->
+  <xs:element name="ConIpocs" type="xs:string" minOccurs="0"/>
+  <!-- Elemento de demarcação de IPOC conectado -->
+  <xs:element name="ipocCon" type="xs:string" minOccurs="0"/>
+  <!-- IPOC conectado --> ipoc
+  <xs:attribute name="ipoc" type="xs:string" use="optional"/>
+  <!-- Elemento de demarcação de informações de contabilização de instrumentos financeiros -->
+  <xs:element name="ContInstFinRes4966" type="xs:string" minOccurs="0"/>
+  <!-- Classificação do Ativo Financeiro --> ClasAtFin
+  <xs:attribute name="ClasAtFin" type="xs:string" use="optional"/>
+  <!-- Estágio do Instrumento Financeiro --> EstInstFin
+  <xs:attribute name="EstInstFin" type="xs:string" use="optional"/>
+  <!-- Quantidade de títulos adquirida --> QtdInst
+  <xs:attribute name="QtdInst" type="xs:decimal" use="optional"/>
+  <!-- Valor Contábil Bruto do Instrumento Financeiro --> VlrContBr
+  <xs:attribute name="VlrContBr" type="xs:decimal" use="optional"/>
+  <!-- Valor da Perda Acumulada --> VlrPerdaAcum
+  <xs:attribute name="VlrPerdaAcum" type="xs:decimal" use="optional"/>
+  <!-- Valor Justo --> VlrJusto
+  <xs:attribute name="VlrJusto" type="xs:decimal" use="optional"/>
+  <!-- Taxa de Juros Efetiva --> TJE
+  <xs:attribute name="TJE" type="xs:decimal" use="optional"/>
+  <!-- Rendas do mês --> RendMes
+  <xs:attribute name="RendMes" type="xs:decimal" use="optional"/>
+  <!-- Alocação do Instrumento Financeiro no Estágio 1 - tipo de PD utilizada --> PdEst1
+  <xs:attribute name="PdEst1" type="xs:string" use="optional"/>
+  <!-- Carteira - Provisão Mínima --> CartProvMin
+  <xs:attribute name="CartProvMin" type="xs:string" use="optional"/>
+  <!-- Tratamento do risco de crédito --> TratRisc
+  <xs:attribute name="TratRisc" type="xs:string" use="optional"/>
+
+<!-- Para cada instrumento financeiro (ContInstFinRes4966) -->
+<xs:complexType name="ContInstFinRes4966">
+  <xs:sequence>
+    <xs:element name="ContInstFinRes4966" type="ContInstFinRes4966" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+</xs:complexType>
+
+  <!-- Elemento de demarcação de informações de contabilização de instrumentos financeiros em Estágios -->
+  <xs:element name="Estagio" type="xs:string" minOccurs="0"/>
+  <!-- Motivo de alocação no Estágio --> Motivo
+  <xs:attribute name="Motivo" type="xs:string" use="optional"/>
+  <!-- Data-base da Alocação --> DtAlocacao
+  <xs:attribute name="DtAlocacao" type="xs:string" use="optional"/>
+
+<!-- Para cada instrumento financeiro (ContInstFinRes4966) -->
+<xs:complexType name="ContInstFinRes4966">
+  <xs:sequence>
+    <xs:element name="ContInstFinRes4966" type="ContInstFinRes4966" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+</xs:complexType>
+
+  <!-- Elemento de demarcação de informações de Perdas em instrumentos financeiros -->
+  <xs:element name="Perda" type="xs:string" minOccurs="0"/>
+  <!-- Motivo da Perda --> MotPerda
+  <xs:attribute name="MotPerda" type="xs:string" use="optional"/>
+  <!-- Valor da Perda --> VlrPerda
+  <xs:attribute name="VlrPerda" type="xs:decimal" use="optional"/>
+  <!-- Elemento de demarcação de informações de agregações -->
+  <xs:element name="Agreg" type="xs:string" minOccurs="0"/>
+  <!-- Natureza da operação --> NatuOp
+  <xs:attribute name="NatuOp" type="xs:string" use="required"/>
+  <!-- Modalidade da operação --> Mod
+  <xs:attribute name="Mod" type="xs:string" use="required"/>
+  <!-- Origem dos recursos --> OrigemRec
+  <xs:attribute name="OrigemRec" type="xs:string" use="required"/>
+  <!-- Vinculação à moeda estrangeira --> VincME
+  <xs:attribute name="VincME" type="xs:string" use="required"/>
+  <!-- Classificação de risco da operação --> ClassOp
+  <xs:attribute name="ClassOp" type="xs:string" use="required"/>
+  <!-- Faixa de valor --> FaixaVlr
+  <xs:attribute name="FaixaVlr" type="xs:string" use="required"/>
+  <!-- Prazo em dobro para provisionamento --> PrzProvm
+  <xs:attribute name="PrzProvm" type="xs:string" use="optional"/>
+  <!-- Localização --> Localiz
+  <xs:attribute name="Localiz" type="xs:string" use="required"/>
+  <!-- Tipo de cliente --> TpCli
+  <xs:attribute name="TpCli" type="xs:string" use="required"/>
+  <!-- Tipo de controle --> TpCtrl
+  <xs:attribute name="TpCtrl" type="xs:string" use="optional"/>
+  <!-- Desempenho da operação --> DesempOp
+  <xs:attribute name="DesempOp" type="xs:string" use="required"/>
+  <!-- Característica especial --> CaracEspecial
+  <xs:attribute name="CaracEspecial" type="xs:string" use="optional"/>
+  <!-- Provisão constituída --> ProvConsttd
+  <xs:attribute name="ProvConsttd" type="xs:decimal" use="required"/>
+  <!-- Quantidade de operações --> QtdOp
+  <xs:attribute name="QtdOp" type="xs:decimal" use="required"/>
+  <!-- Quantidade de clientes --> QtdCli
+  <xs:attribute name="QtdCli" type="xs:decimal" use="required"/>
+  <!-- Valor dos vencimentos -->
+  <xs:element name="Venc" type="xs:string" minOccurs="1"/>
+  <!-- Domínio -->
+  <xs:element name="Descrição" type="xs:string" minOccurs="0"/>
+  <!-- 01 -->
+  <xs:element name="adiantamentos a depositantes" type="xs:string" minOccurs="0"/>
+  <!-- 02 -->
+  <xs:element name="cheque especial e conta garantida" type="xs:string" minOccurs="0"/>
+  <!-- 03 -->
+  <xs:element name="desconto de duplicatas" type="xs:string" minOccurs="0"/>
+  <!-- 04 -->
+  <xs:element name="aquisição de bens – veículos automotores" type="xs:string" minOccurs="0"/>
+  <!-- 05 -->
+  <xs:element name="financiamento à exportação" type="xs:string" minOccurs="0"/>
+  <!-- 06 -->
+  <xs:element name="financiamento à importação" type="xs:string" minOccurs="0"/>
+  <!-- 07 -->
+  <xs:element name="aquisição de bens com interveniência – veículos autom." type="xs:string" minOccurs="0"/>
+  <!-- 08 -->
+  <xs:element name="custeio e pré-custeio" type="xs:string" minOccurs="0"/>
+  <!-- 09 -->
+  <xs:element name="financiamento habitacional – SFH" type="xs:string" minOccurs="0"/>
+  <!-- 10 -->
+  <xs:element name="financiamento de TVM" type="xs:string" minOccurs="0"/>
+  <!-- 11 -->
+  <xs:element name="financiamento de infraestrutura e desenvolvimento" type="xs:string" minOccurs="0"/>
+  <!-- 12 -->
+  <xs:element name="arrendamento financeiro exceto veículos automotores e imóveis" type="xs:string" minOccurs="0"/>
+  <!-- 13 -->
+  <xs:element name="avais e fianças honrados" type="xs:string" minOccurs="0"/>
+  <!-- 14 -->
+  <xs:element name="repasses interfinanceiros" type="xs:string" minOccurs="0"/>
+  <!-- 15 -->
+  <xs:element name="beneficiários de garantias prestadas para operações com PJ financeira
+Fiança Bancária/Garantia financeira prestada vinculada a operações de crédito ou com características de crédito com pessoa integrante do SFN (NR1)" type="xs:string" minOccurs="0"/>
+  <!-- 18 -->
+  <xs:element name="CPR - Cédula de Produto Rural" type="xs:string" minOccurs="0"/>
+  <!-- 19 -->
+  <xs:element name="limite contratado e não utilizado global" type="xs:string" minOccurs="0"/>
+  <!-- 20 -->
+  <xs:element name="retenção de risco assumida por aquisição de cotas de fundos" type="xs:string" minOccurs="0"/>
+  <!-- Domínio -->
+  <xs:element name="Descrição" type="xs:string" minOccurs="0"/>
+  <!-- 01 -->
+  <xs:element name="não liberados" type="xs:string" minOccurs="0"/>
+  <!-- 02 -->
+  <xs:element name="não liberados" type="xs:string" minOccurs="0"/>
+  <!-- Domínio -->
+  <xs:element name="Descrição" type="xs:string" minOccurs="0"/>
+  <!-- 1 -->
+  <xs:element name="Prefixado" type="xs:string" minOccurs="0"/>
+  <!-- 2 -->
+  <xs:element name="TR / TBF" type="xs:string" minOccurs="0"/>
+  <!-- 3 -->
+  <xs:element name="CDI" type="xs:string" minOccurs="0"/>
+  <!-- 4 -->
+  <xs:element name="IGPM" type="xs:string" minOccurs="0"/>
+  <!-- 5 -->
+  <xs:element name="TCR - pré" type="xs:string" minOccurs="0"/>
+  <!-- 9 -->
+  <xs:element name="Poupança" type="xs:string" minOccurs="0"/>
+  <!-- Domínio -->
+  <xs:element name="Descrição" type="xs:string" minOccurs="0"/>
+  <!-- 1 -->
+  <xs:element name="duplicatas" type="xs:string" minOccurs="0"/>
+  <!-- 2 -->
+  <xs:element name="duplicatas" type="xs:string" minOccurs="0"/>
+  <!-- 3 -->
+  <xs:element name="produtos agropecuários - com warrant" type="xs:string" minOccurs="0"/>
+  <!-- 4 -->
+  <xs:element name="equipamentos" type="xs:string" minOccurs="0"/>
+  <!-- 5 -->
+  <xs:element name="outros graus" type="xs:string" minOccurs="0"/>
+  <!-- 6 -->
+  <xs:element name="federal" type="xs:string" minOccurs="0"/>
+  <!-- 7 -->
+  <xs:element name="outras" type="xs:string" minOccurs="0"/>
+  <!-- 8 -->
+  <xs:element name="seguro rural" type="xs:string" minOccurs="0"/>
+  <!-- 9 -->
+  <xs:element name="pessoa física" type="xs:string" minOccurs="0"/>
+  <!-- 10 -->
+  <xs:element name="Veículos automotores (NR1) | descontinuado a partir da data-base maio/2026" type="xs:string" minOccurs="0"/>
+  <!-- 11 -->
+  <xs:element name="Mitigadoras (NR1) | descontinuado a partir da data-base maio/2026" type="xs:string" minOccurs="0"/>
+  <!-- 12 -->
+  <xs:element name="Entidades Multilaterais de Desenvolvimento (EMD) - artigo 37, inciso III da Circular nº 3.644 de 2013 (NR1) | descontinuado a partir da data-base maio/2026" type="xs:string" minOccurs="0"/>
+  <!-- 13 -->
+  <xs:element name="acordos para a compensação e liquidação de obrigações no âmbito do SFN, nos termos da Resolução nº 3.263, de 2005 - artigo 37, inciso IV da Circular nº 3.644 de 2013
+(NR1) | descontinuado a partir da data-base maio/2026" type="xs:string" minOccurs="0"/>
+  <!-- 14 -->
+  <xs:element name="depósito à vista, poupança, ativos financeiros Renda Fixa emitidos por instituições financeiras (Exemplos: CDB, CCB, NC, LC, LF, DI, LCI, LCA, LIG) (NR1)" type="xs:string" minOccurs="0"/>
+  <!-- Domínio -->
+  <xs:element name="Descrição" type="xs:string" minOccurs="0"/>
+  <!-- 1 -->
+  <xs:element name="Classificação inicial" type="xs:string" minOccurs="0"/>
+  <!-- 2 -->
+  <xs:element name="Aumento significativo de risco" type="xs:string" minOccurs="0"/>
+  <!-- 3 -->
+  <xs:element name="Classificação inicial" type="xs:string" minOccurs="0"/>
+  <!-- <Tp> -->
+  <xs:element name="Descrição" type="xs:string" minOccurs="0"/>
+  <!-- 1 -->
+  <xs:element name="Informações de cessionário de cessão com coobrigação" type="xs:string" minOccurs="0"/>
+  <!-- 2 -->
+  <xs:element name="Cedente/Interveniente" type="xs:string" minOccurs="0"/>
+  <!-- 3 -->
+  <xs:element name="Operação paga" type="xs:string" minOccurs="0"/>
+  <!-- 4 -->
+  <xs:element name="Cetip - Sistema Nacional de Gravames (SNG) B3/SNG (NR1) | descontinuado a partir da data-base maio/2026" type="xs:string" minOccurs="0"/>
+  <!-- 5 -->
+  <xs:element name="Cetip" type="xs:string" minOccurs="0"/>
+  <!-- 6 -->
+  <xs:element name="B3/SNG" type="xs:string" minOccurs="0"/>
+  <!-- 7 -->
+  <xs:element name="Informações de cessionário" type="xs:decimal" minOccurs="0"/>
+  <!-- 10 -->
+  <xs:element name="Adquirido de pessoa integrante do SFN" type="xs:decimal" minOccurs="0"/>
+  <!-- 11 -->
+  <xs:element name="TRS" type="xs:string" minOccurs="0"/>
+  <!-- 12 -->
+  <xs:element name="Informação referente ao registro adicional de retenção de risco" type="xs:string" minOccurs="0"/>
+  <!-- 13 -->
+  <xs:element name="Veículos automotores acima de 2 toneladas (NR1) | descontinuado a partir da data-base maio/2026" type="xs:string" minOccurs="0"/>
+  <!-- 14 -->
+  <xs:element name="Cumprimento de direcionamento obrigatório de depósitos à vista para microfinanças" type="xs:string" minOccurs="0"/>
+  <!-- 15 -->
+  <xs:element name="público" type="xs:string" minOccurs="0"/>
+  <!-- 16 -->
+  <xs:element name="Informação de Correspondente Bancário" type="xs:string" minOccurs="0"/>
+  <!-- 17 -->
+  <xs:element name="Informação de reestruturação de instrumentos financeiros" type="xs:string" minOccurs="0"/>
+  <!-- 18 -->
+  <xs:element name="CADIP" type="xs:string" minOccurs="0"/>
+  <!-- 19 -->
+  <xs:element name="Depósitos à vista" type="xs:string" minOccurs="0"/>
+  <!-- 20 -->
+  <xs:element name="Saldo total" type="xs:string" minOccurs="0"/>
+  <!-- 21 -->
+  <xs:element name="Identificação de credores" type="xs:string" minOccurs="0"/>
+  <!-- 22 -->
+  <xs:element name="Identificação da entidade assemelhada" type="xs:string" minOccurs="0"/>
+  <!-- 23 -->
+  <xs:element name="SAC" type="xs:string" minOccurs="0"/>
+  <!-- 24 -->
+  <xs:element name="Exposição garantida por imóvel residencial e há dependência do fluxo de caixa. A exposição e a fonte de renda estejam na mesma moeda, ou haja ao menos 90% de hedge" type="xs:string" minOccurs="0"/>
+  <!-- 25 -->
+  <xs:element name="Instituição financeira receptora da Fiança Bancária/Garantia financeira prestada (NR1)" type="xs:string" minOccurs="0"/>
+  <!-- Data -->
+  <xs:element name="Observações" type="xs:string" minOccurs="0"/>
+  <!-- 40730 -->
+  <xs:element name="As versões antigas ainda podem ser resgatadas pelos nomes originais (SCR3040_Leiaute_MMMAA_vXX.xls)" type="xs:string" minOccurs="0"/>
+  <!-- 40848 -->
+  <xs:element name="Instruções adicionais sobre a utilização no Manual de Informações de Negociação de Operações" type="xs:string" minOccurs="0"/>
+  <!-- 40920 -->
+  <xs:element name="Instruções adicionais sobre a utilização nas Instruções de Preenchimento" type="xs:string" minOccurs="0"/>
+  <!-- 41162 -->
+  <xs:element name="Home equity" type="xs:string" minOccurs="0"/>
+  <!-- 41204 -->
+  <xs:element name="Garantia DPGE" type="xs:string" minOccurs="0"/>
+  <!-- 41213 -->
+  <xs:element name="Instrumento registrado em sistemas de registro, liquidação e custódia autorizados pelo Banco Central do Brasil" type="xs:string" minOccurs="0"/>
+  <!-- 41319 -->
+  <xs:element name="Os certificados e títulos agregadores não serão mais informados no âmbito do SCR." type="xs:string" minOccurs="0"/>
+  <!-- 41361 -->
+  <xs:element name="Aplicação Regulatória" type="xs:string" minOccurs="0"/>
+  <!-- 41591 -->
+  <xs:element name="Carta Circular 3617/2013." type="xs:string" minOccurs="0"/>
+  <!-- 41768 -->
+  <xs:element name="Resolução 4.292, de 20/12/2013 e Carta Circular 3617/2013" type="xs:string" minOccurs="0"/>
+  <!-- 41768 -->
+  <xs:element name="Carta-Circular 3.649, de 09 de abril de 2014" type="xs:string" minOccurs="0"/>
+  <!-- 41768 -->
+  <xs:element name="Carta-Circular 3.649, de 09 de abril de 2014" type="xs:string" minOccurs="0"/>
+  <!-- 41768 -->
+  <xs:element name="Carta-Circular 3.649, de 09 de abril de 2014" type="xs:string" minOccurs="0"/>
+  <!-- 42298 -->
+  <xs:element name="Carta-Circular 3.732, de 16 de outubro de 2015" type="xs:string" minOccurs="0"/>
+  <!-- 42460 -->
+  <xs:element name="Recebíveis de Arranjo de Pagamento" type="xs:string" minOccurs="0"/>
+  <!-- 42563 -->
+  <xs:element name="Carta-Circular 3.773, de 12/07/2016" type="xs:string" minOccurs="0"/>
+  <!-- 42643 -->
+  <xs:element name="Carta-Circular 3.783, de 27/09/2016" type="xs:string" minOccurs="0"/>
+  <!-- 42719 -->
+  <xs:element name="Carta-Circular 3.793, de 15/12/2016" type="xs:string" minOccurs="0"/>
+  <!-- 42776 -->
+  <xs:element name="Carta-Circular 3.806, de 10/02/2017" type="xs:string" minOccurs="0"/>
+  <!-- 42850 -->
+  <xs:element name="Carta-Circular 3.817, de 26/04/2017" type="xs:string" minOccurs="0"/>
+  <!-- 42865 -->
+  <xs:element name="Carta-Circular 3.819, de 04/05/2017" type="xs:string" minOccurs="0"/>
+  <!-- 43067 -->
+  <xs:element name="Carta-Circular 3.845, de 28/11/2017" type="xs:string" minOccurs="0"/>
+  <!-- 43186 -->
+  <xs:element name="Carta-Circular 3.871, de 26/03/2018" type="xs:string" minOccurs="0"/>
+  <!-- 43192 -->
+  <xs:element name="Carta-Circular 3.871, de 26/03/2018" type="xs:string" minOccurs="0"/>
+  <!-- 43280 -->
+  <xs:element name="Carta-Circular 3.889, de 28/06/2018" type="xs:string" minOccurs="0"/>
+  <!-- 43444 -->
+  <xs:element name="Carta-Circular 3.871, de 26/03/2018" type="xs:string" minOccurs="0"/>
+  <!-- 43469 -->
+  <xs:element name="Carta-Circular 3.925, de 04/01/2019" type="xs:string" minOccurs="0"/>
+  <!-- 43671 -->
+  <xs:element name="Carta-Circular 3.961, de 25/07/2019" type="xs:string" minOccurs="0"/>
+  <!-- 43684 -->
+  <xs:element name="Carta-Circular 3.968, de 07/08/2019" type="xs:string" minOccurs="0"/>
+  <!-- 43713 -->
+  <xs:element name="Carta-Circular 3.972, de 05/09/2019" type="xs:string" minOccurs="0"/>
+  <!-- 43777 -->
+  <xs:element name="Carta Circular 3.986, de 08/11/2019" type="xs:string" minOccurs="0"/>
+  <!-- 43938 -->
+  <xs:element name="Carta Circular 4.031, de 17/04/2020" type="xs:string" minOccurs="0"/>
+  <!-- 43957 -->
+  <xs:element name="Carta Circular 4.044, de 05/05/2020" type="xs:string" minOccurs="0"/>
+  <!-- 43959 -->
+  <xs:element name="Carta Circular 4.049, de 08/05/2020" type="xs:string" minOccurs="0"/>
+  <!-- 44011 -->
+  <xs:element name="Carta Circular 4.062, de 29/06/2020" type="xs:string" minOccurs="0"/>
+  <!-- 44034 -->
+  <xs:element name="Carta Circular 4.072, de 22/07/2020" type="xs:string" minOccurs="0"/>
+  <!-- 44043 -->
+  <xs:element name="Instrução Normativa BCB nº 1, de 31/07/2020" type="xs:string" minOccurs="0"/>
+  <!-- 44075 -->
+  <xs:element name="Instrução Normativa BCB nº 12, de 01/09/2020" type="xs:string" minOccurs="0"/>
+  <!-- 44103 -->
+  <xs:element name="Instrução Normativa BCB nº 21, de 29/09/2020" type="xs:string" minOccurs="0"/>
+  <!-- 44323 -->
+  <xs:element name="Instrução Normativa BCB nº 105, de 07/05/2021" type="xs:string" minOccurs="0"/>
+  <!-- 44323 -->
+  <xs:element name="Instrução Normativa BCB nº 105, de 07/05/2021" type="xs:string" minOccurs="0"/>
+  <!-- 44323 -->
+  <xs:element name="Instrução Normativa BCB nº 105, de 07/05/2021" type="xs:string" minOccurs="0"/>
+  <!-- 44403 -->
+  <xs:element name="Instrução Normativa BCB nº 135, de 26/07/2021" type="xs:string" minOccurs="0"/>
+  <!-- 44544 -->
+  <xs:element name="Instrução Normativa BCB nº 207, de 14/12/2021" type="xs:string" minOccurs="0"/>
+  <!-- 44623 -->
+  <xs:element name="Instrução Normativa BCB nº 238, de 03/03/2022" type="xs:string" minOccurs="0"/>
+  <!-- 44887 -->
+  <xs:element name="Instrução Normativa BCB nº 327 de 22/11/2022" type="xs:string" minOccurs="0"/>
+  <!-- 45091 -->
+  <xs:element name="Instrução Normativa BCB nº 393 de 14/06/2023" type="xs:string" minOccurs="0"/>
+  <!-- 45163 -->
+  <xs:element name="Instrução Normativa BCB nº 408 de 25/08/2023" type="xs:string" minOccurs="0"/>
+  <!-- 45215 -->
+  <xs:element name="Instrução Normativa BCB nº 414 de 16/10/2023" type="xs:string" minOccurs="0"/>
+  <!-- 45243 -->
+  <xs:element name="Instrução Normativa BCB nº 419 de 13/11/2023" type="xs:string" minOccurs="0"/>
+  <!-- 45329 -->
+  <xs:element name="Instrução Normativa BCB nº 454 de 07/02/2024" type="xs:string" minOccurs="0"/>
+  <!-- 45435 -->
+  <xs:element name="Instrução Normativa BCB nº 472 de 23/05/2024" type="xs:string" minOccurs="0"/>
+  <!-- 45583 -->
+  <xs:element name="Instrução Normativa BCB nº 531 de 18/10/2024" type="xs:string" minOccurs="0"/>
+  <!-- 45632 -->
+  <xs:element name="Atualização de leiaute conforme Instrução Normativa BCB nº 531 de 18/10/2024" type="xs:string" minOccurs="0"/>
+  <!-- 45806 -->
+  <xs:element name="Atualização de leiaute conforme Instrução Normativa BCB nº 627 de 29/05/2025" type="xs:string" minOccurs="0"/>
+  <!-- 45908 -->
+  <xs:element name="Atualização de leiaute conforme Instrução Normativa BCB nº 659 de 08/09/2025" type="xs:string" minOccurs="0"/>
+  <!-- 46146 -->
+  <xs:element name="Atualização de leiaute conforme Instrução Normativa BCB nº733 de 04/05/2026" type="xs:string" minOccurs="0"/>
+  <!-- 46148 -->
+  <xs:element name="Atualização de leiaute conforme Instrução Normativa BCB nº 735 de 06/05/2026" type="xs:string" minOccurs="0"/>
+
+</xs:schema>
