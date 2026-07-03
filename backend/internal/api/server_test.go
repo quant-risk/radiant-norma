@@ -61,6 +61,7 @@ func newTestServer(t *testing.T) (*api.Server, *sql.DB) {
 	srv.ScanLimiter = radar.NewScanLimiter(1 * time.Minute)
 	srv.ScanCache = radar.NewScanCache(5 * time.Minute)
 	srv.AdminAuth = &radar.AdminAuth{Token: "test-admin-token"}
+	srv.CadocListCache = schema.NewCadocListCache(5 * time.Minute)
 	return srv, d
 }
 

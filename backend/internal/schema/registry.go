@@ -6,10 +6,12 @@
 package schema
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -144,4 +146,95 @@ func nullableString(s string) any {
 		return nil
 	}
 	return s
+}
+
+// ListCadocs retorna a união de CADOCs que têm schema versionado OU
+// críticas cadastradas. Ordenado alfabeticamente.
+//
+// Sprint 6 v1.5.0 (W4): substituiu lista hardcoded em api/server.go.
+// Mantém `internal/api/server.go::listSchemas/listRules` dinâmico
+// conforme regras são adicionadas ao DB.
+//
+// Caso DB vazio (sem schema_versions/criticas), retorna slice vazio
+// (NÃO faz fallback pra lista hardcoded — comportamento é orientado
+// pelo estado real do banco).
+func (r *Registry) ListCadocs(ctx context.Context) ([]string, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT DISTINCT cadoc_code FROM (
+			SELECT cadoc_code FROM schema_versions
+			UNION
+			SELECT cadoc_code FROM criticas
+		)
+		ORDER BY cadoc_code ASC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("list cadocs: %w", err)
+	}
+	defer rows.Close()
+
+	out := []string{}
+	for rows.Next() {
+		var c string
+		if err := rows.Scan(&c); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+// CadocListCache é um cache in-memory (5min TTL) para ListCadocs.
+//
+// Justificativa (W4): endpoint /v1/schemas era chamado em todo dashboard
+// load. Cada call = SELECT DISTINCT cadoc_code (UNION) sobre schema_versions
+// + criticas. Com cache, 99% das chamadas retornam memória.
+//
+// Em produção: trocar para Redis (in-memory não escala horizontalmente).
+type CadocListCache struct {
+	mu        sync.Mutex
+	cadocs    []string
+	cachedAt  time.Time
+	ttl       time.Duration
+}
+
+func NewCadocListCache(ttl time.Duration) *CadocListCache {
+	return &CadocListCache{ttl: ttl}
+}
+
+// GetOrFetch retorna cache se válido, senão chama fetch() e cacheia.
+//
+// fetch() é um func que retorna ([]string, error) — abstração para que
+// possa ser usado tanto em produção (Registry.ListCadocs) quanto em
+// testes (fake).
+func (c *CadocListCache) GetOrFetch(fetch func() ([]string, error)) ([]string, error) {
+	c.mu.Lock()
+	if len(c.cadocs) > 0 && time.Since(c.cachedAt) < c.ttl {
+		out := make([]string, len(c.cadocs))
+		copy(out, c.cadocs)
+		c.mu.Unlock()
+		return out, nil
+	}
+	c.mu.Unlock()
+
+	// Cache miss — fetch (fora do lock para não bloquear readers)
+	cadocs, err := fetch()
+	if err != nil {
+		return nil, err
+	}
+
+	c.mu.Lock()
+	c.cadocs = make([]string, len(cadocs))
+	copy(c.cadocs, cadocs)
+	c.cachedAt = time.Now()
+	c.mu.Unlock()
+
+	return cadocs, nil
+}
+
+// Invalidate limpa cache (usado em testes ou após mudanças manuais).
+func (c *CadocListCache) Invalidate() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.cadocs = nil
+	c.cachedAt = time.Time{}
 }

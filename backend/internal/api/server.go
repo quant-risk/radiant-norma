@@ -2,6 +2,7 @@
 package api
 
 import (
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -53,6 +54,10 @@ type Server struct {
 	ScanLimiter *radar.ScanLimiter
 	ScanCache   *radar.ScanCache
 	AdminAuth   *radar.AdminAuth
+
+	// Sprint 6 v1.5.0 (W4) — cadoc list cache.
+	// listSchemas / listRules consultam DB mas com cache 5min.
+	CadocListCache *schema.CadocListCache
 }
 
 // NewServer cria um Server.
@@ -115,10 +120,27 @@ func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listSchemas(w http.ResponseWriter, r *http.Request) {
-	cadocs := []string{"3040", "3042", "3044", "3050", "2030", "2060", "2061", "2062", "2070", "2160", "2170"}
+	cadocs, err := s.cadocsWithCache(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"cadocs": cadocs,
 		"total":  len(cadocs),
+	})
+}
+
+// cadocsWithCache retorna lista de CADOCs via DB + cache 5min.
+func (s *Server) cadocsWithCache(ctx context.Context) ([]string, error) {
+	if s.Schema == nil {
+		return []string{}, nil
+	}
+	if s.CadocListCache == nil {
+		return s.Schema.ListCadocs(ctx)
+	}
+	return s.CadocListCache.GetOrFetch(func() ([]string, error) {
+		return s.Schema.ListCadocs(ctx)
 	})
 }
 
@@ -151,8 +173,13 @@ func (s *Server) listVersions(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listRules(w http.ResponseWriter, r *http.Request) {
+	cadocs, err := s.cadocsWithCache(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"cadocs": []string{"3040", "3042", "3044", "3050", "2030", "2060", "2061", "2062", "2070", "2160", "2170"},
+		"cadocs": cadocs,
 	})
 }
 

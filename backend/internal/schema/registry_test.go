@@ -396,3 +396,205 @@ func TestSchema_EndToEnd(t *testing.T) {
 	// Confirma que ctx não é usado mas é aceito (não muda nada)
 	_ = ctx
 }
+
+// ============================================================
+// ListCadocs — Sprint 6 v1.5.0 (W4)
+// ============================================================
+
+func TestListCadocs_EmptyDatabase(t *testing.T) {
+	d := testutil.NewTestDB(t)
+	reg := schema.New(d)
+
+	cadocs, err := reg.ListCadocs(context.Background())
+	if err != nil {
+		t.Fatalf("ListCadocs: %v", err)
+	}
+	if len(cadocs) != 0 {
+		t.Errorf("Esperado slice vazio em DB sem dados, got %d", len(cadocs))
+	}
+}
+
+func TestListCadocs_OnlySchemas(t *testing.T) {
+	d := testutil.NewTestDB(t)
+	reg := schema.New(d)
+
+	// Cadastrar schemas
+	day := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	for _, c := range []string{"3040", "3050", "2030"} {
+		v := helperVersion(c, day, "http://example.com/"+c, "")
+		if err := reg.Insert(&v); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	cadocs, err := reg.ListCadocs(context.Background())
+	if err != nil {
+		t.Fatalf("ListCadocs: %v", err)
+	}
+	if len(cadocs) != 3 {
+		t.Errorf("Esperado 3 cadocs, got %d", len(cadocs))
+	}
+}
+
+func TestListCadocs_OnlyCriticas(t *testing.T) {
+	d := testutil.NewTestDB(t)
+
+	// Cadastrar críticas direto no DB (Registry não tem método de insert para criticas)
+	for _, c := range []string{"2060", "2070"} {
+		_, err := d.Exec(`
+			INSERT INTO criticas (cadoc_code, sheet, codigo, regra, enabled)
+			VALUES (?, 'Básicas', 'B01', 'test', 1)
+		`, c)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	reg := schema.New(d)
+	cadocs, err := reg.ListCadocs(context.Background())
+	if err != nil {
+		t.Fatalf("ListCadocs: %v", err)
+	}
+	if len(cadocs) != 2 {
+		t.Errorf("Esperado 2 cadocs (de criticas), got %d", len(cadocs))
+	}
+}
+
+func TestListCadocs_Union(t *testing.T) {
+	d := testutil.NewTestDB(t)
+	reg := schema.New(d)
+
+	day := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	// 3040 e 3050 só em schema_versions
+	for _, c := range []string{"3040", "3050"} {
+		v := helperVersion(c, day, "http://example.com/"+c, "")
+		if err := reg.Insert(&v); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// 2060 só em criticas
+	_, _ = d.Exec(`INSERT INTO criticas (cadoc_code, sheet, codigo, regra, enabled) VALUES ('2060', 'Básicas', 'B01', 'test', 1)`)
+	// 3040 também em criticas (já tem em schema) — não duplica
+	_, _ = d.Exec(`INSERT INTO criticas (cadoc_code, sheet, codigo, regra, enabled) VALUES ('3040', 'Básicas', 'B01', 'test', 1)`)
+
+	cadocs, err := reg.ListCadocs(context.Background())
+	if err != nil {
+		t.Fatalf("ListCadocs: %v", err)
+	}
+	// UNION (não UNION ALL): 3040, 3050, 2060 = 3
+	if len(cadocs) != 3 {
+		t.Errorf("Esperado 3 cadocs distintos, got %d: %v", len(cadocs), cadocs)
+	}
+}
+
+func TestListCadocs_Sorted(t *testing.T) {
+	d := testutil.NewTestDB(t)
+
+	// Inserir em ordem aleatória
+	for _, c := range []string{"3050", "2030", "3040", "2060"} {
+		_, _ = d.Exec(`INSERT INTO criticas (cadoc_code, sheet, codigo, regra, enabled) VALUES (?, 'Básicas', 'B01', 'test', 1)`, c)
+	}
+
+	reg := schema.New(d)
+	cadocs, _ := reg.ListCadocs(context.Background())
+
+	// Deve vir ordenado alfabeticamente
+	expected := []string{"2030", "2060", "3040", "3050"}
+	if len(cadocs) != len(expected) {
+		t.Fatalf("len = %d, want %d", len(cadocs), len(expected))
+	}
+	for i, c := range cadocs {
+		if c != expected[i] {
+			t.Errorf("[%d] = %q, want %q", i, c, expected[i])
+		}
+	}
+}
+
+// ============================================================
+// CadocListCache — cache in-memory (Sprint 6 v1.5.0 / W4)
+// ============================================================
+
+func TestCadocListCache_MissInitially(t *testing.T) {
+	c := schema.NewCadocListCache(5 * time.Minute)
+
+	// fetch não deve ser chamado se cache tem hit
+	fetchCalled := false
+	got, err := c.GetOrFetch(func() ([]string, error) {
+		fetchCalled = true
+		return []string{"3040"}, nil
+	})
+	if err != nil {
+		t.Fatalf("GetOrFetch: %v", err)
+	}
+	if !fetchCalled {
+		t.Errorf("fetch deveria ser chamado em miss inicial")
+	}
+	if len(got) != 1 || got[0] != "3040" {
+		t.Errorf("got %v, want [3040]", got)
+	}
+}
+
+func TestCadocListCache_HitAvoidsFetch(t *testing.T) {
+	c := schema.NewCadocListCache(5 * time.Minute)
+
+	// 1ª call: fetch
+	_, _ = c.GetOrFetch(func() ([]string, error) { return []string{"3040"}, nil })
+
+	// 2ª call dentro do TTL: NÃO deve chamar fetch
+	fetchCalled := false
+	_, _ = c.GetOrFetch(func() ([]string, error) {
+		fetchCalled = true
+		return nil, nil
+	})
+	if fetchCalled {
+		t.Errorf("fetch NÃO deveria ser chamado em hit")
+	}
+}
+
+func TestCadocListCache_TTLExpiration(t *testing.T) {
+	c := schema.NewCadocListCache(50 * time.Millisecond)
+
+	_, _ = c.GetOrFetch(func() ([]string, error) { return []string{"v1"}, nil })
+
+	time.Sleep(100 * time.Millisecond) // > TTL
+
+	fetchCalled := false
+	got, _ := c.GetOrFetch(func() ([]string, error) {
+		fetchCalled = true
+		return []string{"v2"}, nil
+	})
+	if !fetchCalled {
+		t.Errorf("fetch deveria ser chamado após TTL")
+	}
+	if got[0] != "v2" {
+		t.Errorf("got %v, want [v2] (cache foi refreshed)", got)
+	}
+}
+
+func TestCadocListCache_Invalidate(t *testing.T) {
+	c := schema.NewCadocListCache(5 * time.Minute)
+
+	_, _ = c.GetOrFetch(func() ([]string, error) { return []string{"3040"}, nil })
+
+	c.Invalidate()
+
+	fetchCalled := false
+	_, _ = c.GetOrFetch(func() ([]string, error) {
+		fetchCalled = true
+		return []string{"3050"}, nil
+	})
+	if !fetchCalled {
+		t.Errorf("fetch deveria ser chamado após Invalidate")
+	}
+}
+
+func TestCadocListCache_PropagatesFetchError(t *testing.T) {
+	c := schema.NewCadocListCache(5 * time.Minute)
+
+	_, err := c.GetOrFetch(func() ([]string, error) {
+		return nil, errors.New("fetch failed")
+	})
+	if err == nil {
+		t.Errorf("Esperado erro propagado")
+	}
+}
