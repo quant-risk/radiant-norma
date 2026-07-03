@@ -114,7 +114,17 @@ func main() {
 //
 // W2 (Sprint 6 v1.5.0): detecta worker crashes ressetando envios stuck em
 // 'processing' por mais de workpkg.LeaseTimeout (5min).
+//
+// Validação 13 (F13.6 follow-up): panic recover — sem isso, panic no
+// sweeper mataria essa goroutine (silenciosamente — lease sweep para
+// sem aviso).
 func runLeaseSweeperLoop(ctx context.Context, d *sql.DB, logger *slog.Logger) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error("lease sweeper panic recovered (goroutine ending)",
+				"panic", r)
+		}
+	}()
 	ticker := time.NewTicker(workpkg.LeaseSweepInterval)
 	defer ticker.Stop()
 	for {

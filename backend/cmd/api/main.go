@@ -71,7 +71,12 @@ func main() {
 	if adminToken == "" {
 		logger.Warn("RADIANT_NORMA_ADMIN_TOKEN não configurado — /v1/radar/scan retorna 401 (admin auth FAIL CLOSED)")
 	} else {
-		logger.Info("admin auth configurado", "token_prefix", adminToken[:min(8, len(adminToken))])
+		// Validação 13 (F13.8): NÃO logar prefix do token em logs.
+		// Senão, logs viram vetor de secret disclosure (logs são
+		// tipicamente persistidos + agregados + podem vazar).
+		// Em vez disso, log apenas que está configurado, com hash SHA-256 truncated.
+		// (implementação deliberadamente simples — token config é nota binária)
+		logger.Info("admin auth configurado", "token_length", len(adminToken))
 	}
 	srv.ScanLimiter = radar.NewScanLimiter(1 * time.Minute)
 	srv.ScanCache = radar.NewScanCache(5 * time.Minute)
@@ -131,9 +136,6 @@ func envOr(key, def string) string {
 	return def
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
+// NOTA: usamos Go stdlib `min` (built-in desde 1.21). Removido wrapper
+// customizado na validação 13 (F13.1) — memory pattern "reinventar
+// stdlib".

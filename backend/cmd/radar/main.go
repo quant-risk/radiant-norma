@@ -71,6 +71,15 @@ func main() {
 	defer cancel()
 
 	scan := func() {
+		// Validação 13 (F13.6): panic recover. Sem isso, panic no
+		// ScanOnce mataria o goroutine principal sem log de erro.
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error("radar scan panic recovered",
+					"panic", r,
+					"stack_hint", "scanner continua na próxima tick")
+			}
+		}()
 		alerts, err := svc.ScanOnce(ctx, nil) // nil = DefaultSources
 		if err != nil {
 			logger.Error("scan failed", "err", err)
