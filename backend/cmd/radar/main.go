@@ -44,7 +44,7 @@ func main() {
 	defer d.Close()
 
 	if err := db.Migrate(d); err != nil {
-		logger.Error("migrate", "err", err)
+		logger.Error("migrate failed", "err", err)
 		os.Exit(1)
 	}
 

@@ -55,6 +55,12 @@ func main() {
 	}
 	defer d.Close()
 
+	// Migrations (worker pode rodar standalone antes da API ter criado schema)
+	if err := db.Migrate(d); err != nil {
+		logger.Error("migrate failed", "err", err)
+		os.Exit(1)
+	}
+
 	// Init services
 	auditSvc := audit.New(d)
 	auditLog := auditlog.New(d)
@@ -102,10 +108,13 @@ func main() {
 
 // processBatch processa até N envios com status pending.
 //
+// Concorrência: usa CLAIM atômico via UPDATE condicional. Sem isso,
+// dois workers rodando simultaneamente poderiam pegar o mesmo envio.
+//
 // Pipeline por envio:
-//  1. Carrega do DB (status='pending')
+//  1. Claim: UPDATE ... SET status='processing' WHERE status='pending' RETURNING
 //  2. Submete via STA client (stub: gera protocolo fake)
-//  3. Atualiza status (pending → sent → accepted/rejected)
+//  3. Atualiza status (processing → sent → accepted/rejected)
 //
 // Retorna quantos processou com sucesso.
 func processBatch(
@@ -117,34 +126,32 @@ func processBatch(
 	batch int,
 	logger *slog.Logger,
 ) (int, error) {
-	rows, err := d.QueryContext(ctx, `
-		SELECT id, if_id, cadoc_code, data_base, xml_hash, zip_hash, status, xml_content
-		FROM envios
-		WHERE status IN ('pending', 'error')
-		ORDER BY created_at ASC
-		LIMIT ?
-	`, batch)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-
-	var envios []envioRow
-	for rows.Next() {
-		var e envioRow
-		if err := rows.Scan(&e.ID, &e.IFID, &e.CadocCode, &e.DataBase,
-			&e.XMLHash, &e.ZipHash, &e.Status, &e.XMLContent); err != nil {
-			return 0, err
-		}
-		envios = append(envios, e)
-	}
-	if err := rows.Err(); err != nil {
-		return 0, err
-	}
-
+	// Estratégia: claim um envio por vez dentro de um loop.
+	// Em produção: usar SKIP LOCKED (Postgres) ou claim em batch.
 	processed := 0
-	for _, e := range envios {
-		// Submete via STA
+	for i := 0; i < batch; i++ {
+		// 1. Claim atômico: 1 envio vira 'processing' (impede outro worker pegar)
+		var e envioRow
+		err := d.QueryRowContext(ctx, `
+			UPDATE envios SET status='processing'
+			WHERE id = (
+				SELECT id FROM envios
+				WHERE status IN ('pending', 'error')
+				ORDER BY created_at ASC
+				LIMIT 1
+			)
+			RETURNING id, if_id, cadoc_code, data_base, xml_hash, zip_hash, status, xml_content
+		`).Scan(&e.ID, &e.IFID, &e.CadocCode, &e.DataBase,
+			&e.XMLHash, &e.ZipHash, &e.Status, &e.XMLContent)
+		if err == sql.ErrNoRows {
+			break // sem mais envios
+		}
+		if err != nil {
+			logger.Error("claim envio failed", "err", err)
+			return processed, err
+		}
+
+		// 2. Submete via STA
 		sub := &sta.Submission{
 			CadocCode: e.CadocCode,
 			DataBase:  e.DataBase,
@@ -161,7 +168,7 @@ func processBatch(
 			continue
 		}
 
-		// Atualiza status
+		// 3. Atualiza status
 		newStatus := "sent"
 		if result.Accepted {
 			newStatus = "accepted"
@@ -182,7 +189,7 @@ func processBatch(
 			continue
 		}
 
-		// Audit log
+		// 4. Audit log
 		_, _ = auditLog.Log(e.IFID, "worker", "envio.processed", e.CadocCode, []byte(e.ID),
 			map[string]any{
 				"envio_id": e.ID,

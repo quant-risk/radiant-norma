@@ -178,17 +178,20 @@ func (F02Datas) Code() string   { return "F02" }
 func (F02Datas) Sheet() string  { return "Formato" }
 func (F02Datas) Severity() string { return "E" }
 func (F02Datas) Apply(_ context.Context, doc *Doc3040) error {
-	// DtBase pode ser YYYY-MM (mensal) ou YYYY-MM-DD (decisão BACEN)
+	// BACEN: AAAA-MM-DD com 4 dígitos ano, 2 mês, 2 dia.
+	// DtBase do 3040 é tipicamente YYYY-MM (mensal) mas a regra geral é AAAA-MM-DD.
 	if doc.Root.DtBase == "" {
 		return errors.New("DtBase vazio")
 	}
-	// Aceita YYYY-MM ou YYYY-MM-DD
-	re := regexp.MustCompile(`^\d{4}-\d{2}(-\d{2})?$`)
-	if !re.MatchString(doc.Root.DtBase) {
+	// Aceita YYYY-MM (decisão mensal) e YYYY-MM-DD (data cheia)
+	if !datePattern.MatchString(doc.Root.DtBase) {
 		return fmt.Errorf("DtBase fora do padrão AAAA-MM[-DD]: %q", doc.Root.DtBase)
 	}
 	return nil
 }
+
+// datePattern é o regex precompilado para F02 (perf: não compilar a cada chamada).
+var datePattern = regexp.MustCompile(`^\d{4}-\d{2}(-\d{2})?$`)
 
 // F03 — Código do contrato não pode ser apenas espaços.
 // Validação aplica nas tags <Cli>/<Oper>. No agregado, skip.
@@ -361,7 +364,9 @@ func (S04CreditoALiberar) Apply(_ context.Context, doc *Doc3040) error {
 }
 
 // S05 — Limite de crédito: vencimentos possíveis.
-// Limite de cheque especial: Vencimentos v110 deve ser > 0 se DesempOp=01.
+// "A modalidade 'Limite de Crédito' (19) só pode ter vencimentos de limite
+// (20 e 40). Nenhum outro vencimento pode ser aceito quando esta modalidade
+// for informada."
 type S05LimiteCredito struct{}
 
 func (S05LimiteCredito) Code() string   { return "S05" }
@@ -369,11 +374,16 @@ func (S05LimiteCredito) Sheet() string  { return "Semântica" }
 func (S05LimiteCredito) Severity() string { return "E" }
 func (S05LimiteCredito) Apply(_ context.Context, doc *Doc3040) error {
 	for i, ag := range doc.Agregados {
-		// Modalidade 0213 = cheque especial
-		if ag.Mod == "0213" && ag.DesempOp == "01" {
-			v, _ := strconv.Atoi(ag.Vencimentos.V110)
-			if v <= 0 {
-				return fmt.Errorf("Agreg[%d]: cheque especial (Mod=0213) a vencer (DesempOp=01) sem Vencimentos v110 > 0", i)
+		// Modalidade 19 = Limite de Crédito (BACEN).
+		// Vencimentos de limite são v110 (faixa 020) e v120 (faixa 040).
+		if ag.Mod == "19" {
+			// v150 (31-60), v160 (61-90), v165 (>90) devem ser 0.
+			v150, _ := strconv.Atoi(ag.Vencimentos.V150)
+			v160, _ := strconv.Atoi(ag.Vencimentos.V160)
+			v165, _ := strconv.Atoi(ag.Vencimentos.V165)
+			if v150 != 0 || v160 != 0 || v165 != 0 {
+				return fmt.Errorf("Agreg[%d]: Limite de Crédito (Mod=19) só aceita vencimentos v110/v120, mas tem v150=%s v160=%s v165=%s",
+					i, ag.Vencimentos.V150, ag.Vencimentos.V160, ag.Vencimentos.V165)
 			}
 		}
 	}

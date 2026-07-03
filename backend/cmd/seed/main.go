@@ -38,7 +38,7 @@ type CriticaJSON struct {
 	Enabled        *bool  `json:"enabled"`
 	Source         string `json:"fonte"`
 	BaseConfrontada string `json:"base_confrontada"`
-	Tipo           string `json:"tipo"`
+	Tipo            string `json:"tipo_"` // "tipo" já usado por TipoIndicio
 }
 
 type CriticasFile struct {

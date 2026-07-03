@@ -57,25 +57,40 @@ func main() {
 		Addr:              addr,
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second, // Slowloris protection
+		WriteTimeout:      60 * time.Second, // validações podem demorar
+		IdleTimeout:       120 * time.Second,
 	}
 
-	// Graceful shutdown
+	// Graceful shutdown — escuta erros em goroutine sem chamar os.Exit
+	// (que sairia sem dar chance pro Shutdown rodar).
+	serverErr := make(chan error, 1)
 	go func() {
 		logger.Info("api listening", "addr", addr)
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("listen", "err", err)
-			os.Exit(1)
+			serverErr <- err
 		}
+		close(serverErr)
 	}()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-	<-stop
 
-	logger.Info("shutting down...")
+	// Aguarda sinal OU erro fatal do server
+	select {
+	case err := <-serverErr:
+		logger.Error("server fatal", "err", err)
+		os.Exit(1)
+	case sig := <-stop:
+		logger.Info("shutting down", "signal", sig.String())
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	_ = httpSrv.Shutdown(ctx)
+	if err := httpSrv.Shutdown(ctx); err != nil {
+		logger.Error("shutdown", "err", err)
+		os.Exit(1)
+	}
 	logger.Info("bye")
 }
 

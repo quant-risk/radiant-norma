@@ -84,7 +84,7 @@ func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":  "ok",
 		"time":    time.Now().UTC().Format(time.RFC3339),
-		"version": "1.2.0",
+		"version": "1.3.1",
 	})
 }
 
@@ -233,8 +233,10 @@ func (s *Server) staSubmit(w http.ResponseWriter, r *http.Request) {
 	if sub.XML == "" {
 		sub.XML = string(body)
 	}
+	// ZIP: stub usa o XML puro (não o body, que pode ser JSON inteiro).
+	// Em produção: ZIP real viria do campo `zip` do JSON ou seria gerado aqui.
 	if len(sub.Zip) == 0 {
-		sub.Zip = body // stub: mesmo conteúdo
+		sub.Zip = []byte(sub.XML)
 	}
 
 	result, err := s.STAClient.Submit(r.Context(), &sub)
@@ -335,18 +337,16 @@ func (s *Server) getRadarAlert(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "id inválido", http.StatusBadRequest)
 		return
 	}
-	alerts, err := s.Radar.ListAlerts(r.Context(), false, 1000)
+	a, err := s.Radar.GetAlertByID(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	for _, a := range alerts {
-		if a.ID == id {
-			writeJSON(w, http.StatusOK, a)
-			return
-		}
+	if a == nil {
+		http.Error(w, "alert não encontrado", http.StatusNotFound)
+		return
 	}
-	http.Error(w, "alert não encontrado", http.StatusNotFound)
+	writeJSON(w, http.StatusOK, a)
 }
 
 func (s *Server) resolveRadarAlert(w http.ResponseWriter, r *http.Request) {

@@ -66,10 +66,11 @@ func (c *StubClient) Submit(ctx context.Context, sub *Submission) (*Result, erro
 	hash := sha256.Sum256(payload)
 	hashHex := hex.EncodeToString(hash[:8])
 
-	// Gera protocolo STA fake (até 18 dígitos numéricos, conforme BACEN)
-	proto := fmt.Sprintf("2026%02d%02d%05d%s",
-		time.Now().Month(), time.Now().Day(),
-		time.Now().Second()*1000+int(time.Now().UnixMilli()%1000),
+	// Gera protocolo STA fake (até 18 dígitos numéricos, conforme BACEN).
+	// Formato: AAAAMMDD + 5 dígitos (millis do dia) + 8 chars hex do hash.
+	proto := fmt.Sprintf("%04d%02d%02d%05d%s",
+		time.Now().Year(), time.Now().Month(), time.Now().Day(),
+		int(time.Now().UnixMilli()%100000),
 		hashHex[:8],
 	)
 

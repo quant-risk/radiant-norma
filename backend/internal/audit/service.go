@@ -165,12 +165,18 @@ func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*Valida
 	}
 
 	// L1 — Parse XML/JSON
-	if err := s.validateL1Parse(req); err != nil {
+	l1Err := s.validateL1Parse(req)
+	if l1Err != nil {
 		resp.Errors = append(resp.Errors, ValidationError{
 			Critica:  Critica{Codigo: "L1-PARSE", CadocCode: req.CadocCode},
 			Severity: "E",
-			Message:  err.Error(),
+			Message:  l1Err.Error(),
 		})
+		// L1 falhou: aborta L2 (regras semânticas que parseiam XML/JSON não rodam)
+		// sem isso, gera 13+ erros de "parser 3040 falhou" duplicados.
+		resp.Passed = false
+		resp.DurationMs = time.Since(start).Milliseconds()
+		return resp, nil
 	}
 
 	// L2 — Regras semânticas (carrega críticas do DB e aplica as implementadas)
@@ -182,8 +188,16 @@ func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*Valida
 			Message:  "Erro carregando críticas: " + err.Error(),
 		})
 	} else {
-for _, c := range criticas {
-		if err := s.applyRegra(ctx, c, req); err != nil {
+		// Parseia o XML 3040 UMA vez (perf: 25 regras × 1 parse = 25x slowdown)
+		var cachedDoc *rules.Doc3040
+		is3040 := req.CadocCode == "3040" && req.ContentType != "application/json"
+
+		for _, c := range criticas {
+			ruleErr := s.applyRegra(ctx, c, req, is3040, &cachedDoc)
+			if ruleErr == nil {
+				continue
+			}
+
 			// Severity: prioriza o que a Rule implementada declara (registry).
 			// Se a regra está no registry, a implementação define a gravidade autoritativa.
 			// Caso contrário, usa Gravidade do DB, e finalmente "A" (aviso) como default.
@@ -204,7 +218,7 @@ for _, c := range criticas {
 			ve := ValidationError{
 				Critica:  c,
 				Severity: sev,
-				Message:  err.Error(),
+				Message:  ruleErr.Error(),
 			}
 			if sev == "E" {
 				resp.Errors = append(resp.Errors, ve)
@@ -212,7 +226,6 @@ for _, c := range criticas {
 				resp.Warnings = append(resp.Warnings, ve)
 			}
 		}
-	}
 	}
 
 	resp.Passed = len(resp.Errors) == 0
@@ -286,7 +299,16 @@ func expectedRootTag(cadoc string) string {
 // Sprint 4: usa rules.Registry para lookup. Se a regra está registrada
 // (Básicas, Formato, Campos Obrigatórios, Semântica), executa via parser
 // tipado. Caso contrário, fallback para heurísticas inline (B01-B05).
-func (s *Service) applyRegra(ctx context.Context, c Critica, req *ValidationRequest) error {
+//
+// is3040 e cachedDoc permitem cachear o ParseDoc3040 (perf: 25 regras
+// não precisam parsear 25x).
+func (s *Service) applyRegra(
+	ctx context.Context,
+	c Critica,
+	req *ValidationRequest,
+	is3040 bool,
+	cachedDoc **rules.Doc3040,
+) error {
 	content := string(req.XML)
 
 	// B01-B05: regras básicas que rodam no conteúdo XML bruto (sem parser tipado)
@@ -319,16 +341,18 @@ func (s *Service) applyRegra(ctx context.Context, c Critica, req *ValidationRequ
 	}
 
 	// Regras portadas (Sprint 4+): tenta resolver via registry
-	if s.registry != nil {
+	if s.registry != nil && is3040 {
 		rule := s.registry.Get(c.Codigo)
 		if rule != nil {
-			// Parseia o XML 3040 (uma vez por validação seria melhor, mas por
-			// enquanto cada regra parseia — vamos cachear depois se virar gargalo)
-			doc, err := rules.ParseDoc3040([]byte(req.XML))
-			if err != nil {
-				return fmt.Errorf("parser 3040 falhou: %w", err)
+			// Lazy load: parseia uma vez e cacheia
+			if *cachedDoc == nil {
+				doc, err := rules.ParseDoc3040([]byte(req.XML))
+				if err != nil {
+					return fmt.Errorf("parser 3040 falhou: %w", err)
+				}
+				*cachedDoc = doc
 			}
-			return rule.Apply(ctx, doc)
+			return rule.Apply(ctx, *cachedDoc)
 		}
 	}
 

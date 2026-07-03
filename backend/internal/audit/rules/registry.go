@@ -22,7 +22,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"strings"
 )
 
@@ -164,7 +163,6 @@ func Builtin3040() *Registry {
 	r.Register(S04CreditoALiberar{})
 	r.Register(S05LimiteCredito{})
 
-	slog.Info("rules registered", "cadoc", "3040", "count", len(r.Codes()))
 	return r
 }
 

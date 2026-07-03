@@ -236,9 +236,31 @@ func (s *Service) lastKnownHash(ctx context.Context, src Source) (string, error)
 }
 
 // recordBaseline grava a hash como baseline (após scan ou mudança).
+//
+// Idempotente: atualiza a baseline existente se já houver, em vez de
+// inserir nova (evita inchar a tabela).
 func (s *Service) recordBaseline(ctx context.Context, src Source, hash string) error {
 	baselineType := "_baseline_" + strings.ToLower(src.Label)
-	_, err := s.db.ExecContext(ctx, `
+
+	// UPDATE se já existe baseline; senão INSERT.
+	// Estratégia: tenta UPDATE primeiro (afeta 0 rows se não existe), depois INSERT.
+	res, err := s.db.ExecContext(ctx, `
+		UPDATE radar_alerts SET description = ?, detected_at = CURRENT_TIMESTAMP
+		WHERE cadoc_code = ? AND alert_type = ? AND resolved_at IS NULL
+	`, hash, src.CadocCode, baselineType)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil // já existia, atualizou
+	}
+
+	// Não existia — INSERT
+	_, err = s.db.ExecContext(ctx, `
 		INSERT INTO radar_alerts (cadoc_code, alert_type, severity, title, description, source_url)
 		VALUES (?, ?, 'info', ?, ?, ?)
 	`, src.CadocCode, baselineType, "baseline "+src.Label, hash, src.URL)
@@ -279,7 +301,8 @@ func (s *Service) ListAlerts(ctx context.Context, unresolvedOnly bool, limit int
 	}
 	defer rows.Close()
 
-	var alerts []Alert
+	// Sempre retorna slice (não nil) quando vazio, pra JSON serializar [] em vez de null.
+	alerts := []Alert{}
 	for rows.Next() {
 		var a Alert
 		if err := rows.Scan(&a.ID, &a.CadocCode, &a.AlertType, &a.Severity,
@@ -289,6 +312,33 @@ func (s *Service) ListAlerts(ctx context.Context, unresolvedOnly bool, limit int
 		alerts = append(alerts, a)
 	}
 	return alerts, rows.Err()
+}
+
+// GetAlertByID retorna um alerta específico por ID.
+// Query direta (O(1)) em vez de ListAlerts + filtro linear (O(N)).
+func (s *Service) GetAlertByID(ctx context.Context, id int64) (*Alert, error) {
+	var a Alert
+	err := s.db.QueryRowContext(ctx, `
+		SELECT id, cadoc_code, alert_type, severity, title, description,
+		       COALESCE(source_url, ''), detected_at, resolved_at IS NOT NULL
+		FROM radar_alerts
+		WHERE id = ? AND alert_type NOT LIKE '_baseline_%'
+	`, id).Scan(&a.ID, &a.CadocCode, &a.AlertType, &a.Severity,
+		&a.Title, &a.Description, &a.SourceURL, &a.DetectedAt, &a.Resolved)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &a, nil
+}
+
+// Close libera recursos do Radar (HTTP client).
+func (s *Service) Close() {
+	if s.hc != nil {
+		s.hc.CloseIdleConnections()
+	}
 }
 
 // ResolveAlert marca um alerta como resolvido.
