@@ -226,17 +226,21 @@ func (s *Service) fetchHash(ctx context.Context, url string) (string, error) {
 }
 
 // lastKnownHash retorna a última hash registrada para esta source.
-// Usa tabela radar_alerts com alert_type='_baseline_<label>'.
+// Usa tabela dedicada radar_baselines (Sprint 6 v1.5.0 / F3) com PK
+// composta (cadoc_code, alert_type) — UNIQUE garante atomicidade.
 //
-// Por simplicidade: usamos radar_alerts com tipo custom. Em produção,
-// tabela dedicada radar_baselines seria melhor.
+// Antes (v1.4.x): usava radar_alerts com alert_type='_baseline_<label>',
+// que tinha race window entre concurrent scans (ambos faziam UPDATE/INSERT
+// sem constraint UNIQUE → múltiplas baselines ou INSERT race).
+//
+// Performance: query é O(1) (PK lookup) vs antes (ORDER BY + LIMIT 1 sobre
+// radar_alerts com filtro LIKE).
 func (s *Service) lastKnownHash(ctx context.Context, src Source) (string, error) {
 	baselineType := baselineTypeFor(src.Label)
 	var hash string
 	err := s.db.QueryRowContext(ctx, `
-		SELECT description FROM radar_alerts
+		SELECT hash FROM radar_baselines
 		WHERE cadoc_code = ? AND alert_type = ?
-		ORDER BY detected_at DESC LIMIT 1
 	`, src.CadocCode, baselineType).Scan(&hash)
 	if err == sql.ErrNoRows {
 		return "", err
@@ -270,36 +274,41 @@ func baselineTypeFor(label string) string {
 	return "_baseline_" + replacer.Replace(lower)
 }
 
-// recordBaseline grava a hash como baseline (após scan ou mudança).
+// RecordBaseline grava a hash como baseline (após scan ou mudança).
 //
-// Idempotente: atualiza a baseline existente se já houver, em vez de
-// inserir nova (evita inchar a tabela).
-func (s *Service) recordBaseline(ctx context.Context, src Source, hash string) error {
+// Atomicidade (Sprint 6 v1.5.0 / F3): usa INSERT ... ON CONFLICT no
+// tabela radar_baselines. UNIQUE constraint (PK) garante que 2 scans
+// concorrentes escrevam o mesmo baseline sem race window.
+//
+// Antes (v1.4.x): usava UPDATE-then-INSERT fallback em radar_alerts.
+// Janela: 2 goroutines pegam o mesmo prev_hash via SELECT, depois ambos
+// tentam UPDATE (0 rows afetadas por ser primeira vez), depois ambos
+// tentam INSERT — 1 falha com UNIQUE constraint (ou ambos inserem em
+// algumas condições de corrida com SELECT FOR UPDATE não usado).
+//
+// O NOW: 1 única operação atômica — DB serializa via PK UNIQUE.
+//
+// Exportado (Sprint 6) para permitir testes de regressão F3 diretamente
+// sem precisar passar pelo ScanOnce (mais simples de testar concorrência).
+// Em produção, é chamado internamente por scanSource.
+func (s *Service) RecordBaseline(ctx context.Context, src Source, hash string) error {
 	baselineType := baselineTypeFor(src.Label)
-
-	// UPDATE se já existe baseline; senão INSERT.
-	// Estratégia: tenta UPDATE primeiro (afeta 0 rows se não existe), depois INSERT.
-	res, err := s.db.ExecContext(ctx, `
-		UPDATE radar_alerts SET description = ?, detected_at = CURRENT_TIMESTAMP
-		WHERE cadoc_code = ? AND alert_type = ? AND resolved_at IS NULL
-	`, hash, src.CadocCode, baselineType)
-	if err != nil {
-		return err
-	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if n > 0 {
-		return nil // já existia, atualizou
-	}
-
-	// Não existia — INSERT
-	_, err = s.db.ExecContext(ctx, `
-		INSERT INTO radar_alerts (cadoc_code, alert_type, severity, title, description, source_url)
-		VALUES (?, ?, 'info', ?, ?, ?)
-	`, src.CadocCode, baselineType, "baseline "+src.Label, hash, src.URL)
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO radar_baselines (cadoc_code, alert_type, hash, source_url, updated_at)
+		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+		ON CONFLICT(cadoc_code, alert_type) DO UPDATE SET
+			hash = excluded.hash,
+			source_url = excluded.source_url,
+			updated_at = CURRENT_TIMESTAMP
+	`, src.CadocCode, baselineType, hash, src.URL)
 	return err
+}
+
+// recordBaseline é o alias interno (alias pra RecordBaseline).
+// Mantido por compat — internamente scanSource chama direto.
+// Em código novo, prefira RecordBaseline.
+func (s *Service) recordBaseline(ctx context.Context, src Source, hash string) error {
+	return s.RecordBaseline(ctx, src, hash)
 }
 
 // insertAlert persiste um alerta novo.

@@ -2,6 +2,42 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v1.5.0 — 2026-07-03 (Sprint 6: Hardening P0 + Cross-Doc L3 + Postgres driver)
+
+> **Status:** 🚧 Em desenvolvimento
+> **Sprint:** Sprint 6 (ver `SPRINT_6.md`)
+> **Trigger:** 11 gaps acumulados de v1.4.1-v1.4.4 + DOS-via-API risk (R1)
+> **Target release:** final do dia
+
+### 🎯 Objetivo da sprint
+
+Fechar gaps críticos de hardening (race window, worker retry/lease, rate limit
+em DOS vector), introduzir diferencial proprietário (cross-doc L3) e setup de
+Postgres para produção. Ver detalhes em `SPRINT_6.md`.
+
+### 📋 Entregas previstas
+
+- **Frente 1 — Hardening P0:**
+  - F3: `recordBaseline` race fix (INSERT ON CONFLICT)
+  - W1: Worker retry com backoff exponencial
+  - W2: Worker lease timeout (sweeper)
+  - R1: `triggerRadarScan` rate limit + cache + auth role (DOS prevention)
+- **Frente 2 — Testes restantes:**
+  - F6: `internal/schema/registry_test.go`
+  - F7: `internal/db/migrate_test.go` (idempotência)
+  - F8: `internal/api/server_test.go` (E2E coverage)
+- **Frente 3 — Cross-Doc L3:**
+  - `internal/crossdoc/` package novo
+  - 3+ regras cross-doc (3040 ↔ 4111 ↔ DRSAC)
+  - Endpoint `POST /v1/crossdoc/validate`
+- **Frente 4 — Postgres driver:**
+  - pgx/v5 + Docker compose
+  - `db.Open` detecta driver via DSN prefix
+
+*(atualizado conforme sprint avança)*
+
+---
+
 ## v1.4.4 — 2026-07-03 (Validação profunda 10: itoa removed + User-Agent bump + self-doc fix)
 
 ### 🎯 Objetivo da validação

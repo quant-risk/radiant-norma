@@ -13,12 +13,14 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -66,7 +68,7 @@ func TestScanSource_FirstScan(t *testing.T) {
 
 	// Verifica que baseline foi gravada
 	var baselineCount int
-	err = d.QueryRow(`SELECT COUNT(*) FROM radar_alerts WHERE alert_type = '_baseline_drsac_faq' AND cadoc_code = '2030'`).Scan(&baselineCount)
+	err = d.QueryRow(`SELECT COUNT(*) FROM radar_baselines WHERE alert_type = '_baseline_drsac_faq' AND cadoc_code = '2030'`).Scan(&baselineCount)
 	if err != nil {
 		t.Fatalf("query baseline: %v", err)
 	}
@@ -185,7 +187,7 @@ func TestScanSource_BaselineIdempotent(t *testing.T) {
 	}
 
 	var baselineCount int
-	err := d.QueryRow(`SELECT COUNT(*) FROM radar_alerts WHERE alert_type = '_baseline_drsac_faq' AND cadoc_code = '2030'`).Scan(&baselineCount)
+	err := d.QueryRow(`SELECT COUNT(*) FROM radar_baselines WHERE alert_type = '_baseline_drsac_faq' AND cadoc_code = '2030'`).Scan(&baselineCount)
 	if err != nil {
 		t.Fatalf("query: %v", err)
 	}
@@ -219,7 +221,7 @@ func TestFetchHash_Stable(t *testing.T) {
 
 	// Verifica que baseline gravada tem o hash esperado
 	var storedHash string
-	err := d.QueryRow(`SELECT description FROM radar_alerts WHERE alert_type = '_baseline_test' AND cadoc_code = '2030'`).Scan(&storedHash)
+	err := d.QueryRow(`SELECT hash FROM radar_baselines WHERE alert_type = '_baseline_test' AND cadoc_code = '2030'`).Scan(&storedHash)
 	if err != nil {
 		t.Fatalf("query: %v", err)
 	}
@@ -383,13 +385,15 @@ func TestShortHash_NeverPanics(t *testing.T) {
 // hash com < 12 chars (cenário de corrupção ou inserção manual errada),
 // o radar NÃO pode panicar. Chamamos ScanOnce 2x pra forçar o caminho
 // de "lastHash do DB + recordBaseline com hash novo".
+//
+// Sprint 6 v1.5.0 (F3): tabela migrou para radar_baselines.
 func TestRecordBaseline_ShortHashInDB(t *testing.T) {
 	d := testutil.NewTestDB(t)
 
 	// Insere manualmente uma baseline com hash curto (corrompido).
 	_, err := d.Exec(`
-		INSERT INTO radar_alerts (cadoc_code, alert_type, severity, title, description, source_url)
-		VALUES ('2030', '_baseline_corrupted', 'info', 'baseline corrupted', 'shorty', 'http://example.com')
+		INSERT INTO radar_baselines (cadoc_code, alert_type, hash, source_url)
+		VALUES ('2030', '_baseline_corrupted', 'shorty', 'http://example.com')
 	`)
 	if err != nil {
 		t.Fatalf("seed corrupted baseline: %v", err)
@@ -460,11 +464,137 @@ func TestScanSource_FetchError(t *testing.T) {
 
 	// Verifica que não há baseline
 	var baselineCount int
-	err := d.QueryRow(`SELECT COUNT(*) FROM radar_alerts WHERE alert_type = '_baseline_drsac_faq' AND cadoc_code = '2030'`).Scan(&baselineCount)
+	err := d.QueryRow(`SELECT COUNT(*) FROM radar_baselines WHERE alert_type = '_baseline_drsac_faq' AND cadoc_code = '2030'`).Scan(&baselineCount)
 	if err != nil {
 		t.Fatalf("query: %v", err)
 	}
 	if baselineCount != 0 {
 		t.Errorf("fetch falhou, não deveria ter baseline, got %d", baselineCount)
+	}
+}
+
+// ============================================================
+// F3 — recordBaseline race fix (Sprint 6 v1.5.0)
+// ============================================================
+//
+// Regressão: antes do fix v1.5.0, recordBaseline usava UPDATE-then-INSERT
+// em radar_alerts (sem UNIQUE constraint). Em scans concorrentes, 2
+// goroutines pegavam o mesmo prev_hash via SELECT, ambos UPDATE falhavam
+// (0 rows), ambos INSERTavam —	resultava em baselines duplicadas.
+//
+// Depois do fix v1.5.0: tabela dedicada radar_baselines com PK composta
+// (cadoc_code, alert_type) + INSERT ... ON CONFLICT DO UPDATE. UNIQUE
+// constraint serializa gravações concorrentes sem race window.
+
+// TestRecordBaseline_Concurrent dispara 50 goroutines gravando a mesma
+// baseline simultaneamente. Após WaitGroup, deve haver EXATAMENTE 1
+// linha em radar_baselines (não 50).
+//
+// Antes do fix v1.5.0: apareciam 1-50 linhas dependendo de timing.
+// Depois do fix: sempre exatamente 1.
+func TestRecordBaseline_Concurrent(t *testing.T) {
+	d := testutil.NewTestDB(t)
+
+	svc := radar.New(d, 1*time.Hour)
+	svc.SetLogger(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError})))
+	src := sourceWithServer("2030", "DRSAC FAQ", "http://example.com")
+
+	const goroutines = 50
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+
+	for i := 0; i < goroutines; i++ {
+		go func(i int) {
+			defer wg.Done()
+			hash := fmt.Sprintf("hash_goroutine_%d", i)
+			if err := svc.RecordBaseline(context.Background(), src, hash); err != nil {
+				t.Errorf("goroutine %d: RecordBaseline falhou: %v", i, err)
+			}
+		}(i)
+	}
+
+	wg.Wait()
+
+	// Após todas as goroutines, deve haver EXATAMENTE 1 baseline.
+	var count int
+	if err := d.QueryRow(`SELECT COUNT(*) FROM radar_baselines WHERE cadoc_code = ? AND alert_type = ?`,
+		src.CadocCode, "_baseline_drsac_faq").Scan(&count); err != nil {
+		t.Fatalf("count baseline: %v", err)
+	}
+	if count != 1 {
+		t.Errorf("Esperado 1 baseline após %d goroutines concorrentes, got %d (race window aberto)",
+			goroutines, count)
+	}
+}
+
+// TestRecordBaseline_OnConflictUpsert valida explicitamente o UPSERT:
+// insere baseline, atualiza 2x mais, e sempre tem 1 linha com hash final.
+func TestRecordBaseline_OnConflictUpsert(t *testing.T) {
+	d := testutil.NewTestDB(t)
+
+	svc := radar.New(d, 1*time.Hour)
+	svc.SetLogger(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError})))
+	src := sourceWithServer("2030", "DRSAC FAQ", "http://example.com")
+
+	// 5 UPSERTs sequenciais
+	hashes := []string{"hash_v1", "hash_v2", "hash_v3", "hash_v4", "hash_v5"}
+	for _, h := range hashes {
+		if err := svc.RecordBaseline(context.Background(), src, h); err != nil {
+			t.Fatalf("RecordBaseline %s: %v", h, err)
+		}
+	}
+
+	var count int
+	if err := d.QueryRow(`SELECT COUNT(*) FROM radar_baselines WHERE cadoc_code = ? AND alert_type = ?`,
+		src.CadocCode, "_baseline_drsac_faq").Scan(&count); err != nil {
+		t.Fatalf("count: %v", err)
+	}
+	if count != 1 {
+		t.Errorf("Esperado 1 baseline após 5 UPSERTs, got %d", count)
+	}
+
+	// Hash final deve ser o último inserido
+	var finalHash string
+	if err := d.QueryRow(`SELECT hash FROM radar_baselines WHERE cadoc_code = ? AND alert_type = ?`,
+		src.CadocCode, "_baseline_drsac_faq").Scan(&finalHash); err != nil {
+		t.Fatalf("query hash: %v", err)
+	}
+	if finalHash != "hash_v5" {
+		t.Errorf("Esperado hash_v5 (último UPSERT), got %q", finalHash)
+	}
+}
+
+// TestRecordBaseline_BaselinesIsolatedPerCadoc garante que a PK composta
+// isola baselines de CADOCs diferentes (não colam).
+func TestRecordBaseline_BaselinesIsolatedPerCadoc(t *testing.T) {
+	d := testutil.NewTestDB(t)
+
+	svc := radar.New(d, 1*time.Hour)
+	svc.SetLogger(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError})))
+
+	src3040 := sourceWithServer("3040", "Críticas 3040", "http://example.com/3040")
+	src3050 := sourceWithServer("3050", "Críticas 3050", "http://example.com/3050")
+
+	if err := svc.RecordBaseline(context.Background(), src3040, "hash_3040"); err != nil {
+		t.Fatalf("3040: %v", err)
+	}
+	if err := svc.RecordBaseline(context.Background(), src3050, "hash_3050"); err != nil {
+		t.Fatalf("3050: %v", err)
+	}
+
+	var count int
+	if err := d.QueryRow(`SELECT COUNT(*) FROM radar_baselines`).Scan(&count); err != nil {
+		t.Fatalf("count: %v", err)
+	}
+	if count != 2 {
+		t.Errorf("Esperado 2 baselines (3040 + 3050), got %d", count)
+	}
+
+	var hash3040 string
+	if err := d.QueryRow(`SELECT hash FROM radar_baselines WHERE cadoc_code = '3040'`).Scan(&hash3040); err != nil {
+		t.Fatalf("query 3040: %v", err)
+	}
+	if hash3040 != "hash_3040" {
+		t.Errorf("hash 3040 = %q, want hash_3040", hash3040)
 	}
 }

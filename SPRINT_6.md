@@ -1,12 +1,14 @@
 # Sprint 6 — Hardening + Postgres + Cross-Doc L3
 
-> **Data proposta:** 2026-07-04+
-> **Status:** Proposta (aguarda aprovação)
+> **Data:** 2026-07-03 (iniciada)
+> **Status:** 🚀 Em andamento — P0 crítico fechado
 > **Tema:** Encerrar gaps de hardening + setup multi-DB + diferencial proprietário
 > **Versão alvo:** v1.5.0 (minor — features novos)
-> **Trigger:** 7ª (v1.4.1), 8ª (v1.4.2) e 9ª (v1.4.3) validações fecharam gaps
-> progressivamente. Validação 10 (v1.4.4) consolidou cleanup + arquitetura.
-> 11 gaps remanescentes viram Sprint 6
+> **Trigger:** 7ª (v1.4.1), 8ª (v1.4.2), 9ª (v1.4.3) e 10ª (v1.4.4) validações fecharam gaps
+> progressivamente. 11 gaps remanescentes viram Sprint 6
+> **Decisão de execução:** Frente 1 (hardening P0) primeiro conforme memory pattern
+> "DOS-via-API rate limiting é obrigatório desde o dia 1". Postgres fica P1 (trade-off
+> já documentado). Cross-doc L3 fica P1 (diferencial).
 
 ## 🎯 Por que Sprint 6 AGORA
 
