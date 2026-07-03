@@ -88,19 +88,19 @@ func main() {
 
 	// Seed IFs (multi-tenant demo)
 	if err := seedIFs(d, logger); err != nil {
-		logger.Error("seed ifs", "err", err)
+		logger.Error("seed ifs", "err", loggerutil.SafeError(err))
 		os.Exit(1)
 	}
 
 	// Seed críticas
 	if err := seedCriticas(d, *jsonPath, logger); err != nil {
-		logger.Error("seed criticas", "err", err)
+		logger.Error("seed criticas", "err", loggerutil.SafeError(err))
 		os.Exit(1)
 	}
 
 	// Seed schema_registry
 	if err := seedSchemaRegistry(d, *leiautesPath, *xsdPath, logger); err != nil {
-		logger.Error("seed schemas", "err", err)
+		logger.Error("seed schemas", "err", loggerutil.SafeError(err))
 		os.Exit(1)
 	}
 

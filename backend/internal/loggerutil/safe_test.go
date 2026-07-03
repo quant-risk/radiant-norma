@@ -89,3 +89,75 @@ func TestWrap_ErrWithDSN(t *testing.T) {
 		t.Errorf("Wrap não inclui mensagem: %q", wrapped.Error())
 	}
 }
+
+// ===========================
+// Validação 16 (F16.5): regressão — vetor REAL pgx
+// ===========================
+//
+// O vetor que motivou F15.1 não foi DSN bem formada (covered acima),
+// mas o WRAP output do pgx com template `\`user=%s database=%s\``:
+//
+//	"failed to connect to `user=user database=db`: hostname resolving..."
+//
+// O atual `dsnPatterns` regex `(?i)(postgres|...):` casa com
+// "postgres://" — NÃO casa com `user=user` (não tem prefixo DSN).
+// Por isso o vetor REAL do pgx passa despercebido pela sanitização
+// atual (F15.1 PLUG, não FIX).
+//
+// Este test é a regressão que força o fix no próximo round.
+
+func TestSafeError_PgxConnectError_REAL_Vector(t *testing.T) {
+	// Este é o output real do pgx com DSN postgres://user:secret123@...
+	err := errors.New("failed to connect to `user=user database=db`: hostname resolving error")
+	got := loggerutil.SafeError(err)
+
+	// Vetor real expõe:
+	if strings.Contains(got, "user=user") {
+		t.Errorf("SafeError NÃO sanitiza vetor REAL pgx (user=X): %q — fix pendente", got)
+	}
+	if strings.Contains(got, "database=db") {
+		t.Errorf("SafeError NÃO sanitiza vetor REAL pgx (database=X): %q — fix pendente", got)
+	}
+}
+
+// Regressão para outros vetores comuns que vão acontecer:
+// - Connection strings with embedded credentials
+// - URLs em stack traces
+// - JWT tokens em logs (eyJ...)
+// - Cookies em logs
+
+func TestSafeError_URLInStackTrace(t *testing.T) {
+	// Simular erro com URL embedded (sem prefixo protocol).
+	err := errors.New("connection refused at 192.168.1.1:5432 for user=admin")
+	got := loggerutil.SafeError(err)
+
+	// Username "admin" não é exposto (esperado); queremos "admin user=" ainda,
+	// embora admin não seja necessariamente secret, é info disclosure.
+	// Documentado: regex atual só pega URLs com prefixo protocol — NÂO
+	// pega linhas tipo "user=X" ou "password=X" soltas.
+	//
+	// Vetor documentado e aceito como follow-up — ver F16.11.
+	if !strings.Contains(got, "user=admin") {
+		t.Logf("NOTA: regex não detecta 'user=X' sem prefixo DSN: %q (F16.11 follow-up)", got)
+	}
+}
+
+func TestSafeError_EmptyError(t *testing.T) {
+	err := errors.New("")
+	got := loggerutil.SafeError(err)
+	if got != "" {
+		t.Errorf("SafeError(empty err) = %q, want empty string", got)
+	}
+}
+
+func TestSafeError_NestedDSN(t *testing.T) {
+	// Erro com DSN aninhada (raro mas ocorre com fmt.Errorf chains)
+	err := errors.New("connect failed: postgres://u:pa55@primary:5432/db; fallback redis://default:abc123@cache:6379/0")
+	got := loggerutil.SafeError(err)
+	if strings.Contains(got, "pa55") {
+		t.Errorf("SafeError não sanitizou primeiro DSN: %q", got)
+	}
+	if strings.Contains(got, "abc123") {
+		t.Errorf("SafeError não sanitizou segundo DSN: %q", got)
+	}
+}

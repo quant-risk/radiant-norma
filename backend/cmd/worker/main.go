@@ -103,7 +103,8 @@ func main() {
 		case <-ticker.C:
 			n, err := workpkg.ProcessBatch(ctx, d, auditSvc, auditLog, staClient, *batch, logger)
 			if err != nil {
-				logger.Error("batch failed", "err", err)
+				// Validação 16 (F16.1): sanitizar err.
+				logger.Error("batch failed", "err", loggerutil.SafeError(err))
 				continue
 			}
 			if n > 0 {
@@ -136,7 +137,8 @@ func runLeaseSweeperLoop(ctx context.Context, d *sql.DB, logger *slog.Logger) {
 			return
 		case <-ticker.C:
 			if _, err := workpkg.RunLeaseSweeper(ctx, d, logger); err != nil {
-				logger.Error("lease sweeper failed", "err", err)
+				// Validação 16 (F16.1): sanitizar err.
+				logger.Error("lease sweeper failed", "err", loggerutil.SafeError(err))
 			}
 		}
 	}

@@ -85,7 +85,8 @@ func main() {
 		}()
 		alerts, err := svc.ScanOnce(ctx, nil) // nil = DefaultSources
 		if err != nil {
-			logger.Error("scan failed", "err", err)
+			// Validação 16 (F16.1): sanitizar err.
+			logger.Error("scan failed", "err", loggerutil.SafeError(err))
 			return
 		}
 		for _, a := range alerts {

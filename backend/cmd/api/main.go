@@ -124,7 +124,8 @@ func main() {
 	// Aguarda sinal OU erro fatal do server
 	select {
 	case err := <-serverErr:
-		logger.Error("server fatal", "err", err)
+		// Validação 16 (F16.1): sanitizar err para não vazar DSN.
+		logger.Error("server fatal", "err", loggerutil.SafeError(err))
 		os.Exit(1)
 	case sig := <-stop:
 		logger.Info("shutting down", "signal", sig.String())
@@ -133,7 +134,8 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := httpSrv.Shutdown(ctx); err != nil {
-		logger.Error("shutdown", "err", err)
+		// Validação 16 (F16.1): sanitizar err para não vazar DSN.
+		logger.Error("shutdown", "err", loggerutil.SafeError(err))
 		os.Exit(1)
 	}
 	// Libera HTTP connections idle do Radar

@@ -1,23 +1,11 @@
-// Package internal/loggerutil — helpers para evitar vazamento de credenciais em logs.
+// Package loggerutil provides helpers to prevent credential leakage in logs.
 //
-// Validação 15 (F15.1 fix): pgx error messages incluem parte da DSN
-// (user + database name) quando db.Ping() falha. Em produção, esses
-// valores aparecem em stack traces e logs (vazamento de reconnaissance
-// info). Memory pattern "secret em logs = disclosure" expandido.
+// Validação 15/16 (F15.1, F16.5): without sanitizing err.Error()
+// before logging, drivers expose metadata (DSN, user, database).
+// pgx example: "failed to connect to `user=user database=db`".
 //
-// Helper:
-//   - SafeError(err) retorna err.Error() com DSN-like substrings
-//     substituídas por [REDACTED]. Use antes de logar.
-//
-// Detecta:
-//   - postgres://user:pass@host:port/db  →  postgres://[REDACTED]
-//   - postgresql://...
-//   - mysql://...
-//   - redis://...   (auth em URL)
-//   - mongodb://...
-//   - URL-encoded queries com password=...
-//
-// Se não detectar padrão, retorna err.Error() original.
+// SafeError / Wrap are wrappers that run regex passes to redact
+// common credential patterns before logging.
 package loggerutil
 
 import (
@@ -25,39 +13,59 @@ import (
 	"regexp"
 )
 
-// dsnPatterns captura prefixos de URL que tipicamente têm credenciais.
-var dsnPatterns = regexp.MustCompile(`(?i)(postgres|postgresql|mysql|mariadb|redis|mongodb)://[^@\s]+@`)
-
-// errorWithPassword captura parâmetros de query com password.
-// Exemplos: ?password=x, &password=y, ?sslmode=disable&password=z.
-var errorWithPassword = regexp.MustCompile(`(?i)([?&](?:password|pwd|pass)=)[^&\s]+`)
-
-// SafeError retorna err.Error() com credenciais substituídas por
-// [REDACTED]. Use ANTES de logar erros de DB, HTTP, ou qualquer
-// fonte que possa incluir DSN/URL com password.
+// dsnCanonical captura URLs com prefixo protocol://user:pass@host.
 //
-// Se err é nil, retorna "".
+// Exemplo: postgres://user:secret123@db:5432/radiant
+var dsnCanonical = regexp.MustCompile("(?i)(postgres|postgresql|mysql|mariadb|redis|mongodb)://[^@\\s]+@")
+
+// pgxKeyValue captura formato key=value emitido por pgx em mensagens
+// de erro. Exemplo: "user=user database=db port=5432 sslmode=disable".
 //
-// NOTA: não é bulletproof — erros estruturados (com fields
-// separados) podem contornar regex. Para cobertura total, sanitize
-// no nível do driver (pgx conn string parser) ou use logs estruturados
+// CRÍTICO: rodar ANTES de passwordKV ou password=X fica mascarado
+// mas user=database continuam expostos.
+var pgxKeyValue = regexp.MustCompile("(?i)(?:user|database|db|host|server|addr|port)=([^\\s`,;]+)")
+
+// passwordKV captura password=X solto.
+var passwordKV = regexp.MustCompile("(?i)\\b(password|passwd|pwd|secret)=([^&\\s,;]+)")
+
+// passwordInQuery captura ?password=X / &password=Y em query strings.
+var passwordInQuery = regexp.MustCompile("(?i)([?&](?:password|pwd|pass)=)[^&\\s,;]+")
+
+// SafeError returns err.Error() with credentials replaced by [REDACTED].
+//
+// Use BEFORE logging err from drivers, HTTP clients, or any source
+// that may include DSN/URL with password.
+//
+// Returns "" if err is nil.
+//
+// NÃO é bulletproof — erros estruturados (com fields separados)
+// podem contornar regex. Para cobertura total, sanitize no nível
+// do driver (pgx conn string parser) ou use logs estruturados
 // com ignore fields.
 func SafeError(err error) string {
 	if err == nil {
 		return ""
 	}
 	msg := err.Error()
-	msg = dsnPatterns.ReplaceAllString(msg, "$1://[REDACTED]@")
-	msg = errorWithPassword.ReplaceAllString(msg, "${1}[REDACTED]")
+
+	// 1st: DSN canônico com prefixo protocol://user:pass@host.
+	msg = dsnCanonical.ReplaceAllString(msg, "$1://[REDACTED]@")
+
+	// 2nd: pgx key=value (user=X database=Y).
+	// Rodar ANTES de passwordKV — senão password=X fica mascarado
+	// mas user=database ficam expostos.
+	msg = pgxKeyValue.ReplaceAllString(msg, "${1}=[REDACTED]")
+
+	// 3rd: password=X solto.
+	msg = passwordKV.ReplaceAllString(msg, "${1}=[REDACTED]")
+	msg = passwordInQuery.ReplaceAllString(msg, "${1}[REDACTED]")
+
 	return msg
 }
 
-// Wrap é wrapper de conveniência para fmt.Errorf com sanitização.
+// Wrap returns a new error with format "<safeMsg>: <SafeError(err)>".
 //
-//	wrap := loggerutil.Wrap(err, "open db failed")
-//	logger.Error("...", "err", wrap)
-//
-// Equivalente a fmt.Errorf("%s: %w", safeMsg, err) mas com sanitização.
+// Se err é nil, retorna errors.New(safeMsg).
 func Wrap(safeMsg string, err error) error {
 	if err == nil {
 		return errors.New(safeMsg)

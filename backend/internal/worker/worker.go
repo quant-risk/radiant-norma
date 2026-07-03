@@ -27,6 +27,7 @@ import (
 
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
+	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
 )
 
@@ -118,7 +119,8 @@ func ProcessBatch(
 	for i := 0; i < batch; i++ {
 		e, ok, err := claimEnvio(ctx, d)
 		if err != nil {
-			logger.Error("claim envio failed", "err", err)
+			// Validação 16 (F16.1): sanitizar err.
+			logger.Error("claim envio failed", "err", loggerutil.SafeError(err))
 			return processed, err
 		}
 		if !ok {
@@ -127,7 +129,8 @@ func ProcessBatch(
 
 		// Processa o envio (sucesso ou falha).
 		if err := processEnvio(ctx, d, auditSvc, auditLog, staClient, e, logger); err != nil {
-			logger.Error("process envio failed", "envio_id", e.ID, "err", err)
+			// Validação 16 (F16.1): sanitizar err (process_envio id).
+			logger.Error("process envio failed", "envio_id", e.ID, "err", loggerutil.SafeError(err))
 			// Continua para o próximo — não para o batch inteiro.
 			continue
 		}
@@ -235,7 +238,8 @@ func processEnvio(
 			"cadoc", e.CadocCode,
 			"attempts", newAttempts,
 			"status", newStatus,
-			"err", err,
+			// Validação 16 (F16.1): sanitizar err.
+			"err", loggerutil.SafeError(err),
 		)
 		return err
 	}
