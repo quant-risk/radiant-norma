@@ -93,15 +93,9 @@ func itoa(n int64) string {
 21 linhas reinventando `strconv.FormatInt(n, 10)`. Comentário original:
 "evita import strconv só pra isso". Mas importar 1 stdlib não é overhead.
 
-**Fix (v1.4.3):** wrapper deprecado (mantém call sites funcionando) sobre stdlib:
-```go
-// Deprecated: use strconv.FormatInt(n, 10).
-func itoa(n int64) string {
-    return strconv.FormatInt(n, 10)
-}
-```
-
-3 linhas em vez de 21. Comportamento idêntico.
+**Fix (v1.4.3 → v1.4.4):** inicialmente wrapper deprecado (3 linhas) sobre stdlib.
+Na v1.4.4 (validação 10) o wrapper foi **completamente removido** — `strconv.FormatInt`
+usado direto nos 2 call sites. Sem razão pra manter o wrapper.
 
 ### 🟢 F9.14 — VALIDATION_v1.4.1.md self-inconsistency: "2 testes" lista 3
 
@@ -170,8 +164,8 @@ Antes (v1.4.2):              Depois (v1.4.3):
 ## 📂 Arquivos modificados/criados (v1.4.3)
 
 **Código:**
-- `internal/api/server.go` — `const Version = "1.4.3"` exportada
-- `internal/api/server_test.go` — `TestHealthz` usa `api.Version`; `itoa` vira wrapper
+- `internal/api/server.go` — `const Version = "1.4.4"` exportada
+- `internal/api/server_test.go` — `TestHealthz` usa `api.Version`; `itoa` wrapper removido completamente (v1.4.4)
 
 **Docs:**
 - `VALIDATION_v1.4.1.md` — F9.14 + F9.16 corrigidos
@@ -221,7 +215,8 @@ suficiente.
 - **v1.4.3 marcada para commit local** após este doc
 - **Sprint 6** vai priorizar R1 (DOS prevention) + F3 (race) + W1+W2 (worker hardening)
   + F6 (schema tests) + L3 (cross-doc) + PG (Postgres driver)
-- **Próxima validação (10ª)** vai rodar DEPOIS da Sprint 6 fechar gaps novos
+- **Validação 10 (v1.4.4)** rodou e pegou self-inconsistências do próprio
+  VALIDATION_v1.4.2.md + User-Agent stale em radar.go + itoa wrapper redundante
 
 ---
 

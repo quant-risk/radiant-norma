@@ -201,7 +201,7 @@ func (s *Service) fetchHash(ctx context.Context, url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Radiant-Norma-Radar/1.3; +https://fortvna.com.br)")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Radiant-Norma-Radar/1.4.4; +https://fortvna.com.br)")
 	req.Header.Set("Accept", "*/*")
 
 	resp, err := s.hc.Do(req)

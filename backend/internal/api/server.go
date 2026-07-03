@@ -29,7 +29,7 @@ import (
 // lugar — este constante — e todos os call sites referenciam aqui.
 //
 // Para bumpar: atualizar este string + CHANGELOG.md + tag git.
-const Version = "1.4.3"
+const Version = "1.4.4"
 
 // Server agrega todos os serviços.
 type Server struct {

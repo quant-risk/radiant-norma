@@ -2,6 +2,51 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v1.4.4 — 2026-07-03 (Validação profunda 10: itoa removed + User-Agent bump + self-doc fix)
+
+### 🎯 Objetivo da validação
+10ª validação profunda (solicitada por Henrique após release v1.4.3).
+Consolidação arquitetural: remover redundâncias + corrigir self-inconsistências
+do VALIDATION_v1.4.2.md.
+
+### 🐛 Bugs corrigidos
+
+| # | Bug | Sev | Arquivo | Fix |
+|---|---|---|---|---|
+| F10.6 | `itoa` wrapper ainda redundante após F9.24 | 🟢 Baixa | `api/server_test.go` | Wrapper removido completamente |
+| F10.9 | User-Agent hardcoded em radar.go (v1.3 stale) | 🟡 Média | `radar/radar.go:204` | Atualizado para v1.4.4 |
+| F10.3 | Docstring `Cobertura Sprint 5 v1.4.1` stale | 🟢 Baixa | `api/server_test.go:3` | Generic, sem versão |
+| F10.11-F10.15 | VALIDATION_v1.4.2.md self-inconsistencies | 🟢 Baixa | `VALIDATION_v1.4.2.md` | 5 seções corrigidas |
+| F10.15 | SPRINT_6.md trigger stale (citava só v1.4.1) | 🟢 Baixa | `SPRINT_6.md:7` | Atualizado para mencionar v1.4.1-v1.4.4 |
+
+### ✅ Entregas
+
+- **`internal/api/server_test.go`** — `itoa` wrapper completamente removido.
+  `strconv.FormatInt` usado direto nos 2 call sites.
+- **`internal/radar/radar.go`** — User-Agent hardcoded atualizado de "1.3" para "1.4.4".
+  (Idealmente compartilharia `api.Version` mas isso requer refator — gap arquitetural
+  conhecido documentado em VALIDATION_v1.4.3.md F10.10.)
+
+### 📊 Estatísticas
+
+```
+Testes:    99 (mantido)
+Coverage:  ~70% média (mantido)
+itoa:      3 linhas (wrapper) → 0 linhas (removido)
+User-Agent: "1.3" → "1.4.4"
+```
+
+### 📂 Commits
+
+- v1.4.4 (commit local, este): cleanup arquitetural + self-doc fix
+
+### 🏗️ Documentação
+
+- **`VALIDATION_v1.4.3.md`** (NOVO) — 10ª validação profunda com 15 findings.
+  Status: DRAFT. Gap arquitetural (User-Agent vs api.Version) documentado para Sprint 6.
+
+---
+
 ## v1.4.3 — 2026-07-03 (Validação profunda 9: Version constant + itoa cleanup + self-doc fix)
 
 ### 🎯 Objetivo da validação

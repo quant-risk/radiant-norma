@@ -1,8 +1,9 @@
 // Tests end-to-end da API HTTP (httptest + chi router).
 //
-// Cobertura Sprint 5 v1.4.1:
+// Cobertura:
 //
-//   - TestHealthz: smoke test básico, valida uptime + version.
+//   - TestHealthz: smoke test básico, valida uptime + version (referencia
+//     api.Version — single source of truth).
 //
 //   - TestResolveRadarAlert_EmitsAudit (regressão F2): garante que o
 //     endpoint POST /v1/radar/alerts/{id}/resolve emite uma entrada no
@@ -19,7 +20,7 @@
 //
 // Esses testes não cobrem 100% da API (validação, STA submit, schemas,
 // etc continuam cobertos indiretamente pelos testes dos services).
-// Foco: regressão dos gaps da validação v1.4.0.
+// Foco: regressão dos gaps das validações 7-10.
 package api_test
 
 import (
@@ -100,7 +101,7 @@ func TestResolveRadarAlert_EmitsAudit(t *testing.T) {
 	id, _ := res.LastInsertId()
 
 	// Resolve via HTTP
-	req := httptest.NewRequest("POST", "/v1/radar/alerts/"+itoa(id)+"/resolve", nil)
+	req := httptest.NewRequest("POST", "/v1/radar/alerts/"+strconv.FormatInt(id, 10)+"/resolve", nil)
 	req.Header.Set("X-IF-ID", "demo")
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -144,7 +145,7 @@ func TestAuditEmission_Surface(t *testing.T) {
 	id, _ := res.LastInsertId()
 
 	// Resolve via endpoint
-	req := httptest.NewRequest("POST", "/v1/radar/alerts/"+itoa(id)+"/resolve", nil)
+	req := httptest.NewRequest("POST", "/v1/radar/alerts/"+strconv.FormatInt(id, 10)+"/resolve", nil)
 	req.Header.Set("X-IF-ID", "canary-if")
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -183,10 +184,5 @@ func TestAuditEmission_Surface(t *testing.T) {
 	}
 }
 
-// itoa converte int64 pra string. Substituído por strconv.FormatInt na v1.4.3
-// (validação 9) — não há razão pra reinventar stdlib.
-//
-// Deprecated: use strconv.FormatInt(n, 10).
-func itoa(n int64) string {
-	return strconv.FormatInt(n, 10)
-}
+// itoa wrapper removido na v1.4.4 (validação 10) — strconv.FormatInt é
+// usado diretamente nos call sites. Sem razão pra manter o wrapper.

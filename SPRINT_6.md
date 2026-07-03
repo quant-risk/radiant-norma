@@ -4,8 +4,9 @@
 > **Status:** Proposta (aguarda aprovação)
 > **Tema:** Encerrar gaps de hardening + setup multi-DB + diferencial proprietário
 > **Versão alvo:** v1.5.0 (minor — features novos)
-> **Trigger:** 7ª validação profunda (v1.4.1) fechou gaps de audit emission;
-> gaps remanescentes viram Sprint 6
+> **Trigger:** 7ª (v1.4.1), 8ª (v1.4.2) e 9ª (v1.4.3) validações fecharam gaps
+> progressivamente. Validação 10 (v1.4.4) consolidou cleanup + arquitetura.
+> 11 gaps remanescentes viram Sprint 6
 
 ## 🎯 Por que Sprint 6 AGORA
 
