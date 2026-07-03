@@ -28,8 +28,14 @@ import (
 // "version bump ripple effects" toda vez que a versão mudava. Agora há 1 só
 // lugar — este constante — e todos os call sites referenciam aqui.
 //
-// Para bumpar: atualizar este string + CHANGELOG.md + tag git.
-const Version = "1.4.4"
+// Sprint 6 v1.5.0: GAP ARQUITETURAL CONHECIDO — radar.go tem versão
+// hardcoded no User-Agent (não importa api.Version por dependência unilateral).
+// Refator para internal/version/version.go está planejado para Sprint 7
+// (ver VALIDATION_v1.4.3.md F10.10).
+//
+// Para bumpar: atualizar este string + radar.go::fetchHash User-Agent +
+// CHANGELOG.md + tag git.
+const Version = "1.5.0"
 
 // Server agrega todos os serviços.
 type Server struct {
