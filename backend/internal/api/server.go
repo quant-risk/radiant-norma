@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -46,6 +47,12 @@ type Server struct {
 	STAClient sta.Client
 	Radar     *radar.Service
 	startedAt time.Time
+
+	// Sprint 6 v1.5.0 (R1) — DOS-via-API prevention.
+	// TriggerRadarScan agora exige admin role + tem rate limit + cache.
+	ScanLimiter *radar.ScanLimiter
+	ScanCache   *radar.ScanCache
+	AdminAuth   *radar.AdminAuth
 }
 
 // NewServer cria um Server.
@@ -421,6 +428,44 @@ func (s *Server) triggerRadarScan(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "radar não inicializado", http.StatusServiceUnavailable)
 		return
 	}
+
+	// R1 — Auth admin (Sprint 6 v1.5.0): bloqueia vetor de DOS-via-API.
+	// Sem ADMIN_TOKEN configurada, retorna 503 (fail closed).
+	if s.AdminAuth == nil || !s.AdminAuth.IsAdmin(r) {
+		w.Header().Set("WWW-Authenticate", "Bearer")
+		http.Error(w, s.AdminAuth.Challenge(), http.StatusUnauthorized)
+		return
+	}
+
+	// R1 — Cache check (Sprint 6 v1.5.0): se tem resultado < 5min, retorna cached.
+	// Justificativa: evita refazer 3 HTTP requests pra BACEN em chamadas próximas.
+	if cached, ok := s.ScanCache.Get(); ok {
+		_, _ = s.AuditLog.Log(ifID, r.RemoteAddr, "radar.scan.cached", "radar",
+			nil, map[string]any{"cached_count": len(cached)})
+		writeJSON(w, http.StatusOK, map[string]any{
+			"new_alerts": cached,
+			"count":      len(cached),
+			"cached":     true,
+			"cached_at":  s.ScanCache.ScannedAt(),
+		})
+		return
+	}
+
+	// R1 — Rate limit (Sprint 6 v1.5.0): 1 scan/min por IF.
+	// Ataque: atacante autenticado hammerar → DOS contra BACEN.
+	if s.ScanLimiter != nil {
+		allowed, retryAfter := s.ScanLimiter.Allow(ifID)
+		if !allowed {
+			w.Header().Set("Retry-After", fmt.Sprintf("%d", int(retryAfter.Seconds())))
+			http.Error(w,
+				fmt.Sprintf(`{"error":"rate limit exceeded","retry_after_seconds":%d}`,
+					int(retryAfter.Seconds())),
+				http.StatusTooManyRequests)
+			return
+		}
+	}
+
+	// Real scan
 	alerts, err := s.Radar.ScanOnce(r.Context(), nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -432,9 +477,15 @@ func (s *Server) triggerRadarScan(w http.ResponseWriter, r *http.Request) {
 	_, _ = s.AuditLog.Log(ifID, r.RemoteAddr, "radar.scan.triggered", "radar",
 		nil, map[string]any{"new_alerts": len(alerts)})
 
+	// Cache para próximas chamadas (5min TTL).
+	if s.ScanCache != nil {
+		s.ScanCache.Put(alerts)
+	}
+
 	writeJSON(w, http.StatusOK, map[string]any{
 		"new_alerts": alerts,
 		"count":      len(alerts),
+		"cached":     false,
 	})
 }
 

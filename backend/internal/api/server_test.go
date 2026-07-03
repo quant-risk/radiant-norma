@@ -31,6 +31,7 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/fortvna/radiant-norma/backend/internal/api"
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
@@ -43,6 +44,9 @@ import (
 
 // newTestServer monta um *api.Server com DB in-memory e Radar sem
 // fontes (ScanOnce([]) retorna vazio sem HTTP).
+//
+// Sprint 6 v1.5.0 (R1): inicializa ScanLimiter + ScanCache + AdminAuth
+// para validar hardening de triggerRadarScan.
 func newTestServer(t *testing.T) (*api.Server, *sql.DB) {
 	t.Helper()
 	d := testutil.NewTestDB(t)
@@ -54,6 +58,9 @@ func newTestServer(t *testing.T) (*api.Server, *sql.DB) {
 	radarSvc := radar.New(d, 1) // 1ns (não usado, scan é on-demand)
 
 	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc)
+	srv.ScanLimiter = radar.NewScanLimiter(1 * time.Minute)
+	srv.ScanCache = radar.NewScanCache(5 * time.Minute)
+	srv.AdminAuth = &radar.AdminAuth{Token: "test-admin-token"}
 	return srv, d
 }
 
