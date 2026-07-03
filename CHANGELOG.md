@@ -2,6 +2,124 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v1.2.0 — 2026-07-03 (Sprint 3: Infraestrutura backend Go + API REST)
+
+### 🎯 Objetivo da sprint
+Construir a **infraestrutura backend do Radiant Sentinel** em Go: API REST, Schema Registry, Sentinel Audit como microservice, audit log com hash chain, STA stub. Postgres-ready (mas SQLite pra spike local).
+
+### ✅ Entregas
+
+#### Estrutura backend
+- **`backend/`** — projeto Go completo com 9 arquivos:
+  - `cmd/api/main.go` — entrypoint da API REST (chi router)
+  - `cmd/seed/main.go` — popular banco com criticas.json + leiautes.json
+  - `internal/db/db.go` — conexão SQLite (driver modernc.org/sqlite, pure-Go, sem CGo)
+  - `internal/db/migrate.go` — migrations via embed.FS, idempotente
+  - `internal/db/migrations/001_initial.sql` — schema completo (5 tabelas)
+  - `internal/schema/registry.go` — Schema Registry service (GetEffective, List, Insert)
+  - `internal/audit/service.go` — Sentinel Audit (carrega críticas do DB, valida XML/JSON)
+  - `internal/auditlog/log.go` — Audit log com hash chain tamper-evident
+  - `internal/sta/stub.go` — STA client stub (interface + mock que gera protocolo fake)
+  - `internal/api/server.go` — handlers HTTP REST com auth middleware
+
+#### Schema Postgres-ready (SQLite no spike)
+5 tabelas criadas via migrations embed:
+- `ifs` — multi-tenant (CNPJ, nome, tipo, segmento, plano, STA creds)
+- `schema_versions` — versionamento por data-base (effective_from + UNIQUE)
+- `criticas` — 968 importadas (de 6 CADOCs: 3040, 3050, 2061 DLO, 2070 DDR, 2060 DRM, 3044)
+- `envios` — histórico de submissões STA (pending/validated/sent/accepted/rejected)
+- `audit_log` — hash chain (cada entrada referencia SHA da anterior)
+- `radar_alerts` — mudanças de leiaute detectadas (Sprint 4)
+
+#### Endpoints REST (7 funcionais)
+| Método | Path | Função |
+|---|---|---|
+| GET | `/healthz` | Liveness |
+| GET | `/v1/schemas` | Lista CADOCs suportados |
+| GET | `/v1/schemas/{cadoc}` | Schema effective de um CADOC |
+| GET | `/v1/schemas/{cadoc}/versions` | Histórico de versões |
+| GET | `/v1/rules/{cadoc}` | Críticas habilitadas (320 do 3040) |
+| POST | `/v1/validate` | **Sentinel Audit** — valida XML/JSON contra regras |
+| POST | `/v1/sta/submit` | STA stub (gera protocolo fake) |
+
+#### Multi-tenant
+- Middleware `X-IF-ID` obrigatório em `/v1/*`
+- Sem header → 401 Unauthorized
+- Cada IF isolada por header (sem row-level security ainda — Sprint 4)
+
+#### Sentinel Audit end-to-end
+- ✅ XML válido (3040 exemplo, 4832 B) → **passed=true, 0 erros, 0 warnings, 2ms**
+- ✅ XML quebrado (22 B) → **L1-PARSE detectado**, B04 warning
+- Hash SHA-256 do payload retornado em `xml_hash`
+- Duração em `duration_ms`
+- Audit log gravado com hash chain
+
+#### Audit log tamper-evident
+- Cada entrada: SHA-256(prev_hash + payload_hash + metadata + actor + action + target + timestamp)
+- Genesis hash = `"0"*64`
+- Função `Verify()` valida integridade da cadeia inteira
+- 5 entradas geradas em testes, todas com chain válido
+
+#### STA Stub
+- `StubClient.Submit()` retorna protocolo fake `2026070329287c9b3b181`
+- Sempre aceita (configurável `AlwaysAccept=false` pra rejeitar)
+- Calcula hash SHA-256 do ZIP/XML
+
+### 🏗️ Decisões técnicas Sprint 3
+
+| Decisão | Razão |
+|---|---|
+| **SQLite com modernc.org/sqlite** | Sem CGo, sem Postgres/Docker no ambiente local, mas com abstração `database/sql` que permite trocar pra Postgres (`lib/pq` ou `pgx`) mudando 1 linha |
+| **chi router** | Stdlib-compatible, leve, sem dependência mágica |
+| **embed.FS para migrations** | Self-contained binary, sem ler filesystem em runtime |
+| **audit_log hash chain** | LGPD + SOC 2: tamper-evident. Cada entrada referencia SHA da anterior |
+| **X-IF-ID em vez de JWT** | Spike. Sprint 4 vai substituir por JWT/OAuth |
+| **STA stub antes de Playwright** | Permite testes end-to-end sem dependência externa |
+| **XML como string no JSON request** | `json.RawMessage` causava double-encoding. String normal resolve |
+
+### 📊 Estatísticas Sprint 3
+
+```
+backend/ → 10 arquivos Go (1.400 linhas)
+   ├─ cmd/api/main.go          ~80 linhas (entrypoint + graceful shutdown)
+   ├─ cmd/seed/main.go         ~250 linhas (seed de JSON → DB)
+   ├─ internal/api/server.go    ~250 linhas (7 handlers + middleware)
+   ├─ internal/audit/service.go ~200 linhas (Sentinel Audit)
+   ├─ internal/schema/registry.go ~140 linhas (Schema Registry)
+   ├─ internal/auditlog/log.go ~120 linhas (hash chain)
+   ├─ internal/sta/stub.go     ~80 linhas
+   ├─ internal/db/db.go + migrate.go ~80 linhas
+   └─ migrations/001_initial.sql ~110 linhas
+
+Banco SQLite populado:
+   schema_versions: 8
+   criticas:        968
+   audit_log:       5 (geradas em testes)
+```
+
+### 🚧 Gaps remanescentes (Sprint 4)
+
+| Gap | Por quê | Sprint 4 |
+|---|---|---|
+| **Driver Postgres real** | Sem Docker/Postgres local | Adicionar `pgx` + config flag |
+| **JWT/OAuth em vez de X-IF-ID** | Spike | Implementar `internal/auth/` |
+| **row-level security multi-tenant** | X-IF-ID só identifica, não isola | Postgres RLS policies |
+| **STA Web/WS client real** | Playwright precisa setup | Implementar `internal/sta/web.go` |
+| **Mais regras no Sentinel Audit** | Só B01-B05 implementadas | Portar 50% das críticas 3040 |
+| **Cross-doc engine (L3)** | Requer múltiplos CADOCs em memória | Carregar 3040 + 4111 em paralelo |
+| **Worker assíncrono** | cmd/seed é one-shot | Bull/gocron pra STA queue |
+| **Frontend (Sentinel Console)** | Backend-only | Next.js dashboard |
+
+### 🎯 Próxima sprint (Sprint 4 — preview)
+**Tema:** Autenticação, multi-tenant isolado, STA real (Playwright)
+- JWT + OAuth2 com refresh tokens
+- Postgres RLS policies
+- STA Web client (Playwright)
+- Portar 30+ regras semânticas do 3040
+- Radar regulatório (worker de detecção de mudanças)
+
+---
+
 ## v1.1.0 — 2026-07-03 (Sprint 2: Sentinel Audit Spike + capturas restantes)
 
 ### 🎯 Objetivo da sprint

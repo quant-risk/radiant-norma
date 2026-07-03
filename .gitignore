@@ -33,5 +33,19 @@ venv/
 # Não commitar arquivos grandes > 50 MB (PDFs pesados, etc.)
 # Mas até agora todos < 10 MB
 
+# Backend runtime — gerados, não commitar
+backend/radiant.db
+backend/radiant.db-shm
+backend/radiant.db-wal
+*.db
+*.db-shm
+*.db-wal
+backend/api
+backend/seed
+backend/worker
+
+# Backend Go
+backend/vendor/
+
 # Materiais que podem ser baixados novamente
 _catalogos/_extracao.log
