@@ -189,7 +189,7 @@ func seedCriticas(d *sql.DB, path string, logger *slog.Logger) error {
 				c.TipoIndicio, dataInicio, c.MensagemErro, enabled, c.Source,
 			)
 			if err != nil {
-				logger.Warn("insert falhou", "codigo", c.Codigo, "err", err)
+				logger.Warn("insert falhou", "codigo", c.Codigo, "err", loggerutil.SafeError(err))
 				continue
 			}
 			totalInserted++
@@ -259,7 +259,7 @@ func seedSchemaRegistry(d *sql.DB, jsonPath, xsdPath string, logger *slog.Logger
 			Rows      []map[string]any `json:"rows"`
 		}
 		if err := json.Unmarshal(rawLei, &lei); err != nil {
-			logger.Warn("decode leiaute falhou", "cadoc", cadoc, "err", err)
+			logger.Warn("decode leiaute falhou", "cadoc", cadoc, "err", loggerutil.SafeError(err))
 			continue
 		}
 
@@ -284,7 +284,7 @@ func seedSchemaRegistry(d *sql.DB, jsonPath, xsdPath string, logger *slog.Logger
 			fmt.Sprintf("Sprint 3 seed — %d rows extraídos do %s", lei.TotalRows, filepath.Base(jsonPath)),
 		)
 		if err != nil {
-			logger.Warn("insert schema falhou", "cadoc", cadoc, "err", err)
+			logger.Warn("insert schema falhou", "cadoc", cadoc, "err", loggerutil.SafeError(err))
 			continue
 		}
 		totalInserted++

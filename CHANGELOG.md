@@ -107,6 +107,33 @@ LOC:           ~4.200 → ~6.500             (+55%)
 Commits:       10 commits Sprint 6 (v1.4.3 e v1.4.4 são anteriores à tag v1.4.4)
 Migrations:    3 (001-003) → 5 (001-005)
 Regras audit:  25 tipadas → 25 tipadas + 5 raw (B01-B05)
+
+### 🩹 Validações 11-17 (post-ship hardening, in-place)
+
+> **Detalhe:** cada validação profunda pós-release encontrou gaps reais
+> (vetor pgx, reinvent-stdlib, DSN leak, deadlock panic, panic recover,
+> http.Error 500, http.Error 4xx disclosure). Documentados em
+> `VALIDATION_v1.5.0.md`, `VALIDATION_v1.5.0_DEEPER.md`,
+> `VALIDATION_v1.5.0_DEEPEST.md`, `VALIDATION_v1.5.0_DEEPEST2.md`,
+> `VALIDATION_v1.5.0_DEEPEST3.md`.
+
+Resumo consolidado (validações 11-17):
+
+| Validação | Findings | Críticos | Observação |
+|-----------|----------|----------|------------|
+| 11 | 9 | 0 (meta-validação) | Estrutura + docs |
+| 12 | 9 | 4 | cmd/* entrypoints + middleware order + engine recover |
+| 13 | 4 | 1 | Token prefix log + reinvent-stdlib `min()` + cmd panic recover |
+| 14 | 5 | 1 | DSN log no cmd/seed + reinvent-stdlib indexOf + self-doc |
+| 15 | 4 | 1 | pgx error leak (F15.1 PLUG inicial) + http 500 disclosure |
+| 16 | 4 | 1 (F16.5 confirmou F15.1 PLUG) | Sweep universal SafeError + regex ampliado |
+| 17 | 3 | 0 | Warn-level cmd/seed edge cases |
+
+Pacote `internal/loggerutil` (F15.1 + F16.5 fix) cobre vetores reais
+DSN canonical, pgx key=value, password=X solto, ?password= em query.
+7 validações seguidas com findings (~5-15 cada) — pattern confirmado.
+
+**Versão:** inalterada (v1.5.0). Apenas hardening interno.
 Regras cross:  0 → 3 (XD-001/002/003)
 DB drivers:    1 (SQLite) → 2 (+Postgres)
 Endpoints:     13 → 14 (+/v1/crossdoc/validate)

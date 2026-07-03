@@ -4,6 +4,7 @@ package loggerutil_test
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -159,5 +160,44 @@ func TestSafeError_NestedDSN(t *testing.T) {
 	}
 	if strings.Contains(got, "abc123") {
 		t.Errorf("SafeError não sanitizou segundo DSN: %q", got)
+	}
+}
+
+// ===========================
+// Validação 17 (F17.1): regressão — vetor stmt.Exec/INSERT errors
+// ===========================
+//
+// Esses erros NÃO vazam credenciais por design (database/sql não
+// anexa DSN nas mensagens de constraint) — mas o test garante que
+// mudanças no regex (F16.5) não corrompem mensagens legítimas,
+// e estabelece baseline se algum driver futuro passar a incluir DSN.
+
+func TestSafeError_DriverConstraintError(t *testing.T) {
+	// Erro típico de INSERT/SQLITE — "constraint failed: UNIQUE constraint..."
+	err := errors.New("UNIQUE constraint failed: schema_versions.cadoc_code")
+	got := loggerutil.SafeError(err)
+	if got != "UNIQUE constraint failed: schema_versions.cadoc_code" {
+		t.Errorf("SafeError corrompeu constraint msg: %q", got)
+	}
+}
+
+func TestSafeError_JsonDecodeError(t *testing.T) {
+	// Erro típico de json.Unmarshal — "invalid character ..."
+	err := errors.New("invalid character 'x' looking for beginning of value")
+	got := loggerutil.SafeError(err)
+	if got != "invalid character 'x' looking for beginning of value" {
+		t.Errorf("SafeError corrompeu JSON msg: %q", got)
+	}
+}
+
+func TestSafeError_FmtErrorfChain(t *testing.T) {
+	// fmt.Errorf("%w", inner) com DSN encadeada.
+	inner := errors.New("connect: postgres://u:pa55@primary:5432/db")
+	outer := fmt.Errorf("first attempt: %w; retrying", inner)
+	got := loggerutil.SafeError(outer)
+	// Em Go 1.13+, fmt.Errorf com %w preserva a mensagem de inner via
+	// Unwrap(). Mas SafeError recebe error.Error() (que concatena tudo).
+	if strings.Contains(got, "pa55") {
+		t.Errorf("SafeError não sanitizou DSN via fmt.Errorf chain: %q", got)
 	}
 }
