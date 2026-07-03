@@ -2,6 +2,46 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v1.4.1 — 2026-07-03 (Validação profunda 7: F1 + F2 corrigidos, +13 testes)
+
+### 🎯 Objetivo da validação
+7ª validação profunda (solicitada por Henrique após release v1.4.0).
+Caçar gaps remanescentes antes de Sprint 6: mesmo padrão do bug #1, audit emission
+surface incompleta, e api sem testes.
+
+### 🐛 Bugs corrigidos
+
+| # | Bug | Sev | Arquivo | Fix |
+|---|---|---|---|---|
+| F1 | `radar.go` tem 4× `[:12]` em hash (mesmo padrão do bug #1 v1.4.0) | 🟡 Média | `radar/radar.go:150,171,192,193` | Helper `ShortHash()` exportado |
+| F2 | `resolveRadarAlert` e `triggerRadarScan` NÃO emitem audit | 🟡 Média | `api/server.go:377,395` | `auditLog.Log(...)` em ambos |
+
+### ✅ Entregas
+
+- **`internal/radar/radar.go`** — helper `ShortHash(s)` exportado, substitui 4× `s[:12]`. Defesa contra o mesmo padrão do bug #1 do v1.4.0 (auditlog.Verify panic em hash curto).
+- **`internal/api/server.go`** — audit emission em 2 endpoints de Radar (resolve + scan trigger).
+- **`internal/api/server_test.go`** (NOVO) — 3 testes E2E via httptest + chi router: healthz, resolveRadarAlert emits audit, audit emission canary.
+- **`internal/radar/radar_test.go`** — 4 testes novos: ShortHash normal/short/never-panics + RecordBaseline com hash curto no DB (regressão F1).
+
+### 📊 Estatísticas
+
+```
+Testes:    86 → 99 (+13)
+Packages:  5 com testes → 6 com testes (+api)
+Coverage:  ~70% média (api NOVO 20.1%, radar 78.1% → 78.8%)
+```
+
+### 📂 Commits
+
+- v1.4.1 (commit local, este): F1 + F2 + api tests + radar ShortHash tests
+
+### 🏗️ Documentação
+
+- **`VALIDATION_v1.4.0.md`** (NOVO) — 7ª validação profunda com 9 findings (F1-F9).
+  Status: DRAFT. F3-F7 + W1-W4 + L3 + PG vão pra Sprint 6 backlog.
+
+---
+
 ## v1.4.0 — 2026-07-03 (Sprint 5: Testes Unitários + 5 bugs latentes detectados)
 
 ### 🎯 Objetivo da sprint

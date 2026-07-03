@@ -147,7 +147,7 @@ func (s *Service) scanSource(ctx context.Context, src Source) (*Alert, error) {
 	// Primeira vez ou hash igual → não é mudança
 	if lastHash == "" {
 		s.logger.Info("first scan, recording baseline",
-			"cadoc", src.CadocCode, "url", src.URL, "hash", hash[:12])
+			"cadoc", src.CadocCode, "url", src.URL, "hash", ShortHash(hash))
 		if err := s.recordBaseline(ctx, src, hash); err != nil {
 			// Não silenciar: se baseline não gravou, próxima scan tenta de novo
 			// (loop de log "first scan" até DB voltar). Erro aqui é operacional.
@@ -168,7 +168,7 @@ func (s *Service) scanSource(ctx context.Context, src Source) (*Alert, error) {
 		AlertType:   src.AlertType,
 		Severity:    src.Severity,
 		Title:       fmt.Sprintf("%s mudou: %s", src.CadocCode, src.Label),
-		Description: fmt.Sprintf("Hash anterior: %s\nHash novo: %s", lastHash[:12], hash[:12]),
+		Description: fmt.Sprintf("Hash anterior: %s\nHash novo: %s", ShortHash(lastHash), ShortHash(hash)),
 		SourceURL:   src.URL,
 		DetectedAt:  time.Now(),
 	}
@@ -189,8 +189,8 @@ func (s *Service) scanSource(ctx context.Context, src Source) (*Alert, error) {
 	s.logger.Info("CHANGE DETECTED",
 		"cadoc", src.CadocCode,
 		"label", src.Label,
-		"old", lastHash[:12],
-		"new", hash[:12],
+		"old", ShortHash(lastHash),
+		"new", ShortHash(hash),
 	)
 	return &alert, nil
 }
@@ -242,6 +242,22 @@ func (s *Service) lastKnownHash(ctx context.Context, src Source) (string, error)
 		return "", err
 	}
 	return hash, err
+}
+
+// ShortHash retorna os primeiros N caracteres de um hash, mas nunca
+// panica se a string for menor que N. Defesa contra o mesmo padrão que
+// `auditlog.Verify` (v1.4.0 bug #1): SHA-256 hex tem 64 chars sempre,
+// mas se alguém inserir hash mal-formado no DB, [:N] panica.
+//
+// Default: 12 chars (mesmo padrão que logs anteriores usavam hardcoded).
+//
+// Exportada (Sprint 5 v1.4.1) pra ser testável — ver radar_test.go.
+func ShortHash(s string) string {
+	const max = 12
+	if len(s) <= max {
+		return s
+	}
+	return s[:max]
 }
 
 // baselineTypeFor retorna o alert_type usado internamente para baseline.

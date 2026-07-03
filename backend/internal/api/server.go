@@ -375,6 +375,7 @@ func (s *Server) getRadarAlert(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) resolveRadarAlert(w http.ResponseWriter, r *http.Request) {
+	ifID := r.Header.Get("X-IF-ID")
 	if s.Radar == nil {
 		http.Error(w, "radar não inicializado", http.StatusServiceUnavailable)
 		return
@@ -389,10 +390,17 @@ func (s *Server) resolveRadarAlert(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
+
+	// Audit log (Sprint 5 v1.4.1: era gap — mutações de Radar não emitiam).
+	// Mutações de Radar precisam ser auditadas pra SOC 2 / LGPD.
+	_, _ = s.AuditLog.Log(ifID, r.RemoteAddr, "radar.alert.resolved", "radar",
+		[]byte(idStr), map[string]any{"alert_id": id})
+
 	writeJSON(w, http.StatusOK, map[string]any{"resolved": true, "id": id})
 }
 
 func (s *Server) triggerRadarScan(w http.ResponseWriter, r *http.Request) {
+	ifID := r.Header.Get("X-IF-ID")
 	if s.Radar == nil {
 		http.Error(w, "radar não inicializado", http.StatusServiceUnavailable)
 		return
@@ -402,6 +410,12 @@ func (s *Server) triggerRadarScan(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Audit log (Sprint 5 v1.4.1: era gap — scan manual é uma mutação que
+	// dispara HTTP requests pra BACEN e persiste alerts novos).
+	_, _ = s.AuditLog.Log(ifID, r.RemoteAddr, "radar.scan.triggered", "radar",
+		nil, map[string]any{"new_alerts": len(alerts)})
+
 	writeJSON(w, http.StatusOK, map[string]any{
 		"new_alerts": alerts,
 		"count":      len(alerts),

@@ -330,6 +330,128 @@ func TestListAlerts(t *testing.T) {
 }
 
 // ============================================================
+// shortHash helper (Sprint 5 v1.4.1 — regressão F1)
+// ============================================================
+
+// TestShortHash_Normal valida comportamento normal (len >= 12).
+func TestShortHash_Normal(t *testing.T) {
+	d := testutil.NewTestDB(t)
+	_ = d // não usa DB, só importa testutil pra padronizar
+	// SHA-256 hex tem 64 chars; [:12] deve retornar primeiros 12.
+	full := "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+	got := radar.ShortHash(full)
+	want := "abcdef012345"
+	if got != want {
+		t.Errorf("ShortHash(64 chars) = %q, want %q", got, want)
+	}
+}
+
+// TestShortHash_Short valida o fix: hash com < 12 chars não panica.
+// Validação v1.4.0: mesmo padrão do auditlog.Verify v1.4.0 bug #1.
+func TestShortHash_Short(t *testing.T) {
+	d := testutil.NewTestDB(t)
+	_ = d
+
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"empty", "", ""},
+		{"1 char", "a", "a"},
+		{"5 chars", "abcde", "abcde"},
+		{"11 chars (just under)", "abcdefghijk", "abcdefghijk"},
+		{"12 chars (exactly)", "abcdefghijkl", "abcdefghijkl"},
+		{"13 chars (just over)", "abcdefghijklm", "abcdefghijkl"},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			got := radar.ShortHash(c.in)
+			if got != c.want {
+				t.Errorf("ShortHash(%q) = %q, want %q", c.in, got, c.want)
+			}
+		})
+	}
+}
+
+// TestShortHash_NeverPanics garante que ShortHash NUNCA panica,
+// independente do input. Smoke test defensivo.
+func TestShortHash_NeverPanics(t *testing.T) {
+	d := testutil.NewTestDB(t)
+	_ = d
+
+	inputs := []string{"", "x", "abc", strings.Repeat("y", 100), "\x00\x00\x00"}
+	for _, in := range inputs {
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					t.Errorf("ShortHash(%q) panicked: %v", in, r)
+				}
+			}()
+			_ = radar.ShortHash(in)
+		}()
+	}
+}
+
+// TestRecordBaseline_ShortHashInDB regressão do F1: se o DB tem um
+// hash com < 12 chars (cenário de corrupção ou inserção manual errada),
+// o radar NÃO pode panicar. Chamamos ScanOnce 2x pra forçar o caminho
+// de "lastHash do DB + recordBaseline com hash novo".
+func TestRecordBaseline_ShortHashInDB(t *testing.T) {
+	d := testutil.NewTestDB(t)
+
+	// Insere manualmente uma baseline com hash curto (corrompido).
+	_, err := d.Exec(`
+		INSERT INTO radar_alerts (cadoc_code, alert_type, severity, title, description, source_url)
+		VALUES ('2030', '_baseline_corrupted', 'info', 'baseline corrupted', 'shorty', 'http://example.com')
+	`)
+	if err != nil {
+		t.Fatalf("seed corrupted baseline: %v", err)
+	}
+
+	// Servidor com conteúdo novo
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, "new content")
+	}))
+	defer srv.Close()
+
+	svc := radar.New(d, 1*time.Hour)
+	svc.SetLogger(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError})))
+	src := radar.Source{
+		CadocCode: "2030",
+		Label:     "corrupted",
+		URL:       srv.URL,
+		AlertType: "test_alert",
+		Severity:  "info",
+	}
+
+	// Antes do fix: panica em shortHash("shorty") (5 chars).
+	// Depois do fix: retorna "shorty" sem panic.
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("ScanOnce paniced com hash curto no DB: %v", r)
+		}
+	}()
+
+	alerts, err := svc.ScanOnce(context.Background(), []radar.Source{src})
+	if err != nil {
+		t.Fatalf("ScanOnce: %v", err)
+	}
+
+	// Hash 'shorty' (5 chars) != SHA-256 hex do novo conteúdo → alerta criado.
+	if len(alerts) != 1 {
+		t.Errorf("esperado 1 alerta (corrupted baseline → mudança), got %d", len(alerts))
+	}
+	if len(alerts) > 0 {
+		// Description deve usar shortHash defensivamente.
+		if !strings.Contains(alerts[0].Description, "shorty") {
+			t.Errorf("description deveria conter 'shorty' (hash curto), got: %s", alerts[0].Description)
+		}
+	}
+}
+
+// ============================================================
 // FetchHash falha com 404
 // ============================================================
 
