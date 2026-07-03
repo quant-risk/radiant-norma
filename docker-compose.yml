@@ -1,0 +1,62 @@
+# Postgres local para Radiant Norma (Sprint 6 v1.5.0)
+#
+# Como usar:
+#   docker compose up -d postgres    # sobe Postgres:16
+#   export DATABASE_URL="postgres://radiant:radiant@localhost:5432/radiant?sslmode=disable"
+#   ./api -db "$DATABASE_URL"
+#
+# Volumes:
+#   - postgres_data: persistência do DB entre restarts
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: radiant-norma-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: radiant
+      POSTGRES_USER: radiant
+      POSTGRES_PASSWORD: radiant
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U radiant -d radiant"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Opcional: rodar API + worker contra o Postgres (subir com --profile prod)
+  api:
+    profiles: ["prod"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: radiant-norma-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgres://radiant:radiant@postgres:5432/radiant?sslmode=disable"
+      RADIANT_NORMA_ADMIN_TOKEN: "${RADIANT_NORMA_ADMIN_TOKEN:-dev-admin-token}"
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+
+  worker:
+    profiles: ["prod"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["/app/worker"]
+    container_name: radiant-norma-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgres://radiant:radiant@postgres:5432/radiant?sslmode=disable"
+
+volumes:
+  postgres_data:
+    driver: local

@@ -17,6 +17,9 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/testutil"
 )
 
+// IsPostgresDSN é alias exportado do helper (pra testes).
+func IsPostgresDSN(dsn string) bool { return db.IsPostgresDSN(dsn) }
+
 // TestMigrate_AppliesAllMigrations valida que todas as migrations
 // conhecidas são aplicadas e tabelas esperadas existem.
 func TestMigrate_AppliesAllMigrations(t *testing.T) {
@@ -210,3 +213,39 @@ func TestMigrate_FreshSchemaVersionsTable(t *testing.T) {
 // helper para testar sql queries genéricas
 func execNoRows(_ *sql.DB) {}
 var _ = sort.Strings // garante import não removido por tooling
+
+// ============================================================
+// Postgres driver detection (Sprint 6 v1.5.0)
+// ============================================================
+
+func TestIsPostgresDSN(t *testing.T) {
+	cases := []struct {
+		dsn  string
+		want bool
+	}{
+		{"postgres://user:pass@localhost/db", true},
+		{"postgresql://user:pass@localhost/db", true},
+		{"file:radiant.db?_pragma=...", false},
+		{"/path/to/radiant.db", false},
+		{"radiant.db", false},
+		{"", false},
+	}
+	for _, c := range cases {
+		got := db.IsPostgresDSN(c.dsn)
+		if got != c.want {
+			t.Errorf("IsPostgresDSN(%q) = %v, want %v", c.dsn, got, c.want)
+		}
+	}
+}
+
+func TestBackend(t *testing.T) {
+	if got := db.Backend("postgres://localhost/db"); got != "postgres" {
+		t.Errorf("Backend(postgres) = %q, want postgres", got)
+	}
+	if got := db.Backend("file:radiant.db"); got != "sqlite" {
+		t.Errorf("Backend(sqlite) = %q, want sqlite", got)
+	}
+	if got := db.Backend("/path/to/radiant.db"); got != "sqlite" {
+		t.Errorf("Backend(path) = %q, want sqlite", got)
+	}
+}
