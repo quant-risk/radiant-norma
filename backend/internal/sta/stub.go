@@ -18,9 +18,9 @@ import (
 type Submission struct {
 	CadocCode string `json:"cadoc_code"`
 	DataBase  string `json:"data_base"`
-	XML       string `json:"xml,omitempty"`       // XML cru (string) — JSON tag não decodifica como []byte (base64)
-	Zip       []byte `json:"zip,omitempty"`       // ZIP binário (base64 no JSON)
-	Cert      []byte `json:"-"`                   // A1 (PEM) ou nil pra A3 (token) — nunca via JSON
+	XML       string `json:"xml,omitempty"` // XML cru (string) — JSON tag não decodifica como []byte (base64)
+	Zip       []byte `json:"zip,omitempty"` // ZIP binário (base64 no JSON)
+	Cert      []byte `json:"-"`             // A1 (PEM) ou nil pra A3 (token) — nunca via JSON
 	CNPJ      string `json:"cnpj"`
 }
 

@@ -162,9 +162,14 @@ func processBatch(
 		result, err := staClient.Submit(ctx, sub)
 		if err != nil {
 			logger.Error("sta submit failed", "envio_id", e.ID, "err", err)
-			_, _ = d.ExecContext(ctx,
+			// Se este UPDATE falhar, envio fica em 'pending' e o loop claima
+			// de novo — loop infinito de retries. Logamos pra investigar.
+			if _, uerr := d.ExecContext(ctx,
 				"UPDATE envios SET status='error', error_message=? WHERE id=?",
-				err.Error(), e.ID)
+				err.Error(), e.ID); uerr != nil {
+				logger.Error("failed to mark envio as error — possible loop",
+					"envio_id", e.ID, "err", uerr)
+			}
 			continue
 		}
 

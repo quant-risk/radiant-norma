@@ -43,19 +43,19 @@ type Doc3040Root struct {
 
 // Agregado é a tag <Agreg>.
 type Agregado struct {
-	NatuOp     string // 01 = própria, 02 = cobrados
-	Mod        string // modalidade BACEN
-	OrigemRec  string
-	VincME     string // S/N
-	ClassOp    string // A,B,C,D,E,F,G,H
-	FaixaVlr   string
-	PrzProvm   string // S/N
-	Localiz    string // UF
-	TpCli      string // 1=PF, 2=PJ
-	DesempOp   string // 01 a vencer, 02 vencida 15-30, etc
+	NatuOp      string // 01 = própria, 02 = cobrados
+	Mod         string // modalidade BACEN
+	OrigemRec   string
+	VincME      string // S/N
+	ClassOp     string // A,B,C,D,E,F,G,H
+	FaixaVlr    string
+	PrzProvm    string // S/N
+	Localiz     string // UF
+	TpCli       string // 1=PF, 2=PJ
+	DesempOp    string // 01 a vencer, 02 vencida 15-30, etc
 	ProvConsttd string
-	QtdOp      string
-	QtdCli     string
+	QtdOp       string
+	QtdCli      string
 
 	Vencimentos Vencimentos
 }

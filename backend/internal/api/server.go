@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
@@ -28,11 +29,12 @@ type Server struct {
 	AuditLog  *auditlog.Logger
 	STAClient sta.Client
 	Radar     *radar.Service
+	startedAt time.Time
 }
 
 // NewServer cria um Server.
 func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al *auditlog.Logger, staClient sta.Client, rad *radar.Service) *Server {
-	return &Server{DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient, Radar: rad}
+	return &Server{DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient, Radar: rad, startedAt: time.Now()}
 }
 
 // Router retorna o chi router configurado.
@@ -82,9 +84,10 @@ func (s *Server) Router() http.Handler {
 
 func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
-		"status":  "ok",
-		"time":    time.Now().UTC().Format(time.RFC3339),
-		"version": "1.3.1",
+		"status":         "ok",
+		"time":           time.Now().UTC().Format(time.RFC3339),
+		"version":        "1.3.4",
+		"uptime_seconds": int(time.Since(s.startedAt).Seconds()),
 	})
 }
 
@@ -138,9 +141,10 @@ func (s *Server) listRulesByCadoc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Filtra por ?enabled=true|false|all (default: all)
-	enabledFilter := r.URL.Query().Get("enabled")
-	var filtered []audit.Critica
+	// Filtra por ?enabled=true|false|all (case-insensitive, default: all).
+	// Normaliza para lowercase antes do switch — aceita TRUE, True, true.
+	enabledFilter := strings.ToLower(r.URL.Query().Get("enabled"))
+	filtered := make([]audit.Critica, 0, len(criticas))
 	for _, c := range criticas {
 		switch enabledFilter {
 		case "true":
@@ -152,17 +156,15 @@ func (s *Server) listRulesByCadoc(w http.ResponseWriter, r *http.Request) {
 				filtered = append(filtered, c)
 			}
 		default:
-			filtered = criticas // all
+			// "all" ou "" → todas
+			filtered = append(filtered, c)
 		}
-	}
-	if enabledFilter == "" {
-		filtered = criticas
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"cadoc":    cadoc,
-		"rules":    filtered,
-		"total":    len(filtered),
+		"cadoc":     cadoc,
+		"rules":     filtered,
+		"total":     len(filtered),
 		"total_all": len(criticas),
 	})
 }
@@ -208,9 +210,9 @@ func (s *Server) validate(w http.ResponseWriter, r *http.Request) {
 
 	// Audit log
 	_, _ = s.AuditLog.Log(ifID, r.RemoteAddr, "cadoc.validated", req.CadocCode, body, map[string]any{
-		"passed":     resp.Passed,
-		"errors":     len(resp.Errors),
-		"warnings":   len(resp.Warnings),
+		"passed":      resp.Passed,
+		"errors":      len(resp.Errors),
+		"warnings":    len(resp.Warnings),
 		"duration_ms": resp.DurationMs,
 	})
 

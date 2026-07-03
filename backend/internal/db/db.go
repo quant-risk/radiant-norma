@@ -16,9 +16,10 @@ import (
 
 // Open abre uma conexão SQLite (puro Go via modernc.org/sqlite).
 // Para trocar pra Postgres, basta usar o driver lib/pq ou pgx:
-//   import _ "github.com/lib/pq"
-//   dsn := "postgres://user:pass@localhost/radiant?sslmode=disable"
-//   db, err = sql.Open("postgres", dsn)
+//
+//	import _ "github.com/lib/pq"
+//	dsn := "postgres://user:pass@localhost/radiant?sslmode=disable"
+//	db, err = sql.Open("postgres", dsn)
 func Open(path string) (*sql.DB, error) {
 	dsn := fmt.Sprintf("file:%s?_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)&_pragma=busy_timeout(5000)", path)
 	d, err := sql.Open("sqlite", dsn)

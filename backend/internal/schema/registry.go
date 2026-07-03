@@ -27,13 +27,13 @@ type Version struct {
 
 // Field representa um campo do leiaute.
 type Field struct {
-	Tag       string `json:"tag,omitempty"`
-	Attr      string `json:"attr,omitempty"`
-	Type      string `json:"type"`           // BACEN: A8, N19,2, A1, etc
-	Required  bool   `json:"required"`
-	Desc      string `json:"desc,omitempty"`
-	Domain    string `json:"domain,omitempty"`
-	Group     string `json:"group,omitempty"` // sheet de origem
+	Tag      string `json:"tag,omitempty"`
+	Attr     string `json:"attr,omitempty"`
+	Type     string `json:"type"` // BACEN: A8, N19,2, A1, etc
+	Required bool   `json:"required"`
+	Desc     string `json:"desc,omitempty"`
+	Domain   string `json:"domain,omitempty"`
+	Group    string `json:"group,omitempty"` // sheet de origem
 }
 
 // Registry é o serviço de Schema Registry.

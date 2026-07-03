@@ -2,6 +2,95 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v1.3.4 — 2026-07-03 (4ª validação profunda: silent errors + UX)
+
+### 🎯 Objetivo da validação
+Caçar **erros silenciados** (`_ =`) que escondem bugs latentes, melhorar a UX
+do endpoint `/v1/rules`, e endurecer o Radar contra duplicação de alertas.
+
+### 🐛 Bugs latentes detectados (4ª passada)
+
+| # | Bug | Severidade | Fix |
+|---|---|---|---|
+| 1 | `radar.go:178` silenciava `recordBaseline` após `insertAlert`. Se baseline falhasse, próximo scan disparava alerta duplicado. | 🔴 Alta | Logar `Warn` em vez de `_ =` |
+| 2 | `radar.go:151` silenciava `recordBaseline` no first scan. Se DB tivesse problema, loop silencioso de "first scan" sem alerta operacional. | 🟡 Média | Logar `Error` |
+| 3 | `worker/main.go:165` silenciava `UPDATE envios SET status='error'` após STA submit failed. Se DB falhasse, envio ficava em 'pending' e worker loopava infinito. | 🔴 Alta | Logar `Error` (não silenciar) |
+| 4 | `listRulesByCadoc` case-sensitive em `?enabled=true|false`. `?enabled=TRUE` caía no default e retornava TODAS. | 🟡 Média | Normalizar com `strings.ToLower` antes do switch |
+| 5 | Lógica confusa em `listRulesByCadoc` — `switch default` sobrescrevia filtered + `if enabledFilter == ""` redundante. | ⚪ Baixa | Simplificar para um só path |
+| 6 | 14 arquivos com drift gofmt (não críticos, mas código inconsistente). | ⚪ Baixa | `gofmt -w .` em todos |
+
+### ✅ Melhorias UX
+
+| Mudança | Razão |
+|---|---|
+| `healthz` agora retorna `uptime_seconds` + `version` em 1.3.4 | Operações precisa saber há quanto tempo processo está rodando; consistent com outras APIs profissionais |
+| `time.Now()` capturado em `Server.startedAt` no construtor | uptime calculado desde NewServer (não desde healthz request) |
+
+### 📊 Regressões validadas (E2E)
+
+```
+✓ POST /v1/validate XML oficial           → passed=true, 0 erros, 0ms
+✓ GET  /v1/rules/3040?enabled=true|True|TRUE  → 320 (case-insensitive)
+✓ GET  /v1/rules/3040?enabled=false|False|FALSE → 29
+✓ GET  /v1/rules/3040?enabled=            → 349 (default all)
+✓ S04 detecta 6 modalidades BACEN (0204, 0210, 1304, 0201, 0213, 0214)
+✓ S04 NÃO detecta modalidades fora da lista (0202, 0215, 0218, 0501, 0900, 19)
+✓ S04 ignora v110 (só V150/V160 importam)
+✓ Audit chain válida após 5 validações (12 entries)
+✓ Radar recordBaseline idempotente (3 scans → 1 row)
+✓ Worker processa envio pending → status=accepted, protocolo gerado
+✓ Healthz uptime_seconds cresce corretamente (2 → 5 após sleep 3s)
+```
+
+### 🚧 Lição aprendida
+**Silent errors (`_ =`) são hollow stubs de log.** 4ª validação achou 3 lugares
+onde `_ = func()` escondia bugs de produção. Lição: **toda chamada que pode
+falhar e é ignorada intencionalmente deve logar Debug/Warning**; se for
+crítica, propagar erro.
+
+### 📂 Commits
+- v1.3.3 (commit 921ee8c): S04 fix + LoadCriticas + filtro enabled
+- v1.3.4 (commit local, este): silent errors + case-insensitive + healthz uptime
+
+---
+
+## v1.3.3 — 2026-07-03 (3ª validação profunda: S04 fix + enabled filter)
+
+### 🎯 Objetivo da validação
+Corrigir **bug crítico em S04** (modalidade errada) e **bug arquitetural** no
+endpoint `/v1/rules/{cadoc}` que mascarava regras implementadas.
+
+### 🐛 Bug crítico S04
+S04 (Vencimento acima de 60/80 dias) estava documentada errada:
+- ❌ Antes: aplicava a **todas** modalidades (filter `Mod == "0213"` literal)
+- ✅ Agora: aplica apenas às **6 modalidades BACEN** (0204, 0210, 1304, 0201, 0213, 0214)
+- Vencimentos verificados: **V150** (60 dias) + **V160** (80 dias)
+- Documentado com comentário XML-citando o catálogo BACEN
+
+### 🏗️ Mudança arquitetural: enabled filter
+Antes: `LoadCriticas` filtrava `WHERE enabled=1` → regras com bug latente
+nunca eram testadas em produção.
+
+Agora:
+- `LoadCriticas` retorna **TODAS** as regras (320 habilitadas + 29 desabilitadas)
+- `applyRegra` filtra por `c.Enabled` antes de executar (defesa em profundidade)
+- Endpoint `/v1/rules/{cadoc}` aceita `?enabled=true|false|all` (default all)
+- Response inclui `total` (filtrado) e `total_all` (total sem filtro)
+
+### 📊 Validação E2E
+
+```
+✓ S04 detecta todas 6 modalidades BACEN (0204, 0210, 1304, 0201, 0213, 0214)
+✓ S04 NÃO detecta modalidades fora da lista (0202, 0215, 0218, 0501, 0900, 19)
+✓ S04 ignora v110 (só V150/V160 importam)
+✓ S04 pula quando v150=0 e v160=0
+✓ S04 detecta múltiplos Agregs (um por um)
+✓ Filter ?enabled=true retorna 320; ?enabled=false retorna 29
+✓ 320 regras 3040 habilitadas / 349 totais / 29 desabilitadas
+```
+
+---
+
 ## v1.3.0 — 2026-07-03 (Sprint 4: Honesty Patch + Audit utilizável + Radar)
 
 ### 🎯 Objetivo da sprint

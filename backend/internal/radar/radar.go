@@ -24,11 +24,11 @@ import (
 
 // Source é uma URL que o Radar monitora.
 type Source struct {
-	CadocCode  string // 3040, 3050, ...
-	Label      string // "XSD", "Críticas", "Instruções"
-	URL        string
-	AlertType  string // 'leiaute_changed', 'criticas_changed', 'normativo_published'
-	Severity   string // info, warn, critical
+	CadocCode string // 3040, 3050, ...
+	Label     string // "XSD", "Críticas", "Instruções"
+	URL       string
+	AlertType string // 'leiaute_changed', 'criticas_changed', 'normativo_published'
+	Severity  string // info, warn, critical
 }
 
 // DefaultSources é a lista de URLs BACEN monitoradas.
@@ -148,7 +148,12 @@ func (s *Service) scanSource(ctx context.Context, src Source) (*Alert, error) {
 	if lastHash == "" {
 		s.logger.Info("first scan, recording baseline",
 			"cadoc", src.CadocCode, "url", src.URL, "hash", hash[:12])
-		_ = s.recordBaseline(ctx, src, hash)
+		if err := s.recordBaseline(ctx, src, hash); err != nil {
+			// Não silenciar: se baseline não gravou, próxima scan tenta de novo
+			// (loop de log "first scan" até DB voltar). Erro aqui é operacional.
+			s.logger.Error("recordBaseline failed (first scan)",
+				"cadoc", src.CadocCode, "err", err)
+		}
 		return nil, nil
 	}
 
@@ -174,8 +179,12 @@ func (s *Service) scanSource(ctx context.Context, src Source) (*Alert, error) {
 	}
 	alert.ID = id
 
-	// Atualiza baseline
-	_ = s.recordBaseline(ctx, src, hash)
+	// Atualiza baseline — se falhar, próximo scan dispara alerta duplicado.
+	// Logamos warning para investigar; não silenciar.
+	if err := s.recordBaseline(ctx, src, hash); err != nil {
+		s.logger.Warn("recordBaseline failed after alert — próximo scan pode duplicar",
+			"alert_id", id, "cadoc", src.CadocCode, "err", err)
+	}
 
 	s.logger.Info("CHANGE DETECTED",
 		"cadoc", src.CadocCode,

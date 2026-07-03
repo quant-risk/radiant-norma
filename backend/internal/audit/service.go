@@ -1,10 +1,11 @@
 // Package audit implementa o Norma Audit (validação de CADOCs contra regras).
 //
 // Camadas (cf. PRODUTO_TESE_ROADMAP § 5):
-//   L1 — Structural (XSD)
-//   L2 — Semantic (críticas do BACEN)
-//   L3 — Cross-doc (3040 ↔ 4111 ↔ DRSAC) [Sprint 3+]
-//   L4 — Histórico (diff vs base anterior) [Sprint 3+]
+//
+//	L1 — Structural (XSD)
+//	L2 — Semantic (críticas do BACEN)
+//	L3 — Cross-doc (3040 ↔ 4111 ↔ DRSAC) [Sprint 3+]
+//	L4 — Histórico (diff vs base anterior) [Sprint 3+]
 package audit
 
 import (
@@ -38,10 +39,10 @@ type Critica struct {
 
 // ValidationError é o resultado de uma regra que falhou.
 type ValidationError struct {
-	Critica   Critica `json:"critica"`
-	Severity  string  `json:"severity"` // E (Erro), A (Aviso), I (Informativo)
-	Message   string  `json:"message"`
-	XMLLine   int     `json:"xml_line,omitempty"`
+	Critica  Critica `json:"critica"`
+	Severity string  `json:"severity"` // E (Erro), A (Aviso), I (Informativo)
+	Message  string  `json:"message"`
+	XMLLine  int     `json:"xml_line,omitempty"`
 }
 
 // ValidationRequest é o input do endpoint /v1/validate.
@@ -81,14 +82,14 @@ func (r *ValidationRequest) UnmarshalJSON(data []byte) error {
 
 // ValidationResponse é o output.
 type ValidationResponse struct {
-	CadocCode    string            `json:"cadoc_code"`
-	DataBase     string            `json:"data_base"`
-	XMLHash      string            `json:"xml_hash"`
-	Passed       bool              `json:"passed"`
-	Errors       []ValidationError `json:"errors"`
-	Warnings     []ValidationError `json:"warnings"`
-	ExecutedAt   time.Time         `json:"executed_at"`
-	DurationMs   int64             `json:"duration_ms"`
+	CadocCode  string            `json:"cadoc_code"`
+	DataBase   string            `json:"data_base"`
+	XMLHash    string            `json:"xml_hash"`
+	Passed     bool              `json:"passed"`
+	Errors     []ValidationError `json:"errors"`
+	Warnings   []ValidationError `json:"warnings"`
+	ExecutedAt time.Time         `json:"executed_at"`
+	DurationMs int64             `json:"duration_ms"`
 }
 
 // Service é o serviço do Norma Audit.

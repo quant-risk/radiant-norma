@@ -20,35 +20,35 @@ import (
 )
 
 type CriticaJSON struct {
-	Cadoc           string `json:"cadoc"`
-	Sheet           string `json:"sheet"`
-	Codigo          string `json:"codigo"`
-	Regra           string `json:"regra"`
-	Descricao       string `json:"descrição"`
-	DescricaoCritica string `json:"descrição da crítica"` // 2061 DLO
-	DescricaoRegra   string `json:"descrição da regra"`     // 3050
-	Observacoes    string `json:"observações"`
-	Gravidade      string `json:"gravidade"`
-	TipoIndicio    string `json:"tipo"`
-	DataBaseInicio string `json:"data-base inicio"`
-	DataBaseInicioRaw any `json:"data-base_inicio"`
-	MensagemErro   string `json:"mensagem de erro"`
-	Mensagem       string `json:"mensagem"`
-	Habilitado     string `json:"habilitado?"`
-	Enabled        *bool  `json:"enabled"`
-	Source         string `json:"fonte"`
-	BaseConfrontada string `json:"base_confrontada"`
-	Tipo            string `json:"tipo_"` // "tipo" já usado por TipoIndicio
+	Cadoc             string `json:"cadoc"`
+	Sheet             string `json:"sheet"`
+	Codigo            string `json:"codigo"`
+	Regra             string `json:"regra"`
+	Descricao         string `json:"descrição"`
+	DescricaoCritica  string `json:"descrição da crítica"` // 2061 DLO
+	DescricaoRegra    string `json:"descrição da regra"`   // 3050
+	Observacoes       string `json:"observações"`
+	Gravidade         string `json:"gravidade"`
+	TipoIndicio       string `json:"tipo"`
+	DataBaseInicio    string `json:"data-base inicio"`
+	DataBaseInicioRaw any    `json:"data-base_inicio"`
+	MensagemErro      string `json:"mensagem de erro"`
+	Mensagem          string `json:"mensagem"`
+	Habilitado        string `json:"habilitado?"`
+	Enabled           *bool  `json:"enabled"`
+	Source            string `json:"fonte"`
+	BaseConfrontada   string `json:"base_confrontada"`
+	Tipo              string `json:"tipo_"` // "tipo" já usado por TipoIndicio
 }
 
 type CriticasFile struct {
-	Metadata map[string]any                     `json:"_metadata"`
-	Criticas map[string][]map[string]any        `json:"criticas"`
+	Metadata map[string]any              `json:"_metadata"`
+	Criticas map[string][]map[string]any `json:"criticas"`
 }
 
 type LeiautesFile struct {
-	Metadata map[string]any                     `json:"_metadata"`
-	Leiautes map[string]json.RawMessage         `json:"leiautes"`
+	Metadata map[string]any             `json:"_metadata"`
+	Leiautes map[string]json.RawMessage `json:"leiautes"`
 }
 
 func main() {
@@ -242,9 +242,9 @@ func seedSchemaRegistry(d *sql.DB, jsonPath, xsdPath string, logger *slog.Logger
 
 		// Decode leiaute
 		var lei struct {
-			Source    string                   `json:"source"`
-			TotalRows int                      `json:"total_rows"`
-			Rows      []map[string]any         `json:"rows"`
+			Source    string           `json:"source"`
+			TotalRows int              `json:"total_rows"`
+			Rows      []map[string]any `json:"rows"`
 		}
 		if err := json.Unmarshal(rawLei, &lei); err != nil {
 			logger.Warn("decode leiaute falhou", "cadoc", cadoc, "err", err)
