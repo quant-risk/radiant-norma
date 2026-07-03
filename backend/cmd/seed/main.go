@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/fortvna/radiant-norma/backend/internal/db"
+	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 )
 
 type CriticaJSON struct {
@@ -74,13 +75,14 @@ func main() {
 	}
 	d, err := db.Open(resolvedDB)
 	if err != nil {
-		logger.Error("open db", "err", err, "backend", db.Backend(resolvedDB))
+		// Validação 15 (F15.1): sanitizar err.
+		logger.Error("open db", "err", loggerutil.SafeError(err), "backend", db.Backend(resolvedDB))
 		os.Exit(1)
 	}
 	defer d.Close()
 
 	if err := db.Migrate(d); err != nil {
-		logger.Error("migrate", "err", err)
+		logger.Error("migrate", "err", loggerutil.SafeError(err))
 		os.Exit(1)
 	}
 

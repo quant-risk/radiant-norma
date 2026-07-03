@@ -18,6 +18,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
+	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
@@ -120,6 +121,24 @@ func (s *Server) Router() http.Handler {
 
 // --- Handlers ---
 
+// internalServerError retorna 500 com mensagem genérica + loga erro
+// sanitizado internamente.
+//
+// Validação 15 (F15.3): evita information disclosure via err.Error()
+// na response HTTP. err.Error() pode incluir SQL fragments, table
+// names, ou em casos extremos (pgx): user+database da DSN.
+//
+// Resposta: "erro interno (correlation: <trace>)" — caller precisa de
+// logs correlacionados pra debug. Não vaza internals.
+func (s *Server) internalServerError(w http.ResponseWriter, err error, ctx string) {
+	logger := slog.Default()
+	logger.Error("server error",
+		"context", ctx,
+		"path", "?", // settable pelo caller se quiser
+		"err", loggerutil.SafeError(err))
+	http.Error(w, "erro interno (ver logs)", http.StatusInternalServerError)
+}
+
 func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":         "ok",
@@ -132,7 +151,7 @@ func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 func (s *Server) listSchemas(w http.ResponseWriter, r *http.Request) {
 	cadocs, err := s.cadocsWithCache(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		s.internalServerError(w, err, "listSchemas")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -172,7 +191,7 @@ func (s *Server) listVersions(w http.ResponseWriter, r *http.Request) {
 	cadoc := chi.URLParam(r, "cadoc")
 	versions, err := s.Schema.List(cadoc)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		s.internalServerError(w, err, "listVersions")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -185,7 +204,7 @@ func (s *Server) listVersions(w http.ResponseWriter, r *http.Request) {
 func (s *Server) listRules(w http.ResponseWriter, r *http.Request) {
 	cadocs, err := s.cadocsWithCache(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		s.internalServerError(w, err, "listRules")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -197,7 +216,7 @@ func (s *Server) listRulesByCadoc(w http.ResponseWriter, r *http.Request) {
 	cadoc := chi.URLParam(r, "cadoc")
 	criticas, err := s.Audit.LoadCriticas(r.Context(), cadoc)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		s.internalServerError(w, err, "listRulesByCadoc")
 		return
 	}
 
@@ -264,7 +283,7 @@ func (s *Server) validate(w http.ResponseWriter, r *http.Request) {
 	// Executa validação
 	resp, err := s.Audit.Validate(r.Context(), &req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		s.internalServerError(w, err, "validate")
 		return
 	}
 
@@ -326,7 +345,7 @@ func (s *Server) staSubmit(w http.ResponseWriter, r *http.Request) {
 
 	result, err := s.STAClient.Submit(r.Context(), &sub)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		s.internalServerError(w, err, "staSubmit")
 		return
 	}
 
@@ -402,7 +421,7 @@ func (s *Server) listRadarAlerts(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	alerts, err := s.Radar.ListAlerts(r.Context(), unresolvedOnly, limit)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		s.internalServerError(w, err, "listRadarAlerts")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -424,7 +443,7 @@ func (s *Server) getRadarAlert(w http.ResponseWriter, r *http.Request) {
 	}
 	a, err := s.Radar.GetAlertByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		s.internalServerError(w, err, "getRadarAlert")
 		return
 	}
 	if a == nil {
@@ -514,7 +533,7 @@ func (s *Server) triggerRadarScan(w http.ResponseWriter, r *http.Request) {
 	// Real scan
 	alerts, err := s.Radar.ScanOnce(r.Context(), nil)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		s.internalServerError(w, err, "triggerRadarScan")
 		return
 	}
 

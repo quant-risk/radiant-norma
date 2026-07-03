@@ -11,6 +11,7 @@ package rules
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
@@ -165,7 +166,17 @@ type xmlLine struct {
 func iterateXMLElements(xmlContent, parentTag string) <-chan xmlLine {
 	out := make(chan xmlLine)
 	go func() {
-		defer close(out)
+		// Validação 15 (F15.2): panic recover — sem isso, panic em
+		// ExtractTextBetween/parseNum mata o consumer (que está
+		// esperando no canal — deadlock) e ninguém fica sabendo.
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Default().Error("iterateXMLElements panic recovered",
+					"parent_tag", parentTag,
+					"panic", r)
+			}
+			close(out)
+		}()
 		current := xmlLine{}
 		openTag := "<" + parentTag + ">"
 		idx := 0

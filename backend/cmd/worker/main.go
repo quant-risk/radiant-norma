@@ -21,6 +21,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
 	"github.com/fortvna/radiant-norma/backend/internal/db"
+	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
 	workpkg "github.com/fortvna/radiant-norma/backend/internal/worker"
 )
@@ -50,14 +51,15 @@ func main() {
 	// Open DB
 	d, err := db.Open(resolvedDB)
 	if err != nil {
-		logger.Error("db open failed", "err", err, "backend", db.Backend(resolvedDB))
+		// Validação 15 (F15.1): sanitizar err.
+		logger.Error("db open failed", "err", loggerutil.SafeError(err), "backend", db.Backend(resolvedDB))
 		os.Exit(1)
 	}
 	defer d.Close()
 
 	// Migrations (worker pode rodar standalone antes da API ter criado schema)
 	if err := db.Migrate(d); err != nil {
-		logger.Error("migrate failed", "err", err)
+		logger.Error("migrate failed", "err", loggerutil.SafeError(err))
 		os.Exit(1)
 	}
 

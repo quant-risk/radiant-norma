@@ -17,6 +17,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 	crossrules "github.com/fortvna/radiant-norma/backend/internal/crossdoc/rules"
 	"github.com/fortvna/radiant-norma/backend/internal/db"
+	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
@@ -34,7 +35,9 @@ func main() {
 	// DB
 	d, err := db.Open(dbPath)
 	if err != nil {
-		logger.Error("open db", "err", err, "dsn_prefix", db.Backend(dbPath))
+		// Validação 15 (F15.1): sanitizar err para não vazar DSN.
+		// pgx error messages incluem user+database (testado).
+		logger.Error("open db", "err", loggerutil.SafeError(err), "backend", db.Backend(dbPath))
 		os.Exit(1)
 	}
 	defer d.Close()
@@ -42,7 +45,7 @@ func main() {
 
 	// Migrations
 	if err := db.Migrate(d); err != nil {
-		logger.Error("migrations", "err", err)
+		logger.Error("migrations", "err", loggerutil.SafeError(err))
 		os.Exit(1)
 	}
 	logger.Info("migrations applied")
