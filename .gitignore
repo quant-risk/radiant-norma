@@ -26,7 +26,7 @@ __pycache__/
 venv/
 
 # Não commitar catálogo grande (regenerável)
-# Mas como tá pequeno (1.7 MB) e é insumo do Sentinel Audit, mantemos
+# Mas como tá pequeno (1.7 MB) e é insumo do Norma Audit, mantemos
 # _catalogos/criticas.json
 # _catalogos/leiautes.json
 

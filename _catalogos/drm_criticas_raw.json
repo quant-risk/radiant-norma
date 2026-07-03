@@ -3,8 +3,8 @@
     "description": "Críticas do CADOC 2060 (DRM) extraídas do PDF oficial",
     "fonte": "Criticas_Pos_Processamento_2060_V2_Jan25.pdf (BACEN/Desig, Jan/2025)",
     "data_extracao": "2026-07-03T14:15:54",
-    "autor": "Mavis · Radiant Risk Solutions",
-    "uso": "Sentinel Audit L2 — DRM validation",
+    "autor": "Mavis · Radiant",
+    "uso": "Norma Audit L2 — DRM validation",
     "total_criticas": 22
   },
   "criticas": [

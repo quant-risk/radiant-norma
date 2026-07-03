@@ -21,8 +21,8 @@ DOCS = [
     )),
     ("PRODUTO_TESE_ROADMAP.md", "PRODUTO_TESE_ROADMAP.pdf", dict(
         badge="PRODUTO · TESE · ROADMAP",
-        title="Radiant Sentinel",
-        subtitle="Sentinela regulatória pra IF brasileira — tese, personas, GTM, produto por fase, arquitetura, UX, compliance pra IF regulada e roadmap de 18 meses pra construir a plataforma que compete com Mitra/Matera/cadoc.ai.",
+        title="Radiant Norma",
+        subtitle="Inteligência regulatória pra IF brasileira — tese, personas, GTM, produto por fase, arquitetura, UX, compliance pra IF regulada e roadmap de 18 meses pra construir a plataforma que compete com Mitra/Matera/cadoc.ai.",
         tipo="Estratégia & execução",
     )),
 ]
@@ -42,14 +42,14 @@ CSS = """
     }
 
     @bottom-left {
-        content: "Radiant Sentinel · Radiant Risk Solutions (marca da Fortvna)";
+        content: "Radiant Norma · Radiant ()";
         font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
         font-size: 8pt;
         color: #94a3b8;
     }
 
     @bottom-right {
-        content: "Radiant Sentinel — Sentinela regulatória pra IF";
+        content: "Radiant Norma — Inteligência regulatória pra IF";
         font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
         font-size: 8pt;
         color: #94a3b8;
@@ -313,7 +313,7 @@ def md_to_html(md_path: Path, html_path: Path, cover: dict):
   <div class="meta">
     <div class="meta-item">
       <div class="label">Produto</div>
-      <div class="value">Radiant Sentinel</div>
+      <div class="value">Radiant Norma</div>
     </div>
     <div class="meta-item">
       <div class="label">Tipo</div>
@@ -325,7 +325,7 @@ def md_to_html(md_path: Path, html_path: Path, cover: dict):
     </div>
     <div class="meta-item">
       <div class="label">Marca</div>
-      <div class="value">Radiant Risk Solutions · Fortvna</div>
+      <div class="value">Radiant · Fortvna</div>
     </div>
   </div>
 </div>

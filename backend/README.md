@@ -1,6 +1,6 @@
-# Radiant Sentinel — Backend (Sprint 3+)
+# Radiant Norma — Backend (Sprint 3+)
 
-> **API REST + Schema Registry + Sentinel Audit microservice + STA client stub.**
+> **API REST + Schema Registry + Norma Audit microservice + STA client stub.**
 > Sprint 3 entregou a primeira iteração funcional end-to-end com SQLite + Go.
 > Postgres-ready (abstração `database/sql`, troca de driver em 1 linha).
 
@@ -10,7 +10,7 @@
 |---|---|
 | Schema Postgres-ready (5 tabelas) | ✅ |
 | Schema Registry (versionado por data-base) | ✅ |
-| Sentinel Audit (L1+L2) | ✅ |
+| Norma Audit (L1+L2) | ✅ |
 | Audit log tamper-evident (hash chain) | ✅ |
 | STA client stub | ✅ |
 | API REST (7 endpoints) | ✅ |
@@ -19,7 +19,7 @@
 | Postgres driver real | ❌ Sprint 4 |
 | STA Web/WS real (Playwright) | ❌ Sprint 4 |
 | Cross-doc engine (L3) | ❌ Sprint 4 |
-| Frontend (Sentinel Console) | ❌ Sprint 5 |
+| Frontend (Norma Console) | ❌ Sprint 5 |
 
 ## Stack
 
@@ -37,7 +37,7 @@ backend/
 │   └── seed/main.go             # Popular DB com JSONs extraídos
 ├── internal/
 │   ├── api/server.go            # Handlers HTTP REST
-│   ├── audit/service.go         # Sentinel Audit (L1+L2)
+│   ├── audit/service.go         # Norma Audit (L1+L2)
 │   ├── auditlog/log.go          # Hash chain tamper-evident (LGPD/SOC2)
 │   ├── db/
 │   │   ├── db.go                # Conexão (SQLite/Postgres)
@@ -117,7 +117,7 @@ curl -H "X-IF-ID: 12345678" http://localhost:8080/v1/rules/3040 | jq '.total'
 ```
 
 ### `POST /v1/validate`
-**Sentinel Audit** — valida XML/JSON contra regras do CADOC.
+**Norma Audit** — valida XML/JSON contra regras do CADOC.
 
 ```bash
 # Validação com XML
@@ -246,10 +246,10 @@ sqlite3 /tmp/r.db "SELECT id, action, target, substr(entry_hash,1,12) as hash FR
 ## Roadmap
 
 - **Sprint 4**: JWT/OAuth, Postgres driver, STA Playwright, 30+ regras 3040, Radar regulatório
-- **Sprint 5**: Frontend (Sentinel Console), cross-doc engine (L3), self-host on-prem
+- **Sprint 5**: Frontend (Norma Console), cross-doc engine (L3), self-host on-prem
 - **Sprint 6**: SOC 2 Type I, LGPD compliance attested, multi-region
 
 ---
 
-**Mantido por:** Time do Radiant Sentinel · Radiant Risk Solutions (marca da Fortvna)
+**Mantido por:** Time do Radiant Norma · Radiant ()
 **Versão:** 1.2.0 (Sprint 3, 2026-07-03)

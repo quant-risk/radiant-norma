@@ -1,11 +1,11 @@
-# Changelog — cadocs (Radiant Sentinel)
+# Changelog — cadocs (Radiant Norma)
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
 ## v1.2.0 — 2026-07-03 (Sprint 3: Infraestrutura backend Go + API REST)
 
 ### 🎯 Objetivo da sprint
-Construir a **infraestrutura backend do Radiant Sentinel** em Go: API REST, Schema Registry, Sentinel Audit como microservice, audit log com hash chain, STA stub. Postgres-ready (mas SQLite pra spike local).
+Construir a **infraestrutura backend do Radiant Norma** em Go: API REST, Schema Registry, Norma Audit como microservice, audit log com hash chain, STA stub. Postgres-ready (mas SQLite pra spike local).
 
 ### ✅ Entregas
 
@@ -17,7 +17,7 @@ Construir a **infraestrutura backend do Radiant Sentinel** em Go: API REST, Sche
   - `internal/db/migrate.go` — migrations via embed.FS, idempotente
   - `internal/db/migrations/001_initial.sql` — schema completo (5 tabelas)
   - `internal/schema/registry.go` — Schema Registry service (GetEffective, List, Insert)
-  - `internal/audit/service.go` — Sentinel Audit (carrega críticas do DB, valida XML/JSON)
+  - `internal/audit/service.go` — Norma Audit (carrega críticas do DB, valida XML/JSON)
   - `internal/auditlog/log.go` — Audit log com hash chain tamper-evident
   - `internal/sta/stub.go` — STA client stub (interface + mock que gera protocolo fake)
   - `internal/api/server.go` — handlers HTTP REST com auth middleware
@@ -39,7 +39,7 @@ Construir a **infraestrutura backend do Radiant Sentinel** em Go: API REST, Sche
 | GET | `/v1/schemas/{cadoc}` | Schema effective de um CADOC |
 | GET | `/v1/schemas/{cadoc}/versions` | Histórico de versões |
 | GET | `/v1/rules/{cadoc}` | Críticas habilitadas (320 do 3040) |
-| POST | `/v1/validate` | **Sentinel Audit** — valida XML/JSON contra regras |
+| POST | `/v1/validate` | **Norma Audit** — valida XML/JSON contra regras |
 | POST | `/v1/sta/submit` | STA stub (gera protocolo fake) |
 
 #### Multi-tenant
@@ -47,7 +47,7 @@ Construir a **infraestrutura backend do Radiant Sentinel** em Go: API REST, Sche
 - Sem header → 401 Unauthorized
 - Cada IF isolada por header (sem row-level security ainda — Sprint 4)
 
-#### Sentinel Audit end-to-end
+#### Norma Audit end-to-end
 - ✅ XML válido (3040 exemplo, 4832 B) → **passed=true, 0 erros, 0 warnings, 2ms**
 - ✅ XML quebrado (22 B) → **L1-PARSE detectado**, B04 warning
 - Hash SHA-256 do payload retornado em `xml_hash`
@@ -84,7 +84,7 @@ backend/ → 10 arquivos Go (1.400 linhas)
    ├─ cmd/api/main.go          ~80 linhas (entrypoint + graceful shutdown)
    ├─ cmd/seed/main.go         ~250 linhas (seed de JSON → DB)
    ├─ internal/api/server.go    ~250 linhas (7 handlers + middleware)
-   ├─ internal/audit/service.go ~200 linhas (Sentinel Audit)
+   ├─ internal/audit/service.go ~200 linhas (Norma Audit)
    ├─ internal/schema/registry.go ~140 linhas (Schema Registry)
    ├─ internal/auditlog/log.go ~120 linhas (hash chain)
    ├─ internal/sta/stub.go     ~80 linhas
@@ -105,10 +105,10 @@ Banco SQLite populado:
 | **JWT/OAuth em vez de X-IF-ID** | Spike | Implementar `internal/auth/` |
 | **row-level security multi-tenant** | X-IF-ID só identifica, não isola | Postgres RLS policies |
 | **STA Web/WS client real** | Playwright precisa setup | Implementar `internal/sta/web.go` |
-| **Mais regras no Sentinel Audit** | Só B01-B05 implementadas | Portar 50% das críticas 3040 |
+| **Mais regras no Norma Audit** | Só B01-B05 implementadas | Portar 50% das críticas 3040 |
 | **Cross-doc engine (L3)** | Requer múltiplos CADOCs em memória | Carregar 3040 + 4111 em paralelo |
 | **Worker assíncrono** | cmd/seed é one-shot | Bull/gocron pra STA queue |
-| **Frontend (Sentinel Console)** | Backend-only | Next.js dashboard |
+| **Frontend (Norma Console)** | Backend-only | Next.js dashboard |
 
 ### 🎯 Próxima sprint (Sprint 4 — preview)
 **Tema:** Autenticação, multi-tenant isolado, STA real (Playwright)
@@ -120,10 +120,10 @@ Banco SQLite populado:
 
 ---
 
-## v1.1.0 — 2026-07-03 (Sprint 2: Sentinel Audit Spike + capturas restantes)
+## v1.1.0 — 2026-07-03 (Sprint 2: Norma Audit Spike + capturas restantes)
 
 ### 🎯 Objetivo da sprint
-**Fechar gaps de captura + primeiro spike técnico Go** do Sentinel Audit (gerar XSD + executar regras). Validação contra BCValidador substituída por teste negativo (XML quebrado) — BCValidador é Java proprietário e não roda nativamente em ARM64 macOS.
+**Fechar gaps de captura + primeiro spike técnico Go** do Norma Audit (gerar XSD + executar regras). Validação contra BCValidador substituída por teste negativo (XML quebrado) — BCValidador é Java proprietário e não roda nativamente em ARM64 macOS.
 
 ### ✅ Entregas
 
@@ -146,8 +146,8 @@ Banco SQLite populado:
   - 248 linhas de campos processadas (tags + atributos + obrigatoriedade)
   - Tipos BACEN (A8, N19,2) mapeados para XSD (xs:string, xs:decimal)
   - **Limitação conhecida**: XSD não oficial (BACEN só publica 3045 e 3026); alguns tipos ainda são genéricos
-- **`tools/sentinel-audit/main.go`** — executor de regras 3040 contra XML
-  - Roda: `go run ./tools/sentinel-audit -xml 3040/exemploDesempenhoOperacao.xml`
+- **`tools/norma-audit/main.go`** — executor de regras 3040 contra XML
+  - Roda: `go run ./tools/norma-audit -xml 3040/exemploDesempenhoOperacao.xml`
   - **Implementa 5 regras** (B01-B05) carregadas dinamicamente do catálogo JSON
     - B01: arquivo XML deve parsear
     - B04: encoding deve estar declarado
@@ -163,7 +163,7 @@ Banco SQLite populado:
 |---|---|
 | **DRSAC críticas como gap conhecido** | Não está publicamente disponível; FAQ do BACEN aponta pra página protegida por login. Não tentar mais — documentar e seguir. |
 | **DRM críticas via PDF parse** | PDF tem 22 críticas em texto puro (`pdftotext + regex`), funcionou bem. Mais simples que esperar planilha. |
-| **XSD gerado em Go, não Python** | Pipeline consistente (xsdgen + sentinel-audit ambos Go); XSD mais confiável via stdlib Go. |
+| **XSD gerado em Go, não Python** | Pipeline consistente (xsdgen + norma-audit ambos Go); XSD mais confiável via stdlib Go. |
 | **Tipos BACEN genéricos** | Mapeamento A→string, N→decimal; refinar em Sprint 3 com dicionário de tipos BACEN completo. |
 | **T.3 substituído por teste negativo** | BCValidador é Java proprietário, não roda em ARM64; validação cruzada fica para Sprint 3 via Docker. |
 
@@ -196,10 +196,10 @@ _catalogo/
 ├── extract_drm.py         ★ NOVO — script que extrai DRM do PDF
 └── extract_3044.py        ★ NOVO — script que gera schema 3044
 
-tools/                     ★ NOVO — Go spike do Sentinel Audit
+tools/                     ★ NOVO — Go spike do Norma Audit
 ├── go.mod
 ├── xsdgen/main.go         gera XSD a partir de leiautes.json
-└── sentinel-audit/main.go executa regras 3040 contra XML
+└── norma-audit/main.go executa regras 3040 contra XML
 ```
 
 ### 🚧 Gaps remanescentes (vão pra Sprint 3)
@@ -213,10 +213,10 @@ tools/                     ★ NOVO — Go spike do Sentinel Audit
 | Regras 3044 implementadas em Go | JSON pronto, falta Go | T.4 Sprint 3 |
 
 ### 🎯 Próxima sprint (Sprint 3 — preview)
-**Tema:** Infraestrutura do Radiant Sentinel (backend Go + Postgres + Docker)
+**Tema:** Infraestrutura do Radiant Norma (backend Go + Postgres + Docker)
 - Backend Go com API REST
 - Schema Registry com Postgres + JSONB
-- Sentinel Audit como microserviço
+- Norma Audit como microserviço
 - STA Client (Playwright first)
 - White-label multi-tenant
 - LGPD compliance: DPA template, audit log, criptografia
@@ -227,14 +227,14 @@ tools/                     ★ NOVO — Go spike do Sentinel Audit
 ## v1.0.0 — 2026-07-03 (Sprint 1: Eng. Reversa + Catálogo)
 
 ### 🎯 Objetivo da sprint
-Construir a **base de conhecimento técnico** para o **Radiant Sentinel** — sentinela regulatória SaaS da Radiant Risk Solutions (marca da Fortvna) para IFs brasileiras — incluindo (a) captura completa de CADOCs BACEN + concorrentes e (b) extração estruturada em JSON pronto para o Sentinel Audit.
+Construir a **base de conhecimento técnico** para o **Radiant Norma** — inteligência regulatória SaaS da Radiant () para IFs brasileiras — incluindo (a) captura completa de CADOCs BACEN + concorrentes e (b) extração estruturada em JSON pronto para o Norma Audit.
 
 ### ✅ Entregas
 
 #### Documentos canônicos
 - **`README.md`** (310 linhas) — manifesto + índice completo do material capturado
 - **`ENG_REVERSA.md`** (382 linhas) — engenharia reversa de Mitra/LUZ, Matera, cadoc.ai, Dattos, BIBlue, Regulatório Mais (Celcoin), BTech, B3Bee + matriz BACEN × 8 concorrentes + gap DRSAC ESG
-- **`PRODUTO_TESE_ROADMAP.md`** (865 linhas) — Radiant Sentinel: tese, personas, GTM, produto V0-V3, UX/UI, arquitetura Go, compliance pra IF regulada, roadmap 18 meses, identidade da marca
+- **`PRODUTO_TESE_ROADMAP.md`** (865 linhas) — Radiant Norma: tese, personas, GTM, produto V0-V3, UX/UI, arquitetura Go, compliance pra IF regulada, roadmap 18 meses, identidade da marca
 - **`_catalogos/README.md`** (171 linhas) — documentação do catálogo JSON
 
 #### PDFs (3 docs)
@@ -273,12 +273,12 @@ Construir a **base de conhecimento técnico** para o **Radiant Sentinel** — se
 
 | Decisão | Razão |
 |---|---|
-| **Nome: Radiant Sentinel** | "Sentinel" carrega sozinho, ecoa a estética Fortvna (Radiant = marca umbrella), supera conflito com concorrentes |
-| **Tagline principal:** *"Radiant Sentinel — sentinela regulatória pra IF brasileira"* | Claro, em PT, diferencia Matera/Mitra |
+| **Nome: Radiant Norma** | "Norma" carrega sozinho, ecoa a estética Fortvna (Radiant = marca umbrella), supera conflito com concorrentes |
+| **Tagline principal:** *"Radiant Norma — inteligência regulatória pra IF brasileira"* | Claro, em PT, diferencia Matera/Mitra |
 | **PDF engine: Pandoc + Chromium** (não LibreOffice) | Suporta CSS3 grid/flexbox/gradient/cover page via HTML injection |
-| **Estrutura de marca:** Fortvna → Radiant → Sentinel | Hierarquia clara, sub-produtos Sentinel ESG/Radar/Connect/Audit |
-| **Planos:** Sentinel Lite (R$1,5k) / Pro (R$4,5k) / Scale (R$12k) | Entry acessível pra SCD, mid pra IF média, scale pra banco |
-| **Sentinel Audit em 4 camadas** (L1 XSD + L2 Semântico + L3 Cross-doc + L4 Histórico) | L3 e L4 são exclusivos vs BCValidador (diferencial proprietário) |
+| **Estrutura de marca:** Fortvna → Radiant → Norma | Hierarquia clara, sub-produtos Norma ESG/Radar/Connect/Audit |
+| **Planos:** Norma Lite (R$1,5k) / Pro (R$4,5k) / Scale (R$12k) | Entry acessível pra SCD, mid pra IF média, scale pra banco |
+| **Norma Audit em 4 camadas** (L1 XSD + L2 Semântico + L3 Cross-doc + L4 Histórico) | L3 e L4 são exclusivos vs BCValidador (diferencial proprietário) |
 | **DRSAC ESG como first-mover** | Janela IN BCB 694/2025 (vigência dez/2026), ninguém cobre |
 | **Schema Registry versionado por data-base** | A cada release BACEN, IF não mexe em código |
 
@@ -290,7 +290,7 @@ Construir a **base de conhecimento técnico** para o **Radiant Sentinel** — se
 ├─ 4 markdowns principais (865 + 382 + 310 + 171 linhas)
 ├─ 3 PDFs (~ 2,5 MB total)
 ├─ 1 catálogo JSON estruturado (1,7 MB)
-└─ 1.081 regras de validação extraídas (base Sentinel Audit)
+└─ 1.081 regras de validação extraídas (base Norma Audit)
 ```
 
 ### 🚧 Limitações conhecidas (Sprint 1)
@@ -306,5 +306,5 @@ Construir a **base de conhecimento técnico** para o **Radiant Sentinel** — se
 
 ---
 
-**Autor:** Mavis · Radiant Risk Solutions (marca da Fortvna)
-**Mantido por:** Time do Radiant Sentinel
+**Autor:** Mavis · Radiant ()
+**Mantido por:** Time do Radiant Norma

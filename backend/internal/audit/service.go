@@ -1,4 +1,4 @@
-// Package audit implementa o Sentinel Audit (validação de CADOCs contra regras).
+// Package audit implementa o Norma Audit (validação de CADOCs contra regras).
 //
 // Camadas (cf. PRODUTO_TESE_ROADMAP § 5):
 //   L1 — Structural (XSD)
@@ -62,7 +62,7 @@ type ValidationResponse struct {
 	DurationMs   int64             `json:"duration_ms"`
 }
 
-// Service é o serviço do Sentinel Audit.
+// Service é o serviço do Norma Audit.
 type Service struct {
 	db *sql.DB
 }

@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fortvna/radiant-sentinel/backend/internal/db"
+	"github.com/fortvna/radiant-norma/backend/internal/db"
 )
 
 type CriticaJSON struct {

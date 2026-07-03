@@ -1,3 +1,3 @@
-module github.com/fortvna/radiant-sentinel/tools
+module github.com/fortvna/radiant-norma/tools
 
 go 1.22

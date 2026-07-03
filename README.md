@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="assets/logo.svg" alt="Radiant Sentinel — sentinela regulatória para IFs brasileiras" width="480"/>
+<img src="assets/logo.svg" alt="Radiant Norma — inteligência regulatória para IFs brasileiras" width="480"/>
 
-# Radiant Sentinel
+# Radiant Norma
 
-### *Sentinela regulatória para Instituições Financeiras brasileiras.*
+### *Inteligência regulatória para Instituições Financeiras brasileiras.*
 
 **Gera, valida e envia CADOCs BACEN** — com orquestração ponta-a-ponta,
 auditoria tamper-evident e camadas que o BCValidador não tem.
@@ -40,8 +40,8 @@ Quem precisa reportar — SCDs, IPs, bancos médios — acaba escrevendo o pipel
 na mão: extrai dados, gera XML, valida, comprime, sobe no STA, reconcilia o
 protocolo, refaz no mês seguinte quando o leiaute muda.
 
-**Radiant Sentinel** faz esse pipeline inteiro como serviço: Schema Registry
-versionado por data-base, Sentinel Audit em **4 camadas**, STA client real,
+**Radiant Norma** faz esse pipeline inteiro como serviço: Schema Registry
+versionado por data-base, Norma Audit em **4 camadas**, STA client real,
 audit log com **hash chain** (LGPD + SOC 2), multi-tenant isolado por RLS.
 
 > **Diferencial proprietário:** L3 (cross-documento) e L4 (histórico) — o
@@ -72,15 +72,15 @@ audit log com **hash chain** (LGPD + SOC 2), multi-tenant isolado por RLS.
 
 ```
                     ┌──────────────────────────────────────────┐
-                    │         Sentinel Console (Sprint 5)       │
+                    │         Norma Console (Sprint 5)       │
                     │   Next.js · Multi-tenant · Real-time      │
                     └────────────────┬─────────────────────────┘
                                      │ HTTPS · JWT
                     ┌────────────────▼─────────────────────────┐
-                    │       Radiant Sentinel API (Go · chi)     │
+                    │       Radiant Norma API (Go · chi)     │
                     │                                          │
                     │  ┌────────────┐  ┌────────────────────┐  │
-                    │  │ Schema     │  │  Sentinel Audit    │  │
+                    │  │ Schema     │  │  Norma Audit    │  │
                     │  │ Registry   │  │                    │  │
                     │  │            │  │  L1 XSD            │  │
                     │  │ versionado │  │  L2 Semântico      │  │
@@ -127,8 +127,8 @@ de network (50 ms+) >> GC pauses (1 ms) — Rust não se justifica aqui.
 
 ```bash
 # Clone
-git clone https://github.com/quant-risk/radiant-sentinel.git
-cd radiant-sentinel
+git clone https://github.com/quant-risk/radiant-norma.git
+cd radiant-norma
 
 # Backend
 cd backend
@@ -159,19 +159,19 @@ Stack completa em [`backend/README.md`](backend/README.md).
 | Sprint | Tema | Status |
 |---|---|---|
 | **1** | Base documental + catálogo JSON estruturado | ✅ v1.0.0 |
-| **2** | Sentinel Audit spike (Go CLI + XSD gerado) | ✅ v1.1.0 |
+| **2** | Norma Audit spike (Go CLI + XSD gerado) | ✅ v1.1.0 |
 | **3** | Backend Go + API REST + Audit hash chain + STA stub | ✅ v1.2.0 |
 | **4** | Auth real (JWT/OAuth) + Postgres RLS + STA real (Playwright) + 30+ regras 3040 | 🔜 |
-| **5** | Sentinel Console (Next.js) + Radar regulatório (worker de mudanças) | ⏳ |
+| **5** | Norma Console (Next.js) + Radar regulatório (worker de mudanças) | ⏳ |
 | **6** | Cross-doc engine L3 + Histórico L4 + White-label multi-tenant | ⏳ |
 | **7** | SOC 2 Type II + DPA template + ICP-Brasil A3 | ⏳ |
 
 **Sub-produtos anunciados** (marca Radiant):
 
-- 🟢 **Sentinel ESG** — first-mover DRSAC 2030 (janela IN BCB 694/2025, ninguém cobre)
-- 🟡 **Sentinel Radar** — worker que detecta mudanças de leiaute em tempo real
-- 🔵 **Sentinel Connect** — STA client Web/WS com retry + protocolo tracking
-- 🟣 **Sentinel Audit** — o que está nesse repo (o produto raiz)
+- 🟢 **Norma ESG** — first-mover DRSAC 2030 (janela IN BCB 694/2025, ninguém cobre)
+- 🟡 **Norma Radar** — worker que detecta mudanças de leiaute em tempo real
+- 🔵 **Norma Connect** — STA client Web/WS com retry + protocolo tracking
+- 🟣 **Norma Audit** — o que está nesse repo (o produto raiz)
 
 ---
 
@@ -193,11 +193,11 @@ PDFs profissionais  3 (README · ENG_REVERSA · PRODUTO_TESE_ROADMAP)
 ## ✦ Estrutura
 
 ```
-radiant-sentinel/
-├── backend/                     ★★ API REST + Sentinel Audit
+radiant-norma/
+├── backend/                     ★★ API REST + Norma Audit
 │   ├── cmd/{api,seed}/          entrypoints
 │   ├── internal/
-│   │   ├── audit/               Sentinel Audit (L1+L2 portado)
+│   │   ├── audit/               Norma Audit (L1+L2 portado)
 │   │   ├── schema/              Schema Registry
 │   │   ├── auditlog/            Hash chain tamper-evident
 │   │   ├── sta/                 STA client (stub → real)
@@ -207,7 +207,7 @@ radiant-sentinel/
 │
 ├── tools/                       ★ Spikes Go (Sprint 2)
 │   ├── xsdgen/                  gera XSD a partir de leiautes.json
-│   └── sentinel-audit/          CLI que executa regras 3040
+│   └── norma-audit/          CLI que executa regras 3040
 │
 ├── _catalogos/                  ★ 1.099 críticas + 4.244 leiautes (JSON)
 │   ├── criticas.json            regras semânticas portadas
@@ -238,7 +238,7 @@ radiant-sentinel/
 
 | Decisão | Razão |
 |---|---|
-| **Nome: Radiant Sentinel** | "Sentinel" carrega sozinho; Radiant é a marca umbrella Fortvna |
+| **Nome: Radiant Norma** | "Norma" carrega sozinho; Radiant é a marca umbrella Fortvna |
 | **4 camadas de Audit** | L3 (cross-doc) e L4 (histórico) são exclusivos vs BCValidador |
 | **Schema Registry por data-base** | A cada release BACEN, IF não mexe em código |
 | **DRSAC ESG first-mover** | Janela IN BCB 694/2025, vigência dez/2026, ninguém cobre |
@@ -280,7 +280,7 @@ Esse repositório foi construído com uma stack de agentes IA:
 
 ## ✦ Licença
 
-<strong>© 2026 Fortvna Risk Solutions</strong> · Marca *Radiant Risk Solutions* · Produto *Radiant Sentinel* · Henrique Costa
+<strong>© 2026 Fortvna Risk Solutions</strong> · Marca *Radiant* · Produto *Radiant Norma* · Henrique Costa
 
 Repositório privado. Acesso por convite.
 
@@ -295,7 +295,7 @@ Construído em <strong>3 sprints</strong> · <strong>~30 horas úteis</strong> �
 <br>
 
 <sub>
-<sub>Radiant</sub> <sup>·</sup> <sub>Sentinel</sub> <sup>·</sup> <sub>ESG</sub> <sup>·</sup> <sub>Radar</sub> <sup>·</sup> <sub>Connect</sub> <sup>·</sup> <sub>Audit</sub>
+<sub>Radiant</sub> <sup>·</sup> <sub>Norma</sub> <sup>·</sup> <sub>ESG</sub> <sup>·</sup> <sub>Radar</sub> <sup>·</sup> <sub>Connect</sub> <sup>·</sup> <sub>Audit</sub>
 </sub>
 
 </div>

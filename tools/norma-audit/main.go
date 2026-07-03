@@ -1,9 +1,9 @@
-// sentinel-audit: executa as primeiras 5 críticas do 3040 contra um XML de exemplo
-// (Radiant Sentinel — Sprint 2 / T.2)
+// norma-audit: executa as primeiras 5 críticas do 3040 contra um XML de exemplo
+// (Radiant Norma — Sprint 2 / T.2)
 //
 // Uso:
 //   cd tools/
-//   go run ./sentinel-audit -xml ../3040/exemploDesempenhoOperacao.xml
+//   go run ./norma-audit -xml ../3040/exemploDesempenhoOperacao.xml
 //
 // Implementa regras B01-B05 da planilha SCR3040_Criticas.xls:
 //   B01: arquivo XML deve ser válido contra XSD
@@ -137,7 +137,7 @@ func main() {
 	flag.Parse()
 
 	fmt.Println("═══════════════════════════════════════════════════════")
-	fmt.Println("  Radiant Sentinel Audit — Sprint 2 / T.2")
+	fmt.Println("  Radiant Norma Audit — Sprint 2 / T.2")
 	fmt.Println("═══════════════════════════════════════════════════════")
 	fmt.Printf("XML: %s\n", *xmlPath)
 	fmt.Printf("Catálogo: %s\n\n", *jsonPath)

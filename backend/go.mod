@@ -1,4 +1,4 @@
-module github.com/fortvna/radiant-sentinel/backend
+module github.com/fortvna/radiant-norma/backend
 
 go 1.25.0
 

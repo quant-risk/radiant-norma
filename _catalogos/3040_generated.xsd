@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- XSD gerado automaticamente por Radiant Sentinel xsdgen a partir de leiautes.json (SCR3040_Leiaute.xls) -->
+<!-- XSD gerado automaticamente por Radiant Norma xsdgen a partir de leiautes.json (SCR3040_Leiaute.xls) -->
 <!-- NÃO É OFICIAL — BACEN só publica XSD de 3045 e 3026 -->
 <!-- Use com cautela: tipos BACEN foram mapeados genericamente para xs:string/decimal -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">

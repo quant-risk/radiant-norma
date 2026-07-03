@@ -3,8 +3,8 @@
     "description": "Catálogo consolidado de regras de validação (críticas) dos CADOCs BACEN",
     "fonte": "Planilhas oficiais BACEN (Deinf/Dine4 / áreas técnicas)",
     "data_extracao": "2026-07-03T14:17:25",
-    "autor": "Mavis · Radiant Risk Solutions",
-    "uso": "Sentinel Audit L2 (validação semântica) — base para reimplementação em Go",
+    "autor": "Mavis · Radiant",
+    "uso": "Norma Audit L2 (validação semântica) — base para reimplementação em Go",
     "total_cadocs": 6,
     "total_criticas": 1099
   },

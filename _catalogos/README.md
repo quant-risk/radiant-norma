@@ -1,6 +1,6 @@
-# Catálogo Radiant Sentinel — Críticas e Leiautes BACEN
+# Catálogo Radiant Norma — Críticas e Leiautes BACEN
 
-> **Base estruturada de validação para o Sentinel Audit (Radiant Sentinel).**
+> **Base estruturada de validação para o Norma Audit (Radiant Norma).**
 > Críticas + leiautes extraídos das planilhas oficiais do BACEN, em formato JSON pronto pra reimplementação em Go.
 
 ## Arquivos
@@ -39,7 +39,7 @@
 | **2160 DRL** | `2160-DRL/2160_DRL_Leiaute.xlsx` | 516 |
 | **TOTAL** | — | **4.244** |
 
-## Como o Sentinel Audit usa estes dados
+## Como o Norma Audit usa estes dados
 
 ### Camada L1 — Validação estrutural (XSD)
 
@@ -81,12 +81,12 @@ func (c *Critica) Validate(doc *Document) []ValidationError {
 }
 ```
 
-### Camada L3 — Cross-doc (Radiant Sentinel exclusivo)
+### Camada L3 — Cross-doc (Radiant Norma exclusivo)
 
 Cruza documentos carregados — ex: 3040 vs 4111, 3040 vs DRSAC, 3050 vs 4111.
 **NÃO existe no BACEN. Diferencial proprietário.**
 
-### Camada L4 — Histórico (Radiant Sentinel exclusivo)
+### Camada L4 — Histórico (Radiant Norma exclusivo)
 
 Diff vs base anterior — ex: queda suspeita de 80% no saldo.
 **NÃO existe no BACEN. Diferencial proprietário.**
@@ -163,9 +163,9 @@ Pré-requisitos:
 3. **Procurar 2030 DRSAC críticas** em URL alternativa
 4. **Normalizar data-base** das críticas (YYYY-MM vs AAAAMM vs serial Excel)
 5. **Gerar XSD Go** a partir do `leiautes.json`
-6. **Implementar Sentinel Audit L1+L2** em Go usando esses JSONs como seed
+6. **Implementar Norma Audit L1+L2** em Go usando esses JSONs como seed
 
 ---
 
-**Radiant Sentinel · Radiant Risk Solutions (marca da Fortvna)**
+**Radiant Norma · Radiant ()**
 **Data-base:** 2026-07-03 · **Autor:** Mavis

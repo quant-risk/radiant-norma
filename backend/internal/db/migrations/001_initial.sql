@@ -1,4 +1,4 @@
--- Radiant Sentinel — Schema inicial v1
+-- Radiant Norma — Schema inicial v1
 -- Sprint 3 (P0.2)
 
 -- ============================================================

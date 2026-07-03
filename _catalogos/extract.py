@@ -222,7 +222,7 @@ def extract_leiautes(sheets, cadoc_code: str, source: str) -> dict:
 
 def main():
     log("=" * 60)
-    log("EXTRAÇÃO REFINADA v3 — Radiant Sentinel")
+    log("EXTRAÇÃO REFINADA v3 — Radiant Norma")
     log("=" * 60)
 
     criticas_total = {}
@@ -293,8 +293,8 @@ def main():
                 "description": "Catálogo consolidado de regras de validação (críticas) dos CADOCs BACEN",
                 "fonte": "Planilhas oficiais BACEN (Deinf/Dine4 / áreas técnicas)",
                 "data_extracao": datetime.now().isoformat(timespec="seconds"),
-                "autor": "Mavis · Radiant Risk Solutions",
-                "uso": "Sentinel Audit L2 (validação semântica) — base para reimplementação em Go",
+                "autor": "Mavis · Radiant",
+                "uso": "Norma Audit L2 (validação semântica) — base para reimplementação em Go",
                 "total_cadocs": len(criticas_total),
                 "total_criticas": sum(len(v) for v in criticas_total.values()),
             },
@@ -308,7 +308,7 @@ def main():
                 "description": "Catálogo consolidado de leiautes (estrutura de campos) dos CADOCs BACEN",
                 "fonte": "Planilhas oficiais BACEN",
                 "data_extracao": datetime.now().isoformat(timespec="seconds"),
-                "autor": "Mavis · Radiant Risk Solutions",
+                "autor": "Mavis · Radiant",
                 "uso": "Schema Registry + XSD generator — base para L1 (validação estrutural)",
                 "total_cadocs": len(leiautes_total),
                 "total_rows": sum(v["total_rows"] for v in leiautes_total.values()),

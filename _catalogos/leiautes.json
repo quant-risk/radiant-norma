@@ -3,7 +3,7 @@
     "description": "Catálogo consolidado de leiautes (estrutura de campos) dos CADOCs BACEN",
     "fonte": "Planilhas oficiais BACEN",
     "data_extracao": "2026-07-03T14:17:25",
-    "autor": "Mavis · Radiant Risk Solutions",
+    "autor": "Mavis · Radiant",
     "uso": "Schema Registry + XSD generator — base para L1 (validação estrutural)",
     "total_cadocs": 8,
     "total_rows": 4244

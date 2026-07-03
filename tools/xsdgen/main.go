@@ -1,4 +1,4 @@
-// xsdgen: gera XSD do CADOC 3040 a partir de leiautes.json (Radiant Sentinel)
+// xsdgen: gera XSD do CADOC 3040 a partir de leiautes.json (Radiant Norma)
 //
 // Uso:
 //   cd tools/
@@ -78,7 +78,7 @@ func main() {
 	// Gera XSD básico
 	var b strings.Builder
 	b.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-	b.WriteString(fmt.Sprintf("<!-- XSD gerado automaticamente por Radiant Sentinel xsdgen a partir de leiautes.json (%s) -->\n", lei.Source))
+	b.WriteString(fmt.Sprintf("<!-- XSD gerado automaticamente por Radiant Norma xsdgen a partir de leiautes.json (%s) -->\n", lei.Source))
 	b.WriteString("<!-- NÃO É OFICIAL — BACEN só publica XSD de 3045 e 3026 -->\n")
 	b.WriteString("<!-- Use com cautela: tipos BACEN foram mapeados genericamente para xs:string/decimal -->\n")
 	b.WriteString("<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" elementFormDefault=\"qualified\">\n\n")

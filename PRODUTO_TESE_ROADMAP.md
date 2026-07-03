@@ -1,26 +1,26 @@
-# Radiant Sentinel — Produto · Tese · Roadmap
+# Radiant Norma — Produto · Tese · Roadmap
 
-> **Radiant Sentinel é a sentinela regulatória da Radiant Risk Solutions (marca da Fortvna) — plataforma SaaS de CADOCs BACEN que compete contra Mitra (LUZ), Matera, cadoc.ai, Dattos e outros, entendendo que o cliente é uma instituição financeira regulada (banco, SCD, IP, cooperativa, DTVM) e que isso muda tudo: ciclo de venda, due diligence, certificações obrigatórias, regime de compliance.**
+> **Radiant Norma é a inteligência regulatória da Radiant () — plataforma SaaS de CADOCs BACEN que compete contra Mitra (LUZ), Matera, cadoc.ai, Dattos e outros, entendendo que o cliente é uma instituição financeira regulada (banco, SCD, IP, cooperativa, DTVM) e que isso muda tudo: ciclo de venda, due diligence, certificações obrigatórias, regime de compliance.**
 >
-> **Tagline:** *"Radiant Sentinel — sentinela regulatória pra IF brasileira."*
+> **Tagline:** *"Radiant Norma — inteligência regulatória pra IF brasileira."*
 > **Sub-tagline:** *"Sob a égide da Radiant, sua IF na norma."*
 
 Esta é a **terceira peça** da base documental, complementando:
 - `README.md` — mapa do material capturado (BACEN + concorrentes)
 - `ENG_REVERSA.md` — análise técnica de concorrentes e gaps
 
-**Marca-mãe:** Radiant Risk Solutions (marca Radiant, da Fortvna Risk Solutions)
-**Produto:** Radiant Sentinel
-**Sub-produtos da família:** Sentinel ESG · Sentinel Radar · Sentinel Connect · Sentinel Studio · Sentinel Audit
-**Planos:** Sentinel Lite · Sentinel Pro · Sentinel Scale · Sentinel Enterprise
+**Marca-mãe:** Radiant (marca Radiant, da Fortvna Risk Solutions)
+**Produto:** Radiant Norma
+**Sub-produtos da família:** Norma ESG · Norma Radar · Norma Connect · Norma Studio · Norma Audit
+**Planos:** Norma Lite · Norma Pro · Norma Scale · Norma Enterprise
 
-Data-base: **2026-07-03**. Autoria: Mavis · Radiant Risk Solutions.
+Data-base: **2026-07-03**. Autoria: Mavis · Radiant.
 
 ---
 
-## 1. TESE — Radiant Sentinel (em uma frase + desdobramentos)
+## 1. TESE — Radiant Norma (em uma frase + desdobramentos)
 
-> **"A corrida regulatória 2024-2027 (IN BCB 530/2024 [3044], IN BCB 733/2026 [3040], IN BCB 754/2025 [4111], IN BCB 694/2025 [DRSAC], Res BCB 139/2022 [GRSAC], Res BCB 205 [Basileia 4.0]) criou uma janela de adaptação obrigatória em todas as ~2.000 IFs brasileiras. IFs que tratam CADOCs como commodity operacional (geração+envio manual) serão reprocessadas ou pagarão multas a cada virada de data-base. Radiant Sentinel é a sentinela que nunca dorme: (1) plataforma que abstrai mudanças de leiaute sem retrabalho, (2) radar regulatório proativo, e (3) cross-doc automática — vendendo tranquilidade, não XML."**
+> **"A corrida regulatória 2024-2027 (IN BCB 530/2024 [3044], IN BCB 733/2026 [3040], IN BCB 754/2025 [4111], IN BCB 694/2025 [DRSAC], Res BCB 139/2022 [GRSAC], Res BCB 205 [Basileia 4.0]) criou uma janela de adaptação obrigatória em todas as ~2.000 IFs brasileiras. IFs que tratam CADOCs como commodity operacional (geração+envio manual) serão reprocessadas ou pagarão multas a cada virada de data-base. Radiant Norma é a normaa que nunca dorme: (1) plataforma que abstrai mudanças de leiaute sem retrabalho, (2) radar regulatório proativo, e (3) cross-doc automática — vendendo tranquilidade, não XML."**
 
 **3 teses paralelas que se reforçam:**
 
@@ -28,10 +28,10 @@ Data-base: **2026-07-03**. Autoria: Mavis · Radiant Risk Solutions.
 
 IFs gastam 1-3 pessoas a 100% do tempo gerando, validando e enviando CADOCs todo mês. Quando o BACEN muda o leiaute (3-5x/ano), refazem tudo. IFs não compram gerador de XML — compram **tranquilidade** de que o sistema se adapta automaticamente.
 
-**Radiant Sentinel entrega:**
+**Radiant Norma entrega:**
 - **Schema Registry versionado por data-base**: cada release BACEN entra como nova versão, IF não mexe em código.
-- **Validador semântico pré-envio** (Sentinel Audit): reusa a planilha `SCR3040_Criticas.xls` como regras vivas.
-- **Cross-doc engine** (Sentinel Radar): detecta "3040 diz X mas 4111 diz Y; quem está errado?" — feature que ninguém tem.
+- **Validador semântico pré-envio** (Norma Audit): reusa a planilha `SCR3040_Criticas.xls` como regras vivas.
+- **Cross-doc engine** (Norma Radar): detecta "3040 diz X mas 4111 diz Y; quem está errado?" — feature que ninguém tem.
 
 ### Tese 2 — ESG/DRSAC é first-mover em vertical sub-explorada
 
@@ -42,7 +42,7 @@ CADOC 2030 (DRSAC — Risco Social, Ambiental e Climático):
 - Cruzamento com 3040 via IPOC + saldo devedor — **cross-doc real**
 - **Nenhum concorrente SaaS cobre direito**: B3Bee é consultoria, Matera mete dentro do RegTech, cadoc.ai cita de passagem
 
-**Módulo Sentinel ESG** da Radiant Sentinel captura essa janela.
+**Módulo Norma ESG** da Radiant Norma captura essa janela.
 
 ### Tese 3 — Mid-market tem fit perfeito pra SaaS acessíveis
 
@@ -53,7 +53,7 @@ CADOC 2030 (DRSAC — Risco Social, Ambiental e Climático):
 | IP (instituição de pagamento) | Altos volumes de eventos (3044) | Paga caro por Dattos/similar |
 | Fintech "BaaS" | 50 clientes SCD perguntam se oferece CADOC | Tem que montar do zero |
 
-**Radiant Sentinel Lite** (R$ 1,5k/mês, onboarding 15 min) + **white-label** para Fintechs BaaS = impossível de Matera igualar (modelo de consultoria).
+**Radiant Norma Lite** (R$ 1,5k/mês, onboarding 15 min) + **white-label** para Fintechs BaaS = impossível de Matera igualar (modelo de consultoria).
 
 ---
 
@@ -98,7 +98,7 @@ Pra **Banco**: comitê (CTO + Risco + Compliance + Compras + Jurídico). 3-9 mes
 
 **Inbound (curto prazo):**
 - SEO: "gerador CADOC 3040", "como enviar 3044 JSON", "DRSAC compliance", "RADAR regulatório BACEN"
-- Conteúdo: blog Mavis (já existe da Radiant Risk Solutions) com 1 case/mês
+- Conteúdo: blog Mavis (já existe da Radiant) com 1 case/mês
 - LinkedIn outbound do Henrique + dos fundadores Radiant/Fortvna
 
 **Outbound (médio prazo):**
@@ -145,18 +145,18 @@ IF regulada tem **muitos gatekeepers**. Mapeamento de quem fala com quem:
 
 ---
 
-## 4. PRODUTO — fases V0 → V3 (Radiant Sentinel)
+## 4. PRODUTO — fases V0 → V3 (Radiant Norma)
 
-### V0 — Beta fechado "Sentinel Pilot" (semanas 1-8)
+### V0 — Beta fechado "Norma Pilot" (semanas 1-8)
 
 **Objetivo:** validar com 2-3 SCDs-piloto que o fluxo resolve a dor.
 
 Features:
-- ✅ **CLI Go Sentinel**: `sentinel read-xlsx --file base.xlsx --validate > 3040.xml.zip`
+- ✅ **CLI Go Norma**: `norma read-xlsx --file base.xlsx --validate > 3040.xml.zip`
 - ✅ 3040 + 3050 + 3044 (JSON)
 - ✅ Validador XSD + semântico (planilha críticas reimplementada)
-- ✅ Landing page `radiant-sentinel.com.br` + pricing público
-- ✅ 2-3 SCDs-piloto com 90 dias grátis (Sentinel Pilot Program)
+- ✅ Landing page `radiant-norma.com.br` + pricing público
+- ✅ 2-3 SCDs-piloto com 90 dias grátis (Norma Pilot Program)
 
 **Métricas de sucesso:**
 - 2-3 SCDs com envio real OK no STA
@@ -164,31 +164,31 @@ Features:
 - Zero multa BACEN atribuível ao SaaS
 - 50% conversam em pagante
 
-### V1 — SaaS comercial "Sentinel Launch" (meses 3-6)
+### V1 — SaaS comercial "Norma Launch" (meses 3-6)
 
 **Objetivo:** R$ 50k MRR com 10-15 IFs ativas.
 
 Features:
-- ✅ Backend Go + API REST + frontend Next.js (Sentinel Console)
+- ✅ Backend Go + API REST + frontend Next.js (Norma Console)
 - ✅ Multi-tenant (cada IF isolada)
-- ✅ **Sentinel Console**: dashboard regulatório com calendário de prazos, status de cada documento, críticas em tempo real
-- ✅ **Sentinel ESG** — first-mover DRSAC 2030
-- ✅ **Sentinel Audit** — log completo (quem enviou, quando, com qual leiaute)
+- ✅ **Norma Console**: dashboard regulatório com calendário de prazos, status de cada documento, críticas em tempo real
+- ✅ **Norma ESG** — first-mover DRSAC 2030
+- ✅ **Norma Audit** — log completo (quem enviou, quando, com qual leiaute)
 - ✅ **STA Web** automação (Playwright no MVP, WS nativo em V1.5)
 - ✅ Auth: SSO gov.br + email+2FA
 - ✅ LGPD-compliant: DPA, criptografia at rest/in transit, DPIA, DPO de plantão
-- ✅ **Sentinel Radar** — alerta de mudanças de leiaute (push email + in-app)
+- ✅ **Norma Radar** — alerta de mudanças de leiaute (push email + in-app)
 - ✅ Multitenancy + white-label opcional (BaaS Fintech)
 
-**Planos Radiant Sentinel:**
+**Planos Radiant Norma:**
 | Plano | Preço | Inclui |
 |---|---|---|
-| **Sentinel Lite** | R$ 1.500/mês | 1 IF, 3 CADOCs à escolha, 50 envios/mês, suporte email |
-| **Sentinel Pro** | R$ 4.500/mês | 1 IF, todos os CADOCs, envios ilimitados, **Sentinel Radar** |
-| **Sentinel Scale** | R$ 12.000/mês | Multi-tenant, white-label, SLA 99.9%, integrações |
-| **Sentinel Enterprise** | Sob consulta | Self-host on-prem, dedicated, gerente de conta, pen test |
+| **Norma Lite** | R$ 1.500/mês | 1 IF, 3 CADOCs à escolha, 50 envios/mês, suporte email |
+| **Norma Pro** | R$ 4.500/mês | 1 IF, todos os CADOCs, envios ilimitados, **Norma Radar** |
+| **Norma Scale** | R$ 12.000/mês | Multi-tenant, white-label, SLA 99.9%, integrações |
+| **Norma Enterprise** | Sob consulta | Self-host on-prem, dedicated, gerente de conta, pen test |
 
-### V1.5 — STA nativo "Sentinel Direct" (meses 6-8)
+### V1.5 — STA nativo "Norma Direct" (meses 6-8)
 
 - Substituir Playwright por STA Web Services nativo (REST)
 - Suporte a A1 (certificado digital ICP-Brasil em arquivo) e A3 (token físico)
@@ -196,21 +196,21 @@ Features:
 - Hash SHA-256 antes do envio
 - Logs de protocolo STA (até 18 dígitos numérico)
 
-### V2 — Diferenciação "Sentinel Intelligence" (meses 9-12)
+### V2 — Diferenciação "Norma Intelligence" (meses 9-12)
 
 Features:
-- ✅ **Sentinel ESG** v2: wizard cruzar PRSAC ↔ DRSAC ↔ GRSAC (Res BCB 139/2022) automaticamente
-- ✅ **Sentinel Radar** v2: cross-doc engine detecta inconsistências entre 3040 ↔ 4111 ↔ 4060 ↔ DRSAC
+- ✅ **Norma ESG** v2: wizard cruzar PRSAC ↔ DRSAC ↔ GRSAC (Res BCB 139/2022) automaticamente
+- ✅ **Norma Radar** v2: cross-doc engine detecta inconsistências entre 3040 ↔ 4111 ↔ 4060 ↔ DRSAC
 - ✅ **SOC 2 Type I** (preparação 6 meses)
 - ✅ **Self-host opcional** (Helm chart Kubernetes)
-- ✅ **Sentinel Connect** — Open API pública + Webhooks (`cadoc.validated`, `cadoc.sent`, `cadoc.failed`)
+- ✅ **Norma Connect** — Open API pública + Webhooks (`cadoc.validated`, `cadoc.sent`, `cadoc.failed`)
 - ✅ Integração nativa com Topázio, Sinacor, ERPs bancários
 - ✅ Simulador "what-if" pra DRSAC (impacto de mudança regulatória)
 
-### V3 — Plataforma "Sentinel Network" (meses 13-18+)
+### V3 — Plataforma "Norma Network" (meses 13-18+)
 
 - Outros reportes: DIMP (PIX), CCS, COAF, CVM
-- **Sentinel Studio** — workspace low-code pra IFs customizarem templates
+- **Norma Studio** — workspace low-code pra IFs customizarem templates
 - Marketplace de IFs/consultorias
 - Self-host enterprise
 - Expansão LatAm (BACEN equivalente na Argentina, Chile)
@@ -222,26 +222,26 @@ Features:
 
 ## 5. Arquitetura técnica
 
-### Stack Radiant (Go-heavy, alinhado à Radiant Risk Solutions)
+### Stack Radiant (Go-heavy, alinhado à Radiant)
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│  SENTINEL CONSOLE — Next.js 14 + TypeScript + Tailwind         │
-│  Sentinel Dashboard, Sentinel ESG, Sentinel Audit, Calendar     │
+│  NORMA CONSOLE — Next.js 14 + TypeScript + Tailwind         │
+│  Norma Dashboard, Norma ESG, Norma Audit, Calendar     │
 │  Vercel + Cloudflare CDN                                         │
 └────────────────────────────────┬───────────────────────────────┘
-                                 │ REST + Webhooks (Sentinel Connect)
+                                 │ REST + Webhooks (Norma Connect)
                                  ▼
 ┌────────────────────────────────────────────────────────────────┐
-│  SENTINEL GATEWAY — Go (chi router), OpenAPI, OAuth2 + JWT     │
-│  Rate limit, Sentinel Audit (tamper-evident log)               │
+│  NORMA GATEWAY — Go (chi router), OpenAPI, OAuth2 + JWT     │
+│  Rate limit, Norma Audit (tamper-evident log)               │
 │  Multi-tenancy via header X-IF-ID                               │
 └────────────────────────────────┬───────────────────────────────┘
                                  │
    ┌─────────────────────────────┼─────────────────────────────┐
    ▼                             ▼                             ▼
 ┌────────────────┐    ┌────────────────────┐       ┌──────────────────┐
-│  SENTINEL      │    │  SENTINEL CORE       │       │  SENTINEL RADAR  │
+│  NORMA      │    │  NORMA CORE       │       │  NORMA RADAR  │
 │  REGISTRY      │    │  (Pipeline)          │       │  Go + Crawler     │
 │  Postgres      │    │  Go                   │       │  BACEN            │
 │                │    │                       │       │  Diff leiaute     │
@@ -251,12 +251,12 @@ Features:
 │ - Envios       │    │ - Critique validate   │       └──────────────────┘
 │ - Audit log    │    │ - Cross-doc check     │
 │                │    │ - ZIP pack            │
-└────────────────┘    │ - Sentinel ESG wizard │
+└────────────────┘    │ - Norma ESG wizard │
                        └────────────────────┘
                                   │
                                   ▼
                         ┌────────────────────┐
-                        │  SENTINEL DELIVERY  │
+                        │  NORMA DELIVERY  │
                         │  STA Web / WS       │
                         │  Retry queue        │
                         │  Cert A1/A3         │
@@ -266,7 +266,7 @@ Features:
 
 ### Componentes críticos
 
-**1. Sentinel Registry (Postgres + JSON Schema):**
+**1. Norma Registry (Postgres + JSON Schema):**
 ```sql
 CREATE TABLE schema_versions (
   cadoc_code   VARCHAR(4),     -- '3040', '2030'
@@ -279,26 +279,26 @@ CREATE TABLE schema_versions (
 );
 ```
 
-**2. Sentinel Audit — Validador multi-camada:**
+**2. Norma Audit — Validador multi-camada:**
 - **L1 (XSD):** sintaxe de XML, tipos de dados, obrigatoriedade
 - **L2 (Semântica):** reimplementação das críticas BACEN (`SCR3040_Criticas.xls` → Go rules)
 - **L3 (Cross-doc):** 3040 ↔ 4111 ↔ 4060 ↔ DRSAC (regra de consistência)
 - **L4 (Histórico):** diff vs. base anterior (mudanças suspeitas)
 
-**3. Sentinel Delivery — STA Client (Go):**
+**3. Norma Delivery — STA Client (Go):**
 - Modo 1 (Playwright) em V1 → modo 2 (WS nativo) em V1.5
 - Auth via certificado A1/A3 (PEM/tokens)
 - Hash SHA-256 pré-envio
 - Fila com retry exponencial (jitter)
 - 10 upload simultâneos/IF (limite BACEN)
 
-**4. Sentinel Radar — Crawler regulatório:**
+**4. Norma Radar — Crawler regulatório:**
 - Crawler diário do `bcb.gov.br/estabilidadefinanceira`
 - Detecta mudanças em `leiautedocumentoscrd` (diff XLSX)
 - Notificações push + alerta in-app
 - LLM opcional para explicar impacto em linguagem natural
 
-**5. Sentinel ESG — Wizard DRSAC:**
+**5. Norma ESG — Wizard DRSAC:**
 - Cruzar PRSAC ↔ DRSAC ↔ GRSAC (Res BCB 139/2022)
 - 25-47 campos de avaliação por nível
 - Integração com CNAE setorial + COSIF
@@ -309,7 +309,7 @@ CREATE TABLE schema_versions (
 - IF faz upload do XLSX preenchido → geramos XML → validamos → sugerimos correções
 - Alternativa: integração via API com core banking
 
-### Compliance nativo no código (Radiant Sentinel)
+### Compliance nativo no código (Radiant Norma)
 
 - **Criptografia at-rest**: Postgres AES-256, S3 SSE-KMS, volumes EBS criptografados
 - **Criptografia in-transit**: TLS 1.3, HSTS, mTLS entre serviços internos
@@ -324,10 +324,10 @@ CREATE TABLE schema_versions (
 
 #### Filosofia de produto
 
-Radiant Sentinel é desenhada com **três princípios**:
+Radiant Norma é desenhada com **três princípios**:
 
 1. **Compliance Officer não é dev** — UI é **Excel-friendly** (eles vivem em planilha) com wizard visual
-2. **Compliance Officer não confia em "mágica"** — toda transformação é auditável (Sentinel Audit mostra origem de cada campo)
+2. **Compliance Officer não confia em "mágica"** — toda transformação é auditável (Norma Audit mostra origem de cada campo)
 3. **Compliance Officer tem pressa** — onboarding 15 min, sem instalação, sem treinamento
 
 #### Jornada do usuário — fluxo end-to-end
@@ -336,7 +336,7 @@ Radiant Sentinel é desenhada com **três princípios**:
 ┌─────────────────────────────────────────────────────────────────────┐
 │  PASSO 1 — LOGIN                                                    │
 │  ┌───────────────────────────────────────────────────────────────┐  │
-│  │  [Logo Radiant Sentinel]                                       │  │
+│  │  [Logo Radiant Norma]                                       │  │
 │  │                                                                │  │
 │  │  Bem-vindo de volta, Carla.                                    │  │
 │  │                                                                │  │
@@ -347,7 +347,7 @@ Radiant Sentinel é desenhada com **três princípios**:
 └─────────────────────────────────────────────────────────────────────┘
             ↓
 ┌─────────────────────────────────────────────────────────────────────┐
-│  PASSO 2 — SENTINEL CONSOLE (Dashboard principal)                   │
+│  PASSO 2 — NORMA CONSOLE (Dashboard principal)                   │
 │  ┌───────────────────────────────────────────────────────────────┐  │
 │  │  ╭─ Calendário Regulatório ────────────────────────────────╮   │  │
 │  │  │ ◀ Julho 2026 ▶                                           │   │  │
@@ -365,7 +365,7 @@ Radiant Sentinel é desenhada com **três princípios**:
 │  │  │ 🔴 4111 (jun) — Vence 15/07, **NÃO INICIADO**           │   │  │
 │  │  ╰─────────────────────────────────────────────────────────╯   │  │
 │  │                                                                 │  │
-│  │  ╭─ Sentinel Radar — Alertas ──────────────────────────────╮   │  │
+│  │  ╭─ Norma Radar — Alertas ──────────────────────────────╮   │  │
 │  │  │ 🟡 IN BCB 733/2026 — 3040 muda em 01/08 (15 dias)         │   │  │
 │  │  │    → Ação recomendada: revisar schema 3040 v2026.08        │   │  │
 │  │  │ 🟢 Sem mudanças em 3050 e 4111                             │   │  │
@@ -390,7 +390,7 @@ Radiant Sentinel é desenhada com **três princípios**:
 └─────────────────────────────────────────────────────────────────────┘
             ↓
 ┌─────────────────────────────────────────────────────────────────────┐
-│  PASSO 4 — VALIDAÇÃO (Sentinel Audit + L1/L2/L3/L4)                 │
+│  PASSO 4 — VALIDAÇÃO (Norma Audit + L1/L2/L3/L4)                 │
 │  ┌───────────────────────────────────────────────────────────────┐  │
 │  │  🔍 Validando base_2026-07.xlsx                               │  │
 │  │  ────────────────────────────────────────────────              │  │
@@ -408,7 +408,7 @@ Radiant Sentinel é desenhada com **três princípios**:
 └─────────────────────────────────────────────────────────────────────┘
             ↓
 ┌─────────────────────────────────────────────────────────────────────┐
-│  PASSO 5 — PREVIEW + ENVIO (Sentinel Delivery)                     │
+│  PASSO 5 — PREVIEW + ENVIO (Norma Delivery)                     │
 │  ┌───────────────────────────────────────────────────────────────┐  │
 │  │  📦 ZIP gerado: 3040_2026-07_IF1234_202607031530.zip          │  │
 │  │  SHA-256: a1b2c3d4e5f6...                                     │  │
@@ -427,7 +427,7 @@ Radiant Sentinel é desenhada com **três princípios**:
 │  │  Protocolo STA: 20260703153045IF1234                           │  │
 │  │  Hash: a1b2c3d4...                                            │  │
 │  │                                                                │  │
-│  │  [Ver no STA]  [Sentinel Audit]  [Voltar ao Console]           │  │
+│  │  [Ver no STA]  [Norma Audit]  [Voltar ao Console]           │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -440,18 +440,18 @@ Radiant Sentinel é desenhada com **três princípios**:
 - **Drop zone:** react-dropzone (drag & drop XLSX)
 - **Tabelas complexas:** TanStack Table (preview do XML antes do envio)
 - **Charts:** Recharts (dashboard com histórico de envios)
-- **Notificações:** Sonner (toasts) + WebSocket push (Sentinel Radar)
+- **Notificações:** Sonner (toasts) + WebSocket push (Norma Radar)
 - **Auth:** NextAuth.js com provedor gov.br + credenciais email+2FA
 - **i18n:** pt-BR primário, en secundário
 
 #### Princípios de UX aplicados
 
-| Princípio | Como aparece na Radiant Sentinel |
+| Princípio | Como aparece na Radiant Norma |
 |---|---|
 | **Não obriga mudar planilha** | Aceita XLSX no formato que a IF já usa |
 | **Mostra antes de enviar** | Preview XML + diff antes do envio |
 | **Erro acionável** | Cada crítica vem com link "Como corrigir" |
-| **Auditável por construção** | Sentinel Audit registra tudo |
+| **Auditável por construção** | Norma Audit registra tudo |
 | **Mobile-friendly** | Compliance Officer checa status no celular |
 | **Acessibilidade (WCAG AA)** | Contraste, navegação por teclado, ARIA |
 | **Onboarding 15 min** | Wizard inicial com 1 CADOC como exemplo |
@@ -460,7 +460,7 @@ Radiant Sentinel é desenhada com **três princípios**:
 
 | Integração | Tipo | Quando |
 |---|---|---|
-| **Sentinel Connect API** | REST + Webhooks (público) | V1 |
+| **Norma Connect API** | REST + Webhooks (público) | V1 |
 | **STA Web / WS** | Cliente BACEN (oficial) | V1 → V1.5 |
 | **Topázio** (banco core) | Adapter de extração | V2 |
 | **Sinacor** (corretora) | Adapter de extração | V2 |
@@ -481,7 +481,7 @@ IFs não compram SaaS qualquer. Precisamos atender:
 
 | Requisito | Como atendemos |
 |---|---|
-| Encarregado (DPO) | DPO de plantão via Radiant Risk Solutions, contrato SLA |
+| Encarregado (DPO) | DPO de plantão via Radiant, contrato SLA |
 | Encarregado designado | Oferecemos DPO as a service pra SCD pequena |
 | DPIA (Relatório de Impacto) | Feito e atualizado anualmente |
 | Cláusulas de operador (art. 39) | DPA anexo ao contrato com IF |
@@ -541,9 +541,9 @@ Pra entrar em qualquer banco S3-S4+, **anexa-se um pacote de**:
 
 ---
 
-## 6.5 ★ Catálogo Estruturado — base do Sentinel Audit
+## 6.5 ★ Catálogo Estruturado — base do Norma Audit
 
-Em **2026-07-03**, extraí todas as planilhas BACEN (críticas + leiautes) para JSON estruturado na pasta `_catalogos/`. Esta é a **base direta do Sentinel Audit**.
+Em **2026-07-03**, extraí todas as planilhas BACEN (críticas + leiautes) para JSON estruturado na pasta `_catalogos/`. Esta é a **base direta do Norma Audit**.
 
 ### Estatísticas
 
@@ -552,7 +552,7 @@ Em **2026-07-03**, extraí todas as planilhas BACEN (críticas + leiautes) para 
 | **`_catalogos/criticas.json`** | 4 (3040, 3050, 2061 DLO, 2070 DDR) | **1.081 regras de validação** |
 | **`_catalogos/leiautes.json`** | 8 (3040, 3042, 3050, 2030 DRSAC, 2060 DRM, 2062 DLI, 2070 DDR, 2160 DRL) | **4.244 linhas de campos** |
 
-### Como o Sentinel Audit usa o catálogo
+### Como o Norma Audit usa o catálogo
 
 | Camada | O que valida | Fonte de dados |
 |---|---|---|
@@ -563,7 +563,7 @@ Em **2026-07-03**, extraí todas as planilhas BACEN (críticas + leiautes) para 
 
 ### Diferencial vs BCValidador (BACEN)
 
-| Capability | BCValidador BACEN | Sentinel Audit Radiant |
+| Capability | BCValidador BACEN | Norma Audit Radiant |
 |---|---|---|
 | L1 XSD | ✅ | ✅ |
 | L2 Semântico | ✅ | ✅ |
@@ -574,7 +574,7 @@ Em **2026-07-03**, extraí todas as planilhas BACEN (críticas + leiautes) para 
 | LGPD compliance | ❌ | ✅ |
 | Multi-tenant SaaS | ❌ | ✅ |
 | Self-host on-prem | ❌ | ✅ (Helm chart V2) |
-| Atualização automática em mudança de leiaute | ❌ (usuário baixa) | ✅ (Sentinel Radar) |
+| Atualização automática em mudança de leiaute | ❌ (usuário baixa) | ✅ (Norma Radar) |
 
 **Estratégia:** Não copiamos BCValidador (binário Java proprietário). Reimplementamos em Go as regras públicas das planilhas de críticas + adicionamos 3 camadas proprietárias.
 
@@ -606,7 +606,7 @@ Documentação completa: [`_catalogos/README.md`](_catalogos/README.md).
 | C.4 | Normalizar data-base das críticas | semana 2 |
 | C.5 | Gerar XSD Go a partir do `leiautes.json` (3040) | semana 2-3 |
 | C.6 | Portar 50% das críticas 3040 pra Go rules | semana 3-4 |
-| C.7 | Validar Sentinel Audit L1+L2 contra BCValidador (paralelo) | semana 4 |
+| C.7 | Validar Norma Audit L1+L2 contra BCValidador (paralelo) | semana 4 |
 | C.8 | Portar críticas 3050 + 2061 DLO | mês 2 |
 | C.9 | Schema Registry com versioning por data-base | mês 2 |
 
@@ -757,7 +757,7 @@ Documentação completa: [`_catalogos/README.md`](_catalogos/README.md).
 
 ### O que fazer HOJE (se for sério)
 
-1. **Validar a tese com stakeholders Radiant/Fortvna:** apresentar isso pro Henrique, decidir se Radiant Sentinel vira spin-off ou nova vertical da Fortvna
+1. **Validar a tese com stakeholders Radiant/Fortvna:** apresentar isso pro Henrique, decidir se Radiant Norma vira spin-off ou nova vertical da Fortvna
 2. **Marcar 3 calls discovery:** com SCDs amigas da Fortvna, validar dor + willingness to pay
 3. **Tech check (1 dia):** instalar Go 1.22+, clonar repo, ler `SCR3040_Leiaute.xls`, ver se dá pra parsear com `excelize`
 
@@ -787,79 +787,79 @@ Documentação completa: [`_catalogos/README.md`](_catalogos/README.md).
 
 ### Próximos movimentos táticos (esta sprint)
 
-- [ ] Definir **CNPJ do produto** (SLU da Radiant Risk Solutions, subsidiária da Fortvna, parceria com consultoria?)
+- [ ] Definir **CNPJ do produto** (SLU da Radiant, subsidiária da Fortvna, parceria com consultoria?)
 - [ ] **Marcar reunião com Compliance Officer de SCD amiga** pra validar dor
 - [ ] Tech spike: 1 dia só pra ver se dá pra parsear SCR3040_Leiaute.xls em Go
 - [ ] **Decisão Fundador/Radiant:** "vamos?"
 
 ---
 
-**Esta é a base completa do produto Radiant Sentinel. Próximo passo é validação — sem cliente pagante, é só tese bonita.**
+**Esta é a base completa do produto Radiant Norma. Próximo passo é validação — sem cliente pagante, é só tese bonita.**
 
 ---
 
-## 12. IDENTIDADE DA MARCA — Radiant Sentinel
+## 12. IDENTIDADE DA MARCA — Radiant Norma
 
 ### Estrutura de marca
 
 ```
 Fortvna Risk Solutions              ← holding/controladora
         │
-        └── Radiant Risk Solutions  ← marca umbrella de produtos de risco
+        └── Radiant  ← marca umbrella de produtos de risco
                 │
                 ├── Radiant Harness    ← já existe (CLI de Spec-Driven Development)
                 │
-                └── Radiant Sentinel   ← ESTE PRODUTO (CADOCs BACEN)
+                └── Radiant Norma   ← ESTE PRODUTO (CADOCs BACEN)
                         │
-                        ├── Sentinel Lite    ← plano entry (R$ 1,5k/mês)
-                        ├── Sentinel Pro     ← plano completo (R$ 4,5k/mês)
-                        ├── Sentinel Scale   ← plano enterprise (R$ 12k/mês)
-                        ├── Sentinel Enterprise ← sob consulta
+                        ├── Norma Lite    ← plano entry (R$ 1,5k/mês)
+                        ├── Norma Pro     ← plano completo (R$ 4,5k/mês)
+                        ├── Norma Scale   ← plano enterprise (R$ 12k/mês)
+                        ├── Norma Enterprise ← sob consulta
                         │
-                        ├── Sentinel ESG       ← módulo DRSAC (first-mover)
-                        ├── Sentinel Radar     ← radar regulatório
-                        ├── Sentinel Connect   ← API pública + webhooks
-                        ├── Sentinel Studio    ← workspace low-code
-                        └── Sentinel Audit     ← log + auditoria tamper-evident
+                        ├── Norma ESG       ← módulo DRSAC (first-mover)
+                        ├── Norma Radar     ← radar regulatório
+                        ├── Norma Connect   ← API pública + webhooks
+                        ├── Norma Studio    ← workspace low-code
+                        └── Norma Audit     ← log + auditoria tamper-evident
 ```
 
 ### Taglines oficiais
 
 | Contexto | Tagline |
 |---|---|
-| **Principal** | *"Radiant Sentinel — sentinela regulatória pra IF brasileira"* |
+| **Principal** | *"Radiant Norma — inteligência regulatória pra IF brasileira"* |
 | **Curta** | *"Sob a égide da Radiant, sua IF na norma"* |
 | **Emocional** | *"Quem nunca dorme no seu compliance"* |
-| **Ataque** | *"De R$ 80k/ano Matera pra R$ 18k/ano Radiant Sentinel"* |
+| **Ataque** | *"De R$ 80k/ano Matera pra R$ 18k/ano Radiant Norma"* |
 | **Vetor ESG** | *"Primeira plataforma brasileira com DRSAC 2030 de fábrica"* |
-| **Pitch 30s** | *"A corrida regulatória BACEN 2024-2027 virou IFs refém de geradores de XML. Radiant Sentinel é a esteira regulatória que abstrai leiaute, dispara alertas, cruza CADOCs e entrega SOC 2. Por uma fração do que a consultoria cobra."* |
+| **Pitch 30s** | *"A corrida regulatória BACEN 2024-2027 virou IFs refém de geradores de XML. Radiant Norma é a esteira regulatória que abstrai leiaute, dispara alertas, cruza CADOCs e entrega SOC 2. Por uma fração do que a consultoria cobra."* |
 
 ### Domínios a registrar (estratégia anti-conflito)
 
 | Domínio | Custo estimado | Status |
 |---|---|---|
-| `radiant-sentinel.com.br` | R$ 50/ano | **REGISTRAR AGORA** |
-| `radiantsentinel.com.br` | R$ 50/ano | **REGISTRAR AGORA** |
-| `sentinel.radiant.com.br` | depende | reservado |
-| `radiant.com.br/sentinel` | subdomínio | reservado |
-| `radiant-sentinel.io` | US$ 30/ano | opcional |
-| `radiantsentinel.com` | US$ 12/ano | opcional |
-| **INPI — marca "Radiant Sentinel"** | R$ 355 + taxa | **REGISTRAR EM MÊS 1** |
+| `radiant-norma.com.br` | R$ 50/ano | **REGISTRAR AGORA** |
+| `radiantnorma.com.br` | R$ 50/ano | **REGISTRAR AGORA** |
+| `norma.radiant.com.br` | depende | reservado |
+| `radiant.com.br/norma` | subdomínio | reservado |
+| `radiant-norma.io` | US$ 30/ano | opcional |
+| `radiantnorma.com` | US$ 12/ano | opcional |
+| **INPI — marca "Radiant Norma"** | R$ 355 + taxa | **REGISTRAR EM MÊS 1** |
 
 ### Nome em diferentes contextos
 
 | Contexto | Como aparece |
 |---|---|
-| Email | *"Time do Radiant Sentinel preparou seu relatório"* |
-| Slack interno IF | *"Já subiu pro Sentinel?"* |
-| LP headline | *"Radiant Sentinel — sentinela regulatória pra IF"* |
-| Deck slide | *"Hoje apresentamos o Radiant Sentinel, da Radiant Risk Solutions"* |
-| Contrato | *"Radiant Risk Solutions LTDA — produto Radiant Sentinel"* |
-| App icon | S (de Sentinel) estilizado + olho/escudo |
-| API | `api.radiant-sentinel.com.br/v1/...` |
-| Planos | Sentinel Lite, Pro, Scale, Enterprise |
-| Módulos | Sentinel ESG, Radar, Connect, Studio, Audit |
+| Email | *"Time do Radiant Norma preparou seu relatório"* |
+| Slack interno IF | *"Já subiu pro Norma?"* |
+| LP headline | *"Radiant Norma — inteligência regulatória pra IF"* |
+| Deck slide | *"Hoje apresentamos o Radiant Norma, da Radiant"* |
+| Contrato | *"Radiant LTDA — produto Radiant Norma"* |
+| App icon | S (de Norma) estilizado + olho/escudo |
+| API | `api.radiant-norma.com.br/v1/...` |
+| Planos | Norma Lite, Pro, Scale, Enterprise |
+| Módulos | Norma ESG, Radar, Connect, Studio, Audit |
 
 ---
 
-**Esta é a base completa do produto Radiant Sentinel. Próximo passo é validação — sem cliente pagante, é só tese bonita.**
+**Esta é a base completa do produto Radiant Norma. Próximo passo é validação — sem cliente pagante, é só tese bonita.**

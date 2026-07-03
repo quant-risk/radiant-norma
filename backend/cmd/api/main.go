@@ -1,4 +1,4 @@
-// cmd/api: entrypoint da API REST do Radiant Sentinel
+// cmd/api: entrypoint da API REST do Radiant Norma
 package main
 
 import (
@@ -11,12 +11,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fortvna/radiant-sentinel/backend/internal/api"
-	"github.com/fortvna/radiant-sentinel/backend/internal/audit"
-	"github.com/fortvna/radiant-sentinel/backend/internal/auditlog"
-	"github.com/fortvna/radiant-sentinel/backend/internal/db"
-	"github.com/fortvna/radiant-sentinel/backend/internal/schema"
-	"github.com/fortvna/radiant-sentinel/backend/internal/sta"
+	"github.com/fortvna/radiant-norma/backend/internal/api"
+	"github.com/fortvna/radiant-norma/backend/internal/audit"
+	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
+	"github.com/fortvna/radiant-norma/backend/internal/db"
+	"github.com/fortvna/radiant-norma/backend/internal/schema"
+	"github.com/fortvna/radiant-norma/backend/internal/sta"
 )
 
 func main() {

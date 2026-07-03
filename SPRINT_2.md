@@ -1,7 +1,7 @@
-# Sprint 2 — Radiant Sentinel
+# Sprint 2 — Radiant Norma
 
 > **Duração:** 2026-07-04 a 2026-07-17 (2 semanas)
-> **Objetivo:** Completar capturas faltantes, fazer primeiro spike técnico Go, validar arquitetura do Sentinel Audit contra BCValidador.
+> **Objetivo:** Completar capturas faltantes, fazer primeiro spike técnico Go, validar arquitetura do Norma Audit contra BCValidador.
 
 ## Contexto
 
@@ -80,10 +80,10 @@ Sprint 1 entregou:
 #### T.2 — Spike Go: ler `criticas.json` e executar 5 regras do 3040
 - **Por quê:** validar que a estrutura JSON é executável em Go
 - **Tempo:** 4-6h
-- **Entregável:** `tools/sentinel-audit/main.go` que carrega 3040 + executa B01-B05
+- **Entregável:** `tools/norma-audit/main.go` que carrega 3040 + executa B01-B05
 - **Critério done:** valida `exemploDesempenhoOperacao.xml` (já temos), emite erros esperados
 
-#### T.3 — Validação paralela Sentinel Audit vs BCValidador
+#### T.3 — Validação paralela Norma Audit vs BCValidador
 - **Por quê:** garantir que reimplementação em Go bate com a oficial
 - **Tempo:** 2h (depois de T.1 + T.2)
 - **Como:** rodar os dois no mesmo XML de exemplo, comparar lista de erros
@@ -91,8 +91,8 @@ Sprint 1 entregou:
 
 ### 🔵 P3 — Backlog futuro (depois da Sprint 2)
 
-- L.1 — Domain `radiant-sentinel.com.br` (R$ 50)
-- L.2 — INPI registro de marca "Radiant Sentinel" (R$ 355)
+- L.1 — Domain `radiant-norma.com.br` (R$ 50)
+- L.2 — INPI registro de marca "Radiant Norma" (R$ 355)
 - L.3 — Briefing de logo conceitual pro designer
 - L.4 — Landing page (Next.js + Vercel)
 - L.5 — 5 calls discovery com SCDs da rede Fortvna
@@ -115,7 +115,7 @@ Sprint 1 entregou:
 - [ ] `leiautes.json` tem **5.000+ linhas** (4.244 + 3044 + 2170)
 - [ ] Datas-base normalizadas em todas as críticas
 - [ ] XSD Go gerado para 3040 (T.1)
-- [ ] Sentinel Audit Go executa 5 regras do 3040 (T.2)
+- [ ] Norma Audit Go executa 5 regras do 3040 (T.2)
 - [ ] Validação ≥ 90% match vs BCValidador (T.3)
 - [ ] CHANGELOG.md atualizado com v1.1.0
 - [ ] Commit `feat(sprint-2): ...`
@@ -151,11 +151,11 @@ brew install libxml2
 
 ## Próxima sprint (Sprint 3 — preview)
 
-**Tema:** Infraestrutura do Radiant Sentinel (backend Go + Postgres + Docker)
+**Tema:** Infraestrutura do Radiant Norma (backend Go + Postgres + Docker)
 
 - Backend Go com API REST
 - Schema Registry com Postgres + JSONB
-- Sentinel Audit como microserviço
+- Norma Audit como microserviço
 - STA Client (Playwright first)
 - White-label multi-tenant
 - LGPD compliance: DPA template, audit log, criptografia
@@ -163,5 +163,5 @@ brew install libxml2
 
 ---
 
-**Autor:** Mavis · Radiant Risk Solutions (marca da Fortvna)
+**Autor:** Mavis · Radiant ()
 **Stakeholder:** Henrique Costa · henrique@fortvna.com.br

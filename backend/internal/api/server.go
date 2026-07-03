@@ -1,4 +1,4 @@
-// Package api implementa os handlers HTTP da API REST do Radiant Sentinel.
+// Package api implementa os handlers HTTP da API REST do Radiant Norma.
 package api
 
 import (
@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/fortvna/radiant-sentinel/backend/internal/audit"
-	"github.com/fortvna/radiant-sentinel/backend/internal/auditlog"
-	"github.com/fortvna/radiant-sentinel/backend/internal/schema"
-	"github.com/fortvna/radiant-sentinel/backend/internal/sta"
+	"github.com/fortvna/radiant-norma/backend/internal/audit"
+	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
+	"github.com/fortvna/radiant-norma/backend/internal/schema"
+	"github.com/fortvna/radiant-norma/backend/internal/sta"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
