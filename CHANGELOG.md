@@ -2,6 +2,72 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v1.3.6 — 2026-07-03 (6ª validação profunda: helper `parseNum` + stress 200 concurrent)
+
+### 🎯 Objetivo da validação
+Caçar **mesma classe de bug** que S04 (v1.3.5) em outras regras. Encontradas
+2 ocorrências adicionais em S01 e S05. Validar empiricamente que `_txlock=immediate`
+escala para workloads reais (200 goroutines concorrentes).
+
+### 🟡 Bugs encontrados (mesma classe de S04)
+
+| Regra | Linha | Bug | Fix |
+|---|---|---|---|
+| S01DetalhamentoCliente | 315-316 | `strconv.Atoi` ignora erro → QtdCli mal formado escapa | `parseNum()` helper |
+| S05LimiteCredito | 404-406 | `strconv.Atoi` ignora erro → decimal como "500.50" não detectado | `parseNum()` helper |
+
+### ✅ Helper `parseNum`
+
+Centraliza parsing numérico tolerante:
+
+```go
+func parseNum(s string) float64 {
+    v, _ := strconv.ParseFloat(strings.TrimSpace(s), 64)
+    return v
+}
+```
+
+Aceita "0", "0.0", "  0  ", "" como zero. Aplicado em S04, S01, S05.
+
+### 📊 Stress test empírico — 200 goroutines
+
+```
+Duration: 136.170625ms
+Success: 200 / Fail: 0
+Verify: ok=true count=200 err=<nil>
+STRESS PASS — all entries in chain
+```
+
+**200 entries em chain válida, 0 falhas.** `_txlock=immediate` escala para
+workloads realistas. Stress 100 HTTP concorrentes (P=20): 100 passed em
+208ms, audit chain 108 entries sem perda.
+
+### 📊 Suite E2E (v1.3.6)
+
+```
+✓ S01 (QtdCli="abc")                   → S01=0 (parseNum defensivo)
+✓ S04 (v150="0.0" v160="0.0")          → S04=0 (parseNum aceita decimal)
+✓ S05 (Mod=19 v150="500.50")           → S05=1 (parseNum detecta decimal)
+✓ Stress 200 concurrent                → 200/200 chain válida
+✓ Stress 100 HTTP P=20                 → 100/100 passed em 208ms
+✓ Healthz v1.3.6
+```
+
+### 🏗️ Lição aprendida
+
+**"Mesma classe de bug" é padrão de validação.** Achar S04 com `!= "0"`
+deve disparar busca por TODAS as regras com mesmo padrão. Validação 6
+encontrou 2 ocorrências adicionais (S01, S05) com `strconv.Atoi`.
+
+**Helper extraction elimina duplicação.** Centralizar `parseNum` reduziu
+3 lugares com parsing idêntico para 1 chamada.
+
+### 📂 Commits
+- v1.3.5 (commit `f1d7291`): race condition + S04 num parsing
+- v1.3.6 (commit local, este): helper parseNum + S01/S05 + stress 200
+
+---
+
 ## v1.3.5 — 2026-07-03 (5ª validação profunda: race condition crítica no auditlog)
 
 ### 🎯 Objetivo da validação

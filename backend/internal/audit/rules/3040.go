@@ -21,6 +21,15 @@ import (
 	"strings"
 )
 
+// parseNum converte string monetário/numérico para float64, aceitando
+// "0", "0.0", "  0  ", "" (vazio) como zero. Usado pelas regras semânticas
+// para validar vencimentos e quantidades. Comparação string "!= \"0\""
+// dá falsos positivos em "0.0" ou whitespace.
+func parseNum(s string) float64 {
+	v, _ := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	return v
+}
+
 // ============================================================
 // B06-B15: Básicas (contadores, limites, regras estruturais)
 // ============================================================
@@ -312,10 +321,10 @@ func (S01DetalhamentoCliente) Apply(_ context.Context, doc *Doc3040) error {
 	// QtdCli=1 implica em cliente único → individualização obrigatória.
 	// Validação real: verificar se QtdOp > 1 ou se há <Cli> correspondente.
 	for i, ag := range doc.Agregados {
-		qtdCli, _ := strconv.Atoi(ag.QtdCli)
-		qtdOp, _ := strconv.Atoi(ag.QtdOp)
+		qtdCli := parseNum(ag.QtdCli)
+		qtdOp := parseNum(ag.QtdOp)
 		if qtdCli == 1 && qtdOp > 1 {
-			return fmt.Errorf("Agreg[%d]: QtdCli=1 mas QtdOp=%d — operação deveria ser individualizada", i, qtdOp)
+			return fmt.Errorf("Agreg[%d]: QtdCli=1 mas QtdOp=%d — operação deveria ser individualizada", i, int(qtdOp))
 		}
 	}
 	return nil
@@ -374,10 +383,9 @@ func (S04CreditoALiberar) Apply(_ context.Context, doc *Doc3040) error {
 		}
 		v := ag.Vencimentos
 		// Vencimentos "60" e "80" (= v150 e v160) devem ser zero.
-		// Parse numérico: aceita "0", "0.0", "  0  ", "" (vazio) como zero.
-		// Comparação string "!= \"0\"" daria falso positivo em "0.0" ou "".
-		v150, _ := strconv.ParseFloat(strings.TrimSpace(v.V150), 64)
-		v160, _ := strconv.ParseFloat(strings.TrimSpace(v.V160), 64)
+		// parseNum aceita "0", "0.0", "  0  ", "" como zero.
+		v150 := parseNum(v.V150)
+		v160 := parseNum(v.V160)
 		if v150 != 0 || v160 != 0 {
 			return fmt.Errorf("Agreg[%d]: modalidade %s (crédito a liberar) não pode ter vencimentos 60/80 preenchidos (v150=%s v160=%s)",
 				i, ag.Mod, v.V150, v.V160)
@@ -401,9 +409,10 @@ func (S05LimiteCredito) Apply(_ context.Context, doc *Doc3040) error {
 		// Vencimentos de limite são v110 (faixa 020) e v120 (faixa 040).
 		if ag.Mod == "19" {
 			// v150 (31-60), v160 (61-90), v165 (>90) devem ser 0.
-			v150, _ := strconv.Atoi(ag.Vencimentos.V150)
-			v160, _ := strconv.Atoi(ag.Vencimentos.V160)
-			v165, _ := strconv.Atoi(ag.Vencimentos.V165)
+			// ParseFloat (não Atoi) para detectar valores decimais como "0.50".
+			v150 := parseNum(ag.Vencimentos.V150)
+			v160 := parseNum(ag.Vencimentos.V160)
+			v165 := parseNum(ag.Vencimentos.V165)
 			if v150 != 0 || v160 != 0 || v165 != 0 {
 				return fmt.Errorf("Agreg[%d]: Limite de Crédito (Mod=19) só aceita vencimentos v110/v120, mas tem v150=%s v160=%s v165=%s",
 					i, ag.Vencimentos.V150, ag.Vencimentos.V160, ag.Vencimentos.V165)
