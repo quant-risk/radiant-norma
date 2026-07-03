@@ -16,6 +16,7 @@ import (
 
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
+	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
@@ -47,6 +48,7 @@ type Server struct {
 	AuditLog  *auditlog.Logger
 	STAClient sta.Client
 	Radar     *radar.Service
+	CrossDoc  *crossdoc.Engine // Sprint 6 v1.5.0 — Cross-Doc L3
 	startedAt time.Time
 
 	// Sprint 6 v1.5.0 (R1) — DOS-via-API prevention.
@@ -103,6 +105,10 @@ func (s *Server) Router() http.Handler {
 		r.Get("/radar/alerts/{id}", s.getRadarAlert)
 		r.Post("/radar/alerts/{id}/resolve", s.resolveRadarAlert)
 		r.Post("/radar/scan", s.triggerRadarScan)
+
+		// Cross-Doc L3 (Sprint 6 v1.5.0) — diferencial proprietário.
+		// Valida ecossistema inteiro (3040 ↔ 4111 ↔ DRSAC) em paralelo.
+		r.Post("/crossdoc/validate", s.crossdocValidate)
 	})
 
 	return r
@@ -514,6 +520,72 @@ func (s *Server) triggerRadarScan(w http.ResponseWriter, r *http.Request) {
 		"count":      len(alerts),
 		"cached":     false,
 	})
+}
+
+// --- Cross-Doc handlers ---
+
+// crossdocValidate recebe múltiplos CADOCs e executa regras cross-document.
+//
+// Payload:
+//
+//	{
+//	  "cadocs": {
+//	    "3040": "<xml>...</xml>",
+//	    "4111": "<xml>...</xml>",
+//	    "2030": "<xml>...</xml>"
+//	  }
+//	}
+//
+// Resposta: ValidationResponse com passed, errors[], warnings[], rules_run[].
+func (s *Server) crossdocValidate(w http.ResponseWriter, r *http.Request) {
+	ifID := r.Header.Get("X-IF-ID")
+
+	if s.CrossDoc == nil {
+		http.Error(w, "crossdoc engine não inicializado", http.StatusServiceUnavailable)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var req crossdoc.ValidationRequest
+	if err := json.Unmarshal(body, &req); err != nil {
+		http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if len(req.Cadocs) == 0 {
+		http.Error(w, `{"error":"cadocs object required with at least one CADOC"}`,
+			http.StatusBadRequest)
+		return
+	}
+
+	resp := s.CrossDoc.Validate(r.Context(), &req)
+
+	// Audit (Sprint 6 v1.5.0)
+	_, _ = s.AuditLog.Log(ifID, r.RemoteAddr, "crossdoc.validated", "crossdoc",
+		body, map[string]any{
+			"passed":     resp.Passed,
+			"errors":     len(resp.Errors),
+			"warnings":   len(resp.Warnings),
+			"rules_run":  len(resp.RulesRun),
+			"rules_skip": len(resp.RulesSkip),
+			"cadocs":     keysOf(req.Cadocs),
+		})
+
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// keysOf retorna as keys de um map (helper para audit).
+func keysOf(m map[string]string) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
 }
 
 // --- Middleware ---

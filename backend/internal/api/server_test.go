@@ -36,6 +36,8 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/api"
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
+	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
+	rules "github.com/fortvna/radiant-norma/backend/internal/crossdoc/rules"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
@@ -58,12 +60,21 @@ func newTestServer(t *testing.T) (*api.Server, *sql.DB) {
 	radarSvc := radar.New(d, 1) // 1ns (não usado, scan é on-demand)
 
 	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc)
+	srv.CrossDoc = crossdoc.NewEngine(crossdocBuiltinRegistry())
 	srv.ScanLimiter = radar.NewScanLimiter(1 * time.Minute)
 	srv.ScanCache = radar.NewScanCache(5 * time.Minute)
 	srv.AdminAuth = &radar.AdminAuth{Token: "test-admin-token"}
 	srv.CadocListCache = schema.NewCadocListCache(5 * time.Minute)
 	return srv, d
 }
+
+// crossdocBuiltinRegistry importa rules/BuiltinRegistry de cross-doc.
+// Sem cycle: crossdoc/rules só importa crossdoc raiz.
+func crossdocBuiltinRegistry() *crossdoc.Registry {
+	return rules.BuiltinRegistry()
+}
+
+var _ = audit.New // ensure import
 
 // TestHealthz smoke test do /healthz.
 func TestHealthz(t *testing.T) {
