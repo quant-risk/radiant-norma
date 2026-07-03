@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0">
+<channel>
+  <title>Notícias do SCR2</title>
+  <link>https://www.bcb.gov.br</link>
+  <description>Últimas notícias do Documento 3040</description>
+
+  <item>
+    <title>Publicação de nova versão do Manual do Documento 3044</title>
+    <link>https://www.bcb.gov.br/content/estabilidadefinanceira/Leiaute_de_documentos/scrdoc3040/SCR_InstrucoesDePreenchimento_Doc3044.pdf</link>
+    <description><![CDATA[Nova versão do Manual do Documento 3044 publicada em 18/07/2025]]></description>
+    <pubDate>Fri, 18 Jul 2025 16:40:00 GMT</pubDate>
+    <guid>post-2025-07-18</guid>
+  </item>
+
+  <item>
+    <title>Publicação do Aplicativo Validador e Atualização do Manual</title>
+    <link>http://www.bcb.gov.br/?DOC3040</link>
+    <description><![CDATA[
+      <li>Publicação do Aplicativo Validador - versão 7933. Atualização do Leiaute e das Intruções de Preenchimento.</li><br/>
+    ]]></description>
+    <pubDate>Fri, 28 Dec 2018 19:47:00 GMT</pubDate>
+    <guid>post-2018-12-28</guid>
+  </item>
+</channel>
+</rss>

@@ -1,0 +1,247 @@
+
+@page {
+    size: A4;
+    margin: 22mm 18mm 22mm 18mm;
+
+    @top-right {
+        content: counter(page) " / " counter(pages);
+        font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+        font-size: 9pt;
+        color: #64748b;
+    }
+
+    @bottom-left {
+        content: "Radiant Sentinel · Radiant Risk Solutions (marca da Fortvna)";
+        font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+        font-size: 8pt;
+        color: #94a3b8;
+    }
+
+    @bottom-right {
+        content: "Radiant Sentinel — Sentinela regulatória pra IF";
+        font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+        font-size: 8pt;
+        color: #94a3b8;
+    }
+}
+
+@page :first {
+    @top-right { content: ""; }
+    @bottom-left { content: ""; }
+    @bottom-right { content: ""; }
+    margin: 0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.55;
+    color: #1f2937;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    background: #ffffff;
+}
+
+.cover {
+    width: 210mm; height: 297mm;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #334155 100%);
+    color: #f8fafc;
+    padding: 35mm 28mm 14mm 28mm;
+    page-break-after: always;
+    display: flex; flex-direction: column; justify-content: space-between;
+    position: relative; overflow: hidden;
+}
+
+.cover::before {
+    content: "";
+    position: absolute;
+    top: -50mm; right: -50mm;
+    width: 200mm; height: 200mm;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.15), transparent 70%);
+    border-radius: 50%;
+}
+
+.cover .accent {
+    width: 60pt; height: 5pt;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    margin-bottom: 12mm; border-radius: 3pt;
+    position: relative; z-index: 1;
+}
+
+.cover .badge {
+    display: inline-block;
+    background: rgba(59, 130, 246, 0.18);
+    border: 1px solid rgba(147, 197, 253, 0.4);
+    color: #bfdbfe;
+    font-size: 8.5pt; font-weight: 700;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    padding: 4pt 12pt; border-radius: 100pt;
+    margin-bottom: 8mm;
+    position: relative; z-index: 1;
+    width: fit-content;
+}
+
+.cover h1.title {
+    font-size: 38pt; font-weight: 800;
+    line-height: 1.05; letter-spacing: -0.025em;
+    margin: 0 0 10mm 0; color: #ffffff;
+    position: relative; z-index: 1;
+}
+.cover h1.title::before { content: none; }
+
+.cover .subtitle {
+    font-size: 13pt; line-height: 1.5;
+    font-weight: 400; color: #cbd5e1;
+    margin: 0 0 auto 0;
+    max-width: 145mm;
+    position: relative; z-index: 1;
+}
+
+.cover .meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5mm 12mm;
+    border-top: 1px solid rgba(148, 163, 184, 0.25);
+    padding-top: 8mm;
+    position: relative; z-index: 1;
+}
+
+.cover .meta-item .label {
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 7pt; font-weight: 700;
+    margin-bottom: 1.5pt;
+}
+
+.cover .meta-item .value {
+        color: #f1f5f9;
+        font-weight: 600;
+        font-size: 10.5pt;
+    }
+
+    .footer-brand {
+        font-size: 8.5pt;
+        color: #94a3b8;
+        font-style: italic;
+        margin-top: 2mm;
+    }
+
+h1 {
+    font-size: 22pt; font-weight: 800;
+    color: #0f172a; margin: 0 0 8pt 0;
+    letter-spacing: -0.02em;
+    page-break-before: always;
+}
+h1:first-of-type { page-break-before: avoid; }
+h1::before {
+    content: "";
+    display: inline-block;
+    width: 36pt; height: 4pt;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    margin-right: 14pt; vertical-align: middle;
+}
+
+h2 {
+    font-size: 16pt; font-weight: 700;
+    color: #0f172a;
+    margin: 18pt 0 6pt 0;
+    padding: 6pt 0 4pt 0;
+    border-bottom: 2px solid #e2e8f0;
+    page-break-after: avoid;
+}
+
+h3 {
+    font-size: 12.5pt; font-weight: 700;
+    color: #1e293b;
+    margin: 14pt 0 5pt 0;
+    page-break-after: avoid;
+}
+
+h4 {
+    font-size: 11pt; font-weight: 600;
+    color: #334155;
+    margin: 10pt 0 4pt 0;
+    page-break-after: avoid;
+}
+
+p { margin: 0 0 7pt 0; }
+strong, b { font-weight: 700; color: #0f172a; }
+em, i { color: #475569; }
+
+ul, ol { margin: 5pt 0 9pt 0; padding-left: 20pt; }
+li { margin-bottom: 3pt; }
+
+blockquote {
+    margin: 9pt 0;
+    padding: 8pt 14pt;
+    border-left: 4px solid #3b82f6;
+    background: #eff6ff;
+    color: #1e40af;
+    border-radius: 0 4pt 4pt 0;
+    font-style: italic;
+}
+blockquote p { margin: 0; }
+
+code {
+    font-family: "SF Mono", "Monaco", "Menlo", "Consolas", monospace;
+    font-size: 9pt; background: #f1f5f9; color: #be185d;
+    padding: 1pt 4pt; border-radius: 3pt;
+    word-break: break-word;
+}
+
+pre {
+    font-family: "SF Mono", "Monaco", "Menlo", "Consolas", monospace;
+    font-size: 9pt; line-height: 1.5;
+    background: #0f172a; color: #e2e8f0;
+    padding: 10pt 12pt; border-radius: 6pt;
+    overflow: auto;
+    margin: 7pt 0 11pt 0;
+    page-break-inside: avoid;
+    border: 1px solid #1e293b;
+}
+pre code { background: transparent; color: inherit; padding: 0; font-size: inherit; }
+
+table {
+    width: 100%; border-collapse: collapse;
+    margin: 10pt 0;
+    page-break-inside: avoid;
+    font-size: 9.5pt; background: #ffffff;
+    box-shadow: 0 1pt 3pt rgba(0,0,0,0.05);
+}
+
+thead { background: #1e293b; color: #f8fafc; }
+th {
+    padding: 7pt 9pt; text-align: left;
+    font-weight: 700; font-size: 9pt;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    border-bottom: 2px solid #334155;
+}
+td {
+    padding: 6pt 9pt;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+}
+tbody tr:nth-child(even) { background: #f8fafc; }
+tbody tr:last-child td { border-bottom: 2px solid #cbd5e1; }
+
+hr {
+    border: 0; border-top: 1px solid #e5e7eb;
+    margin: 18pt 0;
+}
+
+a {
+    color: #2563eb; text-decoration: none;
+    border-bottom: 1px solid rgba(37, 99, 235, 0.3);
+    word-break: break-word;
+}
+
+img { max-width: 100%; height: auto; border-radius: 4pt; }
+
+ul li input[type="checkbox"] {
+    margin-right: 6pt;
+}

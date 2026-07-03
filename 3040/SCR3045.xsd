@@ -1,0 +1,81 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+
+<!-- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- +  BANCO CENTRAL DO BRASIL                                           + -->
+<!-- +  Sistema de Informacao de Credito - SCR Fase 3                     + -->
+<!-- +  Documento 3045 - definicao xml schema                             + -->
+<!-- +  Versao 1.2                                                        + -->
+<!-- +  Atualizado em 29/08/2023                                          + -->
+<!-- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+
+<!-- ******************************* -->
+<!-- Definicao dos elementos simples -->
+<!-- ******************************* -->
+
+<!-- tipos Doc3045 -->
+ <xs:element name='Doc3045' type='tipo3045'/>
+ <xs:element name='Cli' type='tipoCliente'/>
+ 
+<!-- ****************** -->
+<!-- Definicao de tipos -->
+<!-- ****************** -->
+
+<!-- Documento 3045 -->
+<xs:complexType name='tipo3045'>
+  <xs:sequence>
+    <xs:choice minOccurs='0' maxOccurs='unbounded'>
+      <xs:element ref='Cli' minOccurs='0' maxOccurs='unbounded'/>
+    </xs:choice>
+  </xs:sequence>
+  <xs:attribute name='DtBase' type='tipoDataMesAno' use='required'/>
+  <xs:attribute name='CNPJ' type='tipoCNPJ8' use='required'/>
+  <xs:attribute name='DetOp' type='tipo0ou1' use='required'/>
+</xs:complexType>
+
+<!-- Cliente -->
+<xs:complexType name='tipoCliente'>
+  <xs:attribute name='Cd' type='tipoCodCliente' use='required'/>
+  <xs:attribute name='Tp' type='tipoDoCliente' use='required'/>
+  <xs:attribute name='AutConsCli' type='tipoSimNao' use='optional'/>
+</xs:complexType>
+
+
+<xs:simpleType name='tipoDoCliente'>
+  <xs:restriction base='xs:integer'>
+  <xs:pattern value='[1-6]'/>
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- Definicao de campos de identificacao -->
+<xs:simpleType name='tipoCodCliente'>
+  <xs:restriction base='xs:string'>
+    <xs:whiteSpace value='collapse'/>
+    <xs:pattern value='[0-9A-Za-z]+'/>
+    <xs:maxLength value='14'/>
+    <xs:minLength value='1'/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name='tipoCNPJ8'>
+  <xs:restriction base='xs:string'>
+    <xs:whiteSpace value='collapse'/>
+    <xs:pattern value='[0-9]{8}'/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name='tipoDataMesAno'>
+  <xs:restriction base='xs:gYearMonth'>
+    <xs:minInclusive value='2000-01'/>
+    <xs:maxExclusive value='2050-01'/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name='tipo0ou1'>
+  <xs:restriction base='xs:integer'>
+    <xs:whiteSpace value='collapse'/>
+      <xs:pattern value='0|1'/>
+  </xs:restriction>
+</xs:simpleType>
+
+</xs:schema>

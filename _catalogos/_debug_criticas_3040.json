@@ -1,0 +1,2159 @@
+[
+  {
+    "name": "Básicas",
+    "rows": [
+      [
+        "Regras Básicas de Qualidade do Documento ",
+        null,
+        null,
+        null
+      ],
+      [
+        "Descreve regras básicas de validação do documento 3040.",
+        null,
+        null,
+        null
+      ],
+      [
+        "Habilitado?",
+        "Código",
+        "Regra",
+        "Descrição"
+      ],
+      [
+        "s",
+        "B01",
+        "Erro XML",
+        "O arquivo XML deve atender às regras gerais de formatação XML e às regras de formato do XSD disponível dentro do aplicativo validador, considerado para a data-base referida no arquivo. O XSD considerado terá data-base igual ou anterior a data-base referida no arquivo; dentre as opções, será o mais recente."
+      ],
+      [
+        "s",
+        "B02",
+        "Arquivo .ZIP deve ser gerado pelo aplicativo validador",
+        "O documento 3040/3042 enviado ao Banco Central deve ser um arquivo .ZIP gerado pelo aplicativo validador. Qualquer arquivo. ZIP gerado através de outro aplicativo será rejeitado."
+      ],
+      [
+        "s",
+        "B03",
+        "Instituição remetente deve possuir autorização",
+        "Para enviar o documento 3040/3042 que não seja de sua propriedade uma instituição deverá dispor de uma autorização de envio específica para fazê-lo."
+      ],
+      [
+        "s",
+        "B04",
+        "Documento fora do período de admissão",
+        "Somente podem ser enviados ao SCR documentos cujas datas-base estejam dentro do horizonte permitidos (24 datas-base)."
+      ],
+      [
+        "s",
+        "B05",
+        "Documentos não esperado",
+        "Para o envio de documentos novos, uma instituição deverá estar cadastrada na lista de documentos esperados do sistema para a data-base a qual deseja proceder o envio. Um documento enviado e não esperado será rejeitado. A declaração de dispensa de envio do documento 3040, ou o cancelamento dessa dispensa deverá ser feita através da interface web do SCR."
+      ],
+      [
+        "s",
+        "B06",
+        "Número de remessa incompatível",
+        "O envio de uma nova remessa (ou seja, uma substituição) do documento 3040 deve conter um novo número de remessa no cabeçalho do documento. Caso seja enviada uma remessa e uma parte repetida, o documento será rejeitado. (Para maiores informações sobre partes e remessas, olhar documento instruções e manuais na página do SCR).\nA utilização do número de remessa do arquivo deverá levar em conta o estado do documento na data-base:\nDocumento Esperado: o número de remessa precisa ser igual ao das outras partes já recebidas da mesma remessa ou ser maior para iniciar o envio de uma nova remessa;\nDocumento em Processamento: o número de remessa precisa ser igual ao das outras partes já recebidas da mesma remessa;\nDocumento Aceito: qualquer número de remessa será rejeitado, pois o documento aceito fica bloqueado enquanto aguarda ser carregado para se tornar disponível;\nDocumento Disponível: o número de remessa precisa ser maior do que a última remessa enviada;\nDocumento Rejeitado: o número de remessa precisa ser maior do que a última remessa enviada."
+      ],
+      [
+        "s",
+        "B07",
+        "Composição da remessa (número de parte e final de remessa)",
+        "Uma remessa do documento 3040 deve ser composta de N partes, onde N >= 1. As partes devem ser numeradas de 1 a N sem repetição de número e tendo a parte N, além do seu número, um marcador de final de remessa <Doc3040 TpArq=\"F\">."
+      ],
+      [
+        "s",
+        "B08",
+        "Remessa com parte rejeitada",
+        "Se uma remessa do documento 3040 já tiver ao menos uma parte rejeitada, qualquer outra parte recebida da mesma remessa será rejeitada."
+      ],
+      [
+        "s",
+        "B09",
+        "Número máximo de erros",
+        "O aplicativo validador possui um limite máximo de registros de erros possíveis. Se o número máximo de erros for atingido, a validação será interrompida e o arquivo será rejeitado com os erros registrados até então. Neste caso, os erros adicionais que possam existir não são detectados."
+      ],
+      [
+        "s",
+        "B10",
+        "Número máximo de avisos",
+        "O aplicativo validador possui um limite máximo de registros de avisos possíveis. Se o número máximo de avisos for atingido, a validação continuará, mas avisos adicionais não serão registrados no log. Neste caso, os avisos adicionais que possam existir não são apresentados."
+      ],
+      [
+        "s",
+        "B11",
+        "Documento não aceito na data-base anterior",
+        "Caso a instituição não possua um documento 3040 aceito na data-base anterior, o envio de um novo documento na data-base atual será rejeitado."
+      ],
+      [
+        "s",
+        "B12",
+        "Atributo TpFundo no cabeçalho do xml obrigatório apenas para FIDCs a partir da data-base de março/2024",
+        "Caso a instituição remetente seja um Fundo de Investimento em Direitos Creditórios - FIDC, o atributo \"TpFundo\" no cabeçalho do Cadoc 3040 deverá ser preenchido pelos códigos: 36 - FIDC, 46 - FIDC-NP ou 41 - FIDC PIPS. \n\nImportante!! Demais instituições (não FIDCs), não preencher o atributo TpFundo!"
+      ],
+      [
+        "s",
+        "B13",
+        "IF não é FIDC",
+        "Instituição deve ser FIDC e TpFundo deve assumir valores: 36, 46 ou 41."
+      ],
+      [
+        "s",
+        "B14",
+        "Excedida a quantidade de operações divergentes no 3042",
+        "A quantidade de operações informada excedeu o limite máximo."
+      ],
+      [
+        "s",
+        "B15",
+        "Excedida a quantidade de operações divergentes no 3040",
+        "A quantidade de operações informada excedeu o limite máximo."
+      ],
+      [
+        "s",
+        "B16",
+        "Inclusão de cliente sem operação no documento 3042",
+        "Inclusão de cliente sem operação no documento 3042."
+      ],
+      [
+        "s",
+        "B17",
+        "Arquivo vazio ",
+        "Arquivo deve conter clientes <Cli> ou operações <Agreg>."
+      ],
+      [
+        "s",
+        "B20",
+        "Correção via web em andamento",
+        "Não é possível remeter arquivo de substituição parcial - 3042 enquanto houver protocolo de correção via web em andamento."
+      ],
+      [
+        "s",
+        "B21",
+        "Envios concorrentes do documento 3042",
+        "Um primeiro 3042 foi enviado (e aguardando processamento) e posteriormente o segundo 3042 foi enviado para mesma IF e data-base. Neste caso, o primeiro 3042 é desconsiderado.\nOu o primeiro 3042 foi enviado e estava em processamento, então o segundo 3042 é enviado para mesma IF e data-base, causando a desconsideração do segundo 3042."
+      ]
+    ],
+    "nrows": 23,
+    "ncols": 4
+  },
+  {
+    "name": "Campos Obrigatórios",
+    "rows": [
+      [
+        "Campos Obrigatórios",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "Descreve as críticas que determinarão os campos obrigatórios no documento 3040.",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "Habilitado?",
+        "Alerta",
+        "Erro",
+        "Código",
+        "Regra",
+        "Descrição",
+        "Vigente até "
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "C01",
+        "Campos obrigatórios somente para pessoa jurídica",
+        "Tipo de controle\nSe Tp=\"2\" - pessoa jurídica com CNPJ - é obrigatório Detalhamento do Cliente",
+        null
+      ],
+      [
+        "s",
+        40422,
+        null,
+        "C02",
+        "Campos não obrigatórios",
+        "Conglomerado econômico\nCaracterística especial",
+        null
+      ],
+      [
+        "s",
+        40544,
+        40787,
+        "C03",
+        "Garantias não fidejussórias",
+        "O campo Valor original da garantia é obrigatório, para garantias não fidejussórias (garantias <> 09), os campos Identificação do garantidor e Percentual garantido é proibido para garantias não fidejussórias",
+        "04/2026"
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "C04",
+        "Garantias fidejussórias",
+        "Os campos Identificação do garantidor e Percentual garantido são obrigatórios, para garantias fidejussórias (garantias == 09), dispensada a obrigatoriedade do campo Identificação do garantidor quando a garantia fidejussória for 0903 (PF no exterior) e 0904 (PJ no exterior), o campo Valor original da garantia é proibido para garantias fidejussórias",
+        "04/2026"
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "C05",
+        "Cessões com coobrigação entre instituições financeiras (informação de cessionário). ",
+        "Para Inf==0101 (informação de cessionário), campos obrigatórios: data de cessão (Cd), percentual (Perc) e valor negociado (Valor). ",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "C06",
+        "Cessões com coobrigação entre instituições financeiras (informação de cedente)",
+        "Para Inf==0102, 0103 ou 0104 (informação de cedente), campos obrigatórios: data de cessão (Cd), cessionário (Ident), percentual de coobrigação (Perc) e valor negociado (Valor). ",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "C07",
+        "Porte do cliente PJ",
+        "Deve assumir valores do Anexo 24 para PJ",
+        null
+      ],
+      [
+        "s",
+        40544,
+        40848,
+        "C08",
+        "Porte do cliente PF",
+        "Deve assumir valores do Anexo 25 para PF para operações concedidas a partir da data-base de julho/2011",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "C09",
+        "Campos proibidos para pessoa física",
+        "Tipo de controle\nDetalhamento do cliente\nPorte do Cliente, até habilitação da regra C08",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "C10",
+        "Campos de reavaliação de garantia",
+        "Se houver reavaliação de garantia, deverão ser informados ambos os campos de reavaliação, Data e Valor de reavaliação, ou seja, caso haja o atributo DtReav na tag <Gar>, o atributo VlrData é obrigatório.",
+        "04/2026"
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "C11",
+        "Data de vencimento",
+        "A data de vencimento da operação é obrigatória para todas as operações, exceto para aquelas que possuem vencimentos v199.",
+        null
+      ],
+      [
+        "s",
+        40787,
+        40969,
+        "C13",
+        "Saídas (operações cedidas sem coobrigação)  ",
+        "Para Inf==0303 ou 0304, campos obrigatórios: data da cessão (Cd), cessionário (Ident) e valor negociado (Valor)",
+        null
+      ],
+      [
+        "s",
+        40787,
+        40969,
+        "C14",
+        "Saídas (operações renegociadas)  ",
+        "Para Inf==0305, campos obrigatórios: novo contrato (Cd), modalidade e submodalidade (Ident) e valor renegociado (Valor)",
+        null
+      ],
+      [
+        "s",
+        40787,
+        40969,
+        "C16",
+        "Saídas (alteração de código de contrato)  ",
+        "Para Inf==0307, campos obrigatórios: novo contrato (Cd), modalidade e submodalidade (Ident)",
+        null
+      ],
+      [
+        "n",
+        40848,
+        41760,
+        "C17",
+        "Títulos representativos de operações de crédito  ",
+        "Para Inf=04XX, campos obrigatórios: código do instrumento (Cd)",
+        null
+      ],
+      [
+        "s",
+        40848,
+        null,
+        "C18",
+        "Certificados agregadores de títulos representativos de operações de crédito  ",
+        "Para Inf=05XX, campo obrigatório: código do instrumento (Cd)",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "C19",
+        "Cessões com coobrigação para instituições não financeiras (informação de cessionário)  ",
+        "Para Inf==0701 (informação de cessionário), campos obrigatórios: data da cessão (Cd), percentual de coobrigação (Perc) e valor negociado (Valor). ",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "C20",
+        "Cessões com coobrigação para instituições não financeiras (informação de cedente)  ",
+        "Para Inf==0702, 0703  ou 0704 (informação de cedente), campos obrigatórios: data da cessão (Cd), cessionário (Ident), percentual de coobrigação (Perc) e valor negociado (Valor).",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "C21",
+        "Cessões com coobrigação para instituições não financeiras (tipo de transferência)  ",
+        "Para Inf=0705, 0706 ou 0707, campos obrigatórios: data da transferência (Cd), cessionário (Ident), percentual de risco (Perc) e valor negociado (Valor). O percentual de risco só é obrigatório para operações de natureza 15.",
+        null
+      ],
+      [
+        "s",
+        40544,
+        40969,
+        "C23",
+        "Cessões de operações sem coobrigação (informação de cessionário)  ",
+        "Para Inf=1001 ou 1002 (informação de cessionário), campos obrigatórios: data de aquisição (Cd), valor negociado (Valor) e cedente (Ident). ",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "C24",
+        "Cessões de operações sem coobrigação (informação de cedente)  ",
+        "Para Inf=1003 (informação de cedente), campos obrigatórios: data de transferência (Cd), cessionária (Ident) e valor negociado (Valor).",
+        null
+      ],
+      [
+        "s",
+        40848,
+        41000,
+        "C25",
+        "Derivativos ",
+        "Para Inf=11XX, campos obrigatórios: código do instrumento (Cd), contraparte (Ident).",
+        null
+      ],
+      [
+        "s",
+        40787,
+        40969,
+        "C26",
+        "Saídas (recompra de operação) ",
+        "Para Inf==0309, campos obrigatórios: valor de recompra (Valor).",
+        null
+      ],
+      [
+        "s",
+        40787,
+        40969,
+        "C27",
+        "Saídas (portabilidade) ",
+        "Para Inf==0311, campo obrigatório: instituição para a qual operação foi portada (Ident)",
+        null
+      ],
+      [
+        "s",
+        40544,
+        40787,
+        "C28",
+        "Valor contratado - obrigatoriedade ",
+        "Valor contratado é obrigatório para todas as modalidades não rotativas (todas exceto 0101, 0210, 0213, 0214, 0217, 0406, 1304, 19XX) que possuam vencimentos maiores que 80.",
+        null
+      ],
+      [
+        "s",
+        40787,
+        40969,
+        "C29",
+        "Saídas (incorporação) ",
+        "Para Inf==0312, campo obrigatório: instituição incorporadora (Ident), novo contrato (Cd), modalidade e submodalidade (Qtd)",
+        null
+      ],
+      [
+        "s",
+        40544,
+        40787,
+        "C31",
+        "Faturamento Anual - Compatibilidade de data e obrigatoriedade",
+        "O campo Faturamento Anual é obrigatório para operações concedidas a partir da data-base julho/2011 e para operações concedidas para pessoa jurídica",
+        null
+      ],
+      [
+        "s",
+        40787,
+        40848,
+        "C32",
+        "Percentual do Indexador - Compatibilidade de data",
+        "O campo Percentual do Indexador é obrigatório para operações concedidas a partir da data-base setembro/2011",
+        null
+      ],
+      [
+        "s",
+        40544,
+        40909,
+        "C33",
+        "Aplicabilidade de Dias de Atraso",
+        "O campo Dias de Atraso é obrigatório apenas para operações vencidas (código de vencimento 205 a 330, inclusive)",
+        "12/2024"
+      ],
+      [
+        "s",
+        "n/a",
+        40848,
+        "C34",
+        "Registro adicional de coobrigação - Informações adicionais obrigatórias ",
+        "Para Inf==1201, campo obrigatório: valor da coobrigação (Valor) e do percentual de coobrigação (Perc).",
+        null
+      ],
+      [
+        "s",
+        40848,
+        41122,
+        "C35",
+        "Informações adicionais referentes ao registro adicional de coobrigação",
+        "As operações de modalidade 1511, 1512, 2001 ou 2002 devem possuir informação adicional Tp=\"1201\". Nenhuma outra modalidade poderá possuir informação adicional Tp=\"1201\". (vide observações no HistóricoAtualizações)",
+        null
+      ],
+      [
+        "s",
+        40909,
+        40969,
+        "C36",
+        "Informação de identificação do cedente em cessões de crédito pelo cessionário",
+        "Para Inf==0101 e 0701 o atributo Ident (CNPJ Cedente) somente é obrigatório a partir da data-base de março/2012",
+        null
+      ],
+      [
+        "s",
+        40909,
+        41153,
+        "C37",
+        "Operações originais em cessão de crédito - cedente - Informações adicionais obrigatórias ",
+        "Para Inf==1202, campo obrigatório: código do contrato de cessão (Cd)",
+        null
+      ],
+      [
+        "s",
+        40909,
+        41122,
+        "C38",
+        "Coobrigação Assumida – Cedente - Obrigatoriedade da Informação Adicional",
+        "Para cada pacote de registro adicional com modalidade 1512 (cessão com coobrigação para não SFN, controlada ou não, ou para fundo) deve se registrado informação adicional 1203.",
+        null
+      ],
+      [
+        "s",
+        40909,
+        40969,
+        "C39",
+        "Coobrigação Assumida – Cedente – Identificação CNPJ",
+        "Para Inf==1203, campo obrigatório: cedente da operação (Ident)",
+        null
+      ],
+      [
+        "s",
+        40969,
+        41153,
+        "C40",
+        "Operações originais em cessão de crédito - cedente - Informações adicionais obrigatórias ",
+        "Para Inf==1201, campo obrigatório: data (Cd) e modalidade e submodalidade (Ident)",
+        null
+      ],
+      [
+        "s",
+        40969,
+        41061,
+        "C41",
+        "Obrigatoriedade de adoção da Resolução nº 3.533",
+        "Operações de naturezas 04, 05, 11, 13, 14 ou 15 ou de modalidade 1511, 1512,1513, 2001 ou 2002 e natureza 01 cuja data de cessão (<Inf Cd=\"\">) sejam maiores do que 01/01/2012 devem possuir característica especial 35",
+        null
+      ],
+      [
+        "s",
+        40969,
+        41061,
+        "C42",
+        "Aplicabilidade da Resolução nº 3.533",
+        "Se uma operação for marcada com a característica especial 35, então deverá satisfazer cumulativamente às 2 condições: 1) ter natureza 04, 05, 11, 13, 14 ou 15 ou modalidade 1511, 1512, 1513, 2001 ou 2002 e natureza 01; 2) ter pelo menos uma informação adicional (<Inf Tp=\"\">)  dentre os tipos {0101 a 0105, 0701 a 0707 ou 1201} com data de cessão ou transferência (<Inf Cd=\"\">) posterior à publicação da Resolução nº 3.533 (31/01/2008) ou uma informação adicional dentre os tipos {03XX}. Operações de naturezas 04, 05, 11, 13, 14 ou 15 ou de modalidade 1511, 1512 ou 1513 e natureza 01 cuja data de cessão (<Inf Cd=\"\">) seja inferior à publicação da Resolução nº 3.533 (31/01/2008) não podem possuir a característica especial 35.",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        41153,
+        "C43",
+        "Validação de modalidade/submodalidade em Informações Adicionais",
+        "O atributo \"Ident\" é campo obrigatório da Informações Adicional \"1201\" e deve assumir um dos valores possíveis segundo o anexo 3 do Leiaute do doc.3040.",
+        null
+      ],
+      [
+        "s",
+        41183,
+        41760,
+        "C44",
+        "Verificação de formatação de data em Informações Adicionais",
+        "O atributo \"Ident\" das Informações Adicionais 0402, 0405, 0407, 0408, 0409, 0410 e 0411 deve ser informado no formato AAAA-MM-DD, onde AAAA equivale aos 4 dígitos do ano, MM aos 2 dígitos correspondentes ao mês e DD aos 2 dígitos correspondentes ao dia.",
+        null
+      ],
+      [
+        "s",
+        41671,
+        41699,
+        "C45",
+        "Campo Renda Mensal - Compatibilidade de data e obrigatoriedade (Pessoa Física)",
+        "O campo Renda Mesal informado por meio do atributo 'FatAnual' na tag 'Cli' quando se tratar de Pessoa Física é obrigatório para operações concedidas a partir da data-base julho/2011 para 'Tp' igual a '1', '3' ou '5' na tag 'Cli'.",
+        null
+      ],
+      [
+        "s",
+        41699,
+        41821,
+        "C46",
+        "Obrigatoriedade dos atributos 'Ident'  ou 'Cd' na Inf Adicional '15xx'.",
+        "O preenchimento dos atributos 'Ident' é obrigatório para 'Tp' igual a '15XX', exceto quando se tratar de operação já desconsignada, quando deverá ser preenchido o atributo 'Cd' com valor \"1\".",
+        null
+      ],
+      [
+        "s",
+        41609,
+        41699,
+        "C47",
+        "Obrigatoriedade do atributo TotalCli",
+        "O preenchimento do atributo 'TotalCli' no cabeçalho do documento é obrigatório",
+        null
+      ],
+      [
+        "s",
+        41760,
+        null,
+        "C48",
+        "Obrigatoriedade do Código de Portabilidade atributo 'Cd' na Informação Adicional de Saída por Portabilidade ",
+        "O preenchimento do atributo 'Cd' para a Inf Tp=\"0311\" (Clientes PF) é obrigatório para Operações a partir de maio/2014.",
+        null
+      ],
+      [
+        "n",
+        41791,
+        41821,
+        "C49",
+        "Títulos representativos de operações de crédito  ",
+        "Para Inf=04XX, campos obrigatórios: código do instrumento (Cd). Nota: A informação adicional 0401 deverá conter em <Cd> o chassi do veículo ou em <Ident> o valor “1” nos casos de operação sem chassi.",
+        null
+      ],
+      [
+        "s",
+        42309,
+        42370,
+        "C50",
+        "Correspondentes Bancários",
+        "Para Informação de Correspondentes Bancários, campo obrigatório: 'Ident'. O atributo 'Ident' deverá ser preenchido com CNPJ válido (14 dígitos).",
+        null
+      ],
+      [
+        "s",
+        42309,
+        42370,
+        "C51",
+        "Saídas (assunção de dívida)  ",
+        "Para Inf=0313, campos obrigatórios: 'Cd' e 'Ident'. O tipo de pessoa (Cd) deve ser 1, 2, 3, 4, 5, ou 6, ou seja, se <Inf=\"0313\">, então (<Cd=\"1\">, ou <Cd=\"2\">, ou <Cd=\"3\">, ou <Cd=\"4\">, ou <Cd=\"5\">, ou <Cd=\"6\"> ). O atributo 'Ident' deverá conter o CPF /CNPJ (válidos) do novo devedor.",
+        null
+      ],
+      [
+        "s",
+        42675,
+        42736,
+        "C52",
+        "Títulos representativos de operações de crédito  ",
+        "Para Informações Adicionais 0401, 0402, 0403, 0405, 0407, 0408, 0409, 0410 e 0411, campo obrigatório: código do instrumento (Cd). Nota: A informação adicional 0401 deverá conter em <Cd> o chassi do veículo ou em <Ident> os valores \"1\" ou \"2\" nos casos de operação sem chassi.",
+        null
+      ],
+      [
+        "s",
+        43405,
+        null,
+        "C53",
+        "Campos obrigatórios somente para pessoa jurídica no exterior",
+        "Para clientes pessoa jurídica no exterior - <Cli> <Tp=”4”>, é obrigatório o preenchimentos dos campos “NomeCli”, “TpIdentExt”, “CodExt” e “IdPais”.",
+        null
+      ],
+      [
+        "s",
+        "-",
+        43405,
+        "C54",
+        "Obrigatoriedade do atributo 'Cd' na Inf Adicional '18xx'",
+        "O preenchimento do atributo 'Cd' é obrigatório para 'Tp' igual a '18XX'.",
+        null
+      ],
+      [
+        "s",
+        "-",
+        43405,
+        "C55",
+        "Obrigatoriedade do atributo 'Cd' na Inf Adicional '1999'",
+        "O preenchimento do atributo 'Cd' é obrigatório para 'Tp' igual a '1999'.",
+        null
+      ],
+      [
+        "s",
+        "-",
+        43282,
+        "C56",
+        "Obrigatoriedade de informação de credores",
+        "Para <Inf Tp=\"2101\">, são obrigatórios os campos 'Cd', 'Ident' e 'Perc'.",
+        null
+      ],
+      [
+        "s",
+        "-",
+        43405,
+        "C57",
+        "Característica especial de operação vinculada",
+        "Para as modalidades 1501, 1502, 1503, 1504 e 1599, não poderá ser informada a característica especial 10, ou seja, se <Mod=\"1501\">, <Mod=\"1502\">, <Mod=\"1503\">, <Mod=\"1504\">, ou <Mod=\"1599\">, então <CaracEsp≠\"10\">.",
+        null
+      ],
+      [
+        "s",
+        43891,
+        43922,
+        "C58",
+        "Fundos Administrados",
+        "Para natureza de operação 34, é obrigatória a informação adicional 2202. Ou seja, para <NatuOp = \"34\">, então <InfTp = \"2202\">.",
+        null
+      ],
+      [
+        "s",
+        43891,
+        43922,
+        "C59",
+        "Entidades Assemelhadas - Conglomerado Prudencial",
+        "Para natureza de operação 33, é obrigatória a informação adicional 2201. Ou seja, para <NatuOp = \"33\">, então <InfTp = \"2201\">.",
+        null
+      ],
+      [
+        "s",
+        "-",
+        44075,
+        "C60",
+        "Tag Sicor",
+        "Os campos \"Saldo médio diário total\" e \"Saldo médio diário vincendo total\" da tag Sicor são obrigatórios, exceto para operações que apresentem vértices de vencimento em prejuízo <v3XX>. Ou seja, se <Sicor> e <v3XX>, então <VlrSaldoTot> e <VlrSaldoVinc> não são obrigatórios.",
+        null
+      ],
+      [
+        "s",
+        44136,
+        44166,
+        "C61",
+        "Obrigatoriedade do atributo 'Ident' nas informações adicionais '2201' e '2202'. ",
+        "O preenchimento do atributo 'Ident' na informação adicional é obrigatório para <Inf Tp=\"2201\"> ou <Inf Tp=\"2202\">.",
+        null
+      ],
+      [
+        "s",
+        44197,
+        44228,
+        "C62",
+        "Obrigatoriedade do atributo 'Ident' na informação adicional '1408'",
+        "O preenchimento do atributo 'Ident' na informação adicional é obrigatório para <Inf Tp=\"1408\"> e deve assumir um dos valores possíveis segundo o anexo 37 do leiaute do Documento 3040, no formato de dois dígitos.",
+        null
+      ],
+      [
+        "s",
+        44317,
+        44348,
+        "C63",
+        "Sistema de Amortização",
+        "As operações de modalidade 0901, 0902, 0903 ou 0990 devem possuir informação adicional do Sistema de Amortização (Tp=\"2301\", Tp=\"2302\", Tp=\"2303\" ou Tp=\"2399\"). Nenhuma outra modalidade poderá possuir informação adicional Tp=\"23XX\".",
+        null
+      ],
+      [
+        "s",
+        44501,
+        44621,
+        "C64",
+        "Contabilização de Instrumentos Financeiros",
+        "As operações de modalidade 1803 (\"Debêntures\") devem possuir a tag <ContInstFin>. Nenhuma outra modalidade poderá possuir a tag <ContInstFin>.",
+        "12/2024"
+      ],
+      [
+        "s",
+        44501,
+        44621,
+        "C65",
+        "Contabilização de Instrumentos Financeiros - Valor de Mercado",
+        "O atributo 'VlrMercado' da tag <ContInstFin> é obrigatório para as categorias contábeis 02-Mantido para negociação, e 03-Disponível para venda.",
+        "12/2024"
+      ],
+      [
+        "s",
+        44562,
+        44682,
+        "C66",
+        "Ativo registrado como lastro ou componente de cesta de Instrumento de Cessão Fiduciária",
+        "Os atributos 'Cd' (Tipo de Instrumento) e 'Ident' (Número do Instrumento de Cessão Fiduciária) são obrigatórios para Informação Adicional 06XX, e 'Cd' deve assumir um dos valores segundo o anexo 36 do leiaute do Documento 3040.",
+        null
+      ],
+      [
+        "s",
+        44713,
+        45108,
+        "C67",
+        "Tag Sicor - Financiamentos rurais",
+        "Sempre que a modalidade da operação for 08XX (\"Financiamentos rurais\") e a data de contratação for a partir de 2013 e a operação não possuir a Característica Especial 38, a tag <Sicor> deverá ser informada. Nenhuma outra modalidade poderá possuir a tag <Sicor>.",
+        null
+      ],
+      [
+        "s",
+        "-",
+        45413,
+        "C68",
+        "Informação Complementar para Apuração do RWA",
+        "O atributo 'Cd' é obrigatório para Informação Adicional 2405 e 2406, e 'Cd' deve assumir um dos valores do Anexo 45 ou 46, respectivamente, do leiaute do Documento 3040.",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45658,
+        "C69",
+        "Preenchimento obrigatório para o campo Metodologia de Apuração da Provisão para Perdas Esperadas e Metodologia Diferenciada para taxa de juros efetiva",
+        "Se TpFundo = Vazio (não Fundo), então preenchimento obrigatório do campo MetodApPE em \"C\" ou \"S\" e campo MetodDifTJE em \"S\" ou \"N\"",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45658,
+        "C70",
+        "Preenchimento obrigatório para o campo Classificação do Ativo Financeiro (ClasAtFin)",
+        "Se TpFundo = Vazio (não Fundo), então preenchimento obrigatório do campo ClasAtFin da tag <ContInstFinRes4966> para as operações nas modalidades 1 a 11, 13, 14 e 18 e Naturezas 1,2,3,11,13,14,15 e 32.\nExceção: operações com Informação Adicional de saída 03xx. ",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45658,
+        "C71",
+        "Preenchimento obrigatório para o campo Estágio do Instrumento Financeiro (EstInstFin)",
+        "Se Metodologia de Apuração da Perda Esperada = Completa (MetodApPE = \"C\"), então preenchimento obrigatório do campo EstInstFin da tag <ContInstFinRes4966> para as Naturezas 1,2,3,11,13,14,15 e 32 e seguintes modalidades: \n1 a 14;\n15 com exceção das submodalidades 1511, 1512, 1513;\n18 e\n19 com característica especial 25 (Limite não cancelável unilateralmente). \nExceção: operações com Informação Adicional de saída 03xx. \n",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45658,
+        "C72",
+        "Preenchimento proibido para o campo Estágio do Instrumento Financeiro (EstInstFin)",
+        "Se Metodologia de Apuração da Perda Esperada for Simplificada (MetodApPE = \"S\"), então preenchimento do campo EstInstFin da tag <ContInstFinRes4966> é proibido.\n\n",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45717,
+        "C73",
+        "Preenchimento obrigatório para o campo Taxa de juros efetiva (TJE)",
+        "Se metodologia TJE pura (MetodDifTJE = \"N\") e Classificação do Ativo Financeiro do tipo CA ou VJORA  (ClasAtFin = 1 ou 2), então preenchimento obrigatório do campo TJE da tag <ContInstFinRes4966> para as modalidades de 1 a 11, 13, 14 e 18 para operações de naturezas de 1,2,3,11,13,14,15 e 32. \n\nExceção: operações com Informação Adicional de saída 03xx. ",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45658,
+        "C74",
+        "Preenchimento obrigatório para o campo Carteira Provisão Mínima (CartProvMin)",
+        "Se TpFundo = Vazio (não Fundo), então preenchimento obrigatório \"C1\", \"C2\", \"C3\", \"C4\" ou \"C5\" do campo CartProvMin da tag <ContInstFinRes4966> para as modalidades de 1 a 14 e 18 e operações de naturezas 1,2,3,11,13,14,15 e 32.\n\nExceção: operações com Informação Adicional de saída 03xx. ",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45717,
+        "C75",
+        "Preenchimento obrigatório para o campo Quantidade de Instrumento (QtdInst)\n",
+        "Se TpFundo = Vazio (não Fundo), então preenchimento obrigatório do campo QtdInst da tag <ContInstFinRes4966> para a modalidade 18xx.\n\nExceção: operações com Informação Adicional de saída 03xx. \n",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45717,
+        "C76",
+        "Preenchimento proibido para o campo Quantidade de Instrumento (QtdInst)\n",
+        "Se modalidade diferente de 18xx, o preenchimento do campo QtdInst da tag <ContInstFinRes4966> é proibido.",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45717,
+        "C77",
+        "Preenchimento obrigatório para o campo Valor Justo (VlrJusto)",
+        "Se Classificação do Ativo Financeiro = Valor Justo em Outros Resultados Abrangentes - VJORA ou Valor Justo no Resultado - VJR (ClasAtFin = 2 ou 3), então preenchimento obrigatório do campo VlrJusto da tag <ContInstFinRes4966> para operações das modalidades de 1 a 11,13, 14 e 18, naturezas 1,2,3,11,13,14,15 e 32. \n\nExceção: operações com Informação Adicional de saída 03xx. ",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45778,
+        "C78",
+        "Classificação contábil VJORA permitida apenas nas modalidades 14 e 18 sem característica de concessão de crédito.",
+        "A Classificação do Ativo Financeiro do tipo VJORA (ClasAtFin  = 2) só é permitida nas modalidades 14 e 18 (desde que não tenha característica especial 39 - com caracteristica de concessão de crédito) ",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45658,
+        "C79",
+        "Preenchimento obrigatório para o campo Valor Contábil Bruto (VlrContBr)",
+        "Se TpFundo = Vazio (não Fundo), então preenchimento obrigatório do campo VlrContBr da tag <ContInstFinRes4966> para as operações nas modalidades 1 a 11, 13, 14 e 18 e naturezas de 1,2,3,11,13,14,15 e 32. \n\nExceção: operações com Informação Adicional de saída 03xx. ",
+        null
+      ],
+      [
+        "s",
+        46143,
+        46327,
+        "C80",
+        "Obrigatório informar o Chassi- SNG quando houver garantia de veículo em até 60 dias da data da contratação",
+        "Se Modalidade = 0401 ou 1206 e Tipo de garantia <Tp> = 0330, 0430 ou 1003 e Situação da garantia <SitGar> = 01 e Sem Característica Especial 1 (Renegociação) e Data de Contratação >= 01/01/2021 e Data-base - Data de Contratação > 60 dias, então preenchimento obrigatório do campo <Ident> da tag de Garantias <Gar>, informando o Chassi do veículo.\n\nSe demais modalidades (ex-0401 e ex-1206) e Tipo de garantia <Tp> = 0330, 0430 ou 1003 e Situação da garantia <SitGar> = 01 e Sem Característica Especial 1 e Data de Contratação >= 01/06/2026, Data-base - Data de Contratação > 60 dias, então preenchimento obrigatório do campo <Ident> da tag de Garantias <Gar>, informando o Chassi do veículo.\n\nNão aplicável para operações com Informação de Saída 03xx;\nNão aplicável a Natureza 32.",
+        null
+      ],
+      [
+        "s",
+        46143,
+        46327,
+        "C81",
+        "Obrigatório informar a identificação do imóvel quando houver garantia imobiliária em até 4 meses da data da contratação",
+        "Se Modalidade = 0211, 0901 a 0990 e 1202 e Tipo de garantia <Tp> = 0332, 0333, 0334, 0432, 0433, 0434, 0566, 0567, 0568 ou 1005 e <SitGar> = 01 e Sem Característica Especial 1 (Renegociação) e Data de Contratação >= 01/01/2021, Data-base - Data de Contratação > 120 dias, então preenchimento obrigatório do campo <Ident> da tag de Garantias <Gar>, informando o CNS (6 dígitos) + Matrícula do Imóvel (7 dígitos) no Formato: CCCCCCNNNNNNN.\n\nSe Demais Modalidades (ex-0211, 0901 a 0990 e 1202) e Tipo de garantia <Tp> = 0332, 0333, 0334, 0432, 0433, 0434, 0566, 0567, 0568 ou 1005 e <SitGar> = 01 e Sem Característica Especial 1 (Renegociação) e Data de Contratação >= 01/06/2026, Data-base - Data de Contratação > 120 dias, então preenchimento obrigatório do campo <Ident> da tag de Garantias <Gar>, informando o CNS (6 dígitos) + Matrícula do Imóvel (7 dígitos) no Formato: CCCCCCNNNNNNN.\n\nNão aplicável para operações com Informação de Saída 03xx;\nNão aplicável a Natureza 32.",
+        null
+      ],
+      [
+        "s",
+        46143,
+        46235,
+        "C82",
+        "Obrigatória identificação do garantidor (PJ com 14 caracteres)",
+        "Se garantia Gar.Tp = 0671, 0672, 0673, 0886, então Gar.Ident deve ser informado com 14 caracteres verificados.",
+        null
+      ],
+      [
+        "s",
+        46023,
+        46082,
+        "C83",
+        "Obrigatoriedade dos campos Motivo de alocação no Estágio e Data-base da Alocação",
+        "Se informado o Estágio do Instrumento Financeiro (EstInstFin) e sem Informação Adicional de saída 03xx, e MetodApPE=\"C\", então os campos Motivo de alocação no Estágio (Motivo) e Data-base da Alocação (DtAlocacao) são obrigatórios.",
+        null
+      ],
+      [
+        "s",
+        46023,
+        46174,
+        "C85",
+        "Obrigatoriedade do campo Rendas do mês (RendMes) para Ativo Financeiro",
+        "Se TpFundo = Vazio (não Fundo) e modalidade de 1 a 13 e natureza 1,2,3,11,13,14,15 e 32, então é obrigatório informar o campo RendMes.\nExceção: operações em prejuízo.",
+        null
+      ]
+    ],
+    "nrows": 84,
+    "ncols": 7
+  },
+  {
+    "name": "Formato",
+    "rows": [
+      [
+        "Formato dos Campos",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "Descreve as críticas que determinarão os formatos dos campos no documento 3040.",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "Habilitado?",
+        "Alerta",
+        "Erro",
+        "Código",
+        "Regra",
+        "Descrição"
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "F01",
+        "Taxa efetiva anual",
+        "Forma de taxa percentual anual, em uma base centesimal, com a utilização de duas a sete casas decimais depois da vírgula e arredondada mediante a aplicação da regra estabelecida pela Associação Brasileira de Normas Técnicas (ABNT). "
+      ],
+      [
+        "s",
+        "n/a",
+        40422,
+        "F02",
+        "Datas",
+        "As datas deverão obedecer o formato AAAA-MM-DD, onde AAAA equivale aos 4 dígitos do ano, MM aos 2 dígitos correspondentes ao mês e DD aos 2 dígitos correspondentes ao dia."
+      ],
+      [
+        "s",
+        "n/a",
+        " jan/11",
+        "F03",
+        "Código do contrato",
+        "O código do contrato não pode ser preenchido apenas com espaços em branco."
+      ],
+      [
+        "n",
+        null,
+        null,
+        "F04",
+        "Conglomerado econômico",
+        "O código alfanumérico do conglomerado não pode ser igual a \"0\" (zero)."
+      ],
+      [
+        "s",
+        44228,
+        "-",
+        "F05",
+        "Formato do campo RefBacen na tag Sicor",
+        "Para operações de crédito contratadas a partir de janeiro de 2013, os quatro primeiros dígitos do atributo 'RefBacen', na tag <Sicor>, devem corresponder a um ano a partir de 2013."
+      ]
+    ],
+    "nrows": 9,
+    "ncols": 6
+  },
+  {
+    "name": "Semântica",
+    "rows": [
+      [
+        "Regras Semânticas",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "Descreve regras semânticas que serão aplicadas dentro do documento 3040.",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "Habilitado?",
+        "Alerta",
+        "Erro",
+        "Código",
+        "Regra",
+        "Descrição",
+        "Vigente até "
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "S01",
+        "Detalhamento do cliente",
+        "O campo de “Detalhamento de Cliente” (DetCli) deverá possuir os 8 primeiros números iguais à “Identificação do Cliente” (atributo Cd em <Cli>).",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "S02",
+        "Vendor - Necessidade de informação adicional",
+        "Se modalidade de operação == 0404 ou 0207 então Tipo de informação adicional == 0201 (e suas implicações de campos de Informação Adicional) \nHabilitado para data-base fevereiro de 2011. ",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "S03",
+        "Ocultação de operação em prejuízo há mais de 48 meses",
+        "Se houver código de vencimento 330, deve haver característica especial 11 \nHabilitado para data-base fevereiro de 2011.",
+        null
+      ],
+      [
+        "n",
+        "n/a",
+        40544,
+        "S04",
+        "Crédito a liberar - não aplicabilidade",
+        "Não poderão ter preenchidos os vencimentos de crédito a liberar (vencimentos 60 e 80) as modalidades “crédito rotativo vinculado a cartão de crédito” (0204), “cartão de crédito - compra parcelada” (0210), “cartão de crédito - compra à vista” (1304), “cheque especial e conta garantida” (0201),  cheque especial (0213) e conta garantida (0214)",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "S05",
+        "Limite de crédito - vencimentos possíveis",
+        "A modalidade “Limite de Crédito” (19) só pode ter vencimentos de limite (20 e 40). Nenhum outro vencimento pode ser aceito quando esta modalidade for informada.",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "S06",
+        "Vencimentos 20 e 40 - modalidade possível",
+        "Os vencimentos 20 e 40 só podem ser preenchidos com a modalidade “Limite de Crédito” (19).",
+        null
+      ],
+      [
+        "n",
+        40544,
+        40787,
+        "S08",
+        "Natureza 11 - informação adicional necessária",
+        "Exceto nos casos de informação adicional de saída, se a natureza for 11, deve haver pelo menos uma Informação Adicional sobre “cessão com coobrigação entre instituições financeiras – informação de cedente” (InfoAdicional == 0102 ou 0103 ou 0104)",
+        null
+      ],
+      [
+        "s",
+        40544,
+        40787,
+        "S09",
+        "Natureza 04 - informação adicional necessária",
+        "Exceto nos casos de informação adicional de saída, se a natureza for 04, deve haver uma (e apenas uma) Informação Adicional sobre “cessão com coobrigação entre instituições financeiras – informação de cessionário” (InfoAdicional == 0101 ou 0105).",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "S10",
+        "Verificação de CNPJ e CPF",
+        "Verificação de CNPJ 14 para Tp=“2” e CPF 11 para Tp=“1”",
+        null
+      ],
+      [
+        "n",
+        null,
+        null,
+        "S12",
+        "Compatibilidade entre data de vencimento e valor dos vencimentos distribuídos no fluxo",
+        "A data de vencimento da operação “DtVencOp” deve ser compatível com o máximo fluxo de vencimento informado nas parcelar a vencer, ou seja, a data de vencimento tem que ser menor ou igual ao maior código onde houver informação (códigos v110 a v190).\nSe DtVencOp - Data-Base (de referência) <  5400, não pode haver vencimento = v190\nSe DtVencOp - Data-Base (de referência) <  1801, não pode haver v180 <= vencimento <= v200\nSe DtVencOp - Data-Base (de referência) <  1441, não pode haver v175 <= vencimento <= v200\nSe DtVencOp - Data-Base (de referência) <  1081, não pode haver v170 <= vencimento <= v200\nSe DtVencOp - Data-Base (de referência) <  721, não pode haver v165 <= vencimento <= v200\nSe DtVencOp - Data-Base (de referência) <  361, não pode haver v160 <= vencimento <= v200\nSe DtVencOp - Data-Base (de referência) <  181, não pode haver v150 <= vencimento <= v200\nSe DtVencOp - Data-Base (de referência) <  91, não pode haver v140 <= vencimento <= v200\nSe DtVencOp - Data-Base (de referência) <  61, não pode haver v130 <= vencimento <= v200\nSe DtVencOp - Data-Base (de referência) <  31, não pode haver v120 <= vencimento <= v200",
+        null
+      ],
+      [
+        "s",
+        40544,
+        40940,
+        "S13",
+        "Garantidor fidejussório não pode ser cliente principal",
+        "Dentro de uma operação, um garantidor fidejussório não pode ser o próprio cliente. Para pessoas físicas, <Cli Cd=\"\"> deve ser diferente de <Gar Ident=\"\">. Para pessoas jurídicas, <Op DetCli=\"\"> deve ser diferente de <Gar Ident=\"\"> - para pessoa jurídica devem ser utilizados 14 dígitos.",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "S14",
+        "Compatibilidade entre data de vencimento e data de contratação de uma operação",
+        "A data de vencimento da operação “DtVencOp”, quando houver, deve ser maior ou igual à data de contratação da operação “DtContr”. Regra não aplicada nas operações com informação adicional de saída e nas operações adquiridas de naturezas 02 a 05 com créditos vencidos ou baixados.",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "S15",
+        "Compatibilidade de data de contratação",
+        "Data de contratação da operação (DtContr) tem de ser menor ou igual do que data atual (hoje()).",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "S17",
+        "Compatibilidade de tipo de cliente e identificação do cliente",
+        "Se TpCli=1, Cd deve ter 11 dígitos.\nSe TpCli=2, Cd deve ter 8 dígitos.",
+        null
+      ],
+      [
+        "s",
+        40422,
+        null,
+        "S19",
+        "Data-base anterior à menor data-base admissível",
+        "A data-base do documento deve ser igual ou posterior à data-base 09/2010.",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "S20",
+        "Distribuição de vencimentos de créditos baixados como prejuízo com Classificação de risco incompatível",
+        "Exceto para operações de natureza 34, quando vencimentos = 310, 320 e 330, ClassOp deve ser HH.",
+        "12/2024"
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "S21",
+        "Coobrigação com distribuição de vencimentos incompatíveis",
+        "As operações com modalidade de operação 15 (Mod=15XX) não podem ter códigos de vencimento igual a 310, 320 e 330",
+        null
+      ],
+      [
+        "s",
+        40544,
+        40787,
+        "S22",
+        "Coobrigação com tipo de pessoa incompatível",
+        "Operações com a modalidade 1511 não podem ser ter pessoa física como devedor.",
+        null
+      ],
+      [
+        "s",
+        40544,
+        40787,
+        "S23",
+        "Incompatibilidade de tipo de pessoa em aquisição de operações",
+        "Operações de natureza 04 não podem ter pessoa física como devedor",
+        null
+      ],
+      [
+        "s",
+        40544,
+        40787,
+        "S25",
+        "Não pode haver autocessão ",
+        "Uma instituição não pode fazer cessões de crédito para ela mesma, ou seja, o CNPJ do cabeçalho não pode ser igual a nenhum código de informações adicionais do tipo 0102 ou 0103 ou 0104 (<Doc3040 CNPJ=\"\"> deve ser diferente de <Inf Ident=\"\"> quando <Inf Tp=\"0102 ou 0103 ou 0104\">).",
+        null
+      ],
+      [
+        "s",
+        40544,
+        40787,
+        "S26",
+        "Natureza 02 - informação adicional necessária ",
+        "Exceto nos casos de informação adicional de saída, se a natureza for 02, deve haver pelo menos uma Informação Adicional sobre “Aquisição de operações sem retenção de risco - de pessoa integrante do SFN” (InfoAdicional == 1001).",
+        null
+      ],
+      [
+        "s",
+        40544,
+        40787,
+        "S27",
+        "Natureza 03 - informação adicional necessária ",
+        "Exceto nos casos de informação adicional de saída, se a natureza for 03, deve haver pelo menos uma Informação Adicional sobre “Aquisição de operações sem retenção de risco - de pessoa não integrante do SFN” (InfoAdicional == 1002). ",
+        null
+      ],
+      [
+        "s",
+        40544,
+        40909,
+        "S28",
+        "Dias de atraso da parcela mais atrasada de operações vencidas deve ser compatível com vencimentos",
+        "Se 0 < DiaAtraso <= 14, não pode haver vencimentos de v210 a 290\nSe 15 =< DiaAtraso <= 30, não pode haver vencimentos de v220 a 290 \nSe 31 =< DiaAtraso <= 60, não pode haver vencimentos de v230 a 290 \nSe 61 =< DiaAtraso <= 90, não pode haver vencimentos de v240 a 290 \nSe 91 =< DiaAtraso <= 120, não pode haver vencimentos de v245 a 290 \nSe 121 =< DiaAtraso <= 150, não pode haver vencimentos de v250 a 290 \nSe 151 =< DiaAtraso <= 180, não pode haver vencimentos de v255 a 290\nSe 181 =< DiaAtraso <= 240, não pode haver vencimentos de v260 a 290\nSe 241 =< DiaAtraso <= 300, não pode haver vencimentos de v270 a 290\nSe 301 =< DiaAtraso <= 360, não pode haver vencimentos de v280 a 290\nSe 361 =< DiaAtraso <= 540, não pode haver vencimentos 290\nSe não houver DiaAtraso, não pode haver vencimentos de v205 a 290                                 ",
+        null
+      ],
+      [
+        "s",
+        40544,
+        "-",
+        "S29",
+        "Dias de atraso da parcela mais atrasada de operações em prejuízo deve ser compatível com vencimentos",
+        "Se houver vencimento 310, DiaAtraso deve ser maior do que 180\nSe houver vencimento 320, DiaAtraso deve ser maior do que 540\nSe houver vencimento 330, DiaAtraso deve ser maior do que 1620",
+        "10/2024"
+      ],
+      [
+        "s",
+        40817,
+        41000,
+        "S30",
+        "Natureza 05 - informação adicional necessária",
+        "Exceto nos casos de informação adicional de saída, se a natureza for 05, deve haver uma (e apenas uma) Informação Adicional sobre “Negociação de operações com pessoa não integrante do SFN com retenção de risco - Informação de cessionário” ou \"Cessão com retenção de risco entre instituições financeiras - Informação de cessionário\" (InfoAdicional == 0701).",
+        null
+      ],
+      [
+        "s",
+        40817,
+        41122,
+        "S31",
+        "Natureza 12 e 16 - informação adicional necessária",
+        "Exceto nos casos de informação adicional de saída, se a natureza for 12 ou 16, deve haver pelo menos uma Informação Adicional sobre “Negociação de operações sem retenção de risco - Transferido a pessoa não integrante do SFN” (InfoAdicional == 1003).",
+        null
+      ],
+      [
+        "n",
+        40817,
+        41122,
+        "S32",
+        "Natureza 13, 14 e 15 - informação adicional necessária",
+        "Exceto nos casos de informação adicional de saída, se a natureza for 13 ou 14 ou 15, deve haver pelo menos uma Informação Adicional sobre “Negociação de operações com pessoa não integrante do SFN com retenção de risco - transferidor de operação\" (InfoAdicional == 0702 ou 0703 ou 0704 ou 0705 ou 0706 ou 0707).",
+        null
+      ],
+      [
+        "s",
+        40909,
+        41000,
+        "S33",
+        "Compatibilidade entre informações adicionais e naturezas",
+        "Informações adicionais de negociação de operações exigem a correta natureza de operação:\nSe InfoAdicional = 0101 ou 0105, natureza de operação deve ser 04 ou 11 a 16\nSe InfoAdicional = 0102 ou 0103 ou 0104, natureza de operação deve ser 11\nSe InfoAdicional = 0701, natureza de operação deve ser 05 ou 11 a 16\nSe InfoAdicional = 0702 ou 0703 ou 0704 ou 0705 ou 0706 ou 0707, natureza de operação deve ser 13 ou 14 ou 15\nSe InfoAdicional = 1001, natureza de operação deve ser 02 ou 11 a 16\nSe InfoAdicional = 1002, natureza de operação deve ser 03 ou 11 a 16\nSe InfoAdicional = 1003, natureza de operação deve ser 12 ou 16",
+        null
+      ],
+      [
+        "s",
+        41153,
+        null,
+        "S34",
+        "Compatibilidade de código de contrato de cessão",
+        "Numa operação cedida: \n\n1) o código do contrato de cessão, instruído na informação adicional <Inf Tp=\"1202\">, deve referenciar a operação de cessão no documento 3040. Assim, o atributo \"Cd\" da informação adicional <Inf Tp=\"1202\"> da operação cedida deve ser igual ao atributo \"Cd\" de outra operação com a ”tag” <Op Mod=\"1511\">, <Op Mod=\"1512\">,  <Op Mod=\"2001\"> ou <Op Mod=\"2002\"> ; \n\n2) A modalidade informada na operação cedida deve ser igual a informada na informação adicional <Inf Tp=\"1201\"> do respectivo contrato de cessão. Ou seja, o atributo \"Mod\" da” tag” <Op> da operação cedida que possui informação adicional <Inf Tp=\"1202\"> (referencia para o contrato de cessão) deve ser igual ao atributo \"Ident\" da informação adicional <Inf Tp=\"1201\"> do respectivo contrato de cessão; e \n\n3) O cessionário informado na informação adicional <Inf Tp=\"0102 ou 0103 ou 0104 ou 0702 ou 0703 ou 0704 ou 0705 ou 0706 ou 0707\"> da operação cedida deve ser igual ao informado no respectivo contrato de cessão. Ou seja, o atributo \"Ident\" da informação adicional <Inf Tp=\"0102 ou 0103 ou 0104 ou 0702 ou 0703 ou 0704 ou 0705 ou 0706 ou 0707\"> da operação cedida que também possui a informação adicional <Inf Tp=\"1202\"> (referência para o contrato de cessão) deve ser igual ao atributo \"Cd\" da tag <Cli> do contrato de cessão referenciado. Deve haver pelo menos um código de registro de retenção de risco em contrato de cessão igual ao código de contrato(s) de cessão informado(s) em operações cedidas. Ou seja, deve haver pelo menos um registro de um código de contrato de cessão (identificado pelo atributo \"Cd\" na tag <Op Mod=\"1511\"> ou <Op Mod=\"1512\">) igual ao informado no código informado no atributo \"Cd\" de operações com informação adicional <Inf Tp=\"1202\">. ",
+        null
+      ],
+      [
+        "n",
+        41183,
+        null,
+        "S35",
+        "Compatibilidade de modalidade em contrato de cessão",
+        "Consolidação da regra na Regra S34. A modalidade informada na operação cedida deve ser igual a informada na informação adicional <Inf Tp=\"1201\"> do respectivo contrato de cessão. Ou seja, o atributo \"Mod\" da” tag” <Op> da operação cedida que possui informação adicional <Inf Tp=\"1202\"> (referencia para o contrato de cessão) deve ser igual ao atributo \"Ident\" da informação adicional <Inf Tp=\"1201\"> do respectivo contrato de cessão. A modalidade informada em operações que possuem InfoAdicional 1202 deve ser a mesma modalidade informada em seu registro de retenção de risco em contrato de cessão associado. Ou seja, se o atributo \"Cd\" na tag <Inf Tp=\"1202\"> for igual ao atributo \"Cd\" na tag <Op> de operações com <Inf Tp=\"1201\">, o atributo \"Mod\" da tag <Op> quando <Inf Tp=\"1202\"> deve ser igual ao atributo \"Ident\" da tag <Inf Tp=\"1201\">.",
+        null
+      ],
+      [
+        "s",
+        41153,
+        null,
+        "S36",
+        "Compatibilidade de valores informados em contrato de cessão",
+        "O valor original das operações, informado na informação adicional <Inf Tp=\"1201\"> do contrato de cessão, deve ser maior ou igual à somatória dos vencimentos das respectivas operações cedidas. Ou seja, o atributo \"Valor\" da informação adicional <Inf Tp=\"1201\"> do contrato de cessão deve ser maior ou igual à somatória dos vencimentos da “tag” <Venc> das operações cedidas que possuem a informação adicional <Inf Tp=\"1202\"> (referencia para o contrato de cessão).",
+        null
+      ],
+      [
+        "n",
+        null,
+        null,
+        "S37",
+        "Compatibilidade de nível de risco informado em contrato de cessão",
+        "Eliminação da regra. A classificação de risco no contrato de cessão deve ser equivalente à classificação de risco ponderada das operações que possuam o mesmo código de contrato informado no atributo nas InfoAdicionais. Ou seja, quando o atributo \"Cd\" da tag <Inf Tp=\"1202\"> [pacote A] for igual ao atributo \"Cd\" da tag <Op> em operações que possuam <Inf Tp=\"1201\"> [contrato B], a classificação de risco do contrato no atributo \"ClassOp\" do contrato B deve ser igual à ponderação das classificações de risco das operações contidas no pacote A. Para maior detalhamento sobre como calcular a ponderação, acesse o \"Manual de Informações de Negociação de Operações\" na página do SCR.",
+        null
+      ],
+      [
+        "s",
+        41153,
+        null,
+        "S38",
+        "Compatibilidade de datas em contrato de cessão",
+        "A data informada na informação adicional <Inf Tp=\"0102 ou 0103 ou 0104 ou 0702 ou 0703 ou 0704 ou 0705 ou 0706 ou 0707\"> da operação cedida deve ser igual a informada na informação adicional <Inf Tp=\"1201\"> do respectivo contrato de cessão. Ou seja, o atributo \"Cd\" da informação adicional <Inf Tp=\"0102 ou 0103 ou 0104 ou 0702 ou 0703 ou 0704 ou 0705 ou 0706 ou 0707\"> da operação cedida que também possui a informação adicional <Inf Tp=\"1202\"> (referência para o contrato de cessão) deve ser igual ao atributo \"Cd\" da informação adicional <Inf Tp=\"1201\"> do contrato de cessão referenciado. A data informada em operações que possuem InfoAdicional 1201 deve ser a mesma modalidade informada nas operações originais que se referem ao contrato de cessão. Ou seja, se o atributo \"Cd\" na tag <Inf Tp=\"1202\"> for igual ao atributo \"Cd\" na tag <Op> de operações com <Inf Tp=\"1201\">, o atributo \"Cd\" da tag <Inf Tp=\"0102 ou 0103 ou 0104 ou 0702 ou 0703 ou 0704 ou 0705 ou 0706\"> quando houver <Inf Tp=\"1202\"> deve ser igual ao atributo \"Cd\" da tag <Inf Tp=\"1201\">.",
+        null
+      ],
+      [
+        "n",
+        41183,
+        null,
+        "S39",
+        "Compatibilidade de cessionário informados em contrato de cessão",
+        "Consolidação da regra na Regra S34. O cessionário informado na informação adicional <Inf Tp=\"0102 ou 0103 ou 0104 ou 0702 ou 0703 ou 0704 ou 0705 ou 0706 ou 0707\"> da operação cedida deve ser igual ao informado no respectivo contrato de cessão. Ou seja, o atributo \"Ident\" da informação adicional <Inf Tp=\"0102 ou 0103 ou 0104 ou 0702 ou 0703 ou 0704 ou 0705 ou 0706 ou 0707\"> da operação cedida que também possui a informação adicional <Inf Tp=\"1202\"> (referência para o contrato de cessão) deve ser igual ao atributo \"Cd\" da tag <Cli> do contrato de cessão referenciado. O cessionário informado em operações que possuem InfoAdicional 1201 deve ser igual ao cessionário informado nas operações originais que se referem ao contrato de cessão. Ou seja, se o atributo \"Cd\" na tag <Inf Tp=\"1202\"> for igual ao atributo \"Cd\" na tag <Op> de operações com <Inf Tp=\"1201\">, o atributo \"Ident\" da tag <Inf Tp=\"0102 ou 0103 ou 0104 ou 0702 ou 0703 ou 0704 ou 0705 ou 0706\"> quando houver <Inf Tp=\"1202\"> deve ser igual ao atributo \"Cd\" da tag <Cli> quando <Inf Tp=\"1201\">.",
+        null
+      ],
+      [
+        "s",
+        41122,
+        41153,
+        "S40",
+        "Informações completas de cessão nas operações originais",
+        "Exceto nos casos de informação adicional de saída, Quando houver informações adicionais 0102 ou 0103 ou 0104 ou 0702 ou 0703 ou 0704 ou 0705 ou 0706 ou 0707 deve haver informação adicional 1202.",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        41122,
+        "S41",
+        "Verificação de formatação de CNPJ",
+        "O atributo “Ident” das informações adicionais 01 (exceto 0105), 0303, 1001 e 1203 devem ser CNPJs de 8 dígitos.",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40969,
+        "S42",
+        "Compatibilidade de informação de cedente de operação - cedente",
+        "O informante do documento deve ser igual ao cedente de operações de modalidade 1512. Ou seja, se <Inf Tp=\"1203\">, o atributo <Inf Tp=\"1203\" Ident=\"\"> deve ser igual a <Doc3040 CNPJ=\"\">",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        41122,
+        "S43",
+        "Compatibilidade de informação de cedente de operação - cessionário",
+        "O cedente informado nas informações adicionais de tipo 0101 ou 0701 deve ser igual ao cliente dessa operação. Ou seja, se <Inf Tp=\"0101\"> ou <Inf Tp=\"0701\">, o atributo <Inf Tp=\"0101\" Ident=\"\"> ou <Inf Tp=\"0701\" Ident=\"\"> deve ser igual a <Cli Cd=\"\">",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40940,
+        "S44",
+        "Característica especial “35” para operações cedidas a partir de 01/01/12",
+        "A característica especial “35” só pode ser utilizada para marcar operações cedidas ou adquiridas, ou seja, para operações que sejam: de naturezas 04, 05, 11 e 13 a 15 e modalidades 01 a 13, 1402 ou 1403; ou natureza 01 e modalidade 1511 ou 1512 ou 1513 ou 2001 ou 2002.",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        41122,
+        "S45",
+        "Verificação de formatação de CNPJ e CPF",
+        "O atributo “Ident” das informações adicionais 0304, 07, 1002, 1003 e 2101 devem ser CPFs válidos de 11 dígitos ou CNPJs de 8 dígitos.",
+        null
+      ],
+      [
+        "s",
+        41030,
+        41061,
+        "S46",
+        "Verificação de formatação de data em Informações Adicionais",
+        "O atributo \"Cd\" das Informações Adicionais 01, 0303, 0304, 07, 10, 1201 e 1701 deve ser informado no formato AAAA-MM-DD, onde AAAA equivale aos 4 dígitos do ano, MM aos 2 dígitos correspondentes ao mês e DD aos 2 dígitos correspondentes ao dia.",
+        null
+      ],
+      [
+        "s",
+        41671,
+        41671,
+        "S47",
+        "Proibição de Modalidades excluídas",
+        "As modalidades 0201 (cheque especial e conta garantida), 0205 (capital de giro com prazo de vencimento inferior a 30 d) e 0206 (capital de giro com prazo vencim. igual ou superior 30 d) são proibidas a partir da database fev/2014. Exceção: “Na database fevereiro/2014, operações nas modalidades 0201, 0205 ou 2006 serão excepcionalmente aceitas apenas nos casos em que possuam informação adicional de saída.” (Esta regra será referenciada como erro de XSD, apontando para a Regra B01)",
+        null
+      ],
+      [
+        "s",
+        41883,
+        42309,
+        "S48",
+        "Obrigatoriedade da informação do SNG para modalidades “0401” e “1206”",
+        "Exceto em casos de Informação Adicional de Saída, as modalidades “0401” (aquisição de bens – veículos automotores) e “1206” (arrendamento financeiro de veículos automotores) requerem a Informação Adicional Inf Tp=”0401” (Registro do Chassi do veículo na Cetip - Sistema Nacional de Gravames). ",
+        "04/2026"
+      ],
+      [
+        "n",
+        null,
+        null,
+        "S49",
+        "Compatibilidade de informação de cessionário de operação - cedente",
+        "O cedente informado nas informações adicionais de tipo 1001 ou 1002 deve ser diferente do cliente dessa operação. Ou seja, se <Inf Tp=\"1001\"> ou <Inf Tp=\"1002\">, o atributo <Inf Tp=\"1001\" Ident=\"\"> ou <Inf Tp=\"1002\" Ident=\"\"> deve ser diferente do <Cli Cd=\"\">",
+        null
+      ],
+      [
+        "s",
+        41913,
+        42309,
+        "S50",
+        "Compatibilidade de informação de cliente - crédito pessoal",
+        "Na carteira ativa, as submodalidades 0202 e 0203 de Naturezas de 1 a 3, o tipo de cliente informado deve ser 1, 3 ou 5, ou seja, para operações  com código de vencimento “vCOD” entre “v110” e “v290”, se (<Op NatuOp=\"x\">, onde x pode assumir os valores 1, 2 ou 3) e (<Op Mod=\"0202\"> ou <Op Mod=\"0203\">), então (<Cli Tp=\"1\"> ou <Cli Tp=\"3\"> ou <Cli Tp=\"5\">).",
+        null
+      ],
+      [
+        "s",
+        41913,
+        42309,
+        "S51",
+        "Compatibilidade de informação de cliente - repasses",
+        "Para a submodalidade 1401, o tipo de cliente informado deve ser 2, 4 ou 6, ou seja, se <Op Mod=\"1401\">, então (<Cli Tp=\"2\"> ou <Cli Tp=\"4\"> ou <Cli Tp=\"6\">).",
+        null
+      ],
+      [
+        "s",
+        41913,
+        42309,
+        "S52",
+        "Compatibilidade de informação de taxa de juros - cartão de crédito - compra à vista e parcelado lojista",
+        "Para a submodalidade 1304, a taxa de juros informada deve ser 0 (zero), ou seja, se <Op Mod=\"1304\">, então <Op TaxEft=0>.",
+        null
+      ],
+      [
+        "s",
+        42583,
+        42614,
+        "S53",
+        "Crédito a liberar - não aplicabilidade",
+        "Não poderão ter preenchidos os vencimentos de crédito a liberar (vencimentos 60 e 80) as modalidades \"adiantamento a depositantes\"  (0101), “crédito rotativo vinculado a cartão de crédito” (0204), “cartão de crédito - compra parcelada” (0210), “cartão de crédito - compra à vista” (1304), “cheque especial (0213) e conta garantida” (0214).",
+        null
+      ],
+      [
+        "s",
+        42583,
+        42614,
+        "S54",
+        "Natureza 11 - informação adicional necessária",
+        "Exceto nos casos de informação adicional de saída, se a natureza for 11, deve haver uma (e apenas uma) Informação Adicional sobre “cessão com coobrigação entre instituições financeiras – informação de cedente” (InfoAdicional == 0102 ou 0103 ou 0104)",
+        null
+      ],
+      [
+        "s",
+        42583,
+        42614,
+        "S55",
+        "Natureza 13, 14 e 15 - informação adicional necessária",
+        "Exceto nos casos de informação adicional de saída, se a natureza for 13 ou 14 ou 15, deve haver uma (e somente uma) Informação Adicional sobre “Negociação de operações com pessoa não integrante do SFN com retenção de risco - transferidor de operação\" (InfoAdicional == 0702 ou 0703 ou 0704 ou 0705 ou 0706 ou 0707).",
+        null
+      ],
+      [
+        "s",
+        42675,
+        42736,
+        "S56",
+        "Mapeamento de Vencimentos de Operação de Risco HH",
+        "Exceto em casos de informação adicional de saída, quando ClassOp= HH , é necessário que haja vencimentos em algum dos vértices de prejuízo (v310, v320 ou v330).",
+        "12/2024"
+      ],
+      [
+        "s",
+        42675,
+        42736,
+        "S57",
+        "Falta de percentual de coobrigação",
+        "Nas informações adicionais 0101 a 0105 e 0702 a 0704, o percentual não pode ser igual a zero. Ou seja, se  <Inf Tp=“0101”> ou <Inf Tp=“0102”> ou <Inf Tp=“0103”> ou <Inf Tp=“0104”> ou <Inf Tp=“0105”> ou <Inf Tp=“0702”> ou <Inf Tp=“0703”> ou <Inf Tp=“0704”>, então <Perc ≠ 0>.",
+        null
+      ],
+      [
+        "s",
+        42675,
+        42736,
+        "S58",
+        "Cliente é a própria IF",
+        "Com exceção das modalidades 0204, 0406, 1304, 1403, 1501, 1502, 1599, 19XX, o cliente não pode ser igual ao CNPJ da instituição informante. Ou seja, se <Cli Cd= \"XXXXXXXX\", onde XXXXXXXX é o CNPJ da IF, então <Op Mod=“0204”> ou <Op Mod=“0406”> ou <Op Mod=“1304”> ou <Op Mod=“1403”> ou <Op Mod=“1501”> ou <Op Mod=“1502”> ou <Op Mod=“1599”> ou <Op Mod=“19XX”>. Esta regra não será aplicada para operações de natureza 32, 33 e 34.",
+        null
+      ],
+      [
+        "s",
+        42856,
+        42887,
+        "S59",
+        "Garantia FGTS",
+        "Só é permitida garantia de FGTS para operações de crédito pessoal – com ou sem consignação em folha de pagamento. Ou seja, se <Gar Tp=\"0889\">, então <Op Mod=\"0202\"> ou <Op Mod=\"0203\">.",
+        null
+      ],
+      [
+        "s",
+        42856,
+        42887,
+        "S60",
+        "Crédito rotativo - não migrado ",
+        "Para operações cuja modalidade é 0218, não é permitida a característica especial 18. Ou seja,  se <Op Mod = \"0218\">, então <CaracEspecial ≠ 18>.",
+        null
+      ],
+      [
+        "s",
+        42856,
+        42887,
+        "S61",
+        "Obrigatoriedade do campo valor contratado para as modalidades 0210 e 0406 provenientes de saldo remanescente do crédito rotativo",
+        "Para operações cujas modalidades são 0210 ou 0406 e característica especial 18, é obrigatório o campo valor contratado da operação. Ou seja, se <Op Mod = \"0210\"> ou <Op Mod = \"0406\"> e <CaracEspecial = \"18\">, então <VlrContr ≠ 0>.",
+        null
+      ],
+      [
+        "s",
+        43191,
+        43221,
+        "S62",
+        "Proibição da informação adicional 0308 - saída por baixa de limite de identificação - para clientes com operações individualizadas",
+        "Clientes informados de forma individualizada não podem apresentar operações com motivo de saída por baixa de limite de identificação (0308) e valores no vértice de vencimentos de outra operação pertencente a eles, exceto para operações de natureza 32. Ou seja, para <Cli> que apresentar <Inf Tp= \"0308\">, não poderá haver qualquer outra tag <Op> sem <Inf Tp = \"03XX\">. Esta regra não será aplicada para operações de natureza 32.",
+        null
+      ],
+      [
+        "s",
+        43891,
+        null,
+        "S63",
+        "Compatibilidade de informação entre Porte e Faturamento",
+        "Clientes informados com porte igual a zero não podem apresentar faturamento maior que 1. Ou seja, para tag <Cli>, se <PorteCli=0>, então <FatAnual<=1>.",
+        null
+      ],
+      [
+        "s",
+        "-",
+        43405,
+        "S64",
+        "Campos existentes somente para pessoa jurídica no exterior",
+        "Para clientes diferentes de pessoa jurídica no exterior - <Cli> <Tp≠\"4\">, não é permitido o preenchimentos dos campos “NomeCli”, “TpIdentExt”, “CodExt”, IdLiderBR” e “IdPais”",
+        null
+      ],
+      [
+        "s",
+        43497,
+        43556,
+        "S65",
+        "Verificação de formatação de CNPJ - Informação Adicional 0201 - Vendor/Interveniência",
+        "O atributo “Ident” da informação adicional 0201 - Vendor/Interveniência deve ser informado com CNPJ de 8 dígitos.",
+        null
+      ],
+      [
+        "n",
+        43556,
+        43647,
+        "S66",
+        "Aquisição de Recebíveis",
+        "Para a modalidade 1350, deverão ser aceitas todas as naturezas de operação, com exceção da 01. Ou seja, para <Mod=\"1350\">, então <NatuOp≠\"01\">.",
+        null
+      ],
+      [
+        "n",
+        43556,
+        43586,
+        "S67",
+        "Natureza da operação - Recebíveis de Arranjo de Pagamento",
+        "Para a modalidade 1402, deverão ser aceitas apenas as naturezas de operação 01, 02 e 03. Ou seja, para <Mod=\"1402\">, então <NatuOp=\"01\">, <NatuOp=\"02\"> ou <NatuOp=\"03\">.",
+        null
+      ],
+      [
+        "s",
+        43586,
+        43647,
+        "S68",
+        "Compatibilidade de informação entre Porte e Faturamento",
+        "Clientes informados com faturamento menor ou igual a 1,  só poderão apresentar porte igual a zero ou 1. Ou seja, para tag <Cli>, se <FatAnual<=1>, então <PorteCli=0>, ou <PorteCli=1>.",
+        null
+      ],
+      [
+        "s",
+        43647,
+        43678,
+        "S69",
+        "Compatibilidade de informação entre classificação de risco e provisão constituída",
+        "Para operações classificadas como prejuízo, o valor da provisão constituída deve ser zero. Ou seja, se <ClassOp>=HH, então <ProvConsttd>=0.00.",
+        "12/2024"
+      ],
+      [
+        "s",
+        43891,
+        43952,
+        "S70",
+        "Compatibilidade entre a data da contratação e a data-base para operações intramês",
+        "Para operações intramês, originadas e cedidas dentro do mesmo mês, a data da contratação deve ser igual à data-base. Ou seja, se <CaracEspecial> = 22, então <DtContr> = <DtBase>",
+        null
+      ],
+      [
+        "s",
+        43891,
+        43952,
+        "S71",
+        "Ente Consignante",
+        "O atributo \"Ident\" da informação adicional de Ente Consignante não pode ser igual ao Cliente da operação. Ou seja, para <Inf Tp> = 15XX, <Ident> ≠ <Cli Cd>.",
+        null
+      ],
+      [
+        "n",
+        43891,
+        43952,
+        "S72",
+        "Correspondente Bancário",
+        "O atributo \"Ident\" da informação adicional de Correspondente Bancário não pode ser igual ao Cliente da operação. Ou seja, para <Inf Tp> = 1601, <Ident> ≠ <DetCli>.",
+        null
+      ],
+      [
+        "s",
+        43891,
+        43952,
+        "S73",
+        "Saídas por cessão sem retenção de riscos e benefícios",
+        "O atributo \"Ident\" das informações adicionais de saída por cessão sem retenção de riscos a pessoa integrante ou não do SFN não pode ser igual ao Cliente da operação. Ou seja, para <Inf Tp> = 0303 ou <Inf Tp> = 0304, <Ident> ≠ <Cli Cd>.",
+        null
+      ],
+      [
+        "n",
+        null,
+        null,
+        "S74",
+        "Ativo Problemático",
+        "Operações que apresentem informação adicional de Reestruturação, e/ou vértice de vencimento acima de 240, e/ou classificação da operação de E a H, devem ser acompanhadas da característica especial de Ativo Problemático. Ou seja, se <Inf Tp = \"1701\">, e/ou <venc >= v240> e/ou <ClassOp = \"E\", \"F\", \"G\", ou \"H\">, então <CaracOp = \"19\">.",
+        null
+      ],
+      [
+        "s",
+        43891,
+        44013,
+        "S75",
+        "Duplicidade de Informações Adicionais",
+        "Para cada operação, a mesma informação adicional não pode ser repetida, caso possua exatamente os mesmos atributos.",
+        null
+      ],
+      [
+        "s",
+        44044,
+        44075,
+        "S76",
+        " Formato do campo CEP para operações realizadas em dependências no exterior",
+        "Para operações de natureza 32, o campo CEP deve assumir um dos valores relacionados no Anexo 30 do Leiaute do Documento 3040, no formato \"00000XXX\".",
+        null
+      ],
+      [
+        "n",
+        null,
+        null,
+        "S77",
+        " Formato do campo Localização para operações realizadas em dependências no exterior",
+        "Para operações de natureza 32, o campo Localização deve assumir um dos valores relacionados no Anexo 30 do Leiaute do Documento 3040, no formato \"00XXX\". ",
+        null
+      ],
+      [
+        "s",
+        44044,
+        44075,
+        "S78",
+        " Correspondente Bancário",
+        "O atributo 'Ident' da informação adicional não pode ser igual ao Cliente da operação, nem sua raiz (oito primeiros dígitos do atributo 'Ident') pode coincidir com o CNPJ da instituição. Ou seja, para <Inf Tp> = 1601, <Ident> ≠ <Detcli> e <Ident>(raiz) ≠ <CNPJ>.",
+        null
+      ],
+      [
+        "s",
+        44075,
+        44136,
+        "S79",
+        " Saídas - Alteração do IPOC",
+        "Nas declarações de saída de IPOC (Inf Tp> = “0316”), os campos <Cd> e <Qtd> são de preenchimento obrigatório, sendo o atributo <Cd> o “IPOC” de uma outra operação informada na mesma remessa.\nOu seja, se <Inf Tp> = “0316”, então <Cd> = <IPOC> de outra operação e <Qtd> ≠  nulo\n",
+        null
+      ],
+      [
+        "n",
+        null,
+        null,
+        "S80",
+        " Concatenação IPOC - data da contratação",
+        "Na data da contratação da operação, os elementos da concatenação do campo \"IPOC\" devem corresponder aos valores informados para a operação. Ou seja, se <DtContr> = <DtBase>, então <IPOC> = \"CNPJModCliTpCliCdContrt\" ",
+        null
+      ],
+      [
+        "s",
+        44044,
+        44136,
+        "S81",
+        " Concatenação IPOC - data posterior à de contratação",
+        "Na data posterior à de contratação da operação, os elementos CNPJ da instituição e Cliente da operação da concatenação do campo \"IPOC\" devem corresponder aos respectivos valores informados para a operação. Adicionalmente, a A submodalidade, outro componente um dos componentes de formação do IPOC, deve ser um dos valores relacionados no Anexo 3 do leiaute do 3040 (com 4 dígitos). Ou seja, para <IPOC> = \"CNPJModCliTpCliCdContrt\", então CNPJ = <CNPJ>, CliTp = <Tp>, CliCd = <Cd> e Mod pertencente a um dos valores do anexo 3.",
+        null
+      ],
+      [
+        "s",
+        null,
+        44136,
+        "S82",
+        " Concatenação IPOC - – tratamento do estoque até Novembro/2020",
+        "Os elementos da concatenação do campo \"IPOC\" do estoque da IF devem corresponder aos valores informados para cada operação. Ou seja, se <DtBase> = “202011”, então <IPOC> = \"CNPJModCliTpCliCdContrt\".",
+        null
+      ],
+      [
+        "s",
+        44044,
+        44136,
+        "S83",
+        " Compatibilidade de tipo de cliente e identificação do cliente",
+        "O número de dígitos informados para a identificação do cliente deve ser compatível com seu tipo. Ou seja, se Cli Tp = 1, Cli Cd deve ter 11 dígitos, se Cli Tp = 2, Cli Cd deve ter 8 dígitos e se Cli Tp = 3, 4, 5 ou 6, Cli Cd deve ter 14 dígitos",
+        null
+      ],
+      [
+        "s",
+        44136,
+        44166,
+        "S84",
+        "Operação não própria",
+        "O atributo 'Ident' na informação adicional <Inf Tp=\"2201\"> ou <Inf Tp=\"2202\"> deve ser um CNPJ válido com 14 dígitos, não pode coincidir com o detalhamento do cliente na operação, nem sua raiz (oito primeiros dígitos do atributo 'Ident') pode coincidir com o CNPJ da instituição. Ou seja, para <Inf Tp> = 2201 ou <Inf Tp> = 2202, <Ident> ≠ <Detcli> e <Ident>(raiz) ≠ <CNPJ>.",
+        null
+      ],
+      [
+        "s",
+        44317,
+        44440,
+        "S85",
+        "Data da próxima prestação a vencer",
+        "A data da próxima prestação a vencer (atributo \"DtaProxParcela\" da tag <Op>) não pode ser anterior à data de contratação da operação (atributo \"DtContr\" da tag <Op>) e não pode ser anterior à data de início do relacionamento com o cliente (atributo \"IniRelactCli\" da tag <Cli>).",
+        null
+      ],
+      [
+        "s",
+        "-",
+        44317,
+        "S86",
+        "Característica especial “25” para operações de modalidade \"19 - Limite\".",
+        "A característica especial “25” só pode ser utilizada para marcar operações de modalidade \"19 - Limite\", ou seja, 1901 até 1910, ou 1999.",
+        null
+      ],
+      [
+        "s",
+        "-",
+        44348,
+        "S87",
+        "Conexão de IPOCs - Unicidade",
+        "O IPOC informado através do atributo \"ipoc\" da tag \"<ipocCon>\" não deve ser informado mais de uma vez dentro da mesma tag \"<ConIpocs>\" ou dentro de outra tag \"<ConIpocs>\".",
+        null
+      ],
+      [
+        "s",
+        "-",
+        44348,
+        "S88",
+        "Conexão de IPOCs - Integridade",
+        "O IPOC informado através do atributo \"ipoc\" da tag \"<ipocCon>\" deve estar presente no documento 3040. Ou seja, deve ser informado em alguma operação através do atributo \"IPOC\" da tag \"<Op>\".",
+        null
+      ],
+      [
+        "s",
+        44531,
+        46204,
+        "S89",
+        "Garantia de Penhor Civil, apenas Caixa Econômica Federal",
+        "Garantia de penhor civil só pode ser utilizada se Instituição Financeira = 360305.",
+        null
+      ],
+      [
+        "s",
+        45139,
+        45170,
+        "S90",
+        "Tag Sicor - Créditos a liberar",
+        "Sempre que a modalidade da operação for 08XX (\"Financiamentos rurais\") e a operação for exclusiva de créditos a liberar (tiver somente vértices v60 e/ou v80), a tag <Sicor> não poderá ser informada.",
+        null
+      ],
+      [
+        "s",
+        45139,
+        45170,
+        "S91",
+        "Tag Sicor - Outras modalidades",
+        "Sempre que a modalidade da operação for diferente de 08XX (\"Financiamentos rurais\"), a tag <Sicor> não poderá ser informada.",
+        null
+      ],
+      [
+        "s",
+        "-",
+        45231,
+        "S92",
+        "Tag Sicor - Situação de Crédito Rural\t",
+        "Exceto nos casos de informação adicional de saída, a operação de crédito rural deve observar as seguintes condições em relação à situação informada na tag <Sicor> (Anexo 32 do leiaute do Documento 3040):\na) Se situação SOR01, SOR03 a SOR06, SOR11 ou SOR12, a operação deve possuir carteira ativa;\nb) Se situação SOR02, a operação deve possuir carteira ativa vencida;\nc) Se situação SOR09, a operação deve estar baixada para prejuízo;\nd) Se situação SOR07 ou SOR08, a operação não pode possuir carteira ativa.",
+        null
+      ],
+      [
+        "s",
+        45597,
+        45658,
+        "S93",
+        "Marcação Ativo Problemático operações vencidas acima de 90 dias",
+        "Se operação vencida acima de 90 dias, a marcação de Ativo Problemático é obrigatória. Se (V240 + V245 + V250 + V255 + V260 + V270 + V280 + V290) > 0, então característica especial 19 é obrigatória.",
+        null
+      ],
+      [
+        "s",
+        45597,
+        45658,
+        "S94",
+        "Marcação Ativo Problemático para operações reestruturadas",
+        "Reestruturação ocorrida na data-base, marcação do Ativo Problemático é obrigatória. Se \"Inf\" = 1701 e campo \"Cd\" / data da reestruturação contida na data-base, então característica especial 19 é obrigatória.\nObs.: a marcação de reestruturação Inf 1701 e Ativo Problemático CE 19 deve ser mantida enquanto a operação se mantiver em tais condições.",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45717,
+        "S95",
+        "Estágio 1 e 2 não pode haver Ativo Problemático",
+        "Para operações classificadas como Estágio 1 e 2, não poderá haver marcação de Ativo Problemático. Se EstFin = 1/2, então característíca especial 19 é proibida.",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45717,
+        "S96",
+        "Marcação Ativo Problemático operações no Estágio 3",
+        "Para operações classificadas como Estágio 3, marcação de Ativo Problemático obrigatória. Se EstFin = 3, então característíca especial 19 é obrigatória.",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45717,
+        "S97",
+        "Se atraso superior a 60 dias, não pode ser classificada como Estágio 1",
+        "Se metodologia de apuração da provisão para perdas esperadas = Completa e atraso superior a 60 dias, não pode estar classificada em Estágio 1. Se MetodApPE = 'C' e (V230 + V240 + V245 + V250 + V255 + V260 + V270 + V280 + V290) > 0, então o EstInstFin <> 1.",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45778,
+        "S98",
+        "Uso da Característica Especial 39 (TVM com característica de concessão de crédito) exclusivo para TVMs 18xx",
+        "Somente a modalidade 18xx pode conter a característica especial 39 - Ttulos com característica de concessão de crédito. \n\nExceção: operações com Informação Adicional de saída 03xx. ",
+        null
+      ],
+      [
+        "s",
+        45597,
+        45778,
+        "S99",
+        "Exigência de valor no vértice vencido correspondente aos dias de atraso da parcela mais atrasada (DiaAtraso), exceto para operações em prejuízo.",
+        "Se 1 =< DiaAtraso <= 14, deve haver valor em v205\nSe 15 =< DiaAtraso <= 30, deve haver valor em v210\nSe 31 =< DiaAtraso <= 60, deve haver valor em v220\nSe 61 =< DiaAtraso <= 90, deve haver valor em v230\nSe 91 =< DiaAtraso <= 120, deve haver valor em v240\nSe 121 =< DiaAtraso <= 150, deve haver valor em v245\nSe 151 =< DiaAtraso <= 180, deve haver valor em v250\nSe 181 =< DiaAtraso <= 240, deve haver valor em v255\nSe 241 =< DiaAtraso <= 300, deve haver valor em v260\nSe 301 =< DiaAtraso <= 360, deve haver valor em v270\nSe 361 =< DiaAtraso <= 540, deve haver valor em v280\nSe DiaAtraso>540, deve haver valor em v290\n\nNão se aplica a regra se houver V310, V320 ou V330.",
+        null
+      ],
+      [
+        "s",
+        45870,
+        46082,
+        "S100",
+        "Modalidade de Crédito Consignado é obrigatório o Ente Consignante",
+        "Se modalidade de operação = 0202 - Crédito Consignado, então Informação Adicional 1501, 1502 ou 1503 - Ente Consignante é obrigatória.\nExceção: operações com Informação Adicional de saída 03xx.",
+        null
+      ],
+      [
+        "s",
+        45870,
+        46082,
+        "S101",
+        "Se Ente Consignante INSS, CNPJ indicado deve ser do INSS ou Fundo Previdência",
+        "Se Informação Adicional = 1503 - Ente Consignante INSS e campo \"Cd\" diferente de 1, então campo \"Ident\" deve ser 29979036000140 ou 16727230000197.",
+        null
+      ],
+      [
+        "s",
+        45870,
+        46082,
+        "S102",
+        "Se modalidade 1899 - Outros TVMs, obrigatória marcação com característica de concessão de crédito",
+        "Se modalidade = 1899 - TVM Outros, então obrigatória a característica especial 39 - com característica de concessão de crédito.",
+        null
+      ],
+      [
+        "s",
+        45870,
+        46082,
+        "S103",
+        "Se operação baixada para prejuízo, não deve haver valor de carteira nem provisão constituída",
+        "Se v3xx > 0, então demais vértices devem ser = zero e Valor de Provisão Constituída deve ser = zero.",
+        null
+      ],
+      [
+        "s",
+        45870,
+        46235,
+        "S104",
+        "Valor de provisão constituída deve ser menor igual ao VCB + crédito a liberar",
+        "Se TpFundo = Vazio (não Fundo) e operações nas modalidades 1 a 11, 13, 14 e 18 e naturezas de 1,2,3,11,13,14,15 e 32 e sem informação adicional de saída, então Valor da provisão constituída (ProvConsttd) <= Valor Contábil Bruto (VlrContBr) + Valor do crédito a liberar (v60 + v80).",
+        null
+      ],
+      [
+        "s",
+        45839,
+        45870,
+        "S105",
+        "Se operação contratada no âmbito do Programa EcoInvest, informar o número do leilão.",
+        "Se Informação Adicional = 1408 e campo \"Ident\" = 11, então campo \"Valor\" deve ser preenchido.",
+        null
+      ],
+      [
+        "s",
+        46143,
+        46143,
+        "S106",
+        "Compatibilidade dos campos Tipo de Valor e Valor da Garantia",
+        "Se Tipo de Valor da Garantia <TpVlrGar> = 01, então Valor original da garantia <VlrOrig> é obrigatório e campos Percentual de garantia <PercGar> e Percentual reavaliado <PercData> proibidos;\nSe Tipo de Valor da Garantia <TpVlrGar> = 02, então Percentual de garantia <PercGar> é obrigatório e campos Valor original da garantia <VlrOrig> e Valor Reavaliado <VlrData> proibidos.",
+        null
+      ],
+      [
+        "s",
+        46143,
+        46143,
+        "S107",
+        "Compatibilidade dos campos Reavaliação da garantia e Valor/Percentual",
+        "Se Data de reavaliação (DtReav) informado e o Tipo de Valor da Garantia <TpVlrGar> = 01, então Valor reavaliado <VlrData> deve ser informado.\nSe Data de reavaliação (DtReav) informado e o Tipo de Valor da Garantia <TpVlrGar> = 02, então Percentual reavaliado <PercData> deve ser informado.\nSe Data de reavaliação (DtReav) não informado, campos <VlrData> e <PercData> proibidos.",
+        null
+      ],
+      [
+        "s",
+        46143,
+        46174,
+        "S108",
+        "Saída 0315 disponível apenas para modalidades de garantias prestadas",
+        "A saída 0315 - Encerramento de obrigação referente Garantias Prestadas só pode ser utilizada para as modalidades 15xx.",
+        null
+      ],
+      [
+        "s",
+        46143,
+        46327,
+        "S109",
+        "Saída 0317 deve haver uma garantia honrada",
+        "A saída 0317 - Operação de saída com execução da garantia deve ser acompanhada de uma garantia informada com Situação Honrada SitGar = 03.",
+        null
+      ],
+      [
+        "s",
+        46143,
+        46327,
+        "S110",
+        "Para garantia honrada, deve haver atualização do valor da garantia",
+        "Se Situação da Garantia for honrada (SitGar = 03), então os campos de valores reavaliados devem ser atualizados, ou seja, DtReav e VlrData ou PercData devem ser preenchidos.",
+        null
+      ],
+      [
+        "s",
+        45962,
+        46204,
+        "S111",
+        "Compatibilidade entre prazo e Modalidade de capital de giro 215 / 216",
+        "Modalidade 215 ou 216, exceto Saídas (Info adicional 03xx) ou Operações Renegociadas (Característica Especial = 1):\nSe modalidade 0215 - vencimento até 365 dias, então Data de vencimento (DtVencOp) menos Data de contratação (DtContr) deve ser menor ou igual a 365 dias;\nSe modalidade 0216 - vencimento acima de 365 dias, então Data de vencimento (DtVencOp) menos Data de contratação (DtContr) deve ser maior que 365 dias.",
+        null
+      ],
+      [
+        "s",
+        45962,
+        46204,
+        "S112",
+        "Saída por liquidação antecipada, operação não pode estar vencida",
+        "Informação adicional de Saída por liquidação antecipada - 0302, data-base deve ser menor ou igual que data de vencimento da operação.\nNão avaliado para operações com características rotativas: 0101, 0204, 0210, 0213, 0214, 0217, 0218, 0406, 1001, 1304, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909, 1910, 1999.",
+        null
+      ],
+      [
+        "s",
+        46023,
+        46082,
+        "S115",
+        "Motivo consistente com o estágio",
+        "Se informado o campo Motivo de alocação no Estágio (Motivo), então o domínio do Motivo deve ser igual ao estágio do instrumento financeiro (EstInstFin).",
+        null
+      ],
+      [
+        "s",
+        46023,
+        46174,
+        "S116",
+        "Quantidade de motivos de alocação a depender do estágio",
+        "Se informado o campo Motivo de alocação no Estágio (Motivo), então admite-se apenas uma tag Estagio (campos Motivo e DtAlocacao) se estiver no estágio 1 ou 2, mas podem ser múltiplos se for estágio 3.",
+        null
+      ],
+      [
+        "s",
+        46143,
+        46174,
+        "S117\n(NR)",
+        "Se operação contratada no âmbito do Programa Desenrola 2.0, informar o Valor Renegociado.",
+        "Se Informação Adicional = 1408 e campo \"Ident\" = 13, então campo \"Valor\" deve ser preenchido.",
+        null
+      ]
+    ],
+    "nrows": 114,
+    "ncols": 7
+  },
+  {
+    "name": "Individualizadas",
+    "rows": [
+      [
+        "Regras de Qualidade nas Operações Individualizadas",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "Descreve regras que exigem qualidade das informações de operações individualizadas enviadas no documento 3040.",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        "Habilitado?",
+        "Alerta",
+        "Erro",
+        "Código",
+        "Regra",
+        "Descrição",
+        "Vigente até "
+      ],
+      [
+        "n",
+        null,
+        null,
+        "I01",
+        "Mapeamento de Classificação da Operação x Provisão Constituída, exceto para a modalidade 19XX",
+        "Exceto quando se tratar das modalidades 19XX:\nQuando ClassOp= AA, 0% <= ProvConsttd < 0,5% * ∑VlrVenc\nQuando ClassOp= A, 0,5% <= ProvConsttd < 1% * ∑VlrVenc\nQuando ClassOp= B, 1% <= ProvConsttd < 3% * ∑VlrVenc\nQuando ClassOp= C, 3% <= ProvConsttd < 10% * ∑VlrVenc\nQuando ClassOp= D, 10% <= ProvConsttd < 30% * ∑VlrVenc\nQuando ClassOp= E, 30% <= ProvConsttd < 50% * ∑VlrVenc\nQuando ClassOp= F, 50% <= ProvConsttd < 70% * ∑VlrVenc\nQuando ClassOp= G, 70% <= ProvConsttd < 100% * ∑VlrVenc\nQuando ClassOp= H, ProvConsttd = 100% * ∑VlrVenc\nQuando ClassOp= HH, ProvConsttd = 0\n",
+        null
+      ],
+      [
+        "n",
+        null,
+        null,
+        "I02",
+        "Mapeamento de Classificação da Operação x Vencimentos, quando o prazo a decorrer da operação for inferior a 36 meses (ou seja, se DtVencOp <  Dia/Mês/(Ano+3) da DtBase de Referência) ",
+        "Quando ClassOp= AA , Não pode haver vencimentos >= 210\nQuando ClassOp= A , Não pode haver vencimentos >= 210\nQuando ClassOp= B , Não pode haver vencimentos >= 220\nQuando ClassOp= C , Não pode haver vencimentos >=230\nQuando ClassOp= D , Não pode haver vencimentos >=240\nQuando ClassOp= E , Não pode haver vencimentos >=245\nQuando ClassOp= F , Não pode haver vencimentos >=250\nQuando ClassOp= G , Não pode haver vencimentos >=255\n",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "I03",
+        "Cliente informado mais de uma vez",
+        "Não é admitida repetição, simultânea, de código do cliente (atributo Cd da tag Cli) e tipo do cliente (atributo TpCli da tag Cli) em uma mesma parte de remessa do documento.",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "I04",
+        "Operação informada mais de uma vez para o mesmo cliente",
+        "Não é admitida repetição, simultânea, de código de contrato (atributo Contrt da tag Op) e modalidade (atributo Mod da Tag Op) para um mesmo cliente (atributo Cd da tag Cli) em uma mesma parte de remessa do documento e na remessa completa do documento.",
+        "10/2024"
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "I05",
+        "Código de vencimento informado mais de uma vez na operação",
+        "Não é admitida, em uma única operação, a repetição de vencimentos, tanto em cada parte, como na remessa completa de um documento.",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "I06",
+        "Garantidor fidejussório informado mais de uma vez na mesma operação",
+        "Não é admitida, em uma única operação, a repetição do garantidor fidejussório (atributo Ident da tag Gar) tanto em cada parte, como na remessa completa de um documento.",
+        null
+      ],
+      [
+        "n",
+        null,
+        null,
+        "I07",
+        "Mapeamento de Classificação da Operação x Vencimentos, quando o prazo a decorrer da operação for superior a 36 meses (ou seja, se DtVencOp <  Dia/Mês/(Ano+3) da DtBase de Referência) ",
+        "Quando ClassOp= AA , Não pode haver vencimentos >= 220\nQuando ClassOp= A , Não pode haver vencimentos >= 220\nQuando ClassOp= B , Não pode haver vencimentos >= 240\nQuando ClassOp= C , Não pode haver vencimentos >=250\nQuando ClassOp= D , Não pode haver vencimentos >=255\nQuando ClassOp= E , Não pode haver vencimentos >=260\nQuando ClassOp= F , Não pode haver vencimentos >=270\nQuando ClassOp= G , Não pode haver vencimentos >=280\n",
+        null
+      ],
+      [
+        "s",
+        40544,
+        41000,
+        "I08",
+        "Garantidor fidejussório deve ser compatível com o tipo de garantidor informado ",
+        "Se o garantidor fidejussório for pessoa física (0901), o atributo Ident deve obrigatoriamente ter 11 dígitos verificados.\nSe o garantidor fidejussório for pessoa jurídica (0902), o atributo Ident deve obrigatoriamente ter 14 dígitos verificados.",
+        null
+      ],
+      [
+        "n",
+        40909,
+        41000,
+        "I09",
+        "Conjunto de operações do cliente não pode ser inferior a R$1.000,00",
+        "Exceto nos casos de informação adicional de saída, o somatório dos vencimentos de todas as operações de um cliente deve ser igual ou superior a R$1.000,00. Não são considerados os códigos de vencimento: 20, 40, 60 e 80 na composição do limite de identificação.",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        40544,
+        "I10",
+        "Compatibilidade de informações de saída e valores ",
+        "É obrigatório informar os vencimentos, provisão constituída e classificação da operação para as operações de crédito com exceção das saídas de operação. Nas saídas de operação é proibido informar os vencimentos, provisão constituída e garantia.",
+        "12/2024"
+      ],
+      [
+        "n",
+        40909,
+        40969,
+        "I11",
+        "Impede a identificação de operações de natureza 32",
+        "Operações individualizadas (tag <Cli>) não podem ter natureza de operação 32",
+        null
+      ],
+      [
+        "n",
+        "n/a",
+        42522,
+        "I12",
+        "Conjunto de operações do cliente não pode ser inferior a R$ 200,00",
+        "Exceto nos casos de informação adicional de saída, o somatório dos vencimentos de todas as operações de um cliente deve ser igual ou superior a R$ 200,00. Não são considerados os códigos de vencimento: 20, 40, 60 e 80 na composição do limite de identificação.",
+        null
+      ],
+      [
+        "s",
+        "n/a",
+        43586,
+        "I13",
+        "Clientes com responsabilidade total acima de R$ 200,00 devem ser informados de forma individualizada",
+        "Exceto nos casos de informação adicional de saída, o somatório dos vencimentos de todas as operações de um cliente deve ser igual ou superior a R$ 200,00. Passam a ser considerados todos os domínios do Anexo 1 na composição do limite de identificação. ",
+        null
+      ],
+      [
+        "s",
+        44075,
+        44136,
+        "I14",
+        "IPOC informado mais de uma vez",
+        "Não é admitida repetição de número de IPOC em uma mesma remessa do documento.",
+        null
+      ],
+      [
+        "s",
+        45658,
+        45658,
+        "I15",
+        "Compatibilidade de informações de saída e valores ",
+        "É obrigatório informar os vencimentos, provisão constituída.\nNas saídas de operação é proibido informar os vencimentos, provisão constituída e garantia.",
+        null
+      ]
+    ],
+    "nrows": 19,
+    "ncols": 7
+  }
+]

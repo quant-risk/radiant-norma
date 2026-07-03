@@ -1,0 +1,141 @@
+[
+  {
+    "name": "Críticas Vigentes",
+    "rows": [
+      [
+        null,
+        "Código",
+        "Doc",
+        "Tipo",
+        "Descrição",
+        "Base Confrontada",
+        "Data-início",
+        "Data-fim",
+        "OBSERVAÇÕES"
+      ],
+      [
+        null,
+        4678,
+        2011,
+        "I",
+        "Verifica se o valor calculado da exposição líquida para os RWAJUR2, RWAJUR3 e RWAJUR4, a partir das informações do DRM, são consistentes com as informações correspondentes do DDR. ",
+        "DRM",
+        " Ago/2015",
+        null,
+        null
+      ],
+      [
+        null,
+        4679,
+        2011,
+        "I",
+        "Verifica se o valor calculado do descasamento vertical para os RWAJUR2, RWAJUR3 e RWAJUR4, a partir das informações do DRM, são consistentes com as informações correspondentes do DDR. ",
+        "DRM",
+        " Ago/2015",
+        null,
+        null
+      ],
+      [
+        null,
+        4680,
+        2011,
+        "I",
+        "Verifica se o valor calculado do descasamento horizontal dentro da zona para os RWAJUR2, RWAJUR3 e RWAJUR4, a partir das informações do DRM, são consistentes com as informações correspondentes do DDR. ",
+        "DRM",
+        " Ago/2015",
+        null,
+        null
+      ],
+      [
+        null,
+        4681,
+        2011,
+        "I",
+        "Verifica se o valor calculado do descasamento horizontal entre as zonas para os RWAJUR2, RWAJUR3 e RWAJUR4, a partir das informações do DRM, são consistentes com as informações correspondentes do DDR. ",
+        "DRM",
+        " Ago/2015",
+        null,
+        null
+      ],
+      [
+        null,
+        4682,
+        2011,
+        "I",
+        "Verifica se o valor calculado para exposição bruta para a RWACOM, a partir das informações do DRM são consistentes com as informações correspondentes do DDR. ",
+        "DRM",
+        " Jan/2020",
+        null,
+        null
+      ],
+      [
+        null,
+        4684,
+        2011,
+        "I",
+        "Verifica se o VaR, componente de cálculo do RWAJUR1, apurado a partir das informações obtidas por meio do DRM - documento 2060 - batem com as informações de VaR informado no DDR - documento 2011 - objeto da conta 410201. ",
+        "DRM",
+        " Out/2019",
+        null,
+        null
+      ],
+      [
+        null,
+        4685,
+        2011,
+        "I",
+        "Verifica se o sVaR, componente de cálculo do RWAJUR1, apurado a partir das informações obtidas por meio do DRM - documento 2060 - batem com as informações de sVaR informado no DDR - documento 2011 - objeto da conta 410202. ",
+        "DRM",
+        " Out/2019",
+        null,
+        null
+      ],
+      [
+        null,
+        4686,
+        2011,
+        "I",
+        "Verifica se as informações relativas as posições de moedas do DRM estão consistentes com as informações do DDR. Na verificação, acumula-se as informações do DRM detidas diretamente e que sejam detidas indiretamente, seja por fundos ou por instituição consolidada, sejam no país e no exterior. No DDR acumula-se as posições no país e no exterior. ",
+        "DRM",
+        " Set/2015",
+        null,
+        null
+      ],
+      [
+        null,
+        4693,
+        2011,
+        "E",
+        "O Somatório do Total das Posições Vendidas no Patrimônio Líquido no Exterior (Cód.Exposição 161000) é inconsistente por ser inferior ao Somatório do Total do Excesso da Posição Vendida para Hedge em Participações no Exterior (Cód.Exposição 181000). ",
+        "DDR",
+        " Mar/2020",
+        null,
+        null
+      ],
+      [
+        null,
+        4751,
+        2011,
+        "I",
+        "Chaves duplicadas entre posição e moeda ",
+        "DDR",
+        " Abr/2021",
+        null,
+        null
+      ],
+      [
+        null,
+        4763,
+        2011,
+        "I",
+        "Saldo da conta 770 do DLO/2061 igual a [valor_4] na data base  [valor_1], inconsistente com o DDR/2011 com registro de documento zerado no CRD na data [data]. A IF deve verificar a necessidade de ajuste no registro de documento zerado no CRD e providenciar a remessa dos documentos DDR  a partir do momento em que a instituição passou a apresentar exposição cambial e/ou apurar RWA para risco de mercado segundo metodologias padronizadas.",
+        "DLO",
+        " Out/2021",
+        null,
+        null
+      ]
+    ],
+    "nrows": 12,
+    "ncols": 9
+  }
+]

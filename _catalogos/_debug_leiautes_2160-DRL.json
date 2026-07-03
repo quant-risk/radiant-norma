@@ -1,0 +1,4724 @@
+[
+  {
+    "name": "Leiaute",
+    "rows": [
+      [
+        null,
+        "Nome Campo",
+        "Formato",
+        "Obrigatório",
+        "Descrição",
+        "Tag/Atributo",
+        "Atributos que contém",
+        "Tags que contém",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Instrução de Processamento",
+        "-",
+        "Sim",
+        "<?xml version=\"1.0\" encoding=\"XXXXXXXXXX\"?>\nXXXXXXXXXX: Tipo de codificação utilizada - ISO-8859-1, EBCDIC-CP-US, UTF-8, UTF-16 ou US-ASCII",
+        "-",
+        "version, encoding",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Documento DRL",
+        "-",
+        "Sim",
+        "<documentoDRL cnpj=\"12345678\" dataBase=\"AAAA-MM\" codigoDocumento=\"2160\" tipoEnvio=\"I\">",
+        "documentoDRL",
+        "cnpj, dataBase, codigoDocumento, tipoEnvio",
+        "parametros, contas",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "CNPJ da instituição",
+        "A8",
+        "Sim",
+        "Atributo da tag documentoDRL.",
+        "cnpj",
+        "-",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Data-base",
+        "A7",
+        "Sim",
+        "Atributo da tag documentoDRL. Formato AAAA-MM.",
+        "dataBase",
+        "-",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Código do documento",
+        "A4",
+        "Sim",
+        "Atributo da tag documentoDRL. Preencher com 2160",
+        "codigoDocumento",
+        "-",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Tipo do Envio",
+        "A1",
+        "Sim",
+        "Atributo da tag documentoDRL. Assume os valores do Anexo 1.",
+        "tipoEnvio",
+        "-",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Limites informados pela instituição",
+        "-",
+        "Sim",
+        "Contém tags limite para cada informação se foi enviado ou não no presente documento.",
+        "limitesInformados",
+        "-",
+        "limite",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Limite",
+        "-",
+        "Sim",
+        "<limite codigoLimite=\"10.00\" enviado=\"S\">\nTag que informa se um determinado limite foi enviado no documento.",
+        "limite",
+        "codigoLimite, enviado",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Código do limite",
+        "A5",
+        "Sim",
+        "Atributo da tag limite. Contém a informação do código do limite. Assume sempre o valor \"10.0\"",
+        "codigoLimite",
+        "-",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Informação se o limite foi informado",
+        "A1",
+        "Sim",
+        "Atributo da tag limite. Assume sempre o valor \"S\"",
+        "enviado",
+        "-",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Lista de parâmetros",
+        "-",
+        "Sim",
+        "Contém tags parametro para cada informação de parâmetro.",
+        "parametros",
+        "-",
+        "parametro",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Parâmetro1",
+        "-",
+        "Sim",
+        "<parametro codigoParametro=\"51\" valorParametro=\"Fulano de Tal\">\nTag que informa o código do parâmetro com seu respectivo valor.",
+        "parametro",
+        "codigoParametro, valorParametro",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Código do parâmetro",
+        "A2",
+        "Sim",
+        "Atributo da tag parametro. Contém a informação do código do parâmetro. Assume os valores do Anexo 02",
+        "codigoParametro",
+        "-",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Valor referente ao parâmetro",
+        "A60",
+        "Sim",
+        "Atributo da tag parametro. Valores alfa-numéricos.",
+        "valorParametro",
+        "-",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Contas",
+        "-",
+        "Sim",
+        "Contém tags conta para cada uma das contas.",
+        "contas",
+        "-",
+        "conta",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Informações sobre a conta1",
+        "-",
+        "Sim",
+        "<conta codigoConta=\"1.1.1.1\" valorConta=\"100.00\">\nContém informações sobre as contas da instituição.",
+        "conta",
+        "codigoConta, valorConta",
+        "detalhamentosDRL",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Código da conta",
+        "A16",
+        "Sim",
+        "Atributo da tag conta. Assume os valores do Anexo 3.",
+        "codigoConta",
+        "-",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Valor da conta",
+        "N16,22",
+        "Sim",
+        "Atributo da tag conta. Contém o valor referente da conta em reais (R$).",
+        "valorConta",
+        "-",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Detalhamentos do cálculo",
+        "-",
+        "Não",
+        "<detalhamentosDRL>",
+        "detalhamentosDRL",
+        "-",
+        "detalhamentoDRL",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Detalhamento do cálculo1",
+        "-",
+        "Sim",
+        "<detalhamentoDRL valorDetalhe=\"100,00\">\nContém o detalhamento do cálculo utilizado para obter o valor da conta.",
+        "detalhamentoDRL",
+        "valorDetalhe",
+        "detalhe",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Valor do detalhamento",
+        "N16,22",
+        "Sim",
+        "Atributo da tag detalhamentoDRL. Contém o valor completo do detalhamento em reais (R$).",
+        "valorDetalhe",
+        "-",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Detalhe do cálculo1",
+        "-",
+        "Sim",
+        "<detalhe codigoElemento=\"1\" valorElemento=\"10\">\nContém tags com código do elemento que se refere ao detalhe e seu respectivo valor. ",
+        "detalhe",
+        "codigoElemento, valorElemento",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Código do elemento de cálculo",
+        "N2",
+        "Sim",
+        "Atributo da tag detalhe. Contém o código do elemento que se refere ao detalhe. Assume os valores do Anexo 4.",
+        "codigoElemento",
+        "-",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Valor do elemento de cálculo",
+        "A17",
+        "Sim",
+        "Atributo da tag detalhe. Contém o valor do detalhe de cálculo. Assume os valores dos Anexos  5, 6, 9, 10 e 11  ... ou valores em reais (R$), ou numéricos, ou os códigos do tipo CodPaisISO e\nCodMoedaISO, do Dicionário de Domínios, disponíveis na página do Banco Central do Brasil na internet, no endereço eletrônico:\nhttp://www.bcb.gov.br/?CEDSFNSERVICOS",
+        "valorElemento",
+        "-",
+        "-",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "1 Bloco / Campo múltiplo - deve ser repetido até o envio de todos os dados.",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "2 Na,b: numérico com até (a-b) dígitos inteiros e b dígitos decimais.",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "nrows": 27,
+    "ncols": 21
+  },
+  {
+    "name": "A1 T.Envio",
+    "rows": [
+      [
+        null,
+        "Anexo 1: Indicador de inclusão ou alteração de documento",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Domínio",
+        "Descrição",
+        "Data início",
+        "Data fim"
+      ],
+      [
+        null,
+        "I",
+        "Inclusão de documento ",
+        "2015-01-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        "S",
+        "Substituição de documento",
+        "2015-01-01 00:00:00",
+        null
+      ]
+    ],
+    "nrows": 4,
+    "ncols": 5
+  },
+  {
+    "name": "A2 - A11 Parâmetros",
+    "rows": [
+      [
+        null,
+        "Anexo 2: Código do parâmetro - codigoParametro",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Domínio",
+        "Nome",
+        "Data início",
+        "Data fim"
+      ],
+      [
+        null,
+        51,
+        "Nome do responsável pelo envio do DRL",
+        "2015-10-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        52,
+        "Telefone do responsável pelo envio do DRL",
+        "2015-10-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        53,
+        "Email do responsável pelo envio do DRL",
+        "2015-10-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        54,
+        "Indicador de instituição sujeita ao cálculo do LCR",
+        "2017-01-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        "Anexo 11: Código do domínio do parâmetro 54 - valorParametro",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Domínio",
+        "Nome",
+        "Data início",
+        "Data fim"
+      ],
+      [
+        null,
+        2,
+        "Informa apenas as exposição ao risco de liquidez",
+        "2017-01-01 00:00:00",
+        null
+      ]
+    ],
+    "nrows": 9,
+    "ncols": 5
+  },
+  {
+    "name": "A3 - Contas",
+    "rows": [
+      [
+        null,
+        null,
+        "Código Conta",
+        "Descrição",
+        "Data início",
+        "Data fim",
+        null
+      ],
+      [
+        null,
+        null,
+        10,
+        "Estoque de Ativos de Alta Liquidez",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.1",
+        "Dinheiro em espécie",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.2",
+        "Reservas livres e a liberar em bancos centrais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.3",
+        "Títulos Soberanos e Similares",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.3.1",
+        "Títulos públicos brasileiros: estoque em carteira própria da instituição e fundos exclusivos",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.3.2",
+        "Títulos públicos brasileiros: excedente do montante depositado nas câmaras de liquidação",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.3.3",
+        "Títulos emitidos ou garantidos por EMDs, governos, bancos centrais e PSEs de países com classificação de risco AA- ou superior",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.3.4",
+        "Títulos emitidos ou garantidos por governo e bancos centrais de países com classificação de risco A- ou superior",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.3.5",
+        "Títulos emitidos ou garantidos por governos e bancos centrais de países com classificação de risco BBB- ou superior",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.4",
+        "Títulos privados emitidos por empresas não financeiras (corporate bonds)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.4.1",
+        "Títulos privados emitidos por empresas não financeiras (corporate bonds) com classificação de risco AA- ou superior",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.4.2",
+        "Títulos privados emitidos por empresas não financeiras (corporate bonds) com classificação de risco entre A+ e BBB- ",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.5",
+        "Títulos privados emitidos por instituições financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.5.1",
+        "Covered bonds não emitidos pela própria instituição e com classificação de crédito AA- ou superior",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.5.2",
+        "Títulos de securitização RMBS, não emitidos pela própria instituição, com classificação de crédito igual ou melhor a AA",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.6",
+        "Ações líquidas de empresas não financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.7",
+        "Carteira de Crédito passível de cessão ou securitização",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.7.1",
+        "Carteira de crédito elegível a cessão ou securitização por acordo comercial",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "10.7.2",
+        "Carteira de crédito elegível a garantia ao FGC ",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Subsidiárias",
+        11,
+        "Estoque de Ativos de Alta Liquidez",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.1",
+        "Dinheiro em espécie",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.2",
+        "Reservas livres e a liberar em bancos centrais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.3",
+        "Títulos Soberanos e Similares",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.3.1",
+        "Títulos públicos brasileiros: estoque em carteira própria da instituição e fundos exclusivos",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.3.2",
+        "Títulos públicos brasileiros: excedente do montante depositado nas câmaras de liquidação",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.3.3",
+        "Títulos emitidos ou garantidos por EMDs, governos, bancos centrais e PSEs de países com classificação de risco AA- ou superior",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.3.4",
+        "Títulos emitidos ou garantidos por governo e bancos centrais de países com classificação de risco A- ou superior",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.3.5",
+        "Títulos emitidos ou garantidos por governos e bancos centrais de países com classificação de risco BBB- ou superior",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.4",
+        "Títulos privados emitidos por empresas não financeiras (corporate bonds)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.4.1",
+        "Títulos privados emitidos por empresas não financeiras (corporate bonds) com classificação de risco AA- ou superior",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.4.2",
+        "Títulos privados emitidos por empresas não financeiras (corporate bonds) com classificação de risco entre A+ e BBB- ",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.5",
+        "Títulos privados emitidos por instituições financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.5.1",
+        "Covered bonds não emitidos pela própria instituição e com classificação de crédito AA- ou superior",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.5.2",
+        "Títulos de securitização RMBS, não emitidos pela própria instituição, com classificação de crédito igual ou melhor a AA",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.6",
+        "Ações líquidas de empresas não financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "11.7",
+        "Carteira de crédito elegível a cessão ou securitização por acordo comercial",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        20,
+        "SAÍDAS DE CAIXA",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.1",
+        "Captações de Varejo - Pessoa Física",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.1.1",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais < R$ 1,5 milhão",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.1.1.1",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais < R$ 1,5 milhão - Captações garantidas por seguro-depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.1.1.2",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais < R$ 1,5 milhão - Saldo excedente ao limite do seguro-depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.1.1.3",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais < R$ 1,5 milhão - Captações não elegíveis à cobertura do seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.1.2",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais maior ou igual a R$ 1,5 milhão",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.1.2.1",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais maior ou igual a R$ 1,5 milhão - Captações garantidas por seguro-depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.1.2.2",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais maior ou igual a R$ 1,5 milhão - Saldo excedente ao limite do seguro-depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.1.2.3",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais maior ou igual a R$ 1,5 milhão - Captações não elegíveis à cobertura do seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.2",
+        "Captações de Varejo - Pessoa Jurídica de Pequeno Porte",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.2.1",
+        "Captações de Varejo - Pessoa Jurídica de Pequeno Porte - Captações garantidas por seguro-depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.2.2",
+        "Captações de Varejo - Pessoa Jurídica de Pequeno Porte - Saldo excedente ao limite do seguro-depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.2.3",
+        "Captações de Varejo - Pessoa Jurídica de Pequeno Porte - Captações não elegíveis à cobertura do seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3",
+        "Captações de Atacado não Colateralizadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.1",
+        "Captações de Atacado não Colateralizadas - Depósitos e captações de cooperativas filiadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.2",
+        "Captações de Atacado não Colateralizadas - Captações de empresas não financeiras (corporates), governos, bancos centrais, bancos multilaterais de desenvolvimento e demais entidades do setor público",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.2.1",
+        "Captações de Atacado não Colateralizadas - Captações de empresas não financeiras (corporates), governos, bancos centrais, bancos multilaterais de desenvolvimento e demais entidades do setor público - Com cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.2.2",
+        "Captações de Atacado não Colateralizadas - Captações de empresas não financeiras (corporates), governos, bancos centrais, bancos multilaterais de desenvolvimento e demais entidades do setor público - Sem cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.2.3",
+        "Captações de Atacado não Colateralizadas - Captações de empresas não financeiras (corporates), governos, bancos centrais, bancos multilaterais de desenvolvimento e demais entidades do setor público - Captações não elegíveis à cobertura de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.3",
+        "Captações de Atacado não Colateralizadas - Captações de outras pessoas jurídicas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.3.1",
+        "Captações de Atacado não Colateralizadas - Captações de outras pessoas jurídicas - Com cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.3.2",
+        "Captações de Atacado não Colateralizadas - Captações de outras pessoas jurídicas - Sem cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.3.3",
+        "Captações de Atacado não Colateralizadas - Captações de outras pessoas jurídicas - Captações não elegíveis à cobertura de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.3.4",
+        "Captações de Atacado não Colateralizadas - Captações de outras pessoas jurídicas - Captações por acordo comercial",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.4",
+        "Captações de Atacado não Colateralizadas - Captações de pessoas ligadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.4.1",
+        "Captações de Atacado não Colateralizadas - Captações de pessoas ligadas - Com cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.4.2",
+        "Captações de Atacado não Colateralizadas - Captações de pessoas ligadas - Sem cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.4.3",
+        "Captações de Atacado não Colateralizadas - Captações de pessoas ligadas - Captações não elegíveis à cobertura de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.5",
+        "Captações de Atacado não Colateralizadas - Captações de fundos geridos pela instituição",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.5.1",
+        "Captações de Atacado não Colateralizadas - Captações de fundos geridos pela instituição - Com cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.5.2",
+        "Captações de Atacado não Colateralizadas - Captações de fundos geridos pela instituição - Sem cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.5.3",
+        "Captações de Atacado não Colateralizadas - Captações de fundos geridos pela instituição - Captações não elegíveis à cobertura de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.6",
+        "Captações de Atacado não Colateralizadas - Captações de não residentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.6.1",
+        "Captações de Atacado não Colateralizadas - Captações de não residentes - Com cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.6.2",
+        "Captações de Atacado não Colateralizadas - Captações de não residentes - Sem cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.6.3",
+        "Captações de Atacado não Colateralizadas - Captações de não residentes - Captações não elegíveis à cobertura de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.3.7",
+        "Captações de Atacado não Colateralizadas - Captações via DPGE",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.4",
+        "Obrigações por emissão de TVMs",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.4.1",
+        "Obrigações por emissão de TVMs - Emitidos diretamente no mercado",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.4.1.1",
+        "Obrigações por emissão de TVMs - Emitidos diretamente no mercado - Elegíveis à cobertura de seguro",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.4.1.2",
+        "Obrigações por emissão de TVMs - Emitidos diretamente no mercado - Não elegíveis à cobertura de seguro - Colateralizados ou lastreados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.4.1.3",
+        "Obrigações por emissão de TVMs - Emitidos diretamente no mercado - Não elegíveis à cobertura de seguro e não colateralizados ou lastreados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.4.2",
+        "Obrigações por emissão de TVMs - Emitidos via intervenientes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.4.2.1",
+        "Obrigações por emissão de TVMs - Emitidos via intervenientes - Elegíveis à cobertura de seguro",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.4.2.2",
+        "Obrigações por emissão de TVMs - Emitidos via intervenientes - Não elegíveis à cobertura de seguro: colateralizados ou lastreados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.4.2.3",
+        "Obrigações por emissão de TVMs - Emitidos via intervenientes - Não elegíveis à cobertura de seguro e não colateralizados ou lastreados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.5",
+        "Captações Colateralizadas e Operações Compromissadas (REPO)\nCom vencimento em até 30 dias e cujo colateral seja da IF ou de terceiros obtidos em operações compromissadas com vencimento acima de 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.5.1",
+        "Captações Colateralizadas e Operações Compromissadas (REPO)\nCom vencimento em até 30 dias e cujo colateral seja da IF ou de terceiros obtidos em operações compromissadas com vencimento acima de 30 dias - Captações Colateralizadas e REPO com colateral ATIVOS DE ALTA LIQUIDEZ",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.5.2",
+        "Captações Colateralizadas e Operações Compromissadas (REPO)\nCom vencimento em até 30 dias e cujo colateral seja da IF ou de terceiros obtidos em operações compromissadas com vencimento acima de 30 dias - Captações Colateralizadas e REPO com demais colaterais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.6",
+        "Operações estruturadas e certificados de operações estruturadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.6.1",
+        "Operações estruturadas e certificados de operações estruturadas - Liquidação de Operações estruturadas nos próximos 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.6.2",
+        "Operações estruturadas e certificados de operações estruturadas - Certificado de operações estruturas com vencimento em até 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7",
+        "Saídas de caixa contratuais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.1",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.1.1",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Aplicações direcionadas - empréstimos e financiamentos a liberar relativos a crédito direcionado",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.1.2",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Demais empréstimos e financiamento a liberar",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.1.3",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Operações de comércio exterior",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.1.3.1",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Operações de comércio exterior - Trade Finance - a liberar a clientes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.1.3.2",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Operações de comércio exterior - Trade Finance - vencimento de emissões e linhas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.1.3.3",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Operações de comércio exterior - Valores a liberar em novas operações de financiamento de comércio exterior e ou a depositar em bancos correspondentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.1.4",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Repasses",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.1.4.1",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Repasses - Repasse a liberar ao cliente",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.1.4.2",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Repasses - Pagamento ao provedor de funding",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.2",
+        "Saídas de caixa contratuais - Obrigações por Cessão de Créditos",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.2.1",
+        "Saídas de caixa contratuais - Obrigações por Cessão de Créditos - Valores a serem repassados a cessionários referentes a recebimentos de clientes ",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.2.2",
+        "Saídas de caixa contratuais - Obrigações por Cessão de Créditos - Valores a serem repassados a cedentes referentes a aquisições de carteiras de crédito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.3",
+        "Saídas de caixa contratuais - Instrumentos pós pagos: pagamentos a lojistas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.4",
+        "Saídas de caixa contratuais - Vinculação de ATIVOS DE ALTA LIQUIDEZ",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.5",
+        "Saídas de caixa contratuais - Valor a direcionar e ou a recolher em bancos centrais nos próximos 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.6",
+        "Saídas de caixa contratuais - Pagamentos contratuais nos próximos 30 dias referentes a captações sem vencimento ou com vencimento acima de 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.7.7",
+        "Saídas de caixa contratuais - Demais saídas de caixa contratuais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.8",
+        "Saídas de caixa decorrentes de operações com derivativos",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.8.1",
+        "Saídas de caixa decorrentes de operações com derivativos - Obrigações por operações com derivativos",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.8.1.1",
+        "Saídas de caixa decorrentes de operações com derivativos - Obrigações por operações com derivativos - Derivativos com pagamento de ajustes diários",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.8.1.1.1",
+        "Saídas de caixa decorrentes de operações com derivativos - Obrigações por operações com derivativos - Derivativos com pagamento de ajustes diários - Ajustes a pagar em operações passíveis de liquidação em 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.8.1.1.2",
+        "Saídas de caixa decorrentes de operações com derivativos - Obrigações por operações com derivativos - Derivativos com pagamento de ajustes diários - Ajustes a pagar em operações com vencimento acima de 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.8.1.2",
+        "Saídas de caixa decorrentes de operações com derivativos - Obrigações por operações com derivativos - Liquidação de derivativos sem pagamento de ajustes diários",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.8.2",
+        "Saídas de caixa decorrentes de operações com derivativos - Exigências adicionais de colaterais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.8.2.1",
+        "Saídas de caixa decorrentes de operações com derivativos - Exigências adicionais de colaterais - Decorrente de cláusula de gatilho (rebaixamento da classificação de crédito da instituição)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.8.2.2",
+        "Saídas de caixa decorrentes de operações com derivativos - Exigências adicionais de colaterais - Decorrente de ativos não considerados de Alta Liquidez depositados em garantia",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.8.2.3",
+        "Saídas de caixa decorrentes de operações com derivativos - Exigências adicionais de colaterais - Decorrente de excesso de garantias depositadas na instituição",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.8.2.4",
+        "Saídas de caixa decorrentes de operações com derivativos - Exigências adicionais de colaterais - Chamada de margem ainda não depositada",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.8.2.5",
+        "Saídas de caixa decorrentes de operações com derivativos - Exigências adicionais de colaterais - Decorrentes de possibilidade de substituição de colaterais considerados Ativos de Alta Liquidez depositados na IF por ativos não considerados de Alta Liquidez",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.9",
+        "Linhas de crédito e de liquidez irrevogáveis",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.9.1",
+        "Linhas de crédito e de liquidez irrevogáveis - Clientes de varejo",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.9.2",
+        "Linhas de crédito e de liquidez irrevogáveis - Clientes: empresas não financeiras, governos, bancos centrais, bancos de desenvolvimento multilaterais e demais entidades do setor público",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.9.3",
+        "Linhas de crédito e de liquidez irrevogáveis - Clientes: instituições financeiras, seguradoras, resseguradoras, administradora de consórcio, fundos, câmaras de compensação e liquidação, instituições fiduciárias e outras entidades de investimento coletivo",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.9.4",
+        "Linhas de crédito e de liquidez irrevogáveis - Demais contrapartes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.10",
+        "Saídas de caixa contingentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.10.1",
+        "Saídas de caixa contingentes - Ativos recebidos como colaterais, em aluguel ou em operações de swap de colateral - posição vendida",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.10.2",
+        "Saídas de caixa contingentes - Linhas de crédito e de liquidez revogáveis unilateralmente",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.10.3",
+        "Saídas de caixa contingentes - Fianças e avais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.10.3.1",
+        "Saídas de caixa contingentes - Fianças e avais - Maior garantia não judicial prestada (desembolsável nos próximos 30 dias)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.10.3.2",
+        "Saídas de caixa contingentes - Fianças e avais - Maior garantia judicial prestada (desembolsável nos próximos 30 dias)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.10.3.3",
+        "Saídas de caixa contingentes - Fianças e avais - Saldo total de fianças e avais prestados (Valor total desembolsável nos próximos 30 dias)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.10.4",
+        "Saídas de caixa contingentes - Operações de formador de mercado (market maker): ativos recebidos para realizar operações de formador de mercado",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.10.5",
+        "Saídas de caixa contingentes - Demais saídas de caixa contingentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.11",
+        "Outras saídas de caixa",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.11.1",
+        "Outras saídas de caixa - Ordens de pagamento e transferências recebidas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.11.2",
+        "Outras saídas de caixa - Repasse de boletos bancários e cartões de débito e pré pago",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "20.11.3",
+        "Outras saídas de caixa - Despesas operacionais nos próximos 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Subsidiárias",
+        21,
+        "SAÍDAS DE CAIXA",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.1",
+        "Captações de Varejo - Pessoa Física",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.1.1",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais < R$ 1,5 milhão",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.1.1.1",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais < R$ 1,5 milhão - Captações garantidas por seguro-depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.1.1.2",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais < R$ 1,5 milhão - Saldo excedente ao limite do seguro-depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.1.1.3",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais < R$ 1,5 milhão - Captações não elegíveis à cobertura do seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.1.2",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais maior ou igual a R$ 1,5 milhão",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.1.2.1",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais maior ou igual a R$ 1,5 milhão - Captações garantidas por seguro-depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.1.2.2",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais maior ou igual a R$ 1,5 milhão - Saldo excedente ao limite do seguro-depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.1.2.3",
+        "Captações de Varejo - Pessoa Física - De clientes com depósitos totais maior ou igual a R$ 1,5 milhão - Captações não elegíveis à cobertura do seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.2",
+        "Captações de Varejo - Pessoa Jurídica de Pequeno Porte",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.2.1",
+        "Captações de Varejo - Pessoa Jurídica de Pequeno Porte - Captações garantidas por seguro-depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.2.2",
+        "Captações de Varejo - Pessoa Jurídica de Pequeno Porte - Saldo excedente ao limite do seguro-depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.2.3",
+        "Captações de Varejo - Pessoa Jurídica de Pequeno Porte - Captações não elegíveis à cobertura do seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.1",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Depósitos captados de cooperativas filiadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.2",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de empresas não financeiras (corporates), governos, bancos centrais, bancos multilaterais de desenvolvimento e demais entidades do setor público",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.2.1",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de empresas não financeiras (corporates), governos, bancos centrais, bancos multilaterais de desenvolvimento e demais entidades do setor público - Com cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.2.2",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de empresas não financeiras (corporates), governos, bancos centrais, bancos multilaterais de desenvolvimento e demais entidades do setor público - Sem cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.2.3",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de empresas não financeiras (corporates), governos, bancos centrais, bancos multilaterais de desenvolvimento e demais entidades do setor público - Captações não elegíveis à cobertura de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.3",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de outras pessoas jurídicas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.3.1",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de outras pessoas jurídicas - Com cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.3.2",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de outras pessoas jurídicas - Sem cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.3.3",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de outras pessoas jurídicas - Captações não elegíveis à cobertura de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.3.4",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de outras pessoas jurídicas - Captações por acordo comercial",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.4",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de ligadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.4.1",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de ligadas - Com cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.4.2",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de ligadas - Sem cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.4.3",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de ligadas - Captações não elegíveis à cobertura de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.5",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de fundos geridos pela instituição",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.5.1",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de fundos geridos pela instituição - Com cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.5.2",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de fundos geridos pela instituição - Sem cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.5.3",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de fundos geridos pela instituição - Captações não elegíveis à cobertura de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.6",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de não residentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.6.1",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de não residentes - Com cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.6.2",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de não residentes - Sem cobertura integral de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.3.6.3",
+        "Captações de Atacado não Colateralizadas ou com Colateral de Emissão do Próprio Grupo Financeiro - Captações de não residentes - Captações não elegíveis à cobertura de seguro depósito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.4",
+        "Obrigações por emissão de TVMs",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.4.1",
+        "Obrigações por emissão de TVMs - Elegíveis à cobertura de seguro",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.4.2",
+        "Obrigações por emissão de TVMs - Não elegíveis à cobertura de seguro - Colateralizados ou lastreados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.4.3",
+        "Obrigações por emissão de TVMs - Não elegíveis à cobertura de seguro e não colateralizados ou lastreados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.5",
+        "Captações Colateralizadas e Operações Compromissadas (REPO)\n(colateral da IF ou de terceiros obtidos em operações compromissadas com vencimento acima de 30 dias)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.5.1",
+        "Captações Colateralizadas e Operações Compromissadas (REPO)\n(colateral da IF ou de terceiros obtidos em operações compromissadas com vencimento acima de 30 dias) - Captações Colateralizadas e REPO com colateral ATIVOS DE ALTA LIQUIDEZ",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.5.2",
+        "Captações Colateralizadas e Operações Compromissadas (REPO)\n(colateral da IF ou de terceiros obtidos em operações compromissadas com vencimento acima de 30 dias) - Captações Colateralizadas e REPO com demais colaterais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.6",
+        "Operações estruturadas e certificados de operações estruturadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.6.1",
+        "Operações estruturadas e certificados de operações estruturadas - Liquidação de Operações estruturadas nos próximos 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.6.2",
+        "Operações estruturadas e certificados de operações estruturadas - Certificado de operações estruturas com vencimento em até 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7",
+        "Saídas de caixa contratuais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.1",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.1.1",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Aplicações direcionadas - empréstimos e financiamentos a liberar relativos a crédito direcionado",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.1.2",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Demais empréstimos e financiamento a liberar",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.1.3",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Operações de comércio exterior",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.1.3.1",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Operações de comércio exterior - Trade Finance - a liberar a clientes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.1.3.2",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Operações de comércio exterior - Trade Finance - vencimento de emissões e linhas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.1.3.3",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Operações de comércio exterior - Valores a liberar em novas operações de financiamento de comércio exterior e ou a depositar em bancos correspondentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.1.4",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Repasses",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.1.4.1",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Repasses - Repasse a liberar ao cliente",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.1.4.2",
+        "Saídas de caixa contratuais - Obrigações por Empréstimos, Trade Finance e Repasses - Repasses - Pagamento ao provedor de funding",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.2",
+        "Saídas de caixa contratuais - Obrigações por Cessão de Créditos",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.2.1",
+        "Saídas de caixa contratuais - Obrigações por Cessão de Créditos - Valores a serem repassados a cessionários referentes a recebimentos de clientes ",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.2.2",
+        "Saídas de caixa contratuais - Obrigações por Cessão de Créditos - Valores a serem repassados a cedentes referentes a aquisições de carteiras de crédito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.3",
+        "Saídas de caixa contratuais - Instrumentos pós pagos: Pagamento ao Lojista",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.4",
+        "Saídas de caixa contratuais - Vinculação de ATIVOS DE ALTA LIQUIDEZ",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.5",
+        "Saídas de caixa contratuais - Valor a direcionar e ou a recolher em bancos centrais nos próximos 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.6",
+        "Saídas de caixa contratuais - Pagamentos contratuais nos próximos 30 dias referentes a captações sem vencimento ou com vencimento acima de 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.7.7",
+        "Saídas de caixa contratuais - Demais saídas de caixa contratuais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.8",
+        "Saídas de caixa decorrentes de operações com derivativos",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.8.1",
+        "Saídas de caixa decorrentes de operações com derivativos - Obrigações por operações com derivativos",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.8.1.1",
+        "Saídas de caixa decorrentes de operações com derivativos - Obrigações por operações com derivativos - Derivativos com pagamento de ajustes diários",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.8.1.1.1",
+        "Saídas de caixa decorrentes de operações com derivativos - Obrigações por operações com derivativos - Derivativos com pagamento de ajustes diários - Ajustes a pagar em operações passíveis de liquidação em 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.8.1.1.2",
+        "Saídas de caixa decorrentes de operações com derivativos - Obrigações por operações com derivativos - Derivativos com pagamento de ajustes diários - Ajustes a pagar em operações com vencimento acima de 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.8.1.2",
+        "Saídas de caixa decorrentes de operações com derivativos - Obrigações por operações com derivativos - Liquidação de derivativos sem pagamento de ajustes diários",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.8.2",
+        "Saídas de caixa decorrentes de operações com derivativos - Exigências adicionais de colaterais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.8.2.1",
+        "Saídas de caixa decorrentes de operações com derivativos - Exigências adicionais de colaterais - Decorrente de cláusula de gatilho (rebaixamento da classificação de crédito da instituição)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.8.2.2",
+        "Saídas de caixa decorrentes de operações com derivativos - Exigências adicionais de colaterais - Decorrente de ativos não considerados de Alta Liquidez depositados em garantia",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.8.2.3",
+        "Saídas de caixa decorrentes de operações com derivativos - Exigências adicionais de colaterais - Decorrente de excesso de garantias depositadas na instituição",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.8.2.4",
+        "Saídas de caixa decorrentes de operações com derivativos - Exigências adicionais de colaterais - Chamada de margem ainda não depositada",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.8.2.5",
+        "Saídas de caixa decorrentes de operações com derivativos - Exigências adicionais de colaterais - Decorrentes de possibilidade de substituição de colaterais considerados Ativos de Alta Liquidez depositados na IF por ativos não considerados de Alta Liquidez",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.9",
+        "Linhas de crédito e de liquidez irrevogáveis",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.9.1",
+        "Linhas de crédito e de liquidez irrevogáveis - Clientes de varejo",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.9.2",
+        "Linhas de crédito e de liquidez irrevogáveis - Clientes: empresas não financeiras, governos, bancos centrais, bancos de desenvolvimento multilaterais e demais entidades do setor público",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.9.3",
+        "Linhas de crédito e de liquidez irrevogáveis - Clientes: instituições financeiras, seguradoras, resseguradoras, administradora de consórcio, fundos, câmaras de compensação e liquidação, instituições fiduciárias e outras entidades de investimento coletivo",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.9.4",
+        "Linhas de crédito e de liquidez irrevogáveis - Demais contrapartes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.10",
+        "Saídas de caixa contingentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.10.1",
+        "Saídas de caixa contingentes - Ativos recebidos como colaterais, em aluguel ou em operações de swap de colateral - posição vendida",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.10.2",
+        "Saídas de caixa contingentes - Linhas de crédito e de liquidez revogáveis unilateralmente",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.10.3",
+        "Saídas de caixa contingentes - Fianças e avais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.10.3.1",
+        "Saídas de caixa contingentes - Fianças e avais - Maior garantia não judicial prestada (desembolsável nos próximos 30 dias)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.10.3.2",
+        "Saídas de caixa contingentes - Fianças e avais - Maior garantia judicial prestada (desembolsável nos próximos 30 dias)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.10.3.3",
+        "Saídas de caixa contingentes - Fianças e avais - Saldo total de fianças e avais prestados (Valor total desembolsável nos próximos 30 dias)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.10.4",
+        "Saídas de caixa contingentes - Ativos recebidos para realizar operações de formador de mercado (market maker)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.10.5",
+        "Saídas de caixa contingentes - Demais saídas de caixa contingentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.11",
+        "Outras saídas de caixa",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.11.1",
+        "Outras saídas de caixa - Ordens de pagamento e transferências recebidas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.11.2",
+        "Outras saídas de caixa - Repasse de boletos bancários e cartões de débito e pré pago",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "21.11.3",
+        "Outras saídas de caixa - Despesas operacionais nos próximos 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        30,
+        "Entradas de Caixa",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.1",
+        "Entradas de Caixa - Empréstimos Colaterateralizados e Operações Compromissadas (operações em que o colateral não é reutilizado em operações compromissadas financiadas ou vendido em definitivo)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.1.1",
+        "Entradas de Caixa - Empréstimos Colaterateralizados e Operações Compromissadas (operações em que o colateral não é reutilizado em operações compromissadas financiadas ou vendido em definitivo) - Empréstimos colateralizados por ATIVOS DE ALTA LIQUIDEZ",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.1.2",
+        "Entradas de Caixa - Empréstimos Colaterateralizados e Operações Compromissadas (operações em que o colateral não é reutilizado em operações compromissadas financiadas ou vendido em definitivo) - Empréstimos colateralizados por ATIVOS DE ALTA LIQUIDEZ não considerados no estoque de Ativos de Alta Liquidez da instituição",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.1.3",
+        "Entradas de Caixa - Empréstimos Colaterateralizados e Operações Compromissadas (operações em que o colateral não é reutilizado em operações compromissadas financiadas ou vendido em definitivo) - Empréstimos colateralizadospor ativos não considerados como de ALTA LIQUIDEZ",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.2",
+        "Empréstimos e financiamentos adimplentes a receber",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.2.1",
+        "Empréstimos e financiamentos adimplentes a receber - Empréstimos concedidos a clientes de varejo: pessoas físicas e pessoas jurídicas de pequeno porte",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.2.2",
+        "Empréstimos e financiamentos adimplentes a receber - Empréstimos concedidos a clientes de atacado: pessoas jurídicas não financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.2.3",
+        "Empréstimos e financiamentos adimplentes a receber - Empréstimos concedidos a clientes de atacado: instituições financeiras e BCs",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.2.4",
+        "Empréstimos e financiamentos adimplentes a receber - Valores a receber de clientes referentes a operações de repasse",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.2.5",
+        "Empréstimos e financiamentos adimplentes a receber - Valores a receber de clientes referentes a créditos cedidos (cobrança banco cedente)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.2.6",
+        "Empréstimos e financiamentos adimplentes a receber - Valores a receber de clientes referentes a operações de financiamento de comércio exterior (trade finance)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.2.7",
+        "Empréstimos e financiamentos adimplentes a receber - Parcelas não colateralizadas de operações compromissadas (tratamento simplificado)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.2.8",
+        "Empréstimos e financiamentos adimplentes a receber - Crédito direcionado e outras aplicações direcionadas: operações que devem ser redirecionadas nos próximos 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.2.9",
+        "Empréstimos e financiamentos adimplentes a receber - Crédito direcionado e outras aplicações direcionadas: operações que não necessitam ser redirecionadas nos próximos 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.3",
+        "Entradas de Caixa - Depósitos da instituição",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.3.1",
+        "Entradas de Caixa - Depósitos da instituição - Depósitos da instituição",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.3.2",
+        "Entradas de Caixa - Depósitos da instituição - Depósitos da instituição relativos a trade finance",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.4",
+        "Entradas de Caixa - Resgates de Títulos e Valores Mobiliários (TVMs)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.4.1",
+        "Entradas de Caixa - Resgates de Títulos e Valores Mobiliários (TVMs) - Vencimento de TVMs não subordinados e resgates e proventos referentes a cotas não subordinadas de fundos de investimento",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.4.2",
+        "Entradas de Caixa - Resgates de Títulos e Valores Mobiliários (TVMs) - Vencimento de TVMs subordinados e resgates e proventos referentes a cotas subordinadas de fundos de investimento",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.5",
+        "Entradas de Caixa - Recebimentos por Operações com Derivativos",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.5.1",
+        "Entradas de Caixa - Recebimentos por Operações com Derivativos - Derivativos com pagamento de ajustes diários",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.5.1.1",
+        "Entradas de Caixa - Recebimentos por Operações com Derivativos - Derivativos com pagamento de ajustes diários - Ajustes a receber (derivativos negociados em câmaras como contraparte central)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.5.1.2",
+        "Entradas de Caixa - Recebimentos por Operações com Derivativos - Derivativos com pagamento de ajustes diários - Ajustes a receber (demais derivativos)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.5.2",
+        "Entradas de Caixa - Recebimentos por Operações com Derivativos - Derivativos sem pagamento de ajustes diários",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.5.2.1",
+        "Entradas de Caixa - Recebimentos por Operações com Derivativos - Derivativos sem pagamento de ajustes diários - Liquidação de derivativos negociados em câmaras como contraparte central (operações passíveis de liquidação em 30 dias)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.5.2.2",
+        "Entradas de Caixa - Recebimentos por Operações com Derivativos - Derivativos sem pagamento de ajustes diários - Liquidação de demais derivativos (operações passíveis de liquidação em 30 dias)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.6",
+        "Entradas de Caixa - Outras entradas de caixa",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.6.1",
+        "Entradas de Caixa - Outras entradas de caixa - Decorrentes de operações de cessão de crédito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.6.1.1",
+        "Entradas de Caixa - Outras entradas de caixa - Decorrentes de operações de cessão de crédito - Valores a receber relativos a vendas de carteiras de crédito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.6.1.2",
+        "Entradas de Caixa - Outras entradas de caixa - Decorrentes de operações de cessão de crédito - Valores a receber de instituições cedentes relativos a créditos adquiridos pela instituição e administrados pelos cedentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.6.2",
+        "Entradas de Caixa - Outras entradas de caixa - Liberação de ativos líquidos",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.6.2.1",
+        "Entradas de Caixa - Outras entradas de caixa - Liberação de ativos líquidos - ATIVOS DE ALTA LIQUIDEZ a receber: operações já contratadas e cujos ativos não foram transferidos (swap de colaterais e aluguel de ativos)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.6.2.2",
+        "Entradas de Caixa - Outras entradas de caixa - Liberação de ativos líquidos - Demais ATIVOS DE ALTA LIQUIDEZ a serem liberados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.6.3",
+        "Entradas de Caixa - Outras entradas de caixa - Cartão de crédito: fatura total a receber",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.6.4",
+        "Entradas de Caixa - Outras entradas de caixa - Cartão de crédito: pagamento esperado (%)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.6.5",
+        "Entradas de Caixa - Outras entradas de caixa - Cartão de crédito: valores a receber",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "30.6.6",
+        "Entradas de Caixa - Outras entradas de caixa - Receitas de serviços e tarifas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Subsidiárias",
+        31,
+        "Entradas de Caixa",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.1",
+        "Entradas de Caixa - Empréstimos Colaterateralizados e Operações Compromissadas (operações em que o colateral não é reutilizado em operações compromissadas financiadas ou vendido em definitivo)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.1.1",
+        "Entradas de Caixa - Empréstimos Colaterateralizados e Operações Compromissadas (operações em que o colateral não é reutilizado em operações compromissadas financiadas ou vendido em definitivo) - Empréstimos colateralizados por ATIVOS DE ALTA LIQUIDEZ",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.1.2",
+        "Entradas de Caixa - Empréstimos Colaterateralizados e Operações Compromissadas (operações em que o colateral não é reutilizado em operações compromissadas financiadas ou vendido em definitivo) - Empréstimos colateralizados por ATIVOS DE ALTA LIQUIDEZ não considerados no estoque de Ativos de Alta Liquidez da instituição",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.1.3",
+        "Entradas de Caixa - Empréstimos Colaterateralizados e Operações Compromissadas (operações em que o colateral não é reutilizado em operações compromissadas financiadas ou vendido em definitivo) - Empréstimos colateralizadospor ativos não considerados como de ALTA LIQUIDEZ",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.2",
+        "Entradas de Caixa - Empréstimos e financiamentos adimplentes a receber",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.2.1",
+        "Entradas de Caixa - Empréstimos concedidos a clientes de varejo: pessoas físicas e pessoas jurídicas de pequeno porte",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.2.2",
+        "Entradas de Caixa - Empréstimos e financiamentos adimplentes a receber - Empréstimos concedidos a clientes de atacado: pessoas jurídicas não financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.2.3",
+        "Entradas de Caixa - Empréstimos e financiamentos adimplentes a receber - Empréstimos concedidos a clientes de atacado: instituições financeiras e BCs",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.2.4",
+        "Entradas de Caixa - Empréstimos e financiamentos adimplentes a receber - Valores a receber de clientes referentes a operações de repasse",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.2.5",
+        "Entradas de Caixa - Empréstimos e financiamentos adimplentes a receber - Valores a receber de clientes referentes a créditos cedidos (cobrança banco cedente)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.2.6",
+        "Entradas de Caixa - Empréstimos e financiamentos adimplentes a receber - Valores a receber de clientes referentes a operações de financiamento de comércio exterior (trade finance)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.2.7",
+        "Entradas de Caixa - Empréstimos e financiamentos adimplentes a receber - Parcelas não colateralizadas de operações compromissadas (tratamento simplificado)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.2.8",
+        "Entradas de Caixa - Empréstimos e financiamentos adimplentes a receber - ECrédito direcionado e outras aplicações direcionadas: operações que devem ser redirecionadas nos próximos 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.2.9",
+        "Entradas de Caixa - Empréstimos e financiamentos adimplentes a receber - Empréstimos concedidos - Crédito direcionado e outras aplicações direcionadas: operações que não necessitam ser redirecionadas nos próximos 30 dias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.3",
+        "Entradas de Caixa - Depósitos da instituição",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.3.1",
+        "Entradas de Caixa - Depósitos da instituição - Depósitos da instituição",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.3.2",
+        "Entradas de Caixa - Depósitos da instituição - Depósitos da instituição relativos a trade finance",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.4",
+        "Entradas de Caixa - Resgates de Títulos e Valores Mobiliários (TVMs)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.4.1",
+        "Entradas de Caixa - Resgates de Títulos e Valores Mobiliários (TVMs) - Vencimento de TVMs não subordinados e resgates e proventos referentes a cotas não subordinadas de fundos de investimento",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.4.2",
+        "Entradas de Caixa - Resgates de Títulos e Valores Mobiliários (TVMs) - Vencimento de TVMs subordinados e resgates e proventos referentes a cotas subordinadas de fundos de investimento",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.5",
+        "Entradas de Caixa - Recebimentos por Operações com Derivativos",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.5.1",
+        "Entradas de Caixa - Recebimentos por Operações com Derivativos - Derivativos com pagamento de ajustes diários",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.5.1.1",
+        "Entradas de Caixa - Recebimentos por Operações com Derivativos - Derivativos com pagamento de ajustes diários - Ajustes a receber (derivativos negociados em câmaras como contraparte central)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.5.1.2",
+        "Entradas de Caixa - Recebimentos por Operações com Derivativos - Derivativos com pagamento de ajustes diários - Ajustes a receber (demais derivativos)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.5.2",
+        "Entradas de Caixa - Recebimentos por Operações com Derivativos - Derivativos sem pagamento de ajustes diários",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.5.2.1",
+        "Entradas de Caixa - Recebimentos por Operações com Derivativos - Derivativos sem pagamento de ajustes diários - Liquidação de derivativos negociados em câmaras como contraparte central (operações passíveis de liquidação em 30 dias)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.5.2.2",
+        "Entradas de Caixa - Recebimentos por Operações com Derivativos - Derivativos sem pagamento de ajustes diários - Liquidação de demais derivativos (operações passíveis de liquidação em 30 dias)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.6",
+        "Entradas de Caixa - Outras entradas de caixa",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.6.1",
+        "Entradas de Caixa - Outras entradas de caixa - Decorrentes de operações de cessão de crédito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.6.1.1",
+        "Entradas de Caixa - Outras entradas de caixa - Decorrentes de operações de cessão de crédito - Valores a receber relativos a vendas de carteiras de crédito",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.6.1.2",
+        "Entradas de Caixa - Outras entradas de caixa - Decorrentes de operações de cessão de crédito - Valores a receber de instituições cedentes relativos a créditos adquiridos pela instituição e administrados pelos cedentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.6.2",
+        "Entradas de Caixa - Outras entradas de caixa - Liberação de ativos líquidos",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.6.2.1",
+        "Entradas de Caixa - Outras entradas de caixa - Liberação de ativos líquidos - ATIVOS DE ALTA LIQUIDEZ a receber: operações já contratadas e cujos ativos não foram transferidos (swap de colaterais e aluguel de ativos)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.6.2.2",
+        "Entradas de Caixa - Outras entradas de caixa - Liberação de ativos líquidos - Demais ATIVOS DE ALTA LIQUIDEZ a serem liberados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.6.3",
+        "Entradas de Caixa - Outras entradas de caixa - Cartão de crédito: fatura total a receber",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.6.4",
+        "Entradas de Caixa - Outras entradas de caixa - Cartão de crédito: pagamento esperado (%)",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.6.5",
+        "Entradas de Caixa - Outras entradas de caixa - Cartão de crédito: valores a receber",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "31.6.6",
+        "Entradas de Caixa - Outras entradas de caixa - Receitas de serviços e tarifas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.1.1",
+        "COLCHÃO DE LIQUIDEZ - Colchão mínimo de liquidez calculado pela IF",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.1.2",
+        "COLCHÃO DE LIQUIDEZ - Colchão de liquidez (ativos líquidos) na data base do DRL",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.1.1",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Pessoas Físicas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.1.2",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Pessoas Jurídicas de Pequeno Porte",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.1.3",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Pessoas Jurídicas não financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.1.4",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Governos, BCs, banco de desenvolvimento, entidades do setor público e assemelhadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.1.5",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Instituições financeiras, fundos, seguradoras, investidores institucionais e assemelhados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.1.6",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Ligadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.1.7",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Recursos administrados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.1.8",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Não residentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.2.1",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Pessoas Físicas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.2.2",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Pessoas Jurídicas de Pequeno Porte",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.2.3",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Pessoas Jurídicas não financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.2.4",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Governos, BCs, banco de desenvolvimento, entidades do setor público e assemelhadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.2.5",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Instituições financeiras, fundos, seguradoras, investidores institucionais e assemelhados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.2.6",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Ligadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.2.7",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Recursos administrados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.2.8",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Não residentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.3.1",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Pessoas Físicas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.3.2",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Pessoas Jurídicas de Pequeno Porte",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.3.3",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Pessoas Jurídicas não financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.3.4",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Governos, BCs, banco de desenvolvimento, entidades do setor público e assemelhadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.3.5",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Instituições financeiras, fundos, seguradoras, investidores institucionais e assemelhados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.3.6",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Ligadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.3.7",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Recursos administrados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.3.8",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Não residentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.2.3.9",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Corretoras, distribuidoras e demais intermediários",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.1.1",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Depósitos à Vista - Pessoas Físicas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.1.2",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Depósitos à Vista - Pessoas Jurídicas de Pequeno Porte",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.1.3",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Depósitos à Vista - Pessoas Jurídicas não financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.1.4",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Depósitos à Vista - Governos, BCs, banco de desenvolvimento, entidades do setor público e assemelhadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.1.5",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Depósitos à Vista - Instituições financeiras, fundos, seguradoras, investidores institucionais e assemelhados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.1.6",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Depósitos à Vista - Ligadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.1.7",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Depósitos à Vista - Recursos administrados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.2.1",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Poupança - Pessoas Físicas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.2.2",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Poupança - Pessoas Jurídicas de Pequeno Porte",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.2.3",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Poupança - Pessoas Jurídicas não financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.2.4",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Poupança - Governos, BCs, banco de desenvolvimento, entidades do setor público e assemelhadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.2.5",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Poupança - Instituições financeiras, fundos, seguradoras, investidores institucionais e assemelhados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.2.6",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Poupança - Ligadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.2.7",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Poupança - Recursos administrados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.3.1",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Demais captações a prazo - Pessoas Físicas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.3.2",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Demais captações a prazo - Pessoas Jurídicas de Pequeno Porte",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.3.3",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Demais captações a prazo - Pessoas Jurídicas não financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.3.4",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Demais captações a prazo - Governos, BCs, banco de desenvolvimento, entidades do setor público e assemelhadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.3.5",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Demais captações a prazo - Instituições financeiras, fundos, seguradoras, investidores institucionais e assemelhados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.3.6",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Demais captações a prazo - Ligadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.3.7",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Demais captações a prazo - Recursos administrados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.3.3.8",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - ME - Demais captações a prazo - Corretoras, distribuidoras e demais intermediários",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.4.1",
+        "DEPÓSITOS JUDICIAIS NO BRASIL - Somente contrapartes privadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.4.2",
+        "DEPÓSITOS JUDICIAIS NO BRASIL - Contrapartes públicas e privadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.5.1",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Pessoas Físicas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.5.2",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Pessoas Jurídicas de Pequeno Porte",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.5.3",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Pessoas Jurídicas não financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.5.4",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Governos, BCs, banco de desenvolvimento, entidades do setor público e assemelhadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.5.5",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Instituições financeiras, fundos, seguradoras, investidores institucionais e assemelhados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.5.6",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Ligadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.5.7",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Recursos administrados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.5.8",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Não residentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.6.1.1",
+        "LINHAS DE CRÉDITO E LIQUIDEZ - Linhas de crédito e liquidez no país - Junto a controladores",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.6.1.2",
+        "LINHAS DE CRÉDITO E LIQUIDEZ - Linhas de crédito e liquidez no país - Demais não vinculadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.6.2.1",
+        "LINHAS DE CRÉDITO E LIQUIDEZ - Linhas de crédito e liquidez no exterior - Junto a controladores",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.6.2.2",
+        "LINHAS DE CRÉDITO E LIQUIDEZ - Linhas de crédito e liquidez no exterior - Junto a Banco Central",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.6.2.3",
+        "LINHAS DE CRÉDITO E LIQUIDEZ - Linhas de crédito e liquidez no exterior - Demais não vinculadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.7.1",
+        "Ativos de Alta Liquidez VINCULADOS - Sob custódia da própria IF",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.7.2.1",
+        "Ativos de Alta Liquidez VINCULADOS - Exterior - Garantia de linhas de assistência à liquidez de Bancos Centrais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.7.2.2",
+        "Ativos de Alta Liquidez VINCULADOS - Exterior - Demais vinculações em Bancos Centrais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.7.2.3",
+        "Ativos de Alta Liquidez VINCULADOS - Exterior - Demais garantias de linhas de crédito e liquidez",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.7.2.4",
+        "Ativos de Alta Liquidez VINCULADOS - Exterior - Garantias de operações com derivativos",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.7.2.5",
+        "Ativos de Alta Liquidez VINCULADOS - Exterior - Demais garantias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "40.8",
+        "RESERVAS COMPULSÓRIAS EM BANCOS CENTRAIS",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Subsidiárias",
+        "41.1.1",
+        "COLCHÃO DE LIQUIDEZ - Colchão mínimo de liquidez calculado pela IF",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.1.2",
+        "COLCHÃO DE LIQUIDEZ - Colchão de liquidez (ativos líquidos) na data base do LCR",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.1.1",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Pessoas Físicas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.1.2",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Pessoas Jurídicas de Pequeno Porte",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.1.3",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Pessoas Jurídicas não financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.1.4",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Governos, BCs, banco de desenvolvimento, entidades do setor público e assemelhadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.1.5",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Instituições financeiras, fundos, seguradoras, investidores institucionais e assemelhados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.1.6",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Ligadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.1.7",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Recursos administrados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.1.8",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Depósitos à Vista - Não residentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.2.1",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Pessoas Físicas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.2.2",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Pessoas Jurídicas de Pequeno Porte",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.2.3",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Pessoas Jurídicas não financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.2.4",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Governos, BCs, banco de desenvolvimento, entidades do setor público e assemelhadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.2.5",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Instituições financeiras, fundos, seguradoras, investidores institucionais e assemelhados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.2.6",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Ligadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.2.7",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Recursos administrados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.2.8",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Poupança - Não residentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.3.1",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Pessoas Físicas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.3.2",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Pessoas Jurídicas de Pequeno Porte",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.3.3",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Pessoas Jurídicas não financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.3.4",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Governos, BCs, banco de desenvolvimento, entidades do setor público e assemelhadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.3.5",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Instituições financeiras, fundos, seguradoras, investidores institucionais e assemelhados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.3.6",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Ligadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.3.7",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Recursos administrados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.3.8",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Não residentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.2.3.9",
+        "CONCENTRAÇÃO DA CAPTAÇÃO - Demais captações a prazo - Corretoras, distribuidoras e demais intermediários",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.3.1",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Pessoas Físicas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.3.2",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Pessoas Jurídicas de Pequeno Porte",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.3.3",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Pessoas Jurídicas não financeiras",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.3.4",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Governos, BCs, banco de desenvolvimento, entidades do setor público e assemelhadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.3.5",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Instituições financeiras, fundos, seguradoras, investidores institucionais e assemelhados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.3.6",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Ligadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.3.7",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Recursos administrados",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.3.8",
+        "CAPTAÇÕES ASSEGURADAS POR SEGURO DEPÓSITO - Não residentes",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.4.1.1",
+        "Linhas de Crédito e Liquidez - Linhas de crédito e liquidez na jurisdição da subsidiária - Junto a Banco Central",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.4.1.2",
+        "Linhas de Crédito e Liquidez - Linhas de crédito e liquidez na jurisdição da subsidiária - Demais não vinculadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.4.2.1",
+        "Linhas de Crédito e Liquidez - Linhas de crédito e liquidez contratadas fora da jurisdição da subsidiária - Junto a Banco Central",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.4.2.2",
+        "Linhas de Crédito e Liquidez - Linhas de crédito e liquidez contratadas fora da jurisdição da subsidiária - Demais não vinculadas",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.5.1",
+        "Ativos de Alta Liquidez VINCULADOS - Garantia de linhas de assistência à liquidez de Bancos Centrais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.5.2",
+        "Ativos de Alta Liquidez VINCULADOS - Demais vinculações em Bancos Centrais",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.5.3",
+        "Ativos de Alta Liquidez VINCULADOS - Demais garantias de linhas de crédito e liquidez",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.5.4",
+        "Ativos de Alta Liquidez VINCULADOS - Garantias de operações com derivativos",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.5.5",
+        "Ativos de Alta Liquidez VINCULADOS - Demais garantias",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.6.1",
+        "RESERVAS COMPULSÓRIAS EM BANCOS CENTRAIS - No país da subsidiária",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        "41.6.2",
+        "RESERVAS COMPULSÓRIAS EM BANCOS CENTRAIS - No exterior",
+        null,
+        null,
+        null
+      ]
+    ],
+    "nrows": 430,
+    "ncols": 7
+  },
+  {
+    "name": "A4 Elementos",
+    "rows": [
+      [
+        null,
+        "Anexo 4: Código do elemento",
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        "Domínio",
+        "Nome",
+        "Data início",
+        "Data fim"
+      ],
+      [
+        null,
+        81,
+        "País",
+        "2015-10-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        82,
+        "Valor por moeda e país",
+        "2015-10-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        83,
+        "Moeda",
+        "2015-10-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        84,
+        "Indicador de moeda local",
+        "2015-10-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        87,
+        "Valor por moeda",
+        "2016-03-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        88,
+        "Quantidade de Clientes",
+        "2016-03-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        89,
+        "Faixas de Saldos",
+        "2016-03-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        90,
+        "Limite Seguro Depósito",
+        "2016-03-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        91,
+        "Faixas de Vencimento",
+        "2016-03-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        92,
+        "Valor Contratado",
+        "2016-03-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        93,
+        "Valor Utilizado",
+        "2016-03-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        94,
+        "Valor Depositado",
+        "2016-03-01 00:00:00",
+        null
+      ],
+      [
+        null,
+        95,
+        "Valor Mantido na IF",
+        "2016-03-01 00:00:00",
+        null
+      ]
+    ],
+    "nrows": 15,
+    "ncols": 5
+  }
+]

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Doc3026 CNPJ="00038166" DtBase="2012-06">
+  <CongEcon Cd="1">
+    <Part Cd="12345678" Tp="2"/>
+  </CongEcon>
+  <CongEcon Cd="2">
+    <Part Tp="2" Cd="12345678"/>
+    <Part Tp="2" Cd="12345678"/>
+  </CongEcon>
+</Doc3026>

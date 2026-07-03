@@ -1,0 +1,37 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Build temporário (Pandoc gera e remove)
+_build_*.html
+
+# Logs temporários
+*.log
+!.gitkeep
+
+# Backup
+*.bak
+*.tmp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Não commitar catálogo grande (regenerável)
+# Mas como tá pequeno (1.7 MB) e é insumo do Sentinel Audit, mantemos
+# _catalogos/criticas.json
+# _catalogos/leiautes.json
+
+# Não commitar arquivos grandes > 50 MB (PDFs pesados, etc.)
+# Mas até agora todos < 10 MB
+
+# Materiais que podem ser baixados novamente
+_catalogos/_extracao.log

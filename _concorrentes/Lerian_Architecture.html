@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>    
+  <title>Arquitetura para Relatórios Regulatórios CADOC no SFN</title>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400..900&display=swap" rel="stylesheet">
+
+    <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"
+  />
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="https://blog.lerian.studio/assets/css/main.css?v=c6b72391b2" />
+  <style>
+    :root {            
+        --heading-font-family: 'Golos Text';
+      --body-font-family: 'Golos Text';
+      --heading-font-weight: 700;
+      --intro-background: var(--ghost-accent-color);
+      --color-primary: var(--ghost-accent-color);
+      --color-primary-darker: hsl(from var(--color-primary) h s calc(l - 5));
+      --color-black: #1A1A1A;
+      --color-white: #FFFFFF;
+      --color-gray-100: #F7F7F7;
+      --color-gray-200: #D9D9D9;
+      --color-primary-text-overlay: #000000;
+      --logo-height: 36px; 
+      --image-aspect-ratio: 3/2;
+      --image-radius: 1rem;
+    }
+    @media screen and (max-width: 1023px) {
+        .header .header-nav {
+          background-color: var(--color-white);
+          border: 1px solid rgba(0,0,0,0.05);
+        }
+        .header .header-nav li a,
+        .home-template .header .header-nav li a,
+        .header .header-nav .header-nav-account-links a:not(.btn) {
+          color: var(--color-black);
+        }
+        .header .header-nav .header-nav-account-links {
+          border-color: rgba(0,0,0,0.1);
+        }
+        .header .header-nav .header-nav-account-links .btn {          
+          background-color: var(--ghost-accent-color);
+          color: var(--color-white);
+        }
+        .header .header-nav .header-nav-close svg {
+          color: var(--color-black);
+        }
+    }
+  </style>  
+  <meta name="description" content="Transforme a geração de relatórios CADOC em processo automatizado. Arquitetura validation-first garante integridade desde a origem.">
+    <link rel="icon" href="https://storage.ghost.io/c/43/c9/43c91103-1595-4af6-8970-e82fba2b1f00/content/images/size/w256h256/2025/07/--cone-Preto_Amarelo--1--4.png" type="image/png">
+    <link rel="canonical" href="https://blog.lerian.studio/arquitetura-relatorios-regulatorios-sfn-cadoc">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    
+    <meta property="og:site_name" content="Lerian Blog">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Arquitetura para Relatórios Regulatórios CADOC no SFN">
+    <meta property="og:description" content="Transforme a geração de relatórios CADOC em processo automatizado. Arquitetura validation-first garante integridade desde a origem.">
+    <meta property="og:url" content="https://blog.lerian.studio/arquitetura-relatorios-regulatorios-sfn-cadoc">
+    <meta property="og:image" content="https://storage.ghost.io/c/43/c9/43c91103-1595-4af6-8970-e82fba2b1f00/content/images/size/w1200/2026/01/sindarian_regulatory_reports.png">
+    <meta property="article:published_time" content="2026-01-15T19:27:30.000Z">
+    <meta property="article:modified_time" content="2026-01-15T20:19:52.000Z">
+    <meta property="article:tag" content="Compliance e regulatório">
+    <meta property="article:tag" content="Produto e mercado">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Arquitetura para Relatórios Regulatórios CADOC no SFN">
+    <meta name="twitter:description" content="Transforme a geração de relatórios CADOC em processo automatizado. Arquitetura validation-first garante integridade desde a origem.">
+    <meta name="twitter:url" content="https://blog.lerian.studio/arquitetura-relatorios-regulatorios-sfn-cadoc">
+    <meta name="twitter:image" content="https://storage.ghost.io/c/43/c9/43c91103-1595-4af6-8970-e82fba2b1f00/content/images/size/w1200/2026/01/sindarian_regulatory_reports.png">
+    <meta name="twitter:label1" content="Written by">
+    <meta name="twitter:data1" content="Rosane Alcantara de Melo Rodrigues">
+    <meta name="twitter:label2" content="Filed under">
+    <meta name="twitter:data2" content="Compliance e regulatório, Produto e mercado">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="670">
+    
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "publisher": {
+        "@type": "Organization",
+        "name": "Lerian Blog",
+        "url": "https://blog.lerian.studio/",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "https://storage.ghost.io/c/43/c9/43c91103-1595-4af6-8970-e82fba2b1f00/content/images/2025/07/Estudos---Logo---Podcast.png"
+        }
+    },
+    "author": {
+        "@type": "Person",
+        "name": "Rosane Alcantara de Melo Rodrigues",
+        "url": "https://blog.lerian.studio/author/rosane/",
+        "sameAs": []
+    },
+    "headline": "Arquitetura para Relatórios Regulatórios CADOC no SFN",
+    "url": "https://blog.lerian.studio/da-reconciliacao-manual-a-geracao-continua-arquitetura-para-relatorios-regulatorios-no-sfn/",
+    "datePublished": "2026-01-15T19:27:30.000Z",
+    "dateModified": "2026-01-15T20:19:52.000Z",
+    "image": {
+        "@type": "ImageObject",
+        "url": "https://storage.ghost.io/c/43/c9/43c91103-1595-4af6-8970-e82fba2b1f00/content/images/size/w1200/2026/01/sindarian_regulatory_reports.png",
+        "width": 1200,
+        "height": 670
+    },
+    "keywords": "Compliance e regulatório, Produto e mercado",
+    "description": "No Sistema Financeiro Nacional, a geração de relatórios regulatórios é um processo mandatório e de alta complexidade. Para instituições financeiras e de pagamento, a prestação de contas ao Banco Central do Brasil é materializada através do Catálogo de Documentos (CADOC), um conjunto de mais de 70 relatórios que detalham a saúde financeira e operacional das entidades.\n\nDocumentos como o CADOC 4010 (Balancete Patrimonial Analítico) e 4016 (Balanço Patrimonial Analítico) exigem um nível de detalhe ",
+    "mainEntityOfPage": "https://blog.lerian.studio/da-reconciliacao-manual-a-geracao-continua-arquitetura-para-relatorios-regulatorios-no-sfn/"
+}
+    </script>
+
+    <meta name="generator" content="Ghost 6.50">
+    <link rel="alternate" type="application/rss+xml" title="Lerian Blog" href="https://blog.lerian.studio/rss/">
+    <script defer src="https://cdn.jsdelivr.net/ghost/portal@~2.69/umd/portal.min.js" data-i18n="true" data-ghost="https://blog.lerian.studio/" data-key="a2a5945f6fa229e901006fa17d" data-api="https://lerian-insights.ghost.io/ghost/api/content/" data-locale="pt-br" crossorigin="anonymous"></script><style id="gh-members-styles">.gh-post-upgrade-cta-content,
+.gh-post-upgrade-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    text-align: center;
+    width: 100%;
+    color: #ffffff;
+    font-size: 16px;
+}
+
+.gh-post-upgrade-cta-content {
+    border-radius: 8px;
+    padding: 40px 4vw;
+}
+
+.gh-post-upgrade-cta h2 {
+    color: #ffffff;
+    font-size: 28px;
+    letter-spacing: -0.2px;
+    margin: 0;
+    padding: 0;
+}
+
+.gh-post-upgrade-cta p {
+    margin: 20px 0 0;
+    padding: 0;
+}
+
+.gh-post-upgrade-cta small {
+    font-size: 16px;
+    letter-spacing: -0.2px;
+}
+
+.gh-post-upgrade-cta a {
+    color: #ffffff;
+    cursor: pointer;
+    font-weight: 500;
+    box-shadow: none;
+    text-decoration: underline;
+}
+
+.gh-post-upgrade-cta a:hover {
+    color: #ffffff;
+    opacity: 0.8;
+    box-shadow: none;
+    text-decoration: underline;
+}
+
+.gh-post-upgrade-cta a.gh-btn {
+    display: block;
+    background: #ffffff;
+    text-decoration: none;
+    margin: 28px 0 0;
+    padding: 8px 18px;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.gh-post-upgrade-cta a.gh-btn:hover {
+    opacity: 0.92;
+}</style>
+    <script defer src="https://cdn.jsdelivr.net/ghost/sodo-search@~1.8/umd/sodo-search.min.js" data-key="a2a5945f6fa229e901006fa17d" data-styles="https://cdn.jsdelivr.net/ghost/sodo-search@~1.8/umd/main.css" data-sodo-search="https://lerian-insights.ghost.io/" data-locale="pt-br" crossorigin="anonymous"></script>
+    
+    <link href="https://blog.lerian.studio/webmentions/receive/" rel="webmention">
+    <script defer src="/public/cards.min.js?v=c6b72391b2"></script>
+    <link rel="stylesheet" type="text/css" href="/public/cards.min.css?v=c6b72391b2">
+    <script defer src="/public/comment-counts.min.js?v=c6b72391b2" data-ghost-comments-counts-api="https://blog.lerian.studio/members/api/comments/counts/"></script>
+    <script defer src="/public/member-attribution.min.js?v=c6b72391b2"></script>
+    <script defer src="/public/ghost-stats.min.js?v=c6b72391b2" data-stringify-payload="false" data-datasource="analytics_events" data-storage="localStorage" data-host="https://blog.lerian.studio/.ghost/analytics/api/v1/page_hit"  tb_site_uuid="43c91103-1595-4af6-8970-e82fba2b1f00" tb_post_uuid="45ceb7d0-af6a-4db9-acee-c7d21a71720b" tb_post_type="post" tb_member_uuid="undefined" tb_member_status="undefined" tb_gift_link=""></script><style>:root {--ghost-accent-color: #f2f2f2;}</style>
+    <style>
+  /* Seus estilos originais para links de posts */
+  .post-entry a,
+  .post-entry .kg-button-card a.kg-btn, 
+  .post-entry .kg-header-card a.kg-header-card-button, 
+  .post-entry .kg-header-card.kg-size-large a.kg-header-card-button, 
+  .post-entry .kg-header-card.kg-size-small a.kg-header-card-button {
+    color: #000;
+  }
+
+ 
+
+</style>
+
+<script type="text/javascript">
+_linkedin_partner_id = "8500825";
+window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
+window._linkedin_data_partner_ids.push(_linkedin_partner_id);
+</script><script type="text/javascript">
+(function(l) {
+if (!l){window.lintrk = function(a,b){window.lintrk.q.push([a,b])};
+window.lintrk.q=[]}
+var s = document.getElementsByTagName("script")[0];
+var b = document.createElement("script");
+b.type = "text/javascript";b.async = true;
+b.src = "https://snap.licdn.com/li.lms-analytics/insight.min.js";
+s.parentNode.insertBefore(b, s);})(window.lintrk);
+</script>
+<noscript>
+<img height="1" width="1" style="display:none;" alt="" src="https://px.ads.linkedin.com/collect/?pid=8500825&fmt=gif" />
+</noscript>
+
+<script type="text/javascript">
+_linkedin_partner_id = "9036489";
+window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
+window._linkedin_data_partner_ids.push(_linkedin_partner_id);
+</script><script type="text/javascript">
+(function(l) {
+if (!l){window.lintrk = function(a,b){window.lintrk.q.push([a,b])};
+window.lintrk.q=[]}
+var s = document.getElementsByTagName("script")[0];
+var b = document.createElement("script");
+b.type = "text/javascript";b.async = true;
+b.src = "https://snap.licdn.com/li.lms-analytics/insight.min.js";
+s.parentNode.insertBefore(b, s);})(window.lintrk);
+</script>
+<noscript>
+<img height="1" width="1" style="display:none;" alt="" src="https://px.ads.linkedin.com/collect/?pid=9036489&fmt=gif" />
+</noscript>
+</head>
+<body class="post-template tag-compliance-e-regulatorio tag-produto-e-mercado">
+
+  <header class="header">
+  <div class="s-container">    
+      <a href="https://blog.lerian.studio" class="logo logo--image">
+          <img src="https://storage.ghost.io/c/43/c9/43c91103-1595-4af6-8970-e82fba2b1f00/content/images/2025/07/Estudos---Logo---Podcast.png" alt="Lerian Blog" />
+      </a>
+    <nav id="header-nav" class="header-nav">
+        <ul class="primary">
+      <li class="nav-github">
+        <a href="https://github.com/LerianStudio">Github</a>
+      </li>
+      <li class="nav-assuntos">
+        <a href="https://blog.lerian.studio/assuntos/">Assuntos</a>
+      </li>
+      <li class="nav-autores">
+        <a href="https://blog.lerian.studio/autores/">Autores</a>
+      </li>
+  </ul>
+
+        <div class="header-nav-account-links">
+          <a class="btn" href="#/portal/signup" data-portal="signup">Assinar</a>
+          <a href="#/portal/account" data-portal="account">
+              Sign In
+          </a>
+        </div>
+      <button class="header-nav-close">
+        <svg width="19" height="19" viewBox="0 0 19 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M17.5686 17.5078C17.2135 17.8628 16.6379 17.8628 16.2829 17.5078L0.854299 2.07922C0.499259 1.72418 0.499259 1.14854 0.854299 0.793503C1.20934 0.438463 1.78497 0.438463 2.14001 0.793503L17.5686 16.2221C17.9236 16.5771 17.9236 17.1527 17.5686 17.5078Z" fill="currentColor"/>
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M17.5686 0.793667C17.9236 1.14871 17.9236 1.72434 17.5686 2.07938L2.14001 17.5079C1.78497 17.863 1.20933 17.863 0.854294 17.5079C0.499254 17.1529 0.499254 16.5773 0.854294 16.2222L16.2829 0.793667C16.6379 0.438627 17.2135 0.438627 17.5686 0.793667Z" fill="currentColor"/>
+</svg>
+        <span class="sr-text">Fechar menu</span>
+      </button>
+    </nav>
+    <div class="header-utils">
+        <div class="header-utils-account-links">
+          <a href="#/portal/account" data-portal="account">
+              Entrar
+          </a>
+          <a class="btn" href="#/portal/signup" data-portal="signup">Cadastrar</a>
+        </div>
+      <button class="header-utils-search" aria-label="search" data-ghost-search>
+        <svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M15.4189 8.94714C15.4189 12.7891 12.3044 15.9036 8.46242 15.9036C4.62048 15.9036 1.50598 12.7891 1.50598 8.94714C1.50598 5.1052 4.62048 1.9907 8.46242 1.9907C12.3044 1.9907 15.4189 5.1052 15.4189 8.94714ZM13.3083 15.8783C11.936 16.8395 10.2651 17.4036 8.46242 17.4036C3.79206 17.4036 0.00598145 13.6175 0.00598145 8.94714C0.00598145 4.27678 3.79206 0.490701 8.46242 0.490701C13.1328 0.490701 16.9189 4.27678 16.9189 8.94714C16.9189 11.2731 15.9798 13.3798 14.46 14.9087L17.7803 18.229C18.0732 18.5219 18.0732 18.9967 17.7803 19.2896C17.4874 19.5825 17.0125 19.5825 16.7196 19.2896L13.3083 15.8783Z" fill="currentColor"/>
+</svg>
+        <span class="sr-text">Buscar</span>
+      </button>
+      <button class="header-utils-burger">
+        <svg width="22" height="12" viewBox="0 0 22 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M0 2.5H22V0H0V2.5ZM6 11.5H22V9H6V11.5Z" fill="currentColor"/>
+</svg>
+        <span class="sr-text">Abrir menu</span>
+      </button>
+    </div>    
+  </div>
+</header>  
+  <main id="main">
+    
+  <div class="post-header post-header--stacked">
+    <div class="s-container">      
+      <div class="post-header-intro"> 
+        <div class="post-header-tag-title">
+            <div class="post-tags">
+                <a class="post-tag" href="/tag/compliance-e-regulatorio/" >Compliance e regulatório</a>
+                <a class="post-tag" href="/tag/produto-e-mercado/" >Produto e mercado</a>
+            </div>
+          <h1>Da reconciliação manual à geração contínua: arquitetura para relatórios regulatórios no SFN</h1>
+        </div>
+        <div class="post-header-meta">
+            <div class="post-header-author">
+                  <div class="card-author-name">
+                    <a href="/author/rosane/">Por Rosane Alcantara de Melo Rodrigues</a>
+                  </div>
+            </div>
+          <div class="post-header-date">15 de jan de 2026</div>          
+        </div>
+      </div>
+        <figure class="post-image">
+          <div class="post-image-aspect">
+            <img src="https://storage.ghost.io/c/43/c9/43c91103-1595-4af6-8970-e82fba2b1f00/content/images/size/w1440/2026/01/sindarian_regulatory_reports.png" alt="Da reconciliação manual à geração contínua: arquitetura para relatórios regulatórios no SFN" />
+          </div>
+        </figure>
+    </div>
+  </div>  
+  <div id="content">
+    <div class="post-entry">
+      <p>No Sistema Financeiro Nacional, a geração de relatórios regulatórios é um processo mandatório e de alta complexidade. Para instituições financeiras e de pagamento, a prestação de contas ao Banco Central do Brasil é materializada através do Catálogo de Documentos (CADOC), um conjunto de mais de 70 relatórios que detalham a saúde financeira e operacional das entidades.</p><p>Documentos como o CADOC 4010 (Balancete Patrimonial Analítico) e 4016 (Balanço Patrimonial Analítico) exigem um nível de detalhe e precisão que expõe as fragilidades de arquiteturas contábeis que não foram projetadas com a integridade dos dados em seu núcleo.</p><p>O processo de geração desses arquivos é frequentemente manual, reativo e propenso a erros. Times de finanças e contabilidade dedicam dias a cada fechamento para consolidar dados de fontes heterogêneas, realizar conciliações em planilhas e ajustar formatos para atender aos layouts rigorosos do BACEN. Este esforço não apenas desvia talentos de atividades estratégicas, mas também introduz um risco regulatório significativo, onde falhas podem resultar em apontamentos e sanções.</p><p>Hoje podemos dizer que a automação de relatórios regulatórios não é um problema de <em>ferramenta</em>, mas sim uma consequência de uma <em>arquitetura</em>, visto que diversas correções e revisões manuais são necessárias pelo fato de a integridade dos dados não ser garantida <em>antes</em> do registro no ledger. O grande desafio é transformar a geração de CADOCs de um desafio operacional em um processo determinístico e auditável.</p><p>COSIF: a gramática contábil que fundamenta os relatórios</p><p>Para que a automação seja possível, é preciso primeiro entender a linguagem do regulador. No Brasil, essa linguagem é o COSIF (Plano Contábil das Instituições do Sistema Financeiro Nacional). Ele não é uma sugestão; é a gramática obrigatória que padroniza como cada operação financeira deve ser classificada. Desde uma tarifa de PIX até a compra de um título público, cada transação precisa ter um "endereço" COSIF correspondente.</p><p>Ignorar essa gramática no início do processo é a causa raiz dos problemas de fechamento. Se o plano de contas interno de uma instituição não reflete nativamente a estrutura do COSIF, a geração de relatórios se transforma em uma complexa tradução manual, onde a probabilidade de erro é diretamente proporcional ao volume de dados. É essa desconexão que leva à falha estrutural que veremos a seguir.</p><h2 id="a-falha-estrutural-da-classifica%C3%A7%C3%A3o-a-posteriori">A falha estrutural da classificação a posteriori</h2><p>Em muitas instituições, a arquitetura contábil é construída com uma abordagem <em>transaction-first</em>. A prioridade é processar a transação, e a classificação contábil e regulatória é tratada como um passo subsequente. Este modelo, que prioriza a execução em detrimento da validação, cria três problemas estruturais:</p><ol><li><strong>Custo de reconciliação:</strong> A ausência de uma fonte única da verdade para dados contábeis exige que as equipes gastem um tempo desproporcional em reconciliações. Cada fechamento se torna um exercício de arqueologia de dados para corrigir lançamentos que nasceram sem a conformidade necessária.</li></ol><p></p><ol start="2"><li><strong>Janela de risco:</strong> O intervalo entre a ocorrência da transação e sua correta classificação cria uma janela onde a visão da posição de risco da empresa está incompleta. Divergências só são descobertas dias ou semanas depois, quando a capacidade de ação corretiva é limitada.</li></ol><p></p><ol start="3"><li><strong>Falta de auditabilidade:</strong> Um processo que depende de ajustes manuais e planilhas é inerentemente difícil de auditar. Rastrear a origem de um número em um relatório final pode se tornar uma tarefa investigativa complexa, minando a confiança nos dados.</li></ol><p>A tese central é que a qualidade de um relatório é determinada no momento em que o lançamento contábil é proposto, não quando o relatório é gerado.</p><h2 id="cadoc-4010-e-4016-a-vis%C3%A3o-do-regulador">CADOC 4010 e 4016: a visão do regulador</h2><p>O <strong>CADOC 4010</strong> é a materialização mensal dessa necessidade de transparência. Ele não é apenas um balancete de saldos, mas uma visão analítica que exige desdobramentos por subtítulos, prazo, moeda e contraparte. Se a arquitetura do seu ledger não captura essa granularidade no momento da transação, a geração do 4010 se transforma em um quebra-cabeça manual.</p><p>O <strong>CADOC 4016</strong>, por sua vez, é o balanço semestral, refletindo a posição patrimonial após a apuração de resultado. Ele exclui contas de receita e despesa, e sua consistência é cruzada com os seis CADOCs 4010 enviados no período. Qualquer divergência resulta em apontamentos automáticos pelo BACEN.</p>
+<!--kg-card-begin: html-->
+<table style="border:none;border-collapse:collapse;table-layout:fixed;width:468pt"><colgroup><col><col><col></colgroup><thead><tr style="height:0pt"><th style="border-left:solid #000000 1pt;border-right:solid #000000 1pt;border-bottom:solid #000000 1pt;border-top:solid #000000 1pt;vertical-align:top;padding:5pt 5pt 5pt 5pt;overflow:hidden;overflow-wrap:break-word;" scope="col"><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;"><span style="font-size:11pt;font-family:Arial,sans-serif;color:#000000;background-color:transparent;font-weight:700;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;white-space:pre-wrap;">Documento</span></p></th><th style="border-left:solid #000000 1pt;border-right:solid #000000 1pt;border-bottom:solid #000000 1pt;border-top:solid #000000 1pt;vertical-align:top;padding:5pt 5pt 5pt 5pt;overflow:hidden;overflow-wrap:break-word;" scope="col"><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;"><span style="font-size:11pt;font-family:Arial,sans-serif;color:#000000;background-color:transparent;font-weight:700;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;white-space:pre-wrap;">Periodicidade</span></p></th><th style="border-left:solid #000000 1pt;border-right:solid #000000 1pt;border-bottom:solid #000000 1pt;border-top:solid #000000 1pt;vertical-align:top;padding:5pt 5pt 5pt 5pt;overflow:hidden;overflow-wrap:break-word;" scope="col"><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;"><span style="font-size:11pt;font-family:Arial,sans-serif;color:#000000;background-color:transparent;font-weight:700;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;white-space:pre-wrap;">Foco principal</span></p></th></tr></thead><tbody><tr style="height:0pt"><td style="border-left:solid #000000 1pt;border-right:solid #000000 1pt;border-bottom:solid #000000 1pt;border-top:solid #000000 1pt;vertical-align:top;padding:5pt 5pt 5pt 5pt;overflow:hidden;overflow-wrap:break-word;"><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;"><span style="font-size:11pt;font-family:Arial,sans-serif;color:#000000;background-color:transparent;font-weight:700;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;white-space:pre-wrap;">CADOC 4010</span></p></td><td style="border-left:solid #000000 1pt;border-right:solid #000000 1pt;border-bottom:solid #000000 1pt;border-top:solid #000000 1pt;vertical-align:top;padding:5pt 5pt 5pt 5pt;overflow:hidden;overflow-wrap:break-word;"><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;"><span style="font-size:11pt;font-family:Arial,sans-serif;color:#000000;background-color:transparent;font-weight:400;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;white-space:pre-wrap;">Mensal</span></p></td><td style="border-left:solid #000000 1pt;border-right:solid #000000 1pt;border-bottom:solid #000000 1pt;border-top:solid #000000 1pt;vertical-align:top;padding:5pt 5pt 5pt 5pt;overflow:hidden;overflow-wrap:break-word;"><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;"><span style="font-size:11pt;font-family:Arial,sans-serif;color:#000000;background-color:transparent;font-weight:400;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;white-space:pre-wrap;">Balancete patrimonial analítico com desdobramentos</span></p></td></tr><tr style="height:0pt"><td style="border-left:solid #000000 1pt;border-right:solid #000000 1pt;border-bottom:solid #000000 1pt;border-top:solid #000000 1pt;vertical-align:top;padding:5pt 5pt 5pt 5pt;overflow:hidden;overflow-wrap:break-word;"><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;"><span style="font-size:11pt;font-family:Arial,sans-serif;color:#000000;background-color:transparent;font-weight:700;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;white-space:pre-wrap;">CADOC 4016</span></p></td><td style="border-left:solid #000000 1pt;border-right:solid #000000 1pt;border-bottom:solid #000000 1pt;border-top:solid #000000 1pt;vertical-align:top;padding:5pt 5pt 5pt 5pt;overflow:hidden;overflow-wrap:break-word;"><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;"><span style="font-size:11pt;font-family:Arial,sans-serif;color:#000000;background-color:transparent;font-weight:400;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;white-space:pre-wrap;">Semestral</span></p></td><td style="border-left:solid #000000 1pt;border-right:solid #000000 1pt;border-bottom:solid #000000 1pt;border-top:solid #000000 1pt;vertical-align:top;padding:5pt 5pt 5pt 5pt;overflow:hidden;overflow-wrap:break-word;"><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;"><span style="font-size:11pt;font-family:Arial,sans-serif;color:#000000;background-color:transparent;font-weight:400;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;white-space:pre-wrap;">Balanço patrimonial analítico pós-apuração de resultado</span></p></td></tr></tbody></table>
+<!--kg-card-end: html-->
+<h2 id="garantindo-a-integridade-cont%C3%A1bil-no-lan%C3%A7amento">Garantindo a integridade contábil no lançamento</h2><p>Uma arquitetura validation-first inverte o modelo tradicional. Nela, uma transação não é um comando para mover fundos, mas uma <em>proposta</em> que deve passar por um rigoroso processo de validação antes de ser aceita pelo ledger. Isso garante que apenas transações válidas, íntegras e conformes sejam persistidas, eliminando a necessidade de rollbacks e correções manuais.</p><p>Essa abordagem se materializa em validações transacionais concretas que ocorrem antes do registro:</p><ul><li><strong>Validação de plano de contas:</strong> Antes que uma transação seja processada, o sistema verifica se as rotas/rubricas contábeis especificadas estão de acordo com o plano de contas (COSIF) vigente na instituição. Uma tentativa de usar um código COSIF obsoleto ou uma rubrica inadequada para a operação é rejeitada na origem, impedindo que um dado inválido contamine o ledger e seus reportes futuros.</li></ul><p></p><ul><li><strong>Validação de tipos de conta:</strong> A arquitetura pode impor regras sobre como diferentes tipos de contas interagem. Por exemplo, pode-se definir que uma Conta de Pagamento de um cliente não pode transacionar diretamente com uma Conta de Liquidação interna, exigindo uma Conta de Reserva como intermediária. Uma transação que viole essa regra é bloqueada antes de ser registrada, garantindo a segregação e a conformidade dos saldos.</li></ul><p>Ao aplicar essas validações no início do fluxo, o ledger se torna, por definição, uma fonte da verdade que é não apenas matematicamente balanceada (double-entry), mas também estruturalmente e regulatoriamente correta. O resultado é um registro limpo, auditável e livre de dados que exigiriam intervenção manual.</p><h2 id="automa%C3%A7%C3%A3o-como-consequ%C3%AAncia-dessa-arquitetura">Automação como consequência dessa arquitetura</h2><p>Quando os dados já nascem estruturados e validados, a geração de relatórios deixa de ser um projeto de consolidação e se torna um processo de renderização. É neste ponto que uma ferramenta como o<strong> </strong>Reporter da Lerian se encaixa, sendo uma engine de templates que se conecta diretamente à fonte da verdade que já contém dados íntegros — para gerar qualquer formato de relatório exigido.</p><p>O processo se torna trivial:</p><ol><li><strong>Dados com integridade garantida:</strong> a sua arquitetura e o seu ledger asseguram que cada transação registrada já contenha os metadados necessários e corretos (conta COSIF, prazo, contraparte, etc.).</li><li><strong>Template definido:</strong> um template é criado para mapear os campos do ledger para o formato XML do CADOC 4010.</li><li><strong>Renderização:</strong> O Reporter executa o template, consultando o ledger e gerando o arquivo final em segundos, pois não há necessidade de transformações ou correções de dados.</li></ol><h3 id="exemplo-de-template-pongo2-para-cadoc-4010"><strong>Exemplo de template (Pongo2 para CADOC 4010)</strong></h3><p>O exemplo abaixo ilustra como o template do Reporter busca dados diretamente de um ledger com dados já validados para gerar o XML do CADOC 4010.</p><figure class="kg-card kg-image-card"><img src="https://storage.ghost.io/c/43/c9/43c91103-1595-4af6-8970-e82fba2b1f00/content/images/2026/01/Captura-de-Tela-2026-01-15-a--s-16.26.10.png" class="kg-image" alt="" loading="lazy" width="639" height="391" srcset="https://storage.ghost.io/c/43/c9/43c91103-1595-4af6-8970-e82fba2b1f00/content/images/size/w600/2026/01/Captura-de-Tela-2026-01-15-a--s-16.26.10.png 600w, https://storage.ghost.io/c/43/c9/43c91103-1595-4af6-8970-e82fba2b1f00/content/images/2026/01/Captura-de-Tela-2026-01-15-a--s-16.26.10.png 639w"></figure><p>Este template demonstra como a complexidade é abstraída. O trabalho pesado de validação e estruturação de dados já foi feito no momento da transação. O Reporter transforma esses dados íntegros em relatórios regulatórios em segundos, sem necessidade de intervenção manual.</p><h2 id="conclus%C3%A3o-compliance-como-infraestrutura">Conclusão: compliance como infraestrutura</h2><p>A geração de relatórios regulatórios não precisa ser um gargalo operacional. Ao tratar o compliance como um requisito de infraestrutura e adotar uma arquitetura que garanta a integridade dos dados consultados, as instituições podem transformar essa obrigação em um processo automatizado, auditável e de baixo risco.</p><p>A capacidade de gerar um CADOC 4010 em minutos vem de uma ferramenta de relatórios robusta e moderna, somada a uma fundação contábil sólida, onde cada lançamento já nasce em conformidade.</p><p>Se sua organização ainda enfrenta o desafio mensal de fechamentos manuais, reflita sobre se a ferramenta geradora de relatórios traz a flexibilidade que o seu time precisa e/ou se a sua arquitetura está preparada para garantir a integridade dos dados desde a sua origem.</p>
+      
+        <script defer src="https://cdn.jsdelivr.net/ghost/comments-ui@~1.5/umd/comments-ui.min.js" data-locale="pt-br" data-ghost-comments="https://blog.lerian.studio/" data-api="https://lerian-insights.ghost.io/ghost/api/content/" data-admin="https://lerian-insights.ghost.io/ghost/" data-key="a2a5945f6fa229e901006fa17d" data-title="null" data-count="true" data-post-id="69693f09d6e7a700011e33b8" data-color-scheme="auto" data-avatar-saturation="60" data-accent-color="#f2f2f2" data-comments-enabled="all" data-publication="Lerian Blog" crossorigin="anonymous"></script>
+              
+    </div>
+  </div>
+
+  </main>
+  
+  <footer class="footer">  
+  <div class="s-container">
+
+    <div class="footer-main">
+      <div class="footer-brand">
+        <div class="footer-brand-content">
+            <a href="https://blog.lerian.studio" class="footer-brand-logo">
+              <img src="https://storage.ghost.io/c/43/c9/43c91103-1595-4af6-8970-e82fba2b1f00/content/images/2025/07/Estudos---Logo---Podcast.png" alt="Lerian Blog" />
+            </a>
+            <p>Infra financeira em código e conteúdo.</p>
+        </div>
+          <div class="s-footer-subscribe">
+            <form data-members-form>
+              <label class="sr-text" for="footer-subscribe-email">E-mail</label>
+              <input data-members-email type="email" placeholder="Endereço de e-mail" id="footer-subscribe-email" required />
+              <button type="submit">Assinar</button>
+            </form>
+            <div class="s-footer-subscribe-messages">
+              <div class="s-footer-subscribe-success">
+                <p>Por favor, verifique seu e-mail para confirmar sua assinatura</p>        
+              </div>
+              <div class="s-footer-subscribe-error">
+                <p data-members-error></p>
+              </div>     
+            </div>
+          </div>
+      </div>
+
+        <div class="footer-nav"> 
+          <ul>
+                  <li><span role="heading" aria-level="4">Social</span></li>  
+    <li>
+      <a href="https://www.linkedin.com/company/lerianstudio" target="_blank" rel="noopener">
+        <svg width="22" height="21" viewBox="0 0 22 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M19.5117 0H1.50703C0.682031 0 0.0117188 0.679688 0.0117188 1.51406V19.4859C0.0117188 20.3203 0.682031 21 1.50703 21H19.5117C20.3367 21 21.0117 20.3203 21.0117 19.4859V1.51406C21.0117 0.679688 20.3367 0 19.5117 0ZM6.35859 18H3.24609V7.97812H6.36328V18H6.35859ZM4.80234 6.60938C3.80391 6.60938 2.99766 5.79844 2.99766 4.80469C2.99766 3.81094 3.80391 3 4.80234 3C5.79609 3 6.60703 3.81094 6.60703 4.80469C6.60703 5.80312 5.80078 6.60938 4.80234 6.60938ZM18.0258 18H14.9133V13.125C14.9133 11.9625 14.8898 10.4672 13.2961 10.4672C11.6742 10.4672 11.4258 11.7328 11.4258 13.0406V18H8.31328V7.97812H11.2992V9.34687H11.3414C11.7586 8.55937 12.7758 7.72969 14.2898 7.72969C17.4398 7.72969 18.0258 9.80625 18.0258 12.5062V18Z" fill="currentColor"/>
+</svg>
+        LinkedIn
+      </a>
+    </li>
+      <li>
+        <a href="https://github.com/LerianStudio" target="_blank" rel="noopener">
+          <svg width="24" height="23" viewBox="0 0 24 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M8.20405 18.2531C8.20405 18.3469 8.09624 18.4219 7.9603 18.4219C7.80562 18.4359 7.6978 18.3609 7.6978 18.2531C7.6978 18.1594 7.80562 18.0844 7.94155 18.0844C8.08218 18.0703 8.20405 18.1453 8.20405 18.2531ZM6.74624 18.0422C6.71343 18.1359 6.80718 18.2437 6.9478 18.2719C7.06968 18.3187 7.2103 18.2719 7.23843 18.1781C7.26655 18.0844 7.17749 17.9766 7.03687 17.9344C6.91499 17.9016 6.77905 17.9484 6.74624 18.0422ZM8.81812 17.9625C8.68218 17.9953 8.58843 18.0844 8.60249 18.1922C8.61655 18.2859 8.73843 18.3469 8.87905 18.3141C9.01499 18.2813 9.10874 18.1922 9.09468 18.0984C9.08061 18.0094 8.95405 17.9484 8.81812 17.9625ZM11.9025 0C5.40093 0 0.42749 4.93594 0.42749 11.4375C0.42749 16.6359 3.69937 21.0844 8.3728 22.65C8.9728 22.7578 9.18374 22.3875 9.18374 22.0828C9.18374 21.7922 9.16968 20.1891 9.16968 19.2047C9.16968 19.2047 5.88843 19.9078 5.19937 17.8078C5.19937 17.8078 4.66499 16.4437 3.89624 16.0922C3.89624 16.0922 2.8228 15.3562 3.97124 15.3703C3.97124 15.3703 5.13843 15.4641 5.78062 16.5797C6.80718 18.3891 8.52749 17.8688 9.1978 17.5594C9.30562 16.8094 9.6103 16.2891 9.9478 15.9797C7.32749 15.6891 4.68374 15.3094 4.68374 10.8C4.68374 9.51094 5.03999 8.86406 5.78999 8.03906C5.66812 7.73438 5.26968 6.47812 5.91187 4.85625C6.89155 4.55156 9.14624 6.12188 9.14624 6.12188C10.0837 5.85938 11.0916 5.72344 12.09 5.72344C13.0884 5.72344 14.0962 5.85938 15.0337 6.12188C15.0337 6.12188 17.2884 4.54687 18.2681 4.85625C18.9103 6.48281 18.5119 7.73438 18.39 8.03906C19.14 8.86875 19.5994 9.51562 19.5994 10.8C19.5994 15.3234 16.8384 15.6844 14.2181 15.9797C14.6494 16.35 15.015 17.0531 15.015 18.1547C15.015 19.7344 15.0009 21.6891 15.0009 22.0734C15.0009 22.3781 15.2166 22.7484 15.8119 22.6406C20.4994 21.0844 23.6775 16.6359 23.6775 11.4375C23.6775 4.93594 18.4041 0 11.9025 0ZM4.98374 16.1672C4.9228 16.2141 4.93687 16.3219 5.01655 16.4109C5.09155 16.4859 5.19937 16.5188 5.2603 16.4578C5.32124 16.4109 5.30718 16.3031 5.22749 16.2141C5.15249 16.1391 5.04468 16.1062 4.98374 16.1672ZM4.47749 15.7875C4.44468 15.8484 4.49155 15.9234 4.5853 15.9703C4.6603 16.0172 4.75405 16.0031 4.78687 15.9375C4.81968 15.8766 4.7728 15.8016 4.67905 15.7547C4.5853 15.7266 4.5103 15.7406 4.47749 15.7875ZM5.99624 17.4562C5.92124 17.5172 5.94937 17.6578 6.05718 17.7469C6.16499 17.8547 6.30093 17.8688 6.36187 17.7938C6.4228 17.7328 6.39468 17.5922 6.30093 17.5031C6.1978 17.3953 6.05718 17.3812 5.99624 17.4562ZM5.46187 16.7672C5.38687 16.8141 5.38687 16.9359 5.46187 17.0438C5.53687 17.1516 5.66343 17.1984 5.72437 17.1516C5.79937 17.0906 5.79937 16.9688 5.72437 16.8609C5.65874 16.7531 5.53687 16.7063 5.46187 16.7672Z" fill="currentColor"/>
+</svg>
+          Github
+        </a>
+      </li>
+    <li>
+      <a href="https://www.instagram.com/lerian.studio/" target="_blank" rel="noopener">
+        <svg width="22" height="21" viewBox="0 0 22 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M10.5082 5.11758C7.52695 5.11758 5.12227 7.52227 5.12227 10.5035C5.12227 13.4848 7.52695 15.8895 10.5082 15.8895C13.4895 15.8895 15.8941 13.4848 15.8941 10.5035C15.8941 7.52227 13.4895 5.11758 10.5082 5.11758ZM10.5082 14.0051C8.58164 14.0051 7.00664 12.4348 7.00664 10.5035C7.00664 8.57227 8.57695 7.00195 10.5082 7.00195C12.4395 7.00195 14.0098 8.57227 14.0098 10.5035C14.0098 12.4348 12.4348 14.0051 10.5082 14.0051ZM17.3707 4.89727C17.3707 5.5957 16.8082 6.15352 16.1145 6.15352C15.416 6.15352 14.8582 5.59102 14.8582 4.89727C14.8582 4.20352 15.4207 3.64102 16.1145 3.64102C16.8082 3.64102 17.3707 4.20352 17.3707 4.89727ZM20.9379 6.17227C20.8582 4.48945 20.4738 2.99883 19.241 1.7707C18.0129 0.542578 16.5223 0.158203 14.8395 0.0738281C13.1051 -0.0246094 7.90664 -0.0246094 6.17227 0.0738281C4.49414 0.153516 3.00352 0.537891 1.7707 1.76602C0.537891 2.99414 0.158203 4.48477 0.0738281 6.16758C-0.0246094 7.90195 -0.0246094 13.1004 0.0738281 14.8348C0.153516 16.5176 0.537891 18.0082 1.7707 19.2363C3.00352 20.4645 4.48945 20.8488 6.17227 20.9332C7.90664 21.0316 13.1051 21.0316 14.8395 20.9332C16.5223 20.8535 18.0129 20.4691 19.241 19.2363C20.4691 18.0082 20.8535 16.5176 20.9379 14.8348C21.0363 13.1004 21.0363 7.90664 20.9379 6.17227ZM18.6973 16.6957C18.3316 17.6145 17.6238 18.3223 16.7004 18.6926C15.3176 19.241 12.0363 19.1145 10.5082 19.1145C8.98008 19.1145 5.69414 19.2363 4.31602 18.6926C3.39727 18.327 2.68945 17.6191 2.31914 16.6957C1.7707 15.3129 1.89727 12.0316 1.89727 10.5035C1.89727 8.97539 1.77539 5.68945 2.31914 4.31133C2.68477 3.39258 3.39258 2.68477 4.31602 2.31445C5.69883 1.76602 8.98008 1.89258 10.5082 1.89258C12.0363 1.89258 15.3223 1.7707 16.7004 2.31445C17.6191 2.68008 18.327 3.38789 18.6973 4.31133C19.2457 5.69414 19.1191 8.97539 19.1191 10.5035C19.1191 12.0316 19.2457 15.3176 18.6973 16.6957Z" fill="currentColor"/>
+</svg>
+        Instagram
+      </a>
+    </li>
+    <li>
+      <a href="https://www.youtube.com/@lerian.studio" target="_blank" rel="noopener">
+        <svg width="26" height="18" viewBox="0 0 26 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M25.0768 2.81639C24.7824 1.7078 23.9149 0.834703 22.8135 0.538406C20.8171 0 12.8117 0 12.8117 0C12.8117 0 4.80642 0 2.80997 0.538406C1.70855 0.83475 0.841078 1.7078 0.546656 2.81639C0.0117188 4.82578 0.0117188 9.01819 0.0117188 9.01819C0.0117188 9.01819 0.0117188 13.2106 0.546656 15.22C0.841078 16.3286 1.70855 17.1653 2.80997 17.4616C4.80642 18 12.8117 18 12.8117 18C12.8117 18 20.817 18 22.8135 17.4616C23.9149 17.1653 24.7824 16.3286 25.0768 15.22C25.6118 13.2106 25.6118 9.01819 25.6118 9.01819C25.6118 9.01819 25.6118 4.82578 25.0768 2.81639ZM10.1935 12.8246V5.2118L16.8844 9.01828L10.1935 12.8246Z" fill="currentColor"/>
+</svg>
+        Youtube
+      </a>
+    </li>
+      </ul>
+      <ul>
+      <li><span role="heading" aria-level="4">Assuntos</span></li>  
+      <li><a href="/tag/cases-e-business/">Cases e business</a></li>
+          <li><a href="/tag/compliance-e-regulatorio/">Compliance e regulatório</a></li>
+          <li><a href="/tag/eventos-e-comunidade/">Eventos e comunidade</a></li>
+          <li><a href="/tag/infra-em-foco/">Infra em foco</a></li>
+          <li><a href="/tag/produto-e-mercado/">Produto e mercado</a></li>
+          <li><a href="/tag/tudo-sobre-ia/">Tudo sobre IA</a></li>
+          </ul>
+      <ul>
+      <li><span role="heading" aria-level="4">Quem somos </span></li>  
+      <li><a href="/autores/">Autores</a></li>
+          <li><a href="/sobre-esse-blog/">Sobre esse blog</a></li>
+          </ul>
+      <ul>
+      <li><span role="heading" aria-level="4">Lerian</span></li>  
+      <li><a href="https://docs.lerian.studio/docs/welcome">Docs</a></li>
+          <li><a href="https://lerian.studio/contact">Contato</a></li>
+    
+          </ul>
+        </div>
+
+    </div>
+
+    <div class="footer-copyright">      
+        <p>&copy; 2026 Lerian Blog.</p>
+    </div>
+
+  </div>
+</footer>
+  <script src="https://blog.lerian.studio/assets/js/main.js?v=c6b72391b2"></script>
+  <style>
+  footer.gh-footer {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+</style>
+<script type="text/javascript" async src="https://d335luupugsy2.cloudfront.net/js/loader-scripts/de75ac68-2610-435c-9051-83287420e776-loader.js" ></script>
+</body>
+</html>

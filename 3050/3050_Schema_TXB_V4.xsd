@@ -1,0 +1,739 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<!-- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+	<!-- +  BANCO CENTRAL DO BRASIL                       	            	  + -->
+	<!-- +  Projeto Taxas de operacoes bancarias - TXB					      + -->
+	<!-- +  Documento TXB - Taxas Bancárias definicao xml schema              + -->
+	<!-- +  Versao 1.1 criada em 31/08/2009 por DEINF/DINE4                   + -->
+	<!-- +  Versão 2.0 criada em 09/06/2014 por DEINF/DINE4                   + -->
+	<!-- +  Versão 3.0 criada em 24/03/2017 por DEINF/DINE4                   + -->
+	<!-- +  Versão 4.0 criada em 03/05/2017 por DEINF/DINE4                   + -->
+	<!-- +  Ultima alteracao: 03/05/2017 por DEINF/DINE4                      + -->
+	<!-- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+	<!-- ********************************** -->
+	<!-- Definicao para o Documento         -->
+	<!-- ********************************** -->
+	<!--Definicao do documento TXB-->
+	<xs:element name="DocTXB" type="docTXBType">
+	</xs:element>
+	<!--Fim da definicao do documento TXB-->
+	<!--Definicao do tipo complexo do documento TXB-->
+	<xs:complexType name="docTXBType">
+		<xs:sequence>
+			<xs:element name="referencia" type="referenciaType" minOccurs="1" maxOccurs="5" />
+		</xs:sequence>
+		<xs:attribute name="cnpjInstituicao" type="cnpjInstType" use="required" />
+		<xs:attribute name="dataBase" type="dbType" use="required" />
+		<xs:attribute name="indRemessa" type="indRemessaType" use="required" />
+		<xs:attribute name="nmContato" type="nmType" use="required" />
+		<xs:attribute name="telContato" type="telContatoType" use="required" />
+	</xs:complexType>
+	<!--Fim de definição do tipo complexo do documento TXB-->
+	<!--Início da definição dos grupos de elementos do documento TXB-->
+	<xs:group name="periodicidadeGrupo">
+		<xs:sequence>
+			<xs:element name="diario" type="diarioType" minOccurs="1" maxOccurs="1" />
+			<xs:element name="mensal" type="mensalType" minOccurs="0" maxOccurs="1" />
+		</xs:sequence>
+	</xs:group>
+	<!--Fim da definição dos grupos de elementos do documento TXB-->
+	<!--Início da definição dos tipos complexos-->
+	<xs:complexType name="diarioType">
+		<xs:sequence>
+			<xs:element name="crdLivre" type="credLivreDiarioType" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Início da definição dos tipos/subtipos de Diário/Crédito Livre -->
+	<xs:complexType name="credLivreDiarioType">
+		<xs:sequence>
+			<xs:element name="pesJuridica" type="pesJuridicaType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="pesFisica" type="pesFisicaType" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="pesJuridicaType">
+		<xs:sequence>
+			<xs:element name="pre" type="prePJDiarioType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="flu" type="fluPJDiarioType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="vc" type="vcPJDiarioType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="ind" type="indPJDiarioType" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Início Diário/Crédito Livre/Pré/Pessoa Jurídica-->
+	<xs:complexType name="prePJDiarioType">
+		<xs:sequence>
+			<xs:element name="desDuplicatas" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="desCheques" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="antFatCarCredito" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirPrzAte365" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirPrzSup365" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirTetRotativo" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="conGarantida" type="modelo_2_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="chqEspecial" type="modelo_2_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquVeiculos" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquOutBens" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerVeiculos" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerOutBens" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="vendor" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="compror" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdRotativo" type="modelo_2_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdRotativoNormal" type="modelo_2_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdRotativoAtraso" type="modelo_2_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdParcelado" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdParceladoAut" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdNaoMigrado" type="modelo_2_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finExportacoes" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Diário/Crédito Livre/Pré/Pessoa Jurídica-->
+	<!--Início Diário/Crédito Livre/Flutuante/Pessoa Jurídica-->
+	<xs:complexType name="fluPJDiarioType">
+		<xs:sequence>
+			<xs:element name="capGirPrzAte365" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirPrzSup365" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirTetRotativo" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="conGarantida" type="modelo_2_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="chqEspecial" type="modelo_2_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquVeiculos" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquOutBens" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerVeiculos" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerOutBens" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="vendor" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="compror" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finExportacoes" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Diário/Crédito Livre/Flutuante/Pessoa Jurídica-->
+	<!--Início Diário/Crédito Livre/VC/Pessoa Jurídica-->
+	<xs:complexType name="vcPJDiarioType">
+		<xs:sequence>
+			<xs:element name="acc" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finImportacoes" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finExportacoes" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="repExterno" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Diário/Crédito Livre/VC/Pessoa Jurídica-->
+	<!-- Pessoa Física -->
+	<xs:complexType name="pesFisicaType">
+		<xs:sequence>
+			<xs:element name="pre" type="prePFDiarioType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="flu" type="fluPFDiarioType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="ind" type="indPFDiarioType" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Início Diário/Crédito Livre/Pré/Pessoa Física-->
+	<xs:complexType name="prePFDiarioType">
+		<xs:sequence>
+			<xs:element name="chqEspecial" type="modelo_2_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesNaoConsignado" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesNaoConVinComposicao" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesConTraSetPublico" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesConTraSetPrivado" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesConApoINSS" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquVeiculos" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquOutBens" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdRotativo" type="modelo_2_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdRotativoNormal" type="modelo_2_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdRotativoAtraso" type="modelo_2_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdParcelado" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdParceladoAut" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdNaoMigrado" type="modelo_2_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerVeiculos" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerOutBens" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="desCheques" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Diário/Crédito Livre/Pré/Pessoa Física-->
+	<!--Fim da definição dos tipos/subtipos de Diário/Crédito Livre -->
+	<xs:complexType name="mensalType">
+		<xs:sequence>
+			<xs:element name="crdLivre" type="credLivreMensalType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdDirecionado" type="credDirecionadoType" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Início da definição dos tipos/subtipos de Mensal/Crédito Livre-->
+	<xs:complexType name="credLivreMensalType">
+		<xs:sequence>
+			<xs:element name="pesJuridica" type="pesJuridicaMensalType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="pesFisica" type="pesFisicaMensalType" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="pesJuridicaMensalType">
+		<xs:sequence>
+			<xs:element name="pre" type="prePJMensalType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="flu" type="fluPJMensalType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="vc" type="vcPJMensalType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="ind" type="indPJMensalType" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Início Mensal/Crédito Livre/Pré/Pessoa Jurídica-->
+	<xs:complexType name="prePJMensalType">
+		<xs:sequence>
+			<xs:element name="desDuplicatas" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="desCheques" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="antFatCarCredito" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirPrzAte365" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirPrzSup365" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirTetRotativo" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="conGarantida" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="chqEspecial" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquVeiculos" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquOutBens" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerVeiculos" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerOutBens" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="vendor" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="compror" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdRotativo" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdRotativoNormal" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdRotativoAtraso" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdParcelado" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdParceladoAut" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdNaoMigrado" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdComVista" type="modelo_3_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finExportacoes" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0"/>
+			<xs:element name="outCrdLivres" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Mensal/Crédito Livre/Pré/Pessoa Jurídica-->
+	<!--Início Mensal/Crédito Livre/Flutuante/Pessoa Jurídica-->
+	<xs:complexType name="fluPJMensalType">
+		<xs:sequence>
+			<xs:element name="capGirPrzAte365" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirPrzSup365" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirTetRotativo" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="conGarantida" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="chqEspecial" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquVeiculos" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquOutBens" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerVeiculos" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerOutBens" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="vendor" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="compror" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finExportacoes" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="outCrdLivres" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Mensal/Crédito Livre/Flutuante/Pessoa Jurídica-->
+	<!--Início Mensal/Crédito Livre/VC/Pessoa Jurídica-->
+	<xs:complexType name="vcPJMensalType">
+		<xs:sequence>
+			<xs:element name="acc" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finImportacoes" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finExportacoes" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="repExterno" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="outCrdLivres" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Mensal/Crédito Livre/VC/Pessoa Jurídica-->
+	<!--Início Mensal/Crédito Livre/Indicador/Pessoa Jurídica-->
+	<xs:complexType name="indPJMensalType">
+		<xs:sequence>
+			<xs:element name="capGirPrzAte365" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirPrzSup365" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirTetRotativo" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="conGarantida" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="chqEspecial" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquVeiculos" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquOutBens" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerVeiculos" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerOutBens" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="vendor" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="compror" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finExportacoes" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0"/>
+			<xs:element name="outCrdLivres" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Mensal/Crédito Livre/Indicador/Pessoa Jurídica-->
+	<!--Início Mensal/Crédito Livre/Pré/Pessoa Física-->
+	<xs:complexType name="prePFMensalType">
+		<xs:sequence>
+			<xs:element name="chqEspecial" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesNaoConsignado" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesNaoConVinComposicao" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesConTraSetPublico" type="modelo_6_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesConTraSetPrivado" type="modelo_6_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesConApoINSS" type="modelo_6_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquVeiculos" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquOutBens" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdRotativo" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdRotativoNormal" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdRotativoAtraso" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdParcelado" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdParceladoAut" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdNaoMigrado" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="carCrdComVista" type="modelo_3_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerVeiculos" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerOutBens" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="desCheques" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="outCrdLivres" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Mensal/Crédito Livre/Pré/Pessoa Física-->
+	<!--Fim da definição dos tipos/subtipos de Mensal/Crédito Livre-->
+	<!--Início da definição dos tipos/subtipos de Mensal/Crédito Direcionado-->
+	<xs:complexType name="credDirecionadoType">
+		<xs:sequence>
+			<xs:element name="pesJuridica" type="credDirecionadoPJType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="pesFisica" type="credDirecionadoPFType" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="credDirecionadoPJType">
+		<xs:sequence>
+			<xs:element name="pre" type="prePJDirecionadoType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="tjlp" type="tjlpPJDirecionadoType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="tr" type="trPJDirecionadoType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="vc" type="vcPJDirecionadoType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="ind" type="indPJDirecionadoType" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Início Mensal/Crédito Direcionado/Pré/Pessoa Jurídica-->
+	<xs:complexType name="prePJDirecionadoType">
+		<xs:sequence>
+			<xs:element name="crdRurMercado" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdRurReguladas" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finImobMercado" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finImobReguladas" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finInvRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finAgrRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="outCrdDirecionados" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Mensal/Crédito Direcionado/Pré/Pessoa Jurídica-->
+	<!--Início Mensal/Crédito Direcionado/TJLP/Pessoa Jurídica-->
+	<xs:complexType name="tjlpPJDirecionadoType">
+		<xs:sequence>
+			<xs:element name="crdRurMercado" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdRurReguladas" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finInvRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finAgrRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="outCrdDirecionados" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Mensal/Crédito Direcionado/TJLP/Pessoa Jurídica-->
+	<!--Início Mensal/Crédito Direcionado/TR/Pessoa Jurídica-->
+	<xs:complexType name="trPJDirecionadoType">
+		<xs:sequence>
+			<xs:element name="crdRurMercado" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdRurReguladas" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finImobMercado" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finImobReguladas" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="outCrdDirecionados" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Mensal/Crédito Direcionado/TR/Pessoa Jurídica-->
+	<!--Início Mensal/Crédito Direcionado/VC/Pessoa Jurídica-->
+	<xs:complexType name="vcPJDirecionadoType">
+		<xs:sequence>
+			<xs:element name="capGirRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finInvRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finAgrRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="outCrdDirecionados" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Mensal/Crédito Direcionado/VC/Pessoa Jurídica-->
+	<!--Início Mensal/Crédito Direcionado/Indicador/Pessoa Jurídica-->
+	<xs:complexType name="indPJDirecionadoType">
+		<xs:sequence>
+			<xs:element name="crdRurMercado" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdRurReguladas" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finImobMercado" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finImobReguladas" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirRecBNDES" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finInvRecBNDES" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finAgrRecBNDES" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="outCrdDirecionados" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Mensal/Crédito Direcionado/Indicador/Pessoa Jurídica-->
+	<xs:complexType name="credDirecionadoPFType">
+		<xs:sequence>
+			<xs:element name="pre" type="prePFDirecionadoType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="tjlp" type="tjlpPFDirecionadoType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="tr" type="trPFDirecionadoType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="vc" type="vcPFDirecionadoType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="ind" type="indPFDirecionadoType" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Início Mensal/Crédito Direcionado/Pré/Pessoa Física-->
+	<xs:complexType name="prePFDirecionadoType">
+		<xs:sequence>
+			<xs:element name="crdRurMercado" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdRurReguladas" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finImobMercado" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finImobReguladas" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finInvRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finAgrRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="micConsumo" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="micMicroempreendedor" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="micConsignado" type="modelo_5_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="outCrdDirecionados" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Mensal/Crédito Direcionado/Pré/Pessoa Física-->
+	<!--Início Mensal/Crédito Direcionado/TJLP/Pessoa Física-->
+	<xs:complexType name="tjlpPFDirecionadoType">
+		<xs:sequence>
+			<xs:element name="crdRurMercado" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdRurReguladas" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finInvRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finAgrRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="outCrdDirecionados" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Mensal/Crédito Direcionado/TJLP/Pessoa Física-->
+	<!--Início Mensal/Crédito Direcionado/TR/Pessoa Física-->
+	<xs:complexType name="trPFDirecionadoType">
+		<xs:sequence>
+			<xs:element name="crdRurMercado" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdRurReguladas" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finImobMercado" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finImobReguladas" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="outCrdDirecionados" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Mensal/Crédito Direcionado/TR/Pessoa Física-->
+	<!--Início Mensal/Crédito Direcionado/VC/Pessoa Física-->
+	<xs:complexType name="vcPFDirecionadoType">
+		<xs:sequence>
+			<xs:element name="capGirRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finInvRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finAgrRecBNDES" type="modelo_2_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="outCrdDirecionados" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Mensal/Crédito Direcionado/VC/Pessoa Física-->
+	<!--Início Mensal/Crédito Direcionado/Indicador/Pessoa Física-->
+	<xs:complexType name="indPFDirecionadoType">
+		<xs:sequence>
+			<xs:element name="crdRurMercado" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdRurReguladas" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finImobMercado" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finImobReguladas" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirRecBNDES" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finInvRecBNDES" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finAgrRecBNDES" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="outCrdDirecionados" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim Mensal/Crédito Direcionado/Indicador/Pessoa Física-->
+	<!--Fim da definição dos tipos/subtipos de Mensal/Crédito Direcionado-->
+	<!--Início da definição dos grupos de atributos-->
+	<!--Início dos modelos diários-->
+	<xs:attributeGroup name="modelo1_D_GrpAtrib">
+		<xs:attribute name="txMedJuros" type="taxaType" use="required" />
+		<xs:attribute name="txMedEncFiscais" type="taxaType" use="required" />
+		<xs:attribute name="txMedEncOperacionais" type="taxaType" use="required" />
+		<xs:attribute name="txMinima" type="taxaType" use="required" />
+		<xs:attribute name="txMaxima" type="taxaType" use="required" />
+		<xs:attribute name="vlrConcessoes" type="valorType" use="required" />
+		<xs:attribute name="przDecMedConcessoes" type="qtdType" use="required" />
+		<xs:attribute name="qtdNovContratos" type="qtdType" use="required" />
+		<xs:attribute name="sldCarAtiva" type="valorType" use="required" />
+		<xs:attribute name="sldCedido" type="valorType" use="optional" />
+		<xs:attribute name="sldAdquirido" type="valorType" use="optional" />
+	</xs:attributeGroup>
+	<xs:attributeGroup name="modelo2_D_GrpAtrib">
+		<xs:attribute name="txMedJuros" type="taxaType" use="required" />
+		<xs:attribute name="txMedEncFiscais" type="taxaType" use="required" />
+		<xs:attribute name="txMedEncOperacionais" type="taxaType" use="required" />
+		<xs:attribute name="txMinima" type="taxaType" use="required" />
+		<xs:attribute name="txMaxima" type="taxaType" use="required" />
+		<xs:attribute name="vlrConcessoes" type="valorType" use="required" />
+		<xs:attribute name="qtdNovContratos" type="qtdType" use="required" />
+		<xs:attribute name="sldCarAtiva" type="valorType" use="required" />
+		<xs:attribute name="sldCedido" type="valorType" use="optional" />
+		<xs:attribute name="sldAdquirido" type="valorType" use="optional" />
+	</xs:attributeGroup>
+	<xs:attributeGroup name="modelo3_D_GrpAtrib">
+		<xs:attribute name="vlrConcessoes" type="valorType" use="required" />
+		<xs:attribute name="przDecMedConcessoes" type="qtdType" use="required" />
+		<xs:attribute name="qtdNovContratos" type="qtdType" use="required" />
+		<xs:attribute name="sldCarAtiva" type="valorType" use="required" />
+		<xs:attribute name="sldCedido" type="valorType" use="optional" />
+		<xs:attribute name="sldAdquirido" type="valorType" use="optional" />
+	</xs:attributeGroup>
+	<xs:attributeGroup name="modelo4_D_GrpAtrib">
+		<xs:attribute name="vlrConcessoes" type="valorType" use="required" />
+		<xs:attribute name="qtdNovContratos" type="qtdType" use="required" />
+		<xs:attribute name="sldCarAtiva" type="valorType" use="required" />
+		<xs:attribute name="sldCedido" type="valorType" use="optional" />
+		<xs:attribute name="sldAdquirido" type="valorType" use="optional" />
+	</xs:attributeGroup>
+	<!--Fim dos modelos diários-->
+	<!--Início dos modelos mensais-->
+	<xs:attributeGroup name="modelo1_M_GrpAtrib">
+		<xs:attribute name="sldBaiPrejuizo" type="valorType" use="required" />
+		<xs:attribute name="sldCarAte14" type="valorType" use="required" />
+		<xs:attribute name="sldCarAte60" type="valorType" use="required" />
+		<xs:attribute name="sldCarAte90" type="valorType" use="required" />
+		<xs:attribute name="sldCarMaior90" type="valorType" use="required" />
+		<xs:attribute name="qtdConAte14" type="qtdType" use="required" />
+		<xs:attribute name="qtdConAte60" type="qtdType" use="required" />
+		<xs:attribute name="qtdConAte90" type="qtdType" use="required" />
+		<xs:attribute name="qtdConMaior90" type="qtdType" use="required" />
+		<xs:attribute name="przMedCarteira" type="tmpType" use="required" />
+	</xs:attributeGroup>
+	<xs:attributeGroup name="modelo2_M_GrpAtrib">
+		<xs:attribute name="txMedJuros" type="taxaType" use="required" />
+		<xs:attribute name="txMedEncFiscais" type="taxaType" use="required" />
+		<xs:attribute name="txMedEncOperacionais" type="taxaType" use="required" />
+		<xs:attribute name="txMinima" type="taxaType" use="required" />
+		<xs:attribute name="txMaxima" type="taxaType" use="required" />
+		<xs:attribute name="vlrConcessoes" type="valorType" use="required" />
+		<xs:attribute name="przDecMedConcessoes" type="tmpType" use="required" />
+		<xs:attribute name="qtdNovContratos" type="qtdType" use="required" />
+		<xs:attribute name="sldCarAtiva" type="valorType" use="required" />
+		<xs:attribute name="sldCedido" type="valorType" use="optional" />
+		<xs:attribute name="sldAdquirido" type="valorType" use="optional" />
+		<xs:attribute name="sldBaiPrejuizo" type="valorType" use="required" />
+		<xs:attribute name="sldCarAte14" type="valorType" use="required" />
+		<xs:attribute name="sldCarAte60" type="valorType" use="required" />
+		<xs:attribute name="sldCarAte90" type="valorType" use="required" />
+		<xs:attribute name="sldCarMaior90" type="valorType" use="required" />
+		<xs:attribute name="qtdConAte14" type="qtdType" use="required" />
+		<xs:attribute name="qtdConAte60" type="qtdType" use="required" />
+		<xs:attribute name="qtdConAte90" type="qtdType" use="required" />
+		<xs:attribute name="qtdConMaior90" type="qtdType" use="required" />
+		<xs:attribute name="przMedCarteira" type="tmpType" use="required" />
+	</xs:attributeGroup>
+	<xs:attributeGroup name="modelo3_M_GrpAtrib">
+		<xs:attribute name="vlrConcessoes" type="valorType" use="required" />
+		<xs:attribute name="sldCarAtiva" type="valorType" use="required" />
+	</xs:attributeGroup>
+	<xs:attributeGroup name="modelo4_M_GrpAtrib">
+		<xs:attribute name="vlrConcessoes" type="valorType" use="required" />
+		<xs:attribute name="przDecMedConcessoes" type="tmpType" use="required" />
+		<xs:attribute name="qtdNovContratos" type="qtdType" use="required" />
+		<xs:attribute name="sldCarAtiva" type="valorType" use="required" />
+		<xs:attribute name="sldCedido" type="valorType" use="optional" />
+		<xs:attribute name="sldAdquirido" type="valorType" use="optional" />
+		<xs:attribute name="sldBaiPrejuizo" type="valorType" use="required" />
+		<xs:attribute name="sldCarAte14" type="valorType" use="required" />
+		<xs:attribute name="sldCarAte60" type="valorType" use="required" />
+		<xs:attribute name="sldCarAte90" type="valorType" use="required" />
+		<xs:attribute name="sldCarMaior90" type="valorType" use="required" />
+		<xs:attribute name="qtdConAte14" type="qtdType" use="required" />
+		<xs:attribute name="qtdConAte60" type="qtdType" use="required" />
+		<xs:attribute name="qtdConAte90" type="qtdType" use="required" />
+		<xs:attribute name="qtdConMaior90" type="qtdType" use="required" />
+		<xs:attribute name="przMedCarteira" type="tmpType" use="required" />
+	</xs:attributeGroup>
+	<!--Fim dos modelos mensais-->
+	<!--Fim da definição dos grupos de atributos-->
+	<xs:complexType name="modelo_1_Diario_Type">
+		<xs:sequence />
+		<xs:attributeGroup ref="modelo1_D_GrpAtrib" />
+	</xs:complexType>
+	<xs:complexType name="fluPFDiarioType">
+		<xs:sequence>
+			<xs:element name="chqEspecial" type="modelo_2_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesNaoConsignado" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquVeiculos" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquOutBens" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerVeiculos" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerOutBens" type="modelo_1_Diario_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="indPJDiarioType">
+		<xs:sequence>
+			<xs:element name="capGirPrzAte365" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirPrzSup365" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="capGirTetRotativo" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="conGarantida" type="modelo_4_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="chqEspecial" type="modelo_4_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquVeiculos" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquOutBens" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerVeiculos" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerOutBens" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="vendor" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="compror" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="finExportacoes" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="modelo_2_Diario_Type">
+		<xs:sequence />
+		<xs:attributeGroup ref="modelo2_D_GrpAtrib" />
+	</xs:complexType>
+	<xs:complexType name="modelo_1_Mensal_Type">
+		<xs:sequence />
+		<xs:attributeGroup ref="modelo1_M_GrpAtrib" />
+	</xs:complexType>
+	<xs:complexType name="modelo_2_Mensal_Type">
+		<xs:sequence />
+		<xs:attributeGroup ref="modelo2_M_GrpAtrib" />
+	</xs:complexType>
+	<xs:complexType name="modelo_3_Mensal_Type">
+		<xs:sequence />
+		<xs:attributeGroup ref="modelo3_M_GrpAtrib" />
+	</xs:complexType>
+	<xs:complexType name="modelo_4_Mensal_Type">
+		<xs:sequence />
+		<xs:attributeGroup ref="modelo4_M_GrpAtrib" />
+	</xs:complexType>
+	<xs:complexType name="modelo_3_Diario_Type">
+		<xs:sequence />
+		<xs:attributeGroup ref="modelo3_D_GrpAtrib" />
+	</xs:complexType>
+	<xs:complexType name="modelo_4_Diario_Type">
+		<xs:sequence />
+		<xs:attributeGroup ref="modelo4_D_GrpAtrib" />
+	</xs:complexType>
+	<xs:complexType name="fluPFMensalType">
+		<xs:sequence>
+			<xs:element name="chqEspecial" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesNaoConsignado" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquVeiculos" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquOutBens" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerVeiculos" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerOutBens" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="outCrdLivres" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="vcPFMensalType">
+		<xs:sequence>
+			<xs:element name="outCrdLivres" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="indPFDiarioType">
+		<xs:sequence>
+			<xs:element name="chqEspecial" type="modelo_4_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesNaoConsignado" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesNaoConVinComposicao" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquVeiculos" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquOutBens" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerVeiculos" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerOutBens" type="modelo_3_Diario_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="indPFMensalType">
+		<xs:sequence>
+			<xs:element name="chqEspecial" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesNaoConsignado" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="crdPesNaoConVinComposicao" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquVeiculos" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="aquOutBens" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerVeiculos" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="arrMerOutBens" type="modelo_1_Mensal_Type" maxOccurs="1" minOccurs="0" />
+			<xs:element name="outCrdLivres" type="modelo_4_Mensal_Type" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="pesFisicaMensalType">
+		<xs:sequence>
+			<xs:element name="pre" type="prePFMensalType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="flu" type="fluPFMensalType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="vc" type="vcPFMensalType" maxOccurs="1" minOccurs="0" />
+			<xs:element name="ind" type="indPFMensalType" maxOccurs="1" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<!--Fim da definição dos tipos complexos-->
+	<!--Início da definição dos tipos simples-->
+	<xs:simpleType name="valorType">
+		<xs:restriction base="xs:integer">
+			<xs:minInclusive value="0" />
+			<xs:maxInclusive value="999999999999" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="taxaType">
+		<xs:restriction base="xs:decimal">
+			<xs:totalDigits value="8" />
+			<xs:fractionDigits value="2" />
+			<xs:minInclusive value="0.00" />
+			<xs:maxInclusive value="999999.99" />
+			<xs:pattern value="[0]{0,8}|[0-9]{0,6}[.][0-9]{2}" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="qtdType">
+		<xs:restriction base="xs:integer">
+			<xs:minInclusive value="0" />
+			<xs:maxInclusive value="999999999" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tmpType">
+		<xs:restriction base="xs:integer">
+			<xs:minInclusive value="0" />
+			<xs:maxInclusive value="99999" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="cnpjInstType">
+		<xs:restriction base="xs:integer">
+			<xs:pattern value="[0-9]{8}" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="dbType">
+		<xs:restriction base="xs:date" />
+	</xs:simpleType>
+	<xs:simpleType name="indRemessaType">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[I|A]" />
+			<xs:maxLength value="1" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="nmType">
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="80" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="telContatoType">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[1-9][0-9]-[1-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" />
+		</xs:restriction>
+	</xs:simpleType>
+	<!--Fim da definição dos tipos simples-->
+	<xs:attributeGroup name="modelo5_M_GrpAtrib">
+		<xs:attribute name="txMedJuros" type="taxaType" use="required" />
+		<xs:attribute name="txMedEncFiscais" type="taxaType" use="required" />
+		<xs:attribute name="txMedEncOperacionais" type="taxaType" use="required" />
+		<xs:attribute name="txMinima" type="taxaType" use="required" />
+		<xs:attribute name="txMaxima" type="taxaType" use="required" />
+		<xs:attribute name="vlrConcessoes" type="valorType" use="required" />
+		<xs:attribute name="przDecMedConcessoes" type="tmpType" use="required" />
+		<xs:attribute name="qtdNovContratos" type="qtdType" use="required" />
+		<xs:attribute name="sldCarAtiva" type="valorType" use="required" />
+		<xs:attribute name="sldCedido" type="valorType" use="optional" />
+		<xs:attribute name="sldAdquirido" type="valorType" use="optional" />
+		<xs:attribute name="sldBaiPrejuizo" type="valorType" use="required" />
+		<xs:attribute name="sldCarAte14" type="valorType" use="required" />
+		<xs:attribute name="sldCarAte60" type="valorType" use="required" />
+		<xs:attribute name="sldCarAte90" type="valorType" use="required" />
+		<xs:attribute name="sldCarMaior90" type="valorType" use="required" />
+		<xs:attribute name="qtdConAte14" type="qtdType" use="required" />
+		<xs:attribute name="qtdConAte60" type="qtdType" use="required" />
+		<xs:attribute name="qtdConAte90" type="qtdType" use="required" />
+		<xs:attribute name="qtdConMaior90" type="qtdType" use="required" />
+		<xs:attribute name="przMedCarteira" type="tmpType" use="required" />
+		<xs:attribute name="qtdEmpEntEnvolvidas" type="qtdType" use="required" />
+	</xs:attributeGroup>
+	<xs:complexType name="modelo_5_Mensal_Type">
+		<xs:sequence />
+		<xs:attributeGroup ref="modelo5_M_GrpAtrib" />
+	</xs:complexType>
+	<xs:attributeGroup name="modelo6_M_GrpAtrib">
+		<xs:attribute name="sldBaiPrejuizo" type="valorType" use="required" />
+		<xs:attribute name="sldCarAte14" type="valorType" use="required" />
+		<xs:attribute name="sldCarAte60" type="valorType" use="required" />
+		<xs:attribute name="sldCarAte90" type="valorType" use="required" />
+		<xs:attribute name="sldCarMaior90" type="valorType" use="required" />
+		<xs:attribute name="qtdConAte14" type="qtdType" use="required" />
+		<xs:attribute name="qtdConAte60" type="qtdType" use="required" />
+		<xs:attribute name="qtdConAte90" type="qtdType" use="required" />
+		<xs:attribute name="qtdConMaior90" type="qtdType" use="required" />
+		<xs:attribute name="przMedCarteira" type="tmpType" use="required" />
+		<xs:attribute name="qtdEmpEntEnvolvidas" type="qtdType" use="required" />
+	</xs:attributeGroup>
+	<xs:complexType name="modelo_6_Mensal_Type">
+		<xs:sequence />
+		<xs:attributeGroup ref="modelo6_M_GrpAtrib" />
+	</xs:complexType>
+	<xs:complexType name="referenciaType">
+		<xs:sequence>
+			<xs:group ref="periodicidadeGrupo" />
+		</xs:sequence>
+		<xs:attribute name="dataRef" type="dbType" use="required" />
+	</xs:complexType>
+</xs:schema>
+<!-- Fim do xml schema-->

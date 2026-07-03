@@ -1,0 +1,2115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+        <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-58TG7P3B');</script>
+    <!-- End Google Tag Manager -->
+        <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://www.googletagmanager.com">
+    <link rel="preconnect" href="https://connect.facebook.net">
+    <link rel="dns-prefetch" href="https://www.google-analytics.com">
+    <link rel="preload" as="style" href="/css/fonts/inter.css">
+    <title>Compliance Regulatório Automatizado | BIBlue — Bacen, COAF e LGPD por API</title>
+    <meta name="description" content="Automatize compliance regulatório: envio ao Bacen, comunicação ao COAF, monitoramento PEP, gestão LGPD. Dashboards e relatórios prontos para auditoria.">
+        <meta name="robots" content="follow, index, max-snippet:-1, max-video-preview:-1, max-image-preview:large">
+        <link rel="canonical" href="https://biblue.com.br/casos-de-uso/compliance-regulatorio">
+    <meta name="theme-color" content="#1E3A5F">
+    <link rel="icon" type="image/svg+xml" href="/images/logo-biblue.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Compliance Regulatório Automatizado | BIBlue — Bacen, COAF e LGPD por API">
+    <meta property="og:description" content="Automatize compliance regulatório: envio ao Bacen, comunicação ao COAF, monitoramento PEP, gestão LGPD. Dashboards e relatórios prontos para auditoria.">
+    <meta property="og:image" content="https://biblue.com.br/images/og-biblue.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Compliance Regulatório Automatizado | BIBlue — Bacen, COAF e LGPD por API">
+    <meta property="og:url" content="https://biblue.com.br/casos-de-uso/compliance-regulatorio">
+    <meta property="og:site_name" content="BIBlue">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:updated_time" content="2026-07-02T19:54:01-03:00">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Compliance Regulatório Automatizado | BIBlue — Bacen, COAF e LGPD por API">
+    <meta name="twitter:description" content="Automatize compliance regulatório: envio ao Bacen, comunicação ao COAF, monitoramento PEP, gestão LGPD. Dashboards e relatórios prontos para auditoria.">
+    <meta name="twitter:image" content="https://biblue.com.br/images/og-biblue.png">
+
+    <!-- Fonts (self-hosted Inter) -->
+    <link rel="stylesheet" href="/css/fonts/inter.css">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/css/style.css?v=12">
+    
+        <!-- Google Consent Mode v2 (must load before GTM) -->
+    <script>
+    window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+    gtag('consent','default',{"ad_personalization":"denied","ad_storage":"denied","ad_user_data":"denied","analytics_storage":"denied","functionality_storage":"denied","security_storage":"denied","personalization_storage":"denied","region":["AT","BE","BG","CH","CY","CZ","DE","DK","EE","ES","FI","FR","GB","GR","HR","HU","IE","IS","IT","LI","LT","LU","LV","MT","NL","NO","PL","PT","RO","SE","SI","SK"],"wait_for_update":500});
+    </script>
+    <!-- Google Tag Manager (manages GA4, Google Ads, Facebook Pixel, Clarity) -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-58TG7P3B');</script>
+    
+    <!-- Schema.org (Organization + WebSite + WebPage) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": ["Corporation", "Organization"],
+                "@id": "https://biblue.com.br/#organization",
+                "name": "BIBlue",
+                "legalName": "Biblue Softwares de Integração",
+                "url": "https://biblue.com.br",
+                "logo": {
+                    "@type": "ImageObject",
+                    "@id": "https://biblue.com.br/#logo",
+                    "url": "https://biblue.com.br/images/logo-biblue.svg",
+                    "contentUrl": "https://biblue.com.br/images/logo-biblue.svg",
+                    "caption": "BIBlue - HUB de automação para instituições financeiras",
+                    "inLanguage": "pt-BR"
+                },
+                "sameAs": [
+                    "https://www.facebook.com/BIBlueApp/",
+                    "https://www.linkedin.com/company/biblue/",
+                    "https://www.instagram.com/biblueapp/"
+                ],
+                "contactPoint": {
+                    "@type": "ContactPoint",
+                    "telephone": "+55-43-3047-2255",
+                    "contactType": "sales"
+                },
+                "address": {
+                    "@type": "PostalAddress",
+                    "streetAddress": "Rua Nagib Daher, 580, Sala 4 – 1º Andar",
+                    "addressLocality": "Apucarana",
+                    "addressRegion": "PR",
+                    "addressCountry": "BR"
+                }
+            },
+            {
+                "@type": "WebSite",
+                "@id": "https://biblue.com.br/#website",
+                "url": "https://biblue.com.br",
+                "name": "BIBlue - HUB de automação para instituições financeiras",
+                "publisher": { "@id": "https://biblue.com.br/#organization" },
+                "inLanguage": "pt-BR",
+                "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": "https://biblue.com.br/blog?busca={search_term_string}",
+                    "query-input": "required name=search_term_string"
+                }
+            },
+            {
+                "@type": "WebPage",
+                "@id": "https://biblue.com.br/casos-de-uso/compliance-regulatorio#webpage",
+                "url": "https://biblue.com.br/casos-de-uso/compliance-regulatorio",
+                "name": "Compliance Regulatório Automatizado | BIBlue — Bacen, COAF e LGPD por API",
+                "datePublished": "2024-10-03T14:07:46-03:00",
+                "dateModified": "2026-07-02T19:54:01-03:00",
+                "about": { "@id": "https://biblue.com.br/#organization" },
+                "isPartOf": { "@id": "https://biblue.com.br/#website" },
+                "inLanguage": "pt-BR"
+            }
+        ]
+    }
+    </script>
+</head>
+<body>
+        <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-58TG7P3B" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    
+    <!-- Navbar -->
+    <nav class="site-navbar">
+        <a href="/" class="navbar-logo">
+            <img src="/images/logo-biblue-branco.svg" alt="BIBlue" class="navbar-logo-white">
+            <img src="/images/logo-biblue.svg" alt="BIBlue" class="navbar-logo-color">
+        </a>
+
+        <ul class="navbar-links mob-hide">
+            <!-- Soluções (mega dropdown) -->
+            <li class="has-mega">
+                <a href="/#solucoes" >
+                    Soluções
+                    <svg class="nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </a>
+                <div class="mega-dropdown">
+                    <div class="mega-col">
+                        <span class="mega-col-title">Soluções por necessidade</span>
+                        <a href="/solucoes/analise-credito-antifraude">
+                            <div class="nav-dd-icon mega-icon-indigo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+                            <div class="nav-dd-text"><strong>Crédito e Antifraude</strong><span>Análise de risco e prevenção a fraudes</span></div>
+                        </a>
+                        <a href="/solucoes/registro-contratos">
+                            <div class="nav-dd-icon mega-icon-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                            <div class="nav-dd-text"><strong>Registro de Contratos</strong><span>Gravame e registradoras</span></div>
+                        </a>
+                        <a href="/solucoes/multicalculo-seguros">
+                            <div class="nav-dd-icon mega-icon-cyan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+                            <div class="nav-dd-text"><strong>Multicálculo Seguros</strong><span>Cotação multi-seguradoras</span></div>
+                        </a>
+                        <a href="/solucoes/conciliacao-fiscal-bancaria">
+                            <div class="nav-dd-icon mega-icon-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="2" y1="15" x2="22" y2="15"/><line x1="12" y1="9" x2="12" y2="21"/></svg></div>
+                            <div class="nav-dd-text"><strong>Conciliação Fiscal/Bancária</strong><span>Automatize fechamento contábil</span></div>
+                        </a>
+                        <a href="/solucoes/hub-integrador">
+                            <div class="nav-dd-icon mega-icon-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+                            <div class="nav-dd-text"><strong>HUB Integrador</strong><span>APIs e plugins plug-and-play</span></div>
+                        </a>
+                        <a href="/solucoes/compliance-regulatorio">
+                            <div class="nav-dd-icon mega-icon-indigo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 10h18M5 6l7-3 7 3"/><path d="M8 14v3M12 14v3M16 14v3"/></svg></div>
+                            <div class="nav-dd-text"><strong>Compliance Regulatório</strong><span>88 obrigações BACEN, CVM, RFB</span></div>
+                        </a>
+                    </div>
+                    <div class="mega-col">
+                        <span class="mega-col-title">Casos de Uso</span>
+                        <a href="/casos-de-uso/seguros-embarcados">
+                            <div class="nav-dd-icon mega-icon-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div>
+                            <div class="nav-dd-text"><strong>Seguros Embarcados</strong><span>Insurance-as-a-Service integrado</span></div>
+                        </a>
+                        <a href="/casos-de-uso/onboarding-digital">
+                            <div class="nav-dd-icon mega-icon-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></div>
+                            <div class="nav-dd-text"><strong>Onboarding Digital</strong><span>KYC e verificação automatizada</span></div>
+                        </a>
+                        <a href="/casos-de-uso/cobranca-recuperacao">
+                            <div class="nav-dd-icon mega-icon-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+                            <div class="nav-dd-text"><strong>Cobrança e Recuperação</strong><span>Régua de cobrança inteligente</span></div>
+                        </a>
+                        <a href="/casos-de-uso/registro-recebiveis">
+                            <div class="nav-dd-icon mega-icon-cyan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="10" y1="3" x2="10" y2="9"/></svg></div>
+                            <div class="nav-dd-text"><strong>Registro de Recebíveis</strong><span>Antecipação e cessão de crédito</span></div>
+                        </a>
+                        <a href="/solucoes/compliance-regulatorio">
+                            <div class="nav-dd-icon mega-icon-indigo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg></div>
+                            <div class="nav-dd-text"><strong>Compliance Regulatório</strong><span>88 obrigações BACEN, CVM, RFB</span></div>
+                        </a>
+                    </div>
+                    <div class="mega-cta">
+                        <div class="mega-cta-inner">
+                            <h4>Única solução de ponta a ponta do mercado</h4>
+                            <p>Crédito, antifraude, registro e seguros em uma única plataforma.</p>
+                            <a href="/contato" class="mega-cta-btn">Solicitar demonstração</a>
+                        </div>
+                    </div>
+                </div>
+            </li>
+
+            <!-- Segmentos -->
+            <li>
+                <a href="/segmentos/cooperativas-de-credito" >
+                    Segmentos
+                    <svg class="nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </a>
+                <div class="nav-dropdown">
+                    <a href="/segmentos/cooperativas-de-credito">
+                        <div class="nav-dd-icon mega-icon-indigo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+                        <div class="nav-dd-text"><strong>Cooperativas de Crédito</strong><span>Automação para cooperativismo</span></div>
+                    </a>
+                    <a href="/segmentos/financeiras-de-veiculos">
+                        <div class="nav-dd-icon mega-icon-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+                        <div class="nav-dd-text"><strong>Financeiras de Veículos</strong><span>Registro, crédito e seguros</span></div>
+                    </a>
+                    <a href="/segmentos/fintechs">
+                        <div class="nav-dd-icon mega-icon-cyan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                        <div class="nav-dd-text"><strong>Fintechs</strong><span>APIs plug-and-play</span></div>
+                    </a>
+                    <a href="/segmentos/bancos-digitais">
+                        <div class="nav-dd-icon mega-icon-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+                        <div class="nav-dd-text"><strong>Bancos Digitais</strong><span>Infraestrutura multi-produto</span></div>
+                    </a>
+                    <a href="/segmentos/seguradoras">
+                        <div class="nav-dd-icon mega-icon-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+                        <div class="nav-dd-text"><strong>Seguradoras e Corretoras</strong><span>Multicálculo e gestão de apólices</span></div>
+                    </a>
+                </div>
+            </li>
+
+            <!-- Sobre -->
+            <li>
+                <a href="/sobre" >
+                    Sobre
+                    <svg class="nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </a>
+                <div class="nav-dropdown">
+                    <a href="/por-que-biblue">
+                        <div class="nav-dd-icon mega-icon-indigo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div>
+                        <div class="nav-dd-text"><strong>Por que BIBlue</strong><span>Diferenciais e história</span></div>
+                    </a>
+                    <a href="/sobre">
+                        <div class="nav-dd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
+                        <div class="nav-dd-text"><strong>Quem Somos</strong><span>BIBlue e Glass Group</span></div>
+                    </a>
+                    <a href="/cases/">
+                        <div class="nav-dd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                        <div class="nav-dd-text"><strong>Cases de Sucesso</strong><span>Resultados reais com BIBlue</span></div>
+                    </a>
+                    <a href="/materiais">
+                        <div class="nav-dd-icon mega-icon-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+                        <div class="nav-dd-text"><strong>Materiais</strong><span>Apresentações e PDFs</span></div>
+                    </a>
+                    <a href="/sobre#localizacao">
+                        <div class="nav-dd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+                        <div class="nav-dd-text"><strong>Localização</strong><span>Apucarana – PR</span></div>
+                    </a>
+                </div>
+            </li>
+
+            <!-- Integrações -->
+            <li>
+                <a href="/integracao/plataformas" >
+                    Integrações
+                    <svg class="nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </a>
+                <div class="nav-dropdown">
+                    <a href="/integracao/plataformas">
+                        <div class="nav-dd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+                        <div class="nav-dd-text"><strong>Plataformas</strong><span>Integre com seu sistema</span></div>
+                    </a>
+                    <a href="/integracao/desenvolvedores">
+                        <div class="nav-dd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+                        <div class="nav-dd-text"><strong>Desenvolvedores</strong><span>APIs e documentação técnica</span></div>
+                    </a>
+                    <a href="/integracao/parceiros">
+                        <div class="nav-dd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+                        <div class="nav-dd-text"><strong>Parceiros</strong><span>Programa de parceria</span></div>
+                    </a>
+                </div>
+            </li>
+
+            <!-- Insights (Blog) -->
+            <li>
+                <a href="/blog/" >
+                    Insights
+                    <svg class="nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </a>
+                <div class="nav-dropdown">
+                    <a href="/blog/">
+                        <div class="nav-dd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg></div>
+                        <div class="nav-dd-text"><strong>Blog</strong><span>Artigos e novidades</span></div>
+                    </a>
+                    <a href="/blog/?categoria=avaliacao-credito">
+                        <div class="nav-dd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+                        <div class="nav-dd-text"><strong>Avaliação de Crédito</strong><span>Fraudes e análise de risco</span></div>
+                    </a>
+                    <a href="/blog/?categoria=registro-contrato">
+                        <div class="nav-dd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                        <div class="nav-dd-text"><strong>Registro de Contratos</strong><span>Gravame e legislação</span></div>
+                    </a>
+                    <a href="/blog/?categoria=seguros">
+                        <div class="nav-dd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+                        <div class="nav-dd-text"><strong>Seguros</strong><span>Multicálculo e mercado</span></div>
+                    </a>
+                    <a href="/blog/?categoria=integracoes">
+                        <div class="nav-dd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+                        <div class="nav-dd-text"><strong>Integrações</strong><span>APIs, iPaaS e HUB</span></div>
+                    </a>
+                </div>
+            </li>
+        </ul>
+
+        <div class="navbar-ctas mob-hide">
+            <a href="/contato" class="navbar-cta">Agendar Demo</a>
+            <a href="/contato" class="navbar-cta navbar-cta-primary">Fale com um especialista</a>
+        </div>
+
+        <button class="hamburger" aria-label="Menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </nav>
+
+    <!-- Mobile Nav -->
+    <div class="mobile-nav">
+        <a href="/">Home</a>
+        <span class="mobile-nav-label">Soluções</span>
+        <a href="/solucoes/analise-credito-antifraude">Crédito e Antifraude</a>
+        <a href="/solucoes/registro-contratos">Registro de Contratos</a>
+        <a href="/solucoes/multicalculo-seguros">Multicálculo Seguros</a>
+        <a href="/solucoes/conciliacao-fiscal-bancaria">Conciliação Fiscal/Bancária</a>
+        <a href="/solucoes/hub-integrador">HUB Integrador</a>
+        <a href="/solucoes/compliance-regulatorio">Compliance Regulatório</a>
+        <span class="mobile-nav-divider"></span>
+        <span class="mobile-nav-label">Casos de Uso</span>
+        <a href="/casos-de-uso/seguros-embarcados">Seguros Embarcados</a>
+        <a href="/casos-de-uso/onboarding-digital">Onboarding Digital</a>
+        <a href="/casos-de-uso/cobranca-recuperacao">Cobrança e Recuperação</a>
+        <a href="/casos-de-uso/registro-recebiveis">Registro de Recebíveis</a>
+        <a href="/solucoes/compliance-regulatorio">Compliance Regulatório</a>
+        <span class="mobile-nav-divider"></span>
+        <span class="mobile-nav-label">Segmentos</span>
+        <a href="/segmentos/cooperativas-de-credito">Cooperativas de Crédito</a>
+        <a href="/segmentos/financeiras-de-veiculos">Financeiras de Veículos</a>
+        <a href="/segmentos/fintechs">Fintechs</a>
+        <a href="/segmentos/bancos-digitais">Bancos Digitais</a>
+        <a href="/segmentos/seguradoras">Seguradoras e Corretoras</a>
+        <span class="mobile-nav-divider"></span>
+        <span class="mobile-nav-label">Integrações</span>
+        <a href="/integracao/plataformas">Plataformas</a>
+        <a href="/integracao/desenvolvedores">Desenvolvedores</a>
+        <a href="/integracao/parceiros">Parceiros</a>
+        <span class="mobile-nav-divider"></span>
+        <a href="/por-que-biblue">Por que BIBlue</a>
+        <a href="/sobre">Sobre</a>
+        <a href="/cases/">Cases de Sucesso</a>
+        <a href="/materiais">Materiais</a>
+        <a href="/blog/">Blog</a>
+        <a href="/contato" class="btn btn-primary" style="margin-top: 12px;">Fale com um especialista</a>
+    </div>
+
+<!-- Schema.org BreadcrumbList -->
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://biblue.com.br"},
+        {"@type": "ListItem", "position": 2, "name": "Casos de Uso", "item": "https://biblue.com.br/casos-de-uso"},
+        {"@type": "ListItem", "position": 3, "name": "Compliance Regulatorio", "item": "https://biblue.com.br/casos-de-uso/compliance-regulatorio"}
+    ]
+}
+</script>
+
+<style>
+/* =============================================
+   HERO — Compliance Regulatório
+   ============================================= */
+.cp-hero {
+    background: linear-gradient(160deg, #020824 0%, #0F0A2E 35%, #1A1145 60%, #0C0E2E 100%) !important;
+}
+.cp-hero::before {
+    background-image:
+        linear-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px) !important;
+    animation: cp-grid-drift 20s linear infinite;
+}
+.cp-hero-accent {
+    color: #818CF8 !important;
+}
+.cp-hero-badge {
+    color: #818CF8 !important;
+}
+.cp-hero-perks svg {
+    color: #818CF8 !important;
+}
+.cp-hero-cta {
+    background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%) !important;
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3) !important;
+}
+.cp-hero-cta:hover {
+    box-shadow: 0 6px 28px rgba(99, 102, 241, 0.45) !important;
+}
+/* Hero animations */
+@keyframes cp-grid-drift {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(48px, 48px); }
+}
+@keyframes cp-fade-up {
+    0% { opacity: 0; transform: translateY(24px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+.cp-hero .reg-hero-badge { animation: cp-fade-up 0.6s ease-out both; }
+.cp-hero h1 { animation: cp-fade-up 0.6s ease-out 0.1s both; }
+.cp-hero .reg-hero-desc { animation: cp-fade-up 0.6s ease-out 0.2s both; }
+.cp-hero .reg-hero-actions { animation: cp-fade-up 0.6s ease-out 0.3s both; }
+.cp-hero .reg-hero-perks { animation: cp-fade-up 0.6s ease-out 0.4s both; }
+.cp-hero .reg-hero-right { animation: cp-fade-up 0.8s ease-out 0.3s both; }
+</style>
+
+<!-- ============================================
+     1. HERO
+     ============================================ -->
+<section class="reg-hero cp-hero">
+    <div class="reg-hero-grid container">
+        <div class="reg-hero-left">
+            <p class="reg-hero-badge cp-hero-badge">&#10022; Conformidade regulatória automatizada</p>
+            <h1 style="font-weight: 300; line-height: 1.2;">Mantenha sua instituição em <strong style="font-weight: 800;"><span class="cp-hero-accent">conformidade</span></strong> sem depender de <strong style="font-weight: 800;">processos manuais</strong></h1>
+            <p class="reg-hero-desc">Automatize envios ao Bacen, comunicações ao COAF/UIF, monitoramento PEP e gestão LGPD. Dashboards e relatórios prontos para auditoria, integrados ao seu sistema.</p>
+            <div class="reg-hero-actions">
+                <a href="/contato" class="btn btn-primary cp-hero-cta">Ver a plataforma em ação <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                <a href="/contato" class="reg-hero-link">Agendar demonstração <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+            </div>
+            <p style="margin: 10px 0 0; font-size: 13px; color: rgba(255,255,255,0.4); font-family: 'Inter', sans-serif;">30 minutos. Uma conversa. Clareza sobre o que muda no seu compliance.</p>
+            <div class="reg-hero-perks cp-hero-perks">
+                <span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Setup em 15 dias</span>
+                <span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Sem custo de setup</span>
+                <span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Pay-per-use</span>
+            </div>
+        </div>
+        <div class="reg-hero-right">
+            <img class="reg-hero-svg" src="/svg-pages/hero-compliance-regulatorio.svg" alt="Compliance regulatório automatizado: monitoramento e conformidade contínua" width="560" height="500" style="width:90%;height:auto;display:block;margin:0 auto;" fetchpriority="high" decoding="async">
+        </div>
+    </div>
+</section>
+
+<!-- ============================================
+     2. VISAO GERAL
+     ============================================ -->
+<style>
+.cp-vg-section {
+    position: relative;
+    background: #fff;
+    overflow: hidden;
+}
+.cp-vg-wrapper {
+    position: relative;
+    min-height: 700px;
+}
+.cp-vg-bg {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 42%;
+    height: 100%;
+    z-index: 0;
+    background: url('/images/casos-de-uso/compliance-regulatorio-vg.webp') center/cover no-repeat;
+}
+.cp-vg-content {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 80px 24px 72px;
+}
+.cp-vg-text {
+    width: 52%;
+    margin-bottom: 56px;
+}
+.cp-vg-text h2 {
+    font-family: 'Inter', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    margin: 0 0 28px;
+}
+.cp-vg-text p {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    margin: 0;
+}
+.cp-vg-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 48px;
+}
+.cp-vg-card {
+    padding: 36px 30px;
+    background: rgba(255,255,255,0.45);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.7);
+    transition: all 0.3s var(--ease-out);
+}
+.cp-vg-card:hover {
+    background: rgba(255,255,255,0.65);
+    box-shadow: 0 8px 32px rgba(15,23,42,0.1), inset 0 1px 0 rgba(255,255,255,0.8);
+    transform: translateY(-4px);
+}
+.cp-vg-card-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+.cp-vg-card-icon {
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.cp-vg-card-icon svg { width: 24px; height: 24px; }
+.cp-vg-card-top span {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+}
+.cp-vg-card h4 {
+    font-family: 'Inter', sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.3;
+    margin: 0 0 14px;
+}
+.cp-vg-card p {
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin: 0;
+}
+.cp-vg-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 17px 34px;
+    background: #6366F1;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 14px;
+    text-decoration: none;
+    transition: all 0.3s var(--ease-out);
+    box-shadow: 0 4px 16px rgba(99,102,241,0.25);
+}
+.cp-vg-cta:hover {
+    background: #4F46E5;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(99,102,241,0.35);
+}
+.cp-vg-cta svg { width: 18px; height: 18px; transition: transform 0.3s var(--ease-out); }
+.cp-vg-cta:hover svg { transform: translateX(3px); }
+@media (max-width: 1023px) {
+    .cp-vg-bg { width: 38%; }
+    .cp-vg-text { width: 55%; }
+    .cp-vg-cards { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .cp-vg-card { padding: 28px 22px; }
+}
+@media (max-width: 768px) {
+    .cp-vg-wrapper { min-height: auto; }
+    .cp-vg-bg { position: relative; width: 100%; height: 200px; }
+    .cp-vg-content { padding: 48px 20px 56px; }
+    .cp-vg-text { width: 100%; margin-bottom: 36px; }
+    .cp-vg-text h2 { font-size: 1.8rem; }
+    .cp-vg-cards { grid-template-columns: 1fr; gap: 12px; }
+    .cp-vg-card { backdrop-filter: none; background: #fff; }
+}
+@media (max-width: 639px) {
+    .cp-vg-bg { height: 160px; }
+    .cp-vg-text h2 { font-size: 1.5rem; }
+    .cp-vg-text p { font-size: 15px; }
+    .cp-vg-card { padding: 26px 22px; }
+    .cp-vg-card h4 { font-size: 17px; }
+}
+</style>
+
+<section class="cp-vg-section">
+    <div class="cp-vg-wrapper">
+        <div class="cp-vg-bg">
+            <div style="width:100%;height:100%;background:linear-gradient(135deg, rgba(15,23,42,0.35) 0%, rgba(99,102,241,0.25) 100%);"></div>
+        </div>
+        <div class="cp-vg-content">
+            <div class="cp-vg-text">
+                <h2 style="font-weight: 300;">Compliance não deveria consumir 30% do tempo da <strong style="font-weight: 800;">sua equipe</strong></h2>
+                <p>Quando a operação envolve múltiplos reguladores, reportes manuais e monitoramento descontínuo, o risco de não-conformidade cresce junto com o custo operacional. Automatize tudo em um único fluxo, com dados confiáveis e trilha de auditoria completa.</p>
+            </div>
+            <div class="cp-vg-cards">
+                <div class="cp-vg-card">
+                    <div class="cp-vg-card-top">
+                        <div class="cp-vg-card-icon" style="background:#EEF2FF;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        </div>
+                        <span style="color:#6366F1;">Relatórios Bacen</span>
+                    </div>
+                    <h3>CADOC, SCR e COS automatizados</h3>
+                    <p>Geração automática de relatórios regulatórios para o Banco Central. Templates pré-configurados para CADOC, SCR e COS com validação prévia antes do envio.</p>
+                </div>
+                <div class="cp-vg-card">
+                    <div class="cp-vg-card-top">
+                        <div class="cp-vg-card-icon" style="background:#FEF2F2;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        </div>
+                        <span style="color:#EF4444;">COAF / UIF</span>
+                    </div>
+                    <h3>Comunicação de operações suspeitas</h3>
+                    <p>Detecção automática de operações atípicas e geração de comunicações ao COAF/UIF. Regras configuráveis por segmento com alertas em tempo real para a equipe de compliance.</p>
+                </div>
+                <div class="cp-vg-card">
+                    <div class="cp-vg-card-top">
+                        <div class="cp-vg-card-icon" style="background:#FFFBEB;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </div>
+                        <span style="color:#F59E0B;">Monitoramento Contínuo</span>
+                    </div>
+                    <h3>PEP e sanções em tempo real</h3>
+                    <p>Monitoramento contínuo de PEP, sanções e listas restritivas — não apenas no onboarding, mas durante todo o ciclo de vida do cliente, com alertas automáticos.</p>
+                </div>
+            </div>
+            <a href="/contato" class="cp-vg-cta">
+                Explorar a solução
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================
+     3. FUNCIONALIDADES — Mosaico
+     ============================================ -->
+<section class="section section-gray">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-badge">Funcionalidades</div>
+            <h2 style="font-weight: 300;">Automatize, monitore e comprove conformidade — em <strong style="font-weight: 800;">um só lugar</strong></h2>
+        </div>
+        <div class="benefits-mosaic">
+            <div class="benefits-mosaic-card">
+                <span class="benefits-mosaic-icon benefits-mosaic-icon--indigo"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+                <h3>Relatórios regulatórios automatizados</h3>
+                <p>Geração automática de CADOC, SCR, COS e demais obrigações ao Bacen. Templates pré-configurados com validação de dados antes do envio, eliminando retrabalho e erros manuais.</p>
+            </div>
+            <div class="benefits-mosaic-img" style="background: url('/images/casos-de-uso/compliance-regulatorio-mosaic.webp') center/cover no-repeat; border-radius: 16px;"></div>
+            <div class="benefits-mosaic-card">
+                <span class="benefits-mosaic-icon benefits-mosaic-icon--cyan"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                <h3>Monitoramento PEP e sanções</h3>
+                <p>Monitoramento contínuo — não apenas no onboarding. Verificação periódica contra listas de PEP, sanções internacionais e listas restritivas com alertas automáticos para a equipe.</p>
+            </div>
+            <div class="benefits-mosaic-card">
+                <span class="benefits-mosaic-icon benefits-mosaic-icon--green"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+                <h3>Gestão LGPD com trilha de auditoria</h3>
+                <p>Gerenciamento de consentimentos, direitos de titulares e políticas de retenção de dados. Audit trail completo para demonstrar conformidade em fiscalizações da ANPD.</p>
+            </div>
+            <div class="benefits-mosaic-card">
+                <span class="benefits-mosaic-icon benefits-mosaic-icon--dark"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></span>
+                <h3>Dashboards e alertas regulatórios</h3>
+                <p>Paineis em tempo real com indicadores de conformidade por área. Alertas automáticos de mudanças regulatórias por segmento e prazos de entrega próximos ao vencimento.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================
+     4. BENEFICIOS
+     ============================================ -->
+<section class="section section-light">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-badge">Beneficios</div>
+            <h2 style="font-weight: 300;">O que muda na sua <strong style="font-weight: 800;">operação de compliance</strong></h2>
+        </div>
+        <div class="features-grid">
+            <div class="feature-item">
+                <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+                <div><h3>Redução drástica de esforço manual</h3><p>Elimine planilhas, preenchimentos manuais e conferências repetitivas. Relatórios ao Bacen, COAF e órgãos reguladores são gerados e validados automaticamente.</p></div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+                <div><h3>Auditoria sempre pronta</h3><p>Trilha de auditoria completa para cada ação regulatoria. Quando o auditor chegar, os relatórios já estão prontos — sem semanas de levantamento.</p></div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+                <div><h3>Monitoramento que não para</h3><p>PEP, sanções e listas restritivas verificados continuamente — não apenas no cadastro. Detecção proativa de mudanças de status com notificação imediata.</p></div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+                <div><h3>Integração com sistemas existentes</h3><p>Conecte via API ao seu ERP, CRM ou core banking (TOTVS, SAP, Salesforce). Sem necessidade de trocar sistemas — a BIBlue se adapta a sua operação.</p></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================
+     5. NUMBERS SHOWCASE
+     ============================================ -->
+<section class="numbers-showcase">
+    <div class="numbers-showcase-bg">
+        <div style="width:100%;height:100%;background:linear-gradient(160deg, #020824 0%, #0F0A2E 50%, #1A1145 100%);"></div>
+        <div class="numbers-showcase-overlay" style="background: linear-gradient(180deg, rgba(15,10,46,0.3) 0%, rgba(15,10,46,0.6) 100%);"></div>
+    </div>
+    <div class="container numbers-showcase-inner">
+        <div class="numbers-showcase-content">
+            <h2 style="font-weight: 300;">Resultados que <strong style="font-weight: 800;">falam por si</strong></h2>
+            <p>Instituições que automatizaram compliance com a BIBlue ganharam velocidade, reduziram riscos regulatórios e liberaram a equipe para atividades estrategicas.</p>
+        </div>
+        <div class="numbers-showcase-cards">
+            <div class="numbers-showcase-card">
+                <span class="numbers-showcase-value">80%</span>
+                <span class="numbers-showcase-label">de redução no tempo dedicado a compliance regulatório</span>
+            </div>
+            <div class="numbers-showcase-card">
+                <span class="numbers-showcase-value">100%</span>
+                <span class="numbers-showcase-label">auditável — trilha completa de cada ação regulatoria</span>
+            </div>
+            <div class="numbers-showcase-card">
+                <span class="numbers-showcase-value">24/7</span>
+                <span class="numbers-showcase-label">monitoramento contínuo de PEP, sanções e listas restritivas</span>
+            </div>
+            <div class="numbers-showcase-card">
+                <span class="numbers-showcase-value">15 dias</span>
+                <span class="numbers-showcase-label">para integração completa via API REST com sandbox</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================
+     6. COMPARATIVO
+     ============================================ -->
+<section class="section section-dark">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-badge">Comparativo</div>
+            <h2 style="font-weight: 300;">O que diferencia a BIBlue dos processos <strong style="font-weight: 800;"><span style="background: linear-gradient(135deg, #818CF8, #67E8F9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">manuais de compliance</span></strong></h2>
+            <p style="max-width: 680px; margin: 8px auto 0; color: rgba(255,255,255,0.5); font-size: 15px;">Compliance manual depende de planilhas, memoria institucional e conferências repetitivas. A BIBlue elimina essas vulnerabilidades com automação e monitoramento contínuo.</p>
+        </div>
+
+        <div class="comparison-grid">
+            <div class="comparison-card comparison-market">
+                <div class="comparison-card-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" width="22" height="22"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    <h3>Compliance manual</h3>
+                </div>
+                <ul class="comparison-list comparison-list-negative">
+                    <li>Relatórios ao Bacen preenchidos manualmente em planilhas com alto risco de erro</li>
+                    <li>Comunicacoes ao COAF dependem de analistas identificarem operações atípicas</li>
+                    <li>Monitoramento PEP apenas no onboarding — sem acompanhamento contínuo</li>
+                    <li>Gestão LGPD descentralizada sem trilha de auditoria unificada</li>
+                    <li>Mudanças regulatórias descobertas por acaso ou com atraso</li>
+                    <li>Auditoria gera semanas de levantamento manual de evidências</li>
+                    <li>Sem visibilidade em tempo real do status de conformidade</li>
+                    <li>Politicas de retenção de documentos sem controle automatizado</li>
+                </ul>
+            </div>
+            <div class="comparison-card comparison-biblue">
+                <div class="comparison-card-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2" width="22" height="22"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    <h3>BIBlue Compliance</h3>
+                </div>
+                <ul class="comparison-list comparison-list-positive">
+                    <li><strong>Relatórios Bacen automáticos</strong> — CADOC, SCR e COS gerados e validados antes do envio</li>
+                    <li><strong>Detecção automática de operações suspeitas</strong> — regras configuráveis com alerta ao COAF/UIF</li>
+                    <li><strong>Monitoramento PEP 24/7</strong> — verificação contínua durante todo o ciclo de vida do cliente</li>
+                    <li><strong>LGPD centralizada</strong> — consentimentos, direitos de titulares e audit trail unificados</li>
+                    <li><strong>Alertas regulatórios por segmento</strong> — notificações proativas de mudanças normativas</li>
+                    <li><strong>Auditoria pronta em minutos</strong> — relatórios e evidências gerados automaticamente</li>
+                    <li><strong>Dashboard de conformidade em tempo real</strong> — visão 360 graus do status regulatório</li>
+                    <li><strong>Politicas de retenção automatizadas</strong> — controle de documentos com expurgo programado</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="comparison-bottom-bar">
+            <div class="comparison-bottom-item">
+                <span class="comparison-bottom-label">Reguladores cobertos</span>
+                <span class="comparison-bottom-value">Bacen, COAF/UIF, CVM, Receita Federal, ANPD, Susep, Previc</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================
+     7. PARTNERS
+     ============================================ -->
+<section class="partners-dark">
+    <div class="partners-dark-logos">
+        <div class="partners-dark-logo partners-dark-logo-lg" style="top: 6%; left: 5%;">Bacen</div>
+        <div class="partners-dark-logo" style="top: 4%; left: 22%;">COAF</div>
+        <div class="partners-dark-logo partners-dark-logo-lg" style="top: 5%; right: 20%;">CVM</div>
+        <div class="partners-dark-logo" style="top: 10%; right: 4%;">Receita<br>Federal</div>
+        <div class="partners-dark-logo" style="top: 42%; left: 2%;">Serpro</div>
+        <div class="partners-dark-logo" style="bottom: 28%; left: 16%;">ANPD</div>
+        <div class="partners-dark-logo" style="top: 44%; right: 3%;">Susep</div>
+        <div class="partners-dark-logo" style="bottom: 22%; right: 14%;">Previc</div>
+        <div class="partners-dark-logo" style="bottom: 8%; left: 6%;">UIF</div>
+        <div class="partners-dark-logo" style="bottom: 10%; left: 28%;">SCR</div>
+        <div class="partners-dark-logo" style="bottom: 6%; right: 5%;">CADOC</div>
+        <div class="partners-dark-logo" style="bottom: 26%; right: 32%;">COS</div>
+    </div>
+    <div class="partners-dark-lines"></div>
+    <div class="container partners-dark-content">
+        <h2 style="font-weight: 300;">Conecte sua operação a todos os <strong style="font-weight: 800;">órgãos reguladores</strong> do Brasil</h2>
+        <p>Uma única plataforma para atender obrigações regulatórias do Bacen, COAF, CVM, Receita Federal e ANPD — com templates prontos e envio automatizado.</p>
+        <a href="/contato" class="btn btn-primary">Conversar com um especialista</a>
+    </div>
+</section>
+
+<!-- ============================================
+     8. PROVA SOCIAL
+     ============================================ -->
+<style>
+.cp-social-proof {
+    padding: 96px 0;
+    background: #fff;
+}
+.cp-social-proof .section-header { text-align: center; margin-bottom: 56px; }
+.cp-social-proof .section-header h2 {
+    font-family: 'Inter', sans-serif;
+    font-size: 2.3rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    margin: 12px 0 0;
+}
+.cp-sp-testimonials {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    max-width: 900px;
+    margin: 0 auto 56px;
+}
+.cp-sp-card {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 36px 32px;
+}
+.cp-sp-stars { color: #F59E0B; font-size: 16px; margin-bottom: 16px; letter-spacing: 2px; }
+.cp-sp-card blockquote {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--text-secondary);
+    margin: 0 0 20px;
+    font-style: italic;
+}
+.cp-sp-card cite {
+    font-style: normal;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+}
+.cp-sp-card cite strong { color: var(--text-primary); display: block; margin-bottom: 2px; }
+.cp-sp-card cite span { color: var(--text-tertiary); font-size: 13px; }
+.cp-sp-badges {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+.cp-sp-badge {
+    text-align: center;
+    padding: 28px 16px;
+    background: #F8FAFC;
+    border-radius: 14px;
+    border: 1px solid #E2E8F0;
+}
+.cp-sp-badge-value {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #6366F1;
+    margin-bottom: 6px;
+}
+.cp-sp-badge-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--text-tertiary);
+    line-height: 1.5;
+}
+@media (max-width: 768px) {
+    .cp-sp-testimonials { grid-template-columns: 1fr; gap: 16px; }
+    .cp-sp-badges { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .cp-social-proof .section-header h2 { font-size: 1.6rem; }
+}
+@media (max-width: 639px) {
+    .cp-social-proof { padding: 64px 0; }
+    .cp-sp-card { padding: 28px 22px; }
+}
+</style>
+
+<section class="cp-social-proof">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-badge">Confianca</div>
+            <h2 style="font-weight: 300;">Quem já automatizou compliance com a <strong style="font-weight: 800;">BIBlue</strong></h2>
+        </div>
+        <div class="cp-sp-testimonials">
+            <div class="cp-sp-card">
+                <div class="cp-sp-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                <blockquote>"O tempo que a equipe gastava com relatórios ao Bacen caiu drasticamente. Hoje os CADOC são gerados automaticamente e a auditoria é só validar."</blockquote>
+                <cite>
+                    <strong>Diretor de Compliance</strong>
+                    <span>Cooperativa de crédito . PR</span>
+                </cite>
+            </div>
+            <div class="cp-sp-card">
+                <div class="cp-sp-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                <blockquote>"O monitoramento contínuo de PEP era algo que a gente sabia que precisava mas não conseguia implementar. Com a BIBlue, ligamos em dois dias e já pegou alertas que teriam passado despercebidos."</blockquote>
+                <cite>
+                    <strong>Head de Compliance</strong>
+                    <span>Fintech de crédito . SP</span>
+                </cite>
+            </div>
+        </div>
+        <div class="cp-sp-badges">
+            <div class="cp-sp-badge">
+                <span class="cp-sp-badge-value">+8 anos</span>
+                <span class="cp-sp-badge-label">em tecnologia para compliance financeiro</span>
+            </div>
+            <div class="cp-sp-badge">
+                <span class="cp-sp-badge-value">80%</span>
+                <span class="cp-sp-badge-label">de redução no esforco de compliance</span>
+            </div>
+            <div class="cp-sp-badge">
+                <span class="cp-sp-badge-value">24/7</span>
+                <span class="cp-sp-badge-label">monitoramento PEP e sanções automatizado</span>
+            </div>
+            <div class="cp-sp-badge">
+                <span class="cp-sp-badge-value">99,8%</span>
+                <span class="cp-sp-badge-label">de disponibilidade em nuvem AWS</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================
+     9. COMO FUNCIONA — 5 passos
+     ============================================ -->
+<style>
+.cp-how-it-works {
+    padding: 96px 0;
+    background: #F8FAFC;
+}
+.cp-how-it-works .section-header { text-align: center; margin-bottom: 64px; }
+.cp-how-it-works .section-header h2 {
+    font-family: 'Inter', sans-serif;
+    font-size: 2.3rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    margin: 12px 0 0;
+}
+.cp-hiw-timeline {
+    display: flex;
+    gap: 0;
+    max-width: 1000px;
+    margin: 0 auto;
+    position: relative;
+}
+.cp-hiw-timeline::before {
+    content: '';
+    position: absolute;
+    top: 28px;
+    left: 48px;
+    right: 48px;
+    height: 3px;
+    background: linear-gradient(90deg, #6366F1, #818CF8, #A5B4FC);
+    border-radius: 2px;
+}
+.cp-hiw-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    padding: 0 12px;
+}
+.cp-hiw-number {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #6366F1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: #6366F1;
+    margin: 0 auto 20px;
+    position: relative;
+    z-index: 1;
+}
+.cp-hiw-step h4 {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 8px;
+}
+.cp-hiw-step p {
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin: 0;
+}
+@media (max-width: 768px) {
+    .cp-hiw-timeline {
+        flex-direction: column;
+        gap: 32px;
+        padding-left: 40px;
+    }
+    .cp-hiw-timeline::before {
+        top: 0;
+        bottom: 0;
+        left: 27px;
+        right: auto;
+        width: 3px;
+        height: auto;
+    }
+    .cp-hiw-step {
+        text-align: left;
+        padding: 0;
+    }
+    .cp-hiw-number {
+        position: absolute;
+        left: -40px;
+        top: 0;
+        width: 44px;
+        height: 44px;
+        font-size: 17px;
+        margin: 0;
+    }
+    .cp-how-it-works .section-header h2 { font-size: 1.6rem; }
+}
+@media (max-width: 639px) {
+    .cp-how-it-works { padding: 64px 0; }
+}
+</style>
+
+<section class="cp-how-it-works">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-badge">Processo</div>
+            <h2 style="font-weight: 300;">Como levamos seu <strong style="font-weight: 800;">compliance ao ar</strong></h2>
+        </div>
+        <div class="cp-hiw-timeline">
+            <div class="cp-hiw-step">
+                <div class="cp-hiw-number">1</div>
+                <h3>Diagnóstico</h3>
+                <p>Mapeamos suas obrigações regulatórias atuais, fluxos de compliance e gaps de conformidade.</p>
+            </div>
+            <div class="cp-hiw-step">
+                <div class="cp-hiw-number">2</div>
+                <h3>Configuração</h3>
+                <p>Configuramos templates Bacen, regras COAF, monitoramento PEP e políticas LGPD sob medida.</p>
+            </div>
+            <div class="cp-hiw-step">
+                <div class="cp-hiw-number">3</div>
+                <h3>Integração</h3>
+                <p>Conectamos via API ao seu core banking, ERP ou CRM e validamos em sandbox.</p>
+            </div>
+            <div class="cp-hiw-step">
+                <div class="cp-hiw-number">4</div>
+                <h3>Treinamento</h3>
+                <p>Capacitamos equipes de compliance, jurídico e TI com materiais e suporte dedicado.</p>
+            </div>
+            <div class="cp-hiw-step">
+                <div class="cp-hiw-number">5</div>
+                <h3>Acompanhamento</h3>
+                <p>Monitoramos indicadores, ajustamos regras e atualizamos automaticamente com mudanças regulatórias.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================
+     10. CASES
+     ============================================ -->
+<style>
+.cp-cases {
+    padding: 96px 0;
+    background: #fff;
+}
+.cp-cases .section-header { text-align: center; margin-bottom: 56px; }
+.cp-cases .section-header h2 {
+    font-family: 'Inter', sans-serif;
+    font-size: 2.3rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    margin: 12px 0 0;
+}
+.cp-cases-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    max-width: 960px;
+    margin: 0 auto;
+}
+.cp-case-card {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 36px 32px;
+}
+.cp-case-tag {
+    display: inline-block;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6366F1;
+    background: #EEF2FF;
+    padding: 5px 14px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+.cp-case-card h4 {
+    font-family: 'Inter', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 16px;
+}
+.cp-case-section { margin-bottom: 14px; }
+.cp-case-section strong {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+    margin-bottom: 4px;
+}
+.cp-case-section p {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin: 0;
+}
+.cp-case-metrics {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+.cp-case-metric {
+    background: #EEF2FF;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6366F1;
+}
+@media (max-width: 768px) {
+    .cp-cases-grid { grid-template-columns: 1fr; gap: 16px; }
+    .cp-cases .section-header h2 { font-size: 1.6rem; }
+}
+@media (max-width: 639px) {
+    .cp-cases { padding: 64px 0; }
+    .cp-case-card { padding: 28px 22px; }
+}
+</style>
+
+<section class="cp-cases">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-badge">Cases</div>
+            <h2 style="font-weight: 300;">O que muda <strong style="font-weight: 800;">na pratica</strong></h2>
+        </div>
+        <div class="cp-cases-grid">
+            <div class="cp-case-card">
+                <span class="cp-case-tag">Cooperativa de crédito</span>
+                <h3>De relatórios manuais a compliance automatizado</h3>
+                <div class="cp-case-section">
+                    <strong>Antes</strong>
+                    <p>Equipe de compliance dedicava 3 semanas por mes para consolidar e enviar relatórios ao Bacen. Monitoramento PEP feito apenas no onboarding, sem acompanhamento posterior.</p>
+                </div>
+                <div class="cp-case-section">
+                    <strong>Depois</strong>
+                    <p>Relatórios CADOC e SCR gerados automaticamente com validação prévia. Monitoramento PEP 24/7 com alertas em tempo real. Auditoria pronta em minutos.</p>
+                </div>
+                <div class="cp-case-metrics">
+                    <span class="cp-case-metric">80% menos tempo</span>
+                    <span class="cp-case-metric">Zero multas</span>
+                    <span class="cp-case-metric">PEP 24/7</span>
+                </div>
+            </div>
+            <div class="cp-case-card">
+                <span class="cp-case-tag">Fintech de crédito</span>
+                <h3>Compliance como diferencial competitivo</h3>
+                <div class="cp-case-section">
+                    <strong>Antes</strong>
+                    <p>Crescimento acelerado da base de clientes sem estrutura de compliance proporcional. LGPD gerenciada em planilhas. COAF dependia de análise manual.</p>
+                </div>
+                <div class="cp-case-section">
+                    <strong>Depois</strong>
+                    <p>LGPD com consentimentos centralizados e audit trail. Detecção automática de operações suspeitas com comunicação ao COAF. Dashboard unificado para investidores e reguladores.</p>
+                </div>
+                <div class="cp-case-metrics">
+                    <span class="cp-case-metric">LGPD conforme</span>
+                    <span class="cp-case-metric">COAF automatizado</span>
+                    <span class="cp-case-metric">Audit trail completo</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================
+     11. CROSS-LINKS
+     ============================================ -->
+<section style="padding: 48px 0; background: var(--surface, #F8FAFC);">
+    <div class="container" style="max-width: 800px;">
+        <p style="text-align: center; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; margin-bottom: 24px;">Solucoes complementares</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <a href="/soluções/análise-crédito-antifraude" style="display: block; padding: 20px 24px; background: #fff; border-radius: 12px; border: 1px solid #E2E8F0; text-decoration: none; transition: box-shadow 0.2s;">
+                <strong style="color: #0F172A; font-size: 15px;">Análise de Crédito e Antifraude</strong>
+                <p style="color: #64748B; font-size: 13px; margin: 4px 0 0; line-height: 1.5;">Automatize análise de crédito com consulta a bureaus, antifraude com IA e score em tempo real antes de aprovar operações.</p>
+            </a>
+            <a href="/soluções/registro-contratos" style="display: block; padding: 20px 24px; background: #fff; border-radius: 12px; border: 1px solid #E2E8F0; text-decoration: none; transition: box-shadow 0.2s;">
+                <strong style="color: #0F172A; font-size: 15px;">Registro de Contratos</strong>
+                <p style="color: #64748B; font-size: 13px; margin: 4px 0 0; line-height: 1.5;">Registre contratos veiculares com integração SNG, B3 e 27 Detrans em uma única API com rastreabilidade total.</p>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================
+     12. CTA FINAL
+     ============================================ -->
+<style>
+.cp-cta-final {
+    padding: 96px 0;
+    background: linear-gradient(160deg, #020824 0%, #0F0A2E 50%, #1A1145 100%);
+    text-align: center;
+}
+.cp-cta-final h2 {
+    font-family: 'Inter', sans-serif;
+    font-size: 2.3rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #fff;
+    margin: 0 0 16px;
+}
+.cp-cta-final p {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.6);
+    max-width: 580px;
+    margin: 0 auto 32px;
+}
+.cp-cta-final .btn-primary {
+    background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%) !important;
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
+    font-size: 16px;
+    padding: 18px 36px;
+}
+.cp-cta-final .btn-primary:hover {
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.5);
+}
+.cp-cta-micro {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 16px;
+}
+@media (max-width: 768px) {
+    .cp-cta-final h2 { font-size: 1.6rem; }
+    .cp-cta-final { padding: 72px 0; }
+}
+</style>
+
+<!-- ============================================
+     12b. CONTEÚDO SEO — Documentos normativos e CADOCs
+     ============================================ -->
+<section class="section section-gray" style="padding: 80px 0;">
+    <div class="container" style="max-width: 820px;">
+        <div class="section-badge" style="margin-bottom: 16px;">Documentos Regulatórios</div>
+        <h2 style="font-weight: 300; font-size: 2rem; margin-bottom: 32px;">Conformidade com <strong style="font-weight: 800;">CADOCs, DLI, DLO e documentos normativos</strong> do Banco Central</h2>
+
+        <div style="font-size: 16px; line-height: 1.85; color: var(--text-secondary);">
+            <p>Instituições financeiras brasileiras enfrentam um volume crescente de obrigações regulatórias junto ao <strong>Banco Central do Brasil</strong>. O envio correto e pontual de <strong>documentos CADOC</strong> — como o <strong>CADOC 3040</strong> e <strong>CADOC 3044</strong> (dados ao SCR), o <strong>CADOC 4010</strong> (Balancete Patrimonial Analítico), o <strong>CADOC 4016</strong> (demonstrações financeiras) e o <strong>CADOC 4111</strong> (saldos contábeis diários) — é fundamental para evitar penalidades e manter a saúde regulatória da instituição.</p>
+
+            <p>Além dos CADOCs contábeis, os <strong>demonstrativos DLI e DLO</strong> monitoram <strong>limites de exposição e limites operacionais</strong>, exigindo dados consolidados de risco de crédito atualizados mensalmente. Com a entrada em vigor da <strong>Resolução 4966</strong> (alinhada ao <strong>IFRS 9</strong>), o modelo de provisão migrou da PCLD para a <strong>PPEARC (perda esperada)</strong>, exigindo classificação de operações em <strong>estágios (Stage 1, 2 e 3)</strong> — o que demanda dados granulares e rastreáveis.</p>
+
+            <p>Outro ponto crítico é o <strong>DRO (Documento 5050)</strong>, o <strong>Demonstrativo de Risco Operacional</strong> obrigatório para instituições <strong>S1 a S3</strong>. Com prazo de adequação para S3 em <strong>junho de 2026</strong>, as instituições precisam ter <strong>5 anos de histórico de perdas operacionais</strong> prontos para envio. A reestruturação do <strong>COSIF em 2025</strong>, que adicionou <strong>1.967 novas contas</strong> ao plano contábil, tornou o mapeamento ainda mais complexo.</p>
+
+            <p>A plataforma da BIBlue automatiza a <strong>coleta, validação e envio de relatórios regulatórios</strong> ao Banco Central, integrando-se ao core banking da instituição via API. Templates pré-configurados para CADOC, SCR e COS reduzem o esforço manual e eliminam inconsistências que podem resultar em multas ou restrições operacionais.</p>
+
+            <p style="margin-top: 24px;">
+                <strong>Aprofunde-se nos documentos regulatórios:</strong>
+            </p>
+            <ul style="margin-top: 8px; padding-left: 20px;">
+                <li><a href="/blog/avaliacao-credito/dli-e-dlo-pilares-da-gestao-de-riscos-e-limites-no-banco-central" style="color: #6366F1;">DLI e DLO: Guia dos Demonstrativos de Limites do Banco Central</a></li>
+                <li><a href="/blog/avaliacao-credito/documento-3040-3044-4010-bacen-guia-de-riscos-e-limites" style="color: #6366F1;">Documentos 3040, 3044 e 4010 do Bacen: Guia de Riscos e Limites</a></li>
+                <li><a href="/blog/avaliacao-credito/cadoc-4010-4016-4111-banco-central-cosif-2025-guia-pratico" style="color: #6366F1;">CADOCs Contábeis 4010, 4016 e 4111 com o Novo COSIF 2025</a></li>
+                <li><a href="/blog/avaliacao-credito/dro-documento-5050-banco-central-guia-de-risco-operacional" style="color: #6366F1;">DRO (Documento 5050): Guia de Risco Operacional para S1 a S3</a></li>
+                <li><a href="/blog/avaliacao-credito/resolucao-4966-e-ifrs-9-perda-esperada-para-cooperativas-e-fintechs" style="color: #6366F1;">Resolução 4966 e IFRS 9: Impacto na Provisão de Crédito</a></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="cp-cta-final">
+    <div class="container">
+        <h2 style="font-weight: 300;">O próximo passo é uma <strong style="font-weight: 800;">conversa</strong></h2>
+        <p>Em 30 minutos, mostramos como a plataforma se adapta às suas obrigações regulatórias e quais resultados são viáveis no seu contexto. Sem apresentação genérica — a conversa é sobre o seu compliance.</p>
+        <a href="/contato" class="btn btn-primary">Ver a plataforma em ação <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-left: 4px;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+        <p class="cp-cta-micro">Escolha o melhor horário. A demonstração é personalizada para o seu cenário.</p>
+    </div>
+</section>
+
+<!-- ============================================
+     13. FAQ
+     ============================================ -->
+<section class="faq-dark">
+    <div class="container faq-dark-inner">
+        <h2>Perguntas Frequentes</h2>
+        <div class="faq-dark-list">
+            <div class="faq-dark-item">
+                <button class="faq-dark-question">
+                    Quais relatórios ao Bacen a BIBlue automatiza?
+                    <span class="faq-dark-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+                </button>
+                <div class="faq-dark-answer">
+                    <div class="faq-dark-answer-inner">A plataforma automatiza a geração e validação dos principais relatórios regulatórios, incluindo CADOC (Catalogo de Documentos), SCR (Sistema de Informacoes de Crédito) e COS (Controles Operacionais e de Segurança). Os templates são pré-configurados e atualizados automaticamente conforme mudanças nas normas do Banco Central.</div>
+                </div>
+            </div>
+            <div class="faq-dark-item">
+                <button class="faq-dark-question">
+                    Como funciona a comunicação automática ao COAF/UIF?
+                    <span class="faq-dark-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+                </button>
+                <div class="faq-dark-answer">
+                    <div class="faq-dark-answer-inner">O sistema aplica regras configuráveis por segmento para detectar operações atípicas ou suspeitas em tempo real. Quando uma operação atinge os criterios definidos, um alerta e gerado automaticamente para a equipe de compliance, que pode revisar e gerar a comunicação ao COAF/UIF diretamente pela plataforma, com toda a documentação necessaria.</div>
+                </div>
+            </div>
+            <div class="faq-dark-item">
+                <button class="faq-dark-question">
+                    O monitoramento PEP e feito apenas no onboarding?
+                    <span class="faq-dark-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+                </button>
+                <div class="faq-dark-answer">
+                    <div class="faq-dark-answer-inner">Não. Diferente de soluções tradicionais que verificam PEP apenas no cadastro, a BIBlue realiza monitoramento contínuo 24/7 durante todo o ciclo de vida do cliente. Isso inclui verificação periódica contra listas de Pessoas Expostas Politicamente, sanções internacionais e listas restritivas, com alertas automáticos quando ha mudanca de status.</div>
+                </div>
+            </div>
+            <div class="faq-dark-item">
+                <button class="faq-dark-question">
+                    Como a BIBlue ajuda na conformidade com a LGPD?
+                    <span class="faq-dark-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+                </button>
+                <div class="faq-dark-answer">
+                    <div class="faq-dark-answer-inner">A plataforma oferece gestão centralizada de consentimentos, atendimento a direitos de titulares (acesso, retificação, exclusão), políticas de retenção de dados com expurgo automatizado e trilha de auditoria completa. Tudo documentado e pronto para apresentar em fiscalizações da ANPD ou auditorias internas.</div>
+                </div>
+            </div>
+            <div class="faq-dark-item">
+                <button class="faq-dark-question">
+                    Como funciona a auditoria com a BIBlue?
+                    <span class="faq-dark-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+                </button>
+                <div class="faq-dark-answer">
+                    <div class="faq-dark-answer-inner">Cada ação regulatoria gera automaticamente uma trilha de auditoria com timestamp, responsável, dados antes/depois e evidências. Quando o auditor chegar, basta exportar os relatórios — sem semanas de levantamento manual. A plataforma também oferece templates prontos para auditorias do Bacen com checklist de conformidade.</div>
+                </div>
+            </div>
+            <div class="faq-dark-item">
+                <button class="faq-dark-question">
+                    Quais políticas de retenção de documentos a plataforma suporta?
+                    <span class="faq-dark-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+                </button>
+                <div class="faq-dark-answer">
+                    <div class="faq-dark-answer-inner">A BIBlue permite configurar políticas de retenção por tipo de documento e regulamentação aplicavel. O sistema controla automaticamente prazos de retenção, emite alertas antes do vencimento e executa expurgo programado conforme as regras definidas — atendendo exigencias do Bacen, CVM e LGPD simultaneamente.</div>
+                </div>
+            </div>
+            <div class="faq-dark-item">
+                <button class="faq-dark-question">
+                    A plataforma se integra com sistemas existentes como TOTVS e SAP?
+                    <span class="faq-dark-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+                </button>
+                <div class="faq-dark-answer">
+                    <div class="faq-dark-answer-inner">Sim. A BIBlue oferece API REST documentada com Swagger e conectores prontos para os principais ERPs e CRMs do mercado, incluindo TOTVS, SAP e Salesforce. A integração media leva 15 dias e não exige troca de sistemas — a plataforma se adapta a sua infraestrutura existente, extraindo dados automaticamente para compliance.</div>
+                </div>
+            </div>
+            <div class="faq-dark-item">
+                <button class="faq-dark-question">
+                    Como funciona o modelo de cobrança?
+                    <span class="faq-dark-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+                </button>
+                <div class="faq-dark-answer">
+                    <div class="faq-dark-answer-inner">O modelo e pré-pago, em pacotes escalonáveis, sem contrato e sem setup. Você paga proporcionalmente ao volume de operações monitoradas, relatórios gerados e consultas realizadas. Isso permite que instituições de todos os portes — de fintechs a bancos — acessem compliance automatizado sem investimento inicial alto.</div>
+                </div>
+            </div>
+
+            <div class="faq-dark-item">
+                <button class="faq-dark-question">
+                    O que são os demonstrativos DLI e DLO e como automatizar o envio ao Banco Central?
+                    <span class="faq-dark-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+                </button>
+                <div class="faq-dark-answer">
+                    <div class="faq-dark-answer-inner">O DLI (Demonstrativo de Limites de Exposicao) e o DLO (Demonstrativo de Limites Operacionais) são relatórios mensais obrigatórios ao Bacen que monitoram a exposicao a riscos e o cumprimento de limites prudenciais. A BIBlue consolida automaticamente os dados de crédito e risco necessários para gerar esses demonstrativos, eliminando o levantamento manual. <a href="/blog/avaliacao-crédito/dli-e-dlo-pilares-da-gestão-de-riscos-e-limites-no-banco-central" style="color: #00d4ff;">Leia o guia completo sobre DLI e DLO</a>.</div>
+                </div>
+            </div>
+
+            <div class="faq-dark-item">
+                <button class="faq-dark-question">
+                    Como a BIBlue ajuda no envio dos documentos 3040, 3044 e 4010 ao Banco Central?
+                    <span class="faq-dark-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+                </button>
+                <div class="faq-dark-answer">
+                    <div class="faq-dark-answer-inner">Os documentos 3040 e 3044 referem-se ao reporte de dados ao SCR (Sistema de Informacoes de Crédito), e o 4010 e o Balancete Patrimonial Analitico — todos obrigatórios mensalmente. A plataforma da BIBlue estrutura os dados de operações de crédito e risco no formato exigido pelo Bacen, reduzindo inconsistencias e o risco de penalidades. <a href="/blog/avaliacao-crédito/documento-3040-3044-4010-bacen-guia-de-riscos-e-limites" style="color: #00d4ff;">Entenda os documentos 3040, 3044 e 4010</a>.</div>
+                </div>
+            </div>
+
+            <div class="faq-dark-item">
+                <button class="faq-dark-question">
+                    O que são os CADOCs contabeis 4010, 4016 e 4111 e o que muda com o novo COSIF?
+                    <span class="faq-dark-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+                </button>
+                <div class="faq-dark-answer">
+                    <div class="faq-dark-answer-inner">O CADOC 4010 e o balancete patrimonial, o 4016 são as demonstracoes financeiras e o 4111 traz saldos contabeis diarios. Com a reestruturacao do COSIF em 2025 (1.967 novas contas), muitas instituições enfrentam dificuldades no mapeamento. A automação de compliance da BIBlue garante que os dados sigam a nova estrutura de contas sem retrabalho manual. <a href="/blog/avaliacao-crédito/cadoc-4010-4016-4111-banco-central-cosif-2025-guia-pratico" style="color: #00d4ff;">Veja o guia pratico dos CADOCs contabeis</a>.</div>
+                </div>
+            </div>
+
+            <div class="faq-dark-item">
+                <button class="faq-dark-question">
+                    O que e o DRO (Documento 5050) e por que instituições S3 precisam agir agora?
+                    <span class="faq-dark-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+                </button>
+                <div class="faq-dark-answer">
+                    <div class="faq-dark-answer-inner">O DRO (Demonstrativo de Risco Operacional) e o documento obrigatório para instituições S1 a S3 que reporta perdas operacionais ao Banco Central. O prazo para S3 e junho de 2026 e exige 5 anos de histórico de perdas. Instituições que não comecaram a coleta de dados já estão em atraso. A BIBlue automatiza a estruturacao desses dados operacionais. <a href="/blog/avaliacao-crédito/dro-documento-5050-banco-central-guia-de-risco-operacional" style="color: #00d4ff;">Leia o guia completo do DRO</a>.</div>
+                </div>
+            </div>
+
+            <div class="faq-dark-item">
+                <button class="faq-dark-question">
+                    Como a Resolucao 4966 (IFRS 9) impacta o compliance de crédito da minha instituicao?
+                    <span class="faq-dark-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+                </button>
+                <div class="faq-dark-answer">
+                    <div class="faq-dark-answer-inner">A Resolucao 4966 substituiu o modelo de provisao PCLD pelo PPEARC (perda esperada), alinhado ao IFRS 9. Sua instituicao precisa classificar operações em estagios (Stage 1, 2 e 3) e calcular provisoes prospectivas — o que exige dados de crédito granulares e atualizados. A BIBlue fornece essa base de dados em tempo real, facilitando a conformidade regulatoria. <a href="/blog/avaliacao-crédito/resolucao-4966-e-ifrs-9-perda-esperada-para-cooperativas-e-fintechs" style="color: #00d4ff;">Entenda o impacto da Resolucao 4966</a>.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================
+     14. SCHEMA.ORG
+     ============================================ -->
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "BIBlue Compliance Regulatorio Automatizado",
+    "description": "Plataforma SaaS para automacao de compliance regulatorio: relatorios Bacen (CADOC, SCR, COS), comunicacoes COAF/UIF, monitoramento PEP continuo, gestao LGPD e dashboards de auditoria.",
+    "url": "https://biblue.com.br/casos-de-uso/compliance-regulatorio",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "BRL",
+        "description": "Sem custo de setup. Cobranca por uso."
+    },
+    "provider": {
+        "@type": "Organization",
+        "name": "BIBlue",
+        "legalName": "Biblue Softwares de Integracao",
+        "url": "https://biblue.com.br"
+    },
+    "featureList": [
+        "Relatorios automaticos ao Bacen (CADOC, SCR, COS)",
+        "Comunicacao automatizada ao COAF/UIF",
+        "Monitoramento continuo de PEP e sancoes",
+        "Gestao LGPD com trilha de auditoria",
+        "Alertas de mudancas regulatorias por segmento",
+        "Politicas de retencao de documentos automatizadas",
+        "Dashboards de compliance em tempo real",
+        "Integracao com TOTVS, SAP e Salesforce"
+    ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+        {
+            "@type": "Question",
+            "name": "Quais relatorios ao Bacen a BIBlue automatiza?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "A plataforma automatiza a geracao e validacao dos principais relatorios regulatorios, incluindo CADOC (Catalogo de Documentos), SCR (Sistema de Informacoes de Credito) e COS (Controles Operacionais e de Seguranca). Os templates sao pre-configurados e atualizados automaticamente conforme mudancas nas normas do Banco Central."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Como funciona a comunicacao automatica ao COAF/UIF?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "O sistema aplica regras configuraveis por segmento para detectar operacoes atipicas ou suspeitas em tempo real. Quando uma operacao atinge os criterios definidos, um alerta e gerado automaticamente para a equipe de compliance, que pode revisar e gerar a comunicacao ao COAF/UIF diretamente pela plataforma."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "O monitoramento PEP e feito apenas no onboarding?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Nao. A BIBlue realiza monitoramento continuo 24/7 durante todo o ciclo de vida do cliente, incluindo verificacao periodica contra listas de Pessoas Expostas Politicamente, sancoes internacionais e listas restritivas, com alertas automaticos quando ha mudanca de status."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Como a BIBlue ajuda na conformidade com a LGPD?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "A plataforma oferece gestao centralizada de consentimentos, atendimento a direitos de titulares, politicas de retencao de dados com expurgo automatizado e trilha de auditoria completa, pronta para fiscalizacoes da ANPD."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Como funciona a auditoria com a BIBlue?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Cada acao regulatoria gera automaticamente uma trilha de auditoria com timestamp, responsavel, dados antes/depois e evidencias. A plataforma oferece templates prontos para auditorias do Bacen com checklist de conformidade."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Quais politicas de retencao de documentos a plataforma suporta?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "A BIBlue permite configurar politicas de retencao por tipo de documento e regulamentacao aplicavel, com controle automatico de prazos, alertas antes do vencimento e expurgo programado conforme regras do Bacen, CVM e LGPD."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "A plataforma se integra com sistemas existentes como TOTVS e SAP?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Sim. A BIBlue oferece API REST documentada com Swagger e conectores prontos para TOTVS, SAP e Salesforce. A integracao media leva 15 dias sem exigir troca de sistemas."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Como funciona o modelo de cobranca?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "O modelo e pré-pago, em pacotes escalonáveis, sem contrato e sem setup. Voce paga proporcionalmente ao volume de operacoes monitoradas, relatorios gerados e consultas realizadas."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "O que sao os demonstrativos DLI e DLO e como automatizar o envio ao Banco Central?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "O DLI (Demonstrativo de Limites de Exposicao) e o DLO (Demonstrativo de Limites Operacionais) sao relatorios mensais obrigatorios ao Bacen que monitoram a exposicao a riscos e o cumprimento de limites prudenciais. A BIBlue consolida automaticamente os dados necessarios para gerar esses demonstrativos."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Como a BIBlue ajuda no envio dos documentos 3040, 3044 e 4010 ao Banco Central?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Os documentos 3040 e 3044 referem-se ao reporte de dados ao SCR (Sistema de Informacoes de Credito), e o 4010 e o Balancete Patrimonial Analitico. A plataforma estrutura os dados de credito e risco no formato exigido pelo Bacen, reduzindo inconsistencias e penalidades."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "O que sao os CADOCs contabeis 4010, 4016 e 4111 e o que muda com o novo COSIF?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "O CADOC 4010 e o balancete patrimonial, o 4016 sao demonstracoes financeiras e o 4111 traz saldos contabeis diarios. Com a reestruturacao do COSIF em 2025 (1.967 novas contas), a automacao garante que os dados sigam a nova estrutura sem retrabalho manual."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "O que e o DRO (Documento 5050) e por que instituicoes S3 precisam agir agora?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "O DRO e o Demonstrativo de Risco Operacional obrigatorio para instituicoes S1 a S3. O prazo para S3 e junho de 2026, exigindo 5 anos de historico de perdas operacionais. Instituicoes que nao comecaram a coleta de dados ja estao em atraso."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Como a Resolucao 4966 (IFRS 9) impacta o compliance de credito da minha instituicao?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "A Resolucao 4966 substituiu o modelo de provisao PCLD pelo PPEARC (perda esperada), alinhado ao IFRS 9. Sua instituicao precisa classificar operacoes em estagios (Stage 1, 2 e 3) e calcular provisoes prospectivas, exigindo dados de credito granulares e atualizados em tempo real."
+            }
+        }
+    ]
+}
+</script>
+
+    <!-- CTA Final -->
+        <section class="cta-section">
+        <h2>Pronto para automatizar seus processos?</h2>
+        <p>Agende uma demonstração e descubra como os plugins e HUBs da BIBlue podem acelerar sua operação.</p>
+        <div class="cta-buttons">
+            <a href="/contato" class="btn btn-primary">Agendar Demonstração</a>
+            <a href="https://wa.me/554330472255?text=Ol%C3%A1!%20Gostaria%20de%20saber%20mais%20sobre%20as%20solu%C3%A7%C3%B5es%20BIBlue." class="btn btn-outline" target="_blank" rel="noopener">Falar com Especialista</a>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <!-- Bloco Esquerdo: Logo, Descrição, Social, Escritórios -->
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <img src="/images/logo-biblue.svg" alt="BIBlue" height="32" loading="lazy" decoding="async">
+                    </div>
+                    <p class="footer-description">HUB de automação para instituições financeiras. Antifraude, Análise de Crédito, Registro de Contratos e Multicálculo de Seguros.</p>
+                    <div class="footer-social">
+                        <a href="https://www.linkedin.com/company/biblue/" class="social-link" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M4.98 2C3.88 2 3 2.88 3 3.98V16.02C3 17.12 3.88 18 4.98 18H17.02C18.12 18 19 17.12 19 16.02V3.98C19 2.88 18.12 2 17.02 2H4.98ZM7.5 8.5H9.5V14.5H7.5V8.5ZM8.5 6C8.1 6 7.75 6.15 7.5 6.4C7.25 6.65 7.1 7 7.1 7.4C7.1 7.8 7.25 8.15 7.5 8.4C7.75 8.65 8.1 8.8 8.5 8.8C8.9 8.8 9.25 8.65 9.5 8.4C9.75 8.15 9.9 7.8 9.9 7.4C9.9 7 9.75 6.65 9.5 6.4C9.25 6.15 8.9 6 8.5 6ZM11 8.5H13V9.3C13.3 8.8 14 8.5 14.5 8.5C16.4 8.5 17 9.7 17 11.5V14.5H15V11.8C15 10.9 14.8 10.3 14 10.3C13 10.3 13 11.1 13 11.8V14.5H11V8.5Z"/>
+                            </svg>
+                        </a>
+                        <a href="https://www.instagram.com/biblue.tech/" class="social-link" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M10 6.5C8.067 6.5 6.5 8.067 6.5 10C6.5 11.933 8.067 13.5 10 13.5C11.933 13.5 13.5 11.933 13.5 10C13.5 8.067 11.933 6.5 10 6.5ZM10 12.5C8.622 12.5 7.5 11.378 7.5 10C7.5 8.622 8.622 7.5 10 7.5C11.378 7.5 12.5 8.622 12.5 10C12.5 11.378 11.378 12.5 10 12.5ZM14.5 6.375C14.5 6.858 14.108 7.25 13.625 7.25C13.142 7.25 12.75 6.858 12.75 6.375C12.75 5.892 13.142 5.5 13.625 5.5C14.108 5.5 14.5 5.892 14.5 6.375ZM17.475 7.25C17.417 6.075 17.142 5.025 16.258 4.142C15.375 3.258 14.325 2.983 13.15 2.925C11.942 2.858 8.058 2.858 6.85 2.925C5.675 2.983 4.625 3.258 3.742 4.142C2.858 5.025 2.583 6.075 2.525 7.25C2.458 8.458 2.458 12.342 2.525 13.55C2.583 14.725 2.858 15.775 3.742 16.658C4.625 17.542 5.675 17.817 6.85 17.875C8.058 17.942 11.942 17.942 13.15 17.875C14.325 17.817 15.375 17.542 16.258 16.658C17.142 15.775 17.417 14.725 17.475 13.55C17.542 12.342 17.542 8.458 17.475 7.25ZM16 14.842C15.742 15.508 15.208 16.042 14.542 16.3C13.567 16.658 11.342 16.567 10 16.567C8.658 16.567 6.433 16.658 5.458 16.3C4.792 16.042 4.258 15.508 4 14.842C3.642 13.867 3.733 11.642 3.733 10.3C3.733 8.958 3.642 6.733 4 5.758C4.258 5.092 4.792 4.558 5.458 4.3C6.433 3.942 8.658 4.033 10 4.033C11.342 4.033 13.567 3.942 14.542 4.3C15.208 4.558 15.742 5.092 16 5.758C16.358 6.733 16.267 8.958 16.267 10.3C16.267 11.642 16.358 13.867 16 14.842Z"/>
+                            </svg>
+                        </a>
+                        <a href="https://wa.me/554330472255" class="social-link" aria-label="WhatsApp" target="_blank" rel="noopener noreferrer">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                            </svg>
+                        </a>
+                    </div>
+                    <div class="footer-offices">
+                        <div class="footer-office">
+                            <div class="footer-office-header">
+                                <span class="footer-office-flag">&#x1F1E7;&#x1F1F7;</span>
+                                <strong>Brasil</strong>
+                            </div>
+                            <a href="tel:+554330472255" class="footer-office-phone">(43) 3047-2255</a>
+                            <p>Rua Nagib Daher, 580<br>Sala 4 - 1&ordm; Andar<br>Centro, Apucarana - PR</p>
+                        </div>
+                        <div class="footer-office">
+                            <div class="footer-office-header">
+                                <span class="footer-office-flag">&#x1F1F5;&#x1F1FE;</span>
+                                <strong>Paraguay</strong>
+                            </div>
+                            <p>Domingo Robledo<br>Villa Florida<br>Salto Del Guair&aacute;</p>
+                            <a href="tel:+5543999559686" class="footer-office-phone">+55 439 9955 9686</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bloco Direito: Links + Cards de Soluções -->
+                <div class="footer-right">
+                    <div class="footer-links-row">
+                        <div class="footer-column">
+                            <h4 class="footer-title">Casos de Uso</h4>
+                            <ul class="footer-links">
+                                <li><a href="/casos-de-uso/seguros-embarcados">Seguros Embarcados</a></li>
+                                <li><a href="/casos-de-uso/onboarding-digital">Onboarding Digital / KYC</a></li>
+                                <li><a href="/casos-de-uso/cobranca-recuperacao">Cobrança e Recuperação</a></li>
+                                <li><a href="/casos-de-uso/registro-recebiveis">Registro de Recebíveis</a></li>
+                                <li><a href="/casos-de-uso/compliance-regulatorio">Compliance Regulatório</a></li>
+                            </ul>
+                        </div>
+                        <div class="footer-column">
+                            <h4 class="footer-title">Segmentos</h4>
+                            <ul class="footer-links">
+                                <li><a href="/segmentos/cooperativas-de-credito">Cooperativas de Crédito</a></li>
+                                <li><a href="/segmentos/financeiras-de-veiculos">Financeiras de Veículos</a></li>
+                                <li><a href="/segmentos/fintechs">Fintechs</a></li>
+                                <li><a href="/segmentos/bancos-digitais">Bancos Digitais</a></li>
+                                <li><a href="/segmentos/seguradoras">Seguradoras e Corretoras</a></li>
+                            </ul>
+                        </div>
+                        <div class="footer-column">
+                            <h4 class="footer-title">Empresa</h4>
+                            <ul class="footer-links">
+                                <li><a href="/por-que-biblue">Por que BIBlue</a></li>
+                                <li><a href="/sobre">Sobre nós</a></li>
+                                <li><a href="/cases/">Cases de Sucesso</a></li>
+                                <li><a href="/materiais">Recursos</a></li>
+                                <li><a href="/blog/">Blog</a></li>
+                                <li><a href="/contato">Contato</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="footer-solutions">
+                        <h3 class="footer-solutions-title">Nossas Soluções</h3>
+                        <div class="footer-solutions-grid">
+                            <a href="/solucoes/analise-credito-antifraude" class="footer-solution-card" style="--card-accent: #3B82F6;">
+                                <div class="footer-solution-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    </svg>
+                                </div>
+                                <div class="footer-solution-info">
+                                    <span class="footer-solution-name">Crédito e Antifraude</span>
+                                    <span class="footer-solution-desc">Análise em bureaus integrados</span>
+                                </div>
+                                <svg class="footer-solution-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            </a>
+                            <a href="/solucoes/registro-contratos" class="footer-solution-card" style="--card-accent: #7C3AED;">
+                                <div class="footer-solution-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                                    </svg>
+                                </div>
+                                <div class="footer-solution-info">
+                                    <span class="footer-solution-name">Registro de Contratos</span>
+                                    <span class="footer-solution-desc">SNG, CETIP e 27 Detrans</span>
+                                </div>
+                                <svg class="footer-solution-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            </a>
+                            <a href="/solucoes/multicalculo-seguros" class="footer-solution-card" style="--card-accent: #10B981;">
+                                <div class="footer-solution-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                                    </svg>
+                                </div>
+                                <div class="footer-solution-info">
+                                    <span class="footer-solution-name">Multicálculo Seguros</span>
+                                    <span class="footer-solution-desc">diversas seguradoras simultâneas</span>
+                                </div>
+                                <svg class="footer-solution-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            </a>
+                            <a href="/solucoes/hub-integrador" class="footer-solution-card" style="--card-accent: #06B6D4;">
+                                <div class="footer-solution-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                                    </svg>
+                                </div>
+                                <div class="footer-solution-info">
+                                    <span class="footer-solution-name">HUB Integrador</span>
+                                    <span class="footer-solution-desc">Uma API, 70+ plataformas</span>
+                                </div>
+                                <svg class="footer-solution-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            </a>
+                            <a href="/integracao/desenvolvedores" class="footer-solution-card" style="--card-accent: #F59E0B;">
+                                <div class="footer-solution-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                                    </svg>
+                                </div>
+                                <div class="footer-solution-info">
+                                    <span class="footer-solution-name">Documentação API</span>
+                                    <span class="footer-solution-desc">Swagger, sandbox e SDKs</span>
+                                </div>
+                                <svg class="footer-solution-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            </a>
+                            <a href="/contato" class="footer-solution-card footer-solution-card--cta" style="--card-accent: #EF4444;">
+                                <div class="footer-solution-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                                    </svg>
+                                </div>
+                                <div class="footer-solution-info">
+                                    <span class="footer-solution-name">Fale Conosco</span>
+                                    <span class="footer-solution-desc">Agende uma demonstração</span>
+                                </div>
+                                <svg class="footer-solution-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom-bar">
+                <p class="footer-copyright">&copy; 2026 Biblue Softwares de Integração. Todos os direitos reservados.</p>
+                <div class="footer-group-logos">
+                    Glass Group &middot; Glass Auto &middot; Go Plataforma &middot; <strong>BIBlue</strong>
+                </div>
+                <div class="footer-legal">
+                    <a href="/politicas/termos">Termos de Uso</a>
+                    <a href="/politicas/privacidade">Privacidade</a>
+                    <a href="/politicas/cookies">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- WhatsApp Float -->
+    <a href="https://wa.me/554330472255?text=Ol%C3%A1!%20Gostaria%20de%20saber%20mais%20sobre%20as%20solu%C3%A7%C3%B5es%20BIBlue." class="whatsapp-float" target="_blank" rel="noopener" aria-label="WhatsApp" data-cta="floating_whatsapp" data-cta-text="floating_whatsapp">
+        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    </a>
+
+    <!-- Cookies Banner -->
+    <div class="cookies-banner">
+        <div class="cookies-inner">
+            <div class="cookies-text">
+                Utilizamos cookies para melhorar sua experiência. Ao continuar navegando, você concorda com nossa
+                <a href="/politicas/privacidade">Política de Privacidade</a>.
+            </div>
+            <div class="cookies-buttons">
+                <button class="cookies-btn cookies-btn-accept">Aceitar</button>
+                <button class="cookies-btn cookies-btn-reject">Recusar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS -->
+    <script src="/js/main.js"></script>
+
+    <!-- GA4 Global CTA Tracking -->
+    <script>
+    (function() {
+        window.dataLayer = window.dataLayer || [];
+
+        // Helper: determina categoria do destino do link (contato/whatsapp/solucao/material/outro)
+        function classifyDestination(href) {
+            if (!href) return 'unknown';
+            if (href.indexOf('wa.me') !== -1 || href.indexOf('whatsapp') !== -1) return 'whatsapp';
+            if (href.indexOf('/contato') !== -1 || href.indexOf('agendar-demo') !== -1) return 'contato';
+            if (href.indexOf('/solucoes/') !== -1) return 'solucao';
+            if (href.indexOf('/segmentos/') !== -1) return 'segmento';
+            if (href.indexOf('/materiais') !== -1 || href.indexOf('.pdf') !== -1) return 'material';
+            if (href.indexOf('/blog') !== -1) return 'blog';
+            if (href.indexOf('/integracao/') !== -1) return 'integracao';
+            if (href.indexOf('mailto:') !== -1) return 'email';
+            if (href.indexOf('tel:') !== -1) return 'telefone';
+            return 'outro';
+        }
+
+        // Helper: obtem label do CTA (data-cta-text, texto limpo ou fallback)
+        function getCtaLabel(el) {
+            if (el.dataset && el.dataset.ctaText) return el.dataset.ctaText;
+            var txt = (el.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+            return txt.substring(0, 60) || 'sem_texto';
+        }
+
+        // Helper: obtem seção da página onde o CTA vive (hero, solucoes, segmentos, etc.)
+        function getCtaSection(el) {
+            if (el.dataset && el.dataset.cta) return el.dataset.cta;
+            var section = el.closest('section, header, footer');
+            if (section) {
+                return section.id || section.className.split(' ')[0] || 'unknown';
+            }
+            return 'unknown';
+        }
+
+        // Global click tracking — captura TODOS os CTAs primarios, secundarios e soft.
+        // NAO inclui .contact-alt-card nem .contact-submit (tem listeners especificos
+        // em contato.php que disparam contact_channel_click e formulario).
+        var ctaSelectors = [
+            'a.btn',                      // Todos os botoes (btn-primary, btn-outline, btn-light)
+            'button.btn',
+            'a.product-link',             // Links "Explorar solução"
+            'a.metrics-cta-link',         // CTA WhatsApp das metricas
+            'a.segment-chip',             // Cards de segmento na home
+            'a[href*="/contato"]',        // Qualquer link para /contato
+            'a[href*="wa.me"]',           // Qualquer link WhatsApp
+            'a[href*="/materiais"]',      // Links pra materiais ricos
+            'a[data-cta]'                 // Qualquer elemento com data-cta declarado
+        ].join(', ');
+
+        var trackedElements = new WeakSet();
+        document.querySelectorAll(ctaSelectors).forEach(function(el) {
+            if (trackedElements.has(el)) return;  // Evita double-binding
+            trackedElements.add(el);
+
+            el.addEventListener('click', function() {
+                var href = el.href || el.getAttribute('href') || '';
+                var destination = classifyDestination(href);
+                var isWhatsApp = destination === 'whatsapp';
+
+                dataLayer.push({
+                    'event': isWhatsApp ? 'contact_whatsapp' : 'cta_click',
+                    'event_category': 'cta',
+                    'event_label': getCtaLabel(el),
+                    'cta_section': getCtaSection(el),
+                    'cta_destination': destination,
+                    'cta_url': href,
+                    'page_path': window.location.pathname
+                });
+            });
+        });
+
+        // Footer solution cards (mantido — ja tinha tracking proprio)
+        document.querySelectorAll('.footer-solution-card').forEach(function(card) {
+            if (trackedElements.has(card)) return;
+            trackedElements.add(card);
+            card.addEventListener('click', function() {
+                var name = card.querySelector('.footer-solution-name');
+                if (name) {
+                    dataLayer.push({
+                        'event': 'footer_solution_click',
+                        'event_category': 'navegacao',
+                        'event_label': name.textContent.trim().toLowerCase()
+                    });
+                }
+            });
+        });
+
+        // Returning visitor detection
+        (function() {
+            var visits = parseInt(localStorage.getItem('biblue_visits') || '0') + 1;
+            localStorage.setItem('biblue_visits', visits);
+            localStorage.setItem('biblue_last_visit', new Date().toISOString());
+            if (visits > 1) {
+                dataLayer.push({
+                    'event': 'returning_visitor',
+                    'event_category': 'engajamento',
+                    'event_label': String(visits)
+                });
+            }
+        })();
+
+        // Audience tracking — identifica interesse por vertical, segmento e categoria de blog
+        (function() {
+            var path = window.location.pathname.replace(/^\/BIBlue/, '');
+            var slugMatch;
+
+            // vertical_view em /solucoes/<nome>
+            if ((slugMatch = path.match(/^\/solucoes\/([\w-]+)/))) {
+                var verticalMap = {
+                    'analise-credito-antifraude': 'credito',
+                    'registro-contratos': 'registro',
+                    'multicalculo-seguros': 'seguros',
+                    'hub-integrador': 'hub',
+                    'compliance-regulatorio': 'compliance'
+                };
+                var vertical = verticalMap[slugMatch[1]] || slugMatch[1];
+                dataLayer.push({
+                    'event': 'vertical_view',
+                    'event_category': 'interesse',
+                    'event_label': vertical,
+                    'vertical': vertical,
+                    'page_path': path
+                });
+                // Persona scoring — credito/registro = Carla, seguros = Marcos, hub = Rodrigo, compliance = Patricia
+                var personaHint = { credito: 'carla', registro: 'carla', seguros: 'marcos', hub: 'rodrigo', compliance: 'patricia' }[vertical];
+                if (personaHint) incrementPersonaScore(personaHint);
+            }
+
+            // segment_view em /segmentos/<nome>
+            else if ((slugMatch = path.match(/^\/segmentos\/([\w-]+)/))) {
+                var segment = slugMatch[1];
+                dataLayer.push({
+                    'event': 'segment_view',
+                    'event_category': 'interesse',
+                    'event_label': segment,
+                    'segment': segment,
+                    'page_path': path
+                });
+                var segPersona = {
+                    'financeiras-de-veiculos': 'carla',
+                    'cooperativas-de-credito': 'carla',
+                    'bancos-digitais': 'carla',
+                    'fintechs': 'rodrigo',
+                    'seguradoras': 'marcos'
+                }[segment];
+                if (segPersona) incrementPersonaScore(segPersona);
+            }
+
+            // blog_view em /blog/<categoria>/<slug>
+            else if ((slugMatch = path.match(/^\/blog\/([\w-]+)/))) {
+                var category = slugMatch[1];
+                dataLayer.push({
+                    'event': 'blog_view',
+                    'event_category': 'conteudo',
+                    'event_label': category,
+                    'blog_category': category,
+                    'page_path': path
+                });
+                var blogPersona = {
+                    'avaliacao-credito': 'carla',
+                    'registro-contrato': 'carla',
+                    'antifraude-seguranca': 'patricia',
+                    'seguros': 'marcos',
+                    'integracoes': 'rodrigo'
+                }[category];
+                if (blogPersona) incrementPersonaScore(blogPersona);
+            }
+
+            // integracao/desenvolvedores = Rodrigo
+            if (path.match(/^\/integracao\//)) incrementPersonaScore('rodrigo');
+
+            // Dispara persona_inferred apenas se score claro (>= 2 hits na mesma persona)
+            function incrementPersonaScore(p) {
+                try {
+                    var scores = JSON.parse(localStorage.getItem('biblue_persona_scores') || '{}');
+                    scores[p] = (scores[p] || 0) + 1;
+                    localStorage.setItem('biblue_persona_scores', JSON.stringify(scores));
+
+                    var max = Math.max.apply(null, Object.values(scores));
+                    if (max >= 2) {
+                        var topPersona = Object.keys(scores).find(function(k) { return scores[k] === max; });
+                        var lastFired = localStorage.getItem('biblue_persona_last_fired');
+                        if (lastFired !== topPersona) {
+                            localStorage.setItem('biblue_persona_last_fired', topPersona);
+                            dataLayer.push({
+                                'event': 'persona_inferred',
+                                'event_category': 'audiencia',
+                                'event_label': topPersona,
+                                'persona': topPersona,
+                                'persona_score': max
+                            });
+                        }
+                    }
+                } catch (e) { /* localStorage bloqueado, ignora */ }
+            }
+        })();
+
+        // Exit intent detection (mouse leaves viewport top)
+        var exitFired = false;
+        document.addEventListener('mouseout', function(e) {
+            if (!exitFired && e.clientY < 5 && e.relatedTarget == null) {
+                exitFired = true;
+                dataLayer.push({
+                    'event': 'exit_intent',
+                    'event_category': 'abandono',
+                    'event_label': document.title
+                });
+            }
+        });
+
+        // Tab abandon (user switches tab for 30s+)
+        var hiddenAt = 0;
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                hiddenAt = Date.now();
+            } else if (hiddenAt > 0) {
+                var awaySeconds = Math.round((Date.now() - hiddenAt) / 1000);
+                if (awaySeconds >= 30) {
+                    dataLayer.push({
+                        'event': 'tab_abandon',
+                        'event_category': 'abandono',
+                        'event_label': String(awaySeconds)
+                    });
+                }
+                hiddenAt = 0;
+            }
+        });
+
+        // Idle abandon (no interaction for 120s)
+        var idleTimer = null;
+        function resetIdle() {
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(function() {
+                dataLayer.push({
+                    'event': 'idle_abandon',
+                    'event_category': 'abandono',
+                    'event_label': '120'
+                });
+            }, 120000);
+        }
+        ['mousemove', 'keydown', 'scroll', 'touchstart'].forEach(function(evt) {
+            document.addEventListener(evt, resetIdle, { passive: true, once: false });
+        });
+        resetIdle();
+
+        // Scroll depth tracking (10%, 20%, ... 100%)
+        var scrollThresholds = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+        var scrollFired = {};
+        window.addEventListener('scroll', function() {
+            var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            if (docHeight <= 0) return;
+            var scrollPercent = Math.round((scrollTop / docHeight) * 100);
+            for (var i = 0; i < scrollThresholds.length; i++) {
+                var t = scrollThresholds[i];
+                if (scrollPercent >= t && !scrollFired[t]) {
+                    scrollFired[t] = true;
+                    dataLayer.push({
+                        'event': 'scroll_depth',
+                        'event_category': 'engajamento',
+                        'event_label': t + '%',
+                        'scroll_percentage': t
+                    });
+                }
+            }
+        }, { passive: true });
+    })();
+    </script>
+</body>
+</html>
