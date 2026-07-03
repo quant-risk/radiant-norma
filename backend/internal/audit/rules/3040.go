@@ -343,17 +343,22 @@ func (S03Ocultacao) Apply(_ context.Context, _ *Doc3040) error {
 }
 
 // S04 — Crédito a liberar: não aplicabilidade.
-// Verifica se ClassOp com flag "crédito a liberar" tem Vencimentos zerados.
+//
+// Verifica operações com modalidade "Crédito a Liberar" (Mod inicia com
+// "0101") — essas operações não devem ter vencimentos preenchidos.
+//
+// TODO Sprint 5: validar contra catálogo BACEN o range exato de modalidades
+// que disparam essa regra (atualmente só testamos prefixo "0101").
 type S04CreditoALiberar struct{}
 
 func (S04CreditoALiberar) Code() string   { return "S04" }
 func (S04CreditoALiberar) Sheet() string  { return "Semântica" }
 func (S04CreditoALiberar) Severity() string { return "E" }
 func (S04CreditoALiberar) Apply(_ context.Context, doc *Doc3040) error {
-	// Se ClassOp tem faixa de crédito a liberar e há Vencimentos > 0, é erro.
-	// Faixa 0001 (crédito a liberar): vencimentos devem ser 0.
+	// Modalidade "Crédito a Liberar" (BACEN) tem prefixo "0101".
+	// Vencimentos devem ser zero — qualquer valor preenchido é erro.
 	for i, ag := range doc.Agregados {
-		if strings.HasPrefix(ag.Mod, "0101") { // crédito a liberar
+		if strings.HasPrefix(ag.Mod, "0101") {
 			v := ag.Vencimentos
 			if v.V110 != "0" || v.V120 != "0" || v.V150 != "0" || v.V160 != "0" || v.V165 != "0" {
 				return fmt.Errorf("Agreg[%d]: crédito a liberar (Mod=%s) com vencimentos > 0", i, ag.Mod)

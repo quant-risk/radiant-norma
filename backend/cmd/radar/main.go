@@ -79,12 +79,14 @@ func main() {
 	scan() // immediate
 
 	if *once {
+		svc.Close()
 		logger.Info("once mode: exiting")
 		return
 	}
 
 	ticker := time.NewTicker(*interval)
 	defer ticker.Stop()
+	defer svc.Close()
 
 	for {
 		select {

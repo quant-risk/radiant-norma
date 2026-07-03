@@ -91,6 +91,8 @@ func main() {
 		logger.Error("shutdown", "err", err)
 		os.Exit(1)
 	}
+	// Libera HTTP connections idle do Radar
+	radarSvc.Close()
 	logger.Info("bye")
 }
 

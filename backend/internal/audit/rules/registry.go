@@ -20,9 +20,6 @@ package rules
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"strings"
 )
 
 // Doc3040 é o documento CADOC 3040 parseado.
@@ -164,36 +161,4 @@ func Builtin3040() *Registry {
 	r.Register(S05LimiteCredito{})
 
 	return r
-}
-
-// --- Helpers compartilhados ---
-
-// parseInt converte string para int (retorna erro se vazio/inválido).
-func parseInt(s string) (int, error) {
-	if s == "" {
-		return 0, errors.New("campo vazio")
-	}
-	n := 0
-	for _, c := range s {
-		if c < '0' || c > '9' {
-			return 0, fmt.Errorf("não numérico: %q", s)
-		}
-		n = n*10 + int(c-'0')
-	}
-	return n, nil
-}
-
-// parseDecimal converte string para float64 (formato BACEN: vírgula ou ponto).
-func parseDecimal(s string) (float64, error) {
-	if s == "" {
-		return 0, errors.New("campo vazio")
-	}
-	// Substitui vírgula por ponto (BACEN usa vírgula em alguns contextos)
-	s = strings.ReplaceAll(s, ",", ".")
-	var f float64
-	_, err := fmt.Sscanf(s, "%f", &f)
-	if err != nil {
-		return 0, err
-	}
-	return f, nil
 }
