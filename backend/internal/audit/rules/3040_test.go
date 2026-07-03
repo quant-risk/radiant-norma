@@ -354,8 +354,12 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 	r := rules.Builtin3040()
 	codes := r.Codes()
 
+	// Sprint 6 v1.5.0 (W3): B01-B05 adicionadas como RawRule (rawRules map).
+	// Total agora: 5 raw + 25 tipadas = 30.
 	expectedCodigos := []string{
-		// Básicas
+		// Básicas raw (Sprint 6 v1.5.0 / W3)
+		"B01", "B02", "B03", "B04", "B05",
+		// Básicas tipadas
 		"B06", "B07", "B08", "B09", "B10",
 		"B11", "B12", "B13", "B14", "B15",
 		// Formato

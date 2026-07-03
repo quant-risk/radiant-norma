@@ -77,36 +77,84 @@ type Rule interface {
 	Apply(ctx context.Context, doc *Doc3040) error
 }
 
+// RawRule é a interface para regras que operam no XML bruto, sem parser
+// tipado. Usado para B01-B05 (básicas estruturais: declaração XML, tamanho).
+//
+// Sprint 6 v1.5.0 (W3): movidas do hardcode em audit/service.go::applyRegra
+// para registro unificado. Mantemos interface separada para evitar refactor
+// das 25 regras já portadas (que operam em *Doc3040 tipado).
+type RawRule interface {
+	Code() string
+	Sheet() string
+	Severity() string
+	ApplyRaw(ctx context.Context, xmlContent string) error
+}
+
+// RawRuleFunc adapter permite usar func como RawRule.
+type RawRuleFunc struct {
+	C        string
+	Sht      string
+	Sev      string
+	ApplyFn  func(ctx context.Context, xmlContent string) error
+}
+
+func (r RawRuleFunc) Code() string                       { return r.C }
+func (r RawRuleFunc) Sheet() string                      { return r.Sht }
+func (r RawRuleFunc) Severity() string                   { return r.Sev }
+func (r RawRuleFunc) ApplyRaw(ctx context.Context, s string) error {
+	return r.ApplyFn(ctx, s)
+}
+
 // Registry agrega regras indexadas por código.
 type Registry struct {
-	rules map[string]Rule
+	rules    map[string]Rule
+	rawRules map[string]RawRule
 }
 
 // NewRegistry cria um registry vazio.
 func NewRegistry() *Registry {
-	return &Registry{rules: make(map[string]Rule)}
+	return &Registry{
+		rules:    make(map[string]Rule),
+		rawRules: make(map[string]RawRule),
+	}
 }
 
-// Register adiciona uma regra.
+// Register adiciona uma regra tipada (*Doc3040).
 func (r *Registry) Register(rule Rule) {
 	r.rules[rule.Code()] = rule
 }
 
-// Get retorna a regra de um código (ou nil se não existir).
+// RegisterRaw adiciona uma regra que opera em XML bruto.
+//
+// Sprint 6 v1.5.0 (W3): usado para B01-B05 que não precisam de parser
+// tipado do 3040.
+func (r *Registry) RegisterRaw(rule RawRule) {
+	r.rawRules[rule.Code()] = rule
+}
+
+// Get retorna a regra tipada (Doc3040) por código.
 func (r *Registry) Get(code string) Rule {
 	return r.rules[code]
 }
 
-// Codes retorna todos os códigos registrados.
+// GetRaw retorna a regra raw (XML bruto) por código.
+func (r *Registry) GetRaw(code string) RawRule {
+	return r.rawRules[code]
+}
+
+// Codes retorna todos os códigos registrados (tipadas + raw).
 func (r *Registry) Codes() []string {
-	out := make([]string, 0, len(r.rules))
+	out := make([]string, 0, len(r.rules)+len(r.rawRules))
 	for k := range r.rules {
+		out = append(out, k)
+	}
+	for k := range r.rawRules {
 		out = append(out, k)
 	}
 	return out
 }
 
-// All retorna todas as regras.
+// All retorna todas as regras (tipadas — útil para inventário).
 func (r *Registry) All() []Rule {
 	out := make([]Rule, 0, len(r.rules))
 	for _, r := range r.rules {
@@ -115,17 +163,35 @@ func (r *Registry) All() []Rule {
 	return out
 }
 
+// AllRaw retorna todas as regras raw.
+func (r *Registry) AllRaw() []RawRule {
+	out := make([]RawRule, 0, len(r.rawRules))
+	for _, r := range r.rawRules {
+		out = append(out, r)
+	}
+	return out
+}
+
 // Builtin3040 retorna o registry com as regras 3040 implementadas.
 //
 // Cobre:
-//   - Básicas: B06-B15 (contadores, limites)
+//   - Básicas raw: B01-B05 (opera em XML bruto, sem parser tipado)
+//   - Básicas tipadas: B06-B15 (contadores, limites)
 //   - Formato: F01-F05 (taxa, data, contrato, conglomerado, RefBacen)
 //   - Campos Obrigatórios: C01-C05 (obrigatoriedade condicional)
 //   - Semântica: S01-S05 (semântica geral)
 //
-// Total: 25 regras. Adicionar mais em sprints seguintes.
+// Total: 25 regras tipadas + 5 regras raw = 30 entradas no registry.
+// Sprint 6 v1.5.0 (W3): B01-B05 movidas do hardcode em service.go para cá.
 func Builtin3040() *Registry {
 	r := NewRegistry()
+
+	// Básicas raw B01-B05 (Sprint 6 v1.5.0 / W3)
+	r.RegisterRaw(B01ArquivoXMLValido{})
+	r.RegisterRaw(B02EstruturaBasica{})
+	r.RegisterRaw(B03TamanhoArquivo{})
+	r.RegisterRaw(B04CodificacaoDeclarada{})
+	r.RegisterRaw(B05ArquivoNaoVazio{})
 
 	// Básicas B06-B15
 	r.Register(B06RemessaIncompativel{})

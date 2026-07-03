@@ -15,7 +15,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -317,9 +316,14 @@ func expectedRootTag(cadoc string) string {
 
 // applyRegra aplica UMA regra específica ao documento.
 //
-// Sprint 4: usa rules.Registry para lookup. Se a regra está registrada
+// Sprint 4+: usa rules.Registry para lookup. Se a regra está registrada
 // (Básicas, Formato, Campos Obrigatórios, Semântica), executa via parser
-// tipado. Caso contrário, fallback para heurísticas inline (B01-B05).
+// tipado. Caso contrário, fallback para heurísticas inline (B01-B05 em
+// v1.4.x).
+//
+// Sprint 6 v1.5.0 (W3): B01-B05 movidas para o registry via interface
+// RawRule (operam em XML bruto, sem parser tipado). Mantém compat com
+// 25 regras tipadas já existentes (B06+).
 //
 // is3040 e cachedDoc permitem cachear o ParseDoc3040 (perf: 25 regras
 // não precisam parsear 25x).
@@ -332,36 +336,15 @@ func (s *Service) applyRegra(
 ) error {
 	content := string(req.XML)
 
-	// B01-B05: regras básicas que rodam no conteúdo XML bruto (sem parser tipado)
-	if c.Codigo == "B01" {
-		// B01: arquivo XML deve ser válido (já checado em L1)
-		return nil
-	}
-	if c.Codigo == "B02" {
-		return nil
-	}
-	if c.Codigo == "B03" {
-		return nil
-	}
-	if c.Codigo == "B04" {
-		// B04: codificação deve estar declarada
-		if !strings.HasPrefix(strings.TrimSpace(content), "<?xml") {
-			return errors.New("arquivo não começa com declaração <?xml")
+	// 1ª tentativa: regra raw (B01-B05, opera em XML bruto)
+	// Sprint 6 v1.5.0 (W3): removido hardcode "if c.Codigo == 'B01'..."
+	if s.registry != nil {
+		if rawRule := s.registry.GetRaw(c.Codigo); rawRule != nil {
+			return rawRule.ApplyRaw(ctx, content)
 		}
-		return nil
-	}
-	if c.Codigo == "B05" {
-		// B05: arquivo não pode estar vazio/muito pequeno
-		if len(req.XML) == 0 {
-			return errors.New("arquivo XML está vazio")
-		}
-		if len(req.XML) < 50 {
-			return fmt.Errorf("arquivo XML tem apenas %d bytes", len(req.XML))
-		}
-		return nil
 	}
 
-	// Regras portadas (Sprint 4+): tenta resolver via registry
+	// 2ª tentativa: regra tipada (opera em *Doc3040)
 	if s.registry != nil && is3040 {
 		rule := s.registry.Get(c.Codigo)
 		if rule != nil {
