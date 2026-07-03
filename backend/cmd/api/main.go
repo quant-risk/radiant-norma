@@ -15,6 +15,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
 	"github.com/fortvna/radiant-norma/backend/internal/db"
+	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
 )
@@ -47,8 +48,9 @@ func main() {
 	audSvc := audit.New(d)
 	audLog := auditlog.New(d)
 	staClient := sta.NewStubClient()
+	radarSvc := radar.New(d, 6*time.Hour)
 
-	srv := api.NewServer(schReg, audSvc, audLog, staClient)
+	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc)
 	handler := srv.Router()
 
 	httpSrv := &http.Server{

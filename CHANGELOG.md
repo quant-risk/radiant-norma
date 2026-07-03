@@ -2,6 +2,134 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v1.3.0 — 2026-07-03 (Sprint 4: Honesty Patch + Audit utilizável + Radar)
+
+### 🎯 Objetivo da sprint
+Fechar **5 hollow stubs** da Sprint 3 detectados em validação end-to-end,
+portar **25 regras semânticas do 3040** com parser XML tipado, e implementar
+o **Radar Regulatório** (worker que detecta mudanças de leiaute — diferencial
+first-mover da Radiant Norma).
+
+### ✅ Entregas
+
+#### 🔴 P0 — Honesty Patch (5/5)
+Sprint 3 fechou o ciclo dados→serviço mas, ao validar end-to-end com curl
+fresh sandbox, descobrimos 5 hollow stubs que a CHANGELOG não declarava.
+Sprint 4 começa consertando a casa:
+
+| Bug | Fix |
+|---|---|
+| `/v1/validate` exigia `cadoc_code` no JSON mas docs/clientes enviavam `cadoc` | `audit.ValidationRequest.UnmarshalJSON` custom — aceita ambos |
+| Apenas 5/320 regras 3040 implementadas | Sprint 4 P1 (25 regras) |
+| `cmd/worker/` diretório vazio (anunciado mas não codado) | `cmd/worker/main.go` (180 linhas) — processa envios pending do DB |
+| `/v1/sta/submit` lia params da URL, inconsistente com resto da API | `sta.Submission` com JSON tags + handler unificado (body JSON preferencial, query retrocompat) |
+| Tabela `envios` rejeitava INSERT silenciosamente (FK pra `ifs` vazia) | Seed popula 2 IFs demo + migration 002 adiciona `xml_content` e `zip_content` |
+
+#### 🟡 P1 — Audit utilizável (B1: 25 regras 3040)
+- **`internal/audit/rules/`** — package novo com interface Rule + Registry
+- **`registry.go`** (130 linhas) — `Rule` interface + `Builtin3040()` retorna 25 regras
+- **`3040.go`** (440 linhas) — parser XML tipado (`Doc3040`, `Agregado`, `Vencimentos`) + 25 regras:
+  - **Básicas**: B06-B15 (contadores, limites, partes rejeitadas, max erros/avisos)
+  - **Formato**: F01-F05 (taxa efetiva, datas, código contrato, conglomerado, RefBacen Sicor)
+  - **Campos Obrigatórios**: C01-C05 (PJ, não obrigatórios, garantias, cessões)
+  - **Semântica**: S01-S05 (detalhamento cliente, vendor, ocultação, crédito a liberar, limite)
+- **Severity** da Rule tem prioridade sobre DB (regras implementadas são fonte da verdade)
+
+**Cobertura de regras:** 5/320 (1.5%) → **25/320 (7.8%)**
+
+#### 🟢 P2 — Radar Regulatório (B3: first-mover)
+- **`internal/radar/radar.go`** (260 linhas) — Service com:
+  - `ScanOnce()` — fetch URLs BACEN → SHA-256 → compara com baseline → insere alert se mudou
+  - `DefaultSources` — 3 URLs candidatas (3040, 3050, DRSAC FAQ)
+  - Resiliente: 404 não quebra, baseline gravado mesmo se fetch falhar
+- **`cmd/radar/main.go`** (100 linhas) — worker CLI com `--once` mode e intervalo configurável
+- **4 endpoints REST novos:**
+  - `GET /v1/radar/alerts` (filtro `?unresolved=true`)
+  - `GET /v1/radar/alerts/{id}`
+  - `POST /v1/radar/alerts/{id}/resolve`
+  - `POST /v1/radar/scan` (trigger scan manual)
+
+#### 🔧 Migration tracking via `schema_migrations`
+- Migration 001 era idempotente (`CREATE TABLE IF NOT EXISTS`)
+- Migration 002 (`ALTER TABLE envios ADD COLUMN xml_content`) não é idempotente
+- Solução: tabela `schema_migrations` rastreia quais migrations foram aplicadas
+- Migrate pula automaticamente migrations já aplicadas
+
+### 🏗️ Decisões técnicas Sprint 4
+
+| Decisão | Razão |
+|---|---|
+| **`rules.Registry` interface-based** | Cada regra = struct com `Code()`, `Sheet()`, `Severity()`, `Apply()`. Adicionar regra = 1 struct + 1 linha no registry |
+| **Parser XML tipado** | encoding/xml stdlib + struct tags. Zero dependência externa. Mais simples que XPath |
+| **Severity da Rule > DB gravidade** | DB tem gravidade vazia pra regras novas. Implementação é fonte da verdade |
+| **cmd/worker é stub** | Processa pending, atualiza status. Sem retry exponencial/DLQ (próxima sprint com asynq) |
+| **cmd/radar fetch URLs candidatas** | Resiliente a 404. URLs BACEN mudam; sistema sobrevive a path errado |
+| **`radar_alerts.alert_type='_baseline_*'`** | Reaproveita tabela. Em produção, tabela dedicada `radar_baselines` |
+| **Migration tracking** | Resolve ALTER TABLE não-idempotente sem hack IF NOT EXISTS (que SQLite não suporta em ALTER) |
+
+### 📊 Estatísticas Sprint 4
+
+```
+backend/ → 14 arquivos Go (2.908 linhas) — era 10/1.400 Sprint 3
+   ├─ cmd/api/main.go              100 linhas (entrypoint)
+   ├─ cmd/seed/main.go             280 linhas (+ seed IFs demo)
+   ├─ cmd/worker/main.go           180 linhas (queue processor) — NOVO
+   ├─ cmd/radar/main.go            100 linhas (radar worker) — NOVO
+   ├─ internal/api/server.go       290 linhas (10 handlers)
+   ├─ internal/audit/service.go    320 linhas (+ registry integration)
+   ├─ internal/audit/rules/registry.go  140 linhas (Rule interface) — NOVO
+   ├─ internal/audit/rules/3040.go     440 linhas (25 regras + parser) — NOVO
+   ├─ internal/auditlog/log.go     140 linhas (hash chain)
+   ├─ internal/db/db.go             40 linhas
+   ├─ internal/db/migrate.go        90 linhas (+ schema_migrations) — modificado
+   ├─ internal/radar/radar.go      260 linhas (fetch + diff + alerts) — NOVO
+   ├─ internal/schema/registry.go  140 linhas
+   └─ internal/sta/stub.go          95 linhas (+ JSON tags)
+
+   migrations/  2 arquivos
+   ├─ 001_initial.sql              128 linhas
+   └─ 002_envios_xml.sql             5 linhas — NOVO
+```
+
+### 🧪 Testes E2E (curl sandbox limpo)
+
+```
+✓ POST /v1/validate XML válido (4832 B) → passed=true, 0 erros, 2-4ms
+✓ POST /v1/validate DtBase="20-08"     → F02 detecta, severity=E
+✓ POST /v1/validate Remessa=0          → B06 detecta, severity=E
+✓ POST /v1/validate Mod=0213 v110=0    → S05 detecta, severity=E
+✓ POST /v1/validate XML quebrado       → L1-PARSE + 13 regras falham (correto)
+✓ POST /v1/sta/submit JSON             → protocolo + envio_id + persiste
+✓ POST /v1/sta/submit ?cadoc=          → retrocompat OK
+✓ Worker processa envio pending        → status=accepted, protocolo gerado
+✓ POST /v1/radar/scan                  → scan em 1.7s, baseline gravado
+✓ POST /v1/radar/alerts/{id}/resolve   → marca resolved, 404 se inexistente
+```
+
+### 🚧 Gaps remanescentes (Sprint 5)
+
+| Gap | Por quê | Sprint 5 |
+|---|---|---|
+| **Driver Postgres real** | Sem Docker local | `pgx` + config flag |
+| **JWT/OAuth em vez de X-IF-ID** | Mantido header simples | `internal/auth/` + refresh tokens |
+| **Postgres RLS multi-tenant** | X-IF-ID só identifica | Policies por IF |
+| **STA Web/WS real** | Stub OK pra demo | `internal/sta/web.go` |
+| **Mais regras 3040** | Cobertura 7.8% | Sprint 5: Agregadas + Individualizadas |
+| **Cross-doc engine (L3)** | Requer multi-CADOC | Carregar 3040 + 4111 + DRSAC em paralelo |
+| **Frontend Norma Console** | Backend-only | Next.js dashboard |
+| **Dedup 3040 (14 warnings)** | Duplicatas reais no JSON | Deduplicar no extract.py |
+| **Radar: asynq queue** | Stub usa ticker simples | Substituir por fila real |
+| **Testes unitários** | Sem coverage ainda | `*_test.go` + coverage report |
+
+### 🎯 Próxima sprint (Sprint 5 — preview)
+**Tema:** Norma Console (frontend) + mais regras + cross-doc L3
+- Frontend Next.js com dashboard IFs
+- Portar 30+ regras Agregadas + Individualizadas do 3040
+- Cross-doc engine L3 (3040 ↔ 4111 ↔ DRSAC)
+- Radar com asynq queue + retries
+
+---
+
 ## v1.2.0 — 2026-07-03 (Sprint 3: Infraestrutura backend Go + API REST)
 
 ### 🎯 Objetivo da sprint

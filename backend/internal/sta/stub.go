@@ -16,25 +16,25 @@ import (
 
 // Submission representa uma submissão ao STA.
 type Submission struct {
-	CadocCode string
-	DataBase  string
-	XML       []byte
-	Zip       []byte
-	Cert      []byte // A1 (PEM) ou nil pra A3 (token)
-	CNPJ      string
+	CadocCode string `json:"cadoc_code"`
+	DataBase  string `json:"data_base"`
+	XML       string `json:"xml,omitempty"`       // XML cru (string) — JSON tag não decodifica como []byte (base64)
+	Zip       []byte `json:"zip,omitempty"`       // ZIP binário (base64 no JSON)
+	Cert      []byte `json:"-"`                   // A1 (PEM) ou nil pra A3 (token) — nunca via JSON
+	CNPJ      string `json:"cnpj"`
 }
 
 // Result é o resultado de uma submissão.
 type Result struct {
-	ProtocolSTA string
-	Accepted    bool
-	Rejection   *Rejection
+	ProtocolSTA string     `json:"protocol_sta"`
+	Accepted    bool       `json:"accepted"`
+	Rejection   *Rejection `json:"rejection,omitempty"`
 }
 
 // Rejection contém o motivo da rejeição.
 type Rejection struct {
-	Code    string
-	Message string
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
 // Client é a interface do cliente STA.
@@ -55,13 +55,13 @@ func NewStubClient() *StubClient {
 
 // Submit simula o envio. Calcula hash, gera protocolo fake, retorna aceito.
 func (c *StubClient) Submit(ctx context.Context, sub *Submission) (*Result, error) {
-	if sub.Zip == nil && sub.XML == nil {
+	if sub.Zip == nil && len(sub.XML) == 0 {
 		return nil, errors.New("submission sem XML nem ZIP")
 	}
 
 	payload := sub.Zip
 	if payload == nil {
-		payload = sub.XML
+		payload = []byte(sub.XML)
 	}
 	hash := sha256.Sum256(payload)
 	hashHex := hex.EncodeToString(hash[:8])

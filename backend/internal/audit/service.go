@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/fortvna/radiant-norma/backend/internal/audit/rules"
 )
 
 // Critica representa uma regra de validação.
@@ -43,11 +45,38 @@ type ValidationError struct {
 }
 
 // ValidationRequest é o input do endpoint /v1/validate.
+//
+// Aceita tanto `cadoc` (cliente-friendly, documentado no README) quanto
+// `cadoc_code` (nome da coluna no DB) por compatibilidade.
 type ValidationRequest struct {
 	CadocCode   string `json:"cadoc_code"`
-	DataBase    string `json:"data_base"` // YYYY-MM-DD
-	XML         string `json:"xml"`       // pode ser XML ou JSON (3044)
+	DataBase    string `json:"data_base"`    // YYYY-MM-DD
+	XML         string `json:"xml"`          // pode ser XML ou JSON (3044)
 	ContentType string `json:"content_type"` // "application/xml" ou "application/json"
+}
+
+// UnmarshalJSON customizado: aceita "cadoc" OU "cadoc_code" no JSON.
+func (r *ValidationRequest) UnmarshalJSON(data []byte) error {
+	// Tipo shadow com cadoc opcional.
+	type shadow struct {
+		CadocCode   string `json:"cadoc_code"`
+		Cadoc       string `json:"cadoc"` // alias
+		DataBase    string `json:"data_base"`
+		XML         string `json:"xml"`
+		ContentType string `json:"content_type"`
+	}
+	var s shadow
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	r.CadocCode = s.CadocCode
+	if r.CadocCode == "" {
+		r.CadocCode = s.Cadoc
+	}
+	r.DataBase = s.DataBase
+	r.XML = s.XML
+	r.ContentType = s.ContentType
+	return nil
 }
 
 // ValidationResponse é o output.
@@ -64,12 +93,23 @@ type ValidationResponse struct {
 
 // Service é o serviço do Norma Audit.
 type Service struct {
-	db *sql.DB
+	db       *sql.DB
+	registry *rules.Registry // registry de regras portadas (Sprint 4+)
 }
 
 // New cria um novo Service.
 func New(db *sql.DB) *Service {
-	return &Service{db: db}
+	return &Service{db: db, registry: rules.Builtin3040()}
+}
+
+// SetRegistry permite injetar registry customizado (testes).
+func (s *Service) SetRegistry(r *rules.Registry) {
+	s.registry = r
+}
+
+// Registry retorna o registry atual.
+func (s *Service) Registry() *rules.Registry {
+	return s.registry
 }
 
 // LoadCriticas retorna todas as críticas habilitadas de um CADOC.
@@ -142,24 +182,37 @@ func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*Valida
 			Message:  "Erro carregando críticas: " + err.Error(),
 		})
 	} else {
-		for _, c := range criticas {
-			if err := s.applyRegra(ctx, c, req); err != nil {
-				sev := c.Gravidade
+for _, c := range criticas {
+		if err := s.applyRegra(ctx, c, req); err != nil {
+			// Severity: prioriza o que a Rule implementada declara (registry).
+			// Se a regra está no registry, a implementação define a gravidade autoritativa.
+			// Caso contrário, usa Gravidade do DB, e finalmente "A" (aviso) como default.
+			sev := ""
+			inRegistry := false
+			if s.registry != nil {
+				if rule := s.registry.Get(c.Codigo); rule != nil {
+					inRegistry = true
+					sev = rule.Severity()
+				}
+			}
+			if !inRegistry {
+				sev = c.Gravidade
 				if sev == "" {
 					sev = "A"
 				}
-				ve := ValidationError{
-					Critica:  c,
-					Severity: sev,
-					Message:  err.Error(),
-				}
-				if sev == "E" {
-					resp.Errors = append(resp.Errors, ve)
-				} else {
-					resp.Warnings = append(resp.Warnings, ve)
-				}
+			}
+			ve := ValidationError{
+				Critica:  c,
+				Severity: sev,
+				Message:  err.Error(),
+			}
+			if sev == "E" {
+				resp.Errors = append(resp.Errors, ve)
+			} else {
+				resp.Warnings = append(resp.Warnings, ve)
 			}
 		}
+	}
 	}
 
 	resp.Passed = len(resp.Errors) == 0
@@ -229,21 +282,22 @@ func expectedRootTag(cadoc string) string {
 }
 
 // applyRegra aplica UMA regra específica ao documento.
-// Em Sprint 3, implementamos apenas B01-B05 + algumas heurísticas simples.
+//
+// Sprint 4: usa rules.Registry para lookup. Se a regra está registrada
+// (Básicas, Formato, Campos Obrigatórios, Semântica), executa via parser
+// tipado. Caso contrário, fallback para heurísticas inline (B01-B05).
 func (s *Service) applyRegra(ctx context.Context, c Critica, req *ValidationRequest) error {
 	content := string(req.XML)
 
-	// B01-B05 — Regras básicas (Cadoc 3040)
+	// B01-B05: regras básicas que rodam no conteúdo XML bruto (sem parser tipado)
 	if c.Codigo == "B01" {
 		// B01: arquivo XML deve ser válido (já checado em L1)
 		return nil
 	}
 	if c.Codigo == "B02" {
-		// B02: arquivo .ZIP deve ser gerado pelo aplicativo validador — não checamos aqui
 		return nil
 	}
 	if c.Codigo == "B03" {
-		// B03: instituição remetente deve possuir autorização — check externo
 		return nil
 	}
 	if c.Codigo == "B04" {
@@ -264,6 +318,20 @@ func (s *Service) applyRegra(ctx context.Context, c Critica, req *ValidationRequ
 		return nil
 	}
 
-	// Outras regras — skip por enquanto (Sprint 4)
+	// Regras portadas (Sprint 4+): tenta resolver via registry
+	if s.registry != nil {
+		rule := s.registry.Get(c.Codigo)
+		if rule != nil {
+			// Parseia o XML 3040 (uma vez por validação seria melhor, mas por
+			// enquanto cada regra parseia — vamos cachear depois se virar gargalo)
+			doc, err := rules.ParseDoc3040([]byte(req.XML))
+			if err != nil {
+				return fmt.Errorf("parser 3040 falhou: %w", err)
+			}
+			return rule.Apply(ctx, doc)
+		}
+	}
+
+	// Regra não implementada — skip (vai virar erro quando tivermos 100% cobertura)
 	return nil
 }

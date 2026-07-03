@@ -2,13 +2,18 @@
 package api
 
 import (
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
+	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
 	"github.com/go-chi/chi/v5"
@@ -17,15 +22,17 @@ import (
 
 // Server agrega todos os serviços.
 type Server struct {
+	DB        *sql.DB
 	Schema    *schema.Registry
 	Audit     *audit.Service
 	AuditLog  *auditlog.Logger
 	STAClient sta.Client
+	Radar     *radar.Service
 }
 
 // NewServer cria um Server.
-func NewServer(sch *schema.Registry, aud *audit.Service, al *auditlog.Logger, staClient sta.Client) *Server {
-	return &Server{Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient}
+func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al *auditlog.Logger, staClient sta.Client, rad *radar.Service) *Server {
+	return &Server{DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient, Radar: rad}
 }
 
 // Router retorna o chi router configurado.
@@ -60,6 +67,12 @@ func (s *Server) Router() http.Handler {
 
 		// STA submission (stub)
 		r.Post("/sta/submit", s.staSubmit)
+
+		// Radar regulatório (Sprint 4)
+		r.Get("/radar/alerts", s.listRadarAlerts)
+		r.Get("/radar/alerts/{id}", s.getRadarAlert)
+		r.Post("/radar/alerts/{id}/resolve", s.resolveRadarAlert)
+		r.Post("/radar/scan", s.triggerRadarScan)
 	})
 
 	return r
@@ -152,7 +165,7 @@ func (s *Server) validate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.CadocCode == "" {
-		http.Error(w, "cadoc_code required", http.StatusBadRequest)
+		http.Error(w, "cadoc (or cadoc_code) required", http.StatusBadRequest)
 		return
 	}
 	if len(req.XML) == 0 {
@@ -188,34 +201,186 @@ func (s *Server) staSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Lê XML e gera ZIP stub (em Sprint 4: ZIP real)
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	// Aceita body JSON (preferencial, contrato documentado) OU query params (retrocompat).
+	var sub sta.Submission
+	body, _ := io.ReadAll(r.Body)
+
+	if r.Header.Get("Content-Type") == "application/json" && len(body) > 0 {
+		if err := json.Unmarshal(body, &sub); err != nil {
+			http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	} else {
+		// Fallback retrocompat: query params
+		sub.CadocCode = r.URL.Query().Get("cadoc")
+		if sub.CadocCode == "" {
+			sub.CadocCode = r.URL.Query().Get("cadoc_code")
+		}
+		sub.DataBase = r.URL.Query().Get("data_base")
+	}
+
+	// Fallback do CNPJ é o X-IF-ID (multi-tenant identifier)
+	if sub.CNPJ == "" {
+		sub.CNPJ = ifID
+	}
+
+	if sub.CadocCode == "" {
+		http.Error(w, "cadoc_code required (in body JSON or ?cadoc= query param)", http.StatusBadRequest)
 		return
 	}
 
-	sub := &sta.Submission{
-		CadocCode: r.URL.Query().Get("cadoc"),
-		DataBase:  r.URL.Query().Get("data_base"),
-		XML:       body,
-		Zip:       body, // stub: mesmo conteúdo
-		CNPJ:      ifID,
+	// XML/ZIP: se não vier no body JSON, usa o body cru (XML direto)
+	if sub.XML == "" {
+		sub.XML = string(body)
+	}
+	if len(sub.Zip) == 0 {
+		sub.Zip = body // stub: mesmo conteúdo
 	}
 
-	result, err := s.STAClient.Submit(r.Context(), sub)
+	result, err := s.STAClient.Submit(r.Context(), &sub)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// Persiste envio no DB (para o cmd/worker reenviar em caso de falha)
+	envioID := generateEnvioID()
+	xmlHash := sha256.Sum256([]byte(sub.XML))
+	zipHash := sha256.Sum256(sub.Zip)
+	if len(sub.Zip) == 0 {
+		zipHash = xmlHash
+	}
+	_, dbErr := s.DB.ExecContext(r.Context(), `
+		INSERT INTO envios (id, if_id, cadoc_code, data_base, remessa, xml_hash, zip_hash,
+		                    xml_content, zip_content, status, protocol_sta, sent_at, confirmed_at)
+		VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+	`, envioID, ifID, sub.CadocCode, sub.DataBase,
+		hex.EncodeToString(xmlHash[:]), hex.EncodeToString(zipHash[:]),
+		sub.XML, sub.Zip,
+		statusFromResult(result), result.ProtocolSTA)
+	if dbErr != nil {
+		// Falha em persistir não bloqueia a response (STA já aceitou), mas avisamos
+		_, _ = s.AuditLog.Log(ifID, r.RemoteAddr, "sta.submit.persist_failed",
+			sub.CadocCode, body, map[string]any{"err": dbErr.Error()})
+		writeJSON(w, http.StatusOK, map[string]any{
+			"protocol_sta": result.ProtocolSTA,
+			"accepted":     result.Accepted,
+			"rejection":    result.Rejection,
+			"envio_id":     envioID,
+			"warning":      "envio não persistido: " + dbErr.Error(),
+		})
+		return
+	}
+
 	// Audit log
 	_, _ = s.AuditLog.Log(ifID, r.RemoteAddr, "sta.submit", sub.CadocCode, body, map[string]any{
+		"envio_id": envioID,
 		"protocol": result.ProtocolSTA,
 		"accepted": result.Accepted,
 	})
 
-	writeJSON(w, http.StatusOK, result)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"protocol_sta": result.ProtocolSTA,
+		"accepted":     result.Accepted,
+		"rejection":    result.Rejection,
+		"envio_id":     envioID,
+	})
+}
+
+// generateEnvioID gera UUID v4-like para um envio.
+// Não usa crypto/rand por simplicidade — em produção usar uuid.New().
+func generateEnvioID() string {
+	now := time.Now().UnixNano()
+	return "env-" + hex.EncodeToString([]byte{
+		byte(now >> 56), byte(now >> 48), byte(now >> 40), byte(now >> 32),
+		byte(now >> 24), byte(now >> 16), byte(now >> 8), byte(now),
+	})
+}
+
+func statusFromResult(r *sta.Result) string {
+	if r.Accepted {
+		return "accepted"
+	}
+	return "rejected"
+}
+
+// --- Radar handlers ---
+
+func (s *Server) listRadarAlerts(w http.ResponseWriter, r *http.Request) {
+	if s.Radar == nil {
+		http.Error(w, "radar não inicializado", http.StatusServiceUnavailable)
+		return
+	}
+	unresolvedOnly := r.URL.Query().Get("unresolved") == "true"
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	alerts, err := s.Radar.ListAlerts(r.Context(), unresolvedOnly, limit)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"alerts": alerts,
+		"total":  len(alerts),
+	})
+}
+
+func (s *Server) getRadarAlert(w http.ResponseWriter, r *http.Request) {
+	if s.Radar == nil {
+		http.Error(w, "radar não inicializado", http.StatusServiceUnavailable)
+		return
+	}
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "id inválido", http.StatusBadRequest)
+		return
+	}
+	alerts, err := s.Radar.ListAlerts(r.Context(), false, 1000)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	for _, a := range alerts {
+		if a.ID == id {
+			writeJSON(w, http.StatusOK, a)
+			return
+		}
+	}
+	http.Error(w, "alert não encontrado", http.StatusNotFound)
+}
+
+func (s *Server) resolveRadarAlert(w http.ResponseWriter, r *http.Request) {
+	if s.Radar == nil {
+		http.Error(w, "radar não inicializado", http.StatusServiceUnavailable)
+		return
+	}
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "id inválido", http.StatusBadRequest)
+		return
+	}
+	if err := s.Radar.ResolveAlert(r.Context(), id); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"resolved": true, "id": id})
+}
+
+func (s *Server) triggerRadarScan(w http.ResponseWriter, r *http.Request) {
+	if s.Radar == nil {
+		http.Error(w, "radar não inicializado", http.StatusServiceUnavailable)
+		return
+	}
+	alerts, err := s.Radar.ScanOnce(r.Context(), nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"new_alerts": alerts,
+		"count":      len(alerts),
+	})
 }
 
 // --- Middleware ---

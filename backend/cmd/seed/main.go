@@ -74,6 +74,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Seed IFs (multi-tenant demo)
+	if err := seedIFs(d, logger); err != nil {
+		logger.Error("seed ifs", "err", err)
+		os.Exit(1)
+	}
+
 	// Seed críticas
 	if err := seedCriticas(d, *jsonPath, logger); err != nil {
 		logger.Error("seed criticas", "err", err)
@@ -87,6 +93,39 @@ func main() {
 	}
 
 	logger.Info("✓ seed completo")
+}
+
+// seedIFs popula 1 IF de exemplo (demo) usada em testes via header X-IF-ID: demo.
+// A FK constraint de envios.if_id exige ifs pré-cadastradas.
+func seedIFs(d *sql.DB, logger *slog.Logger) error {
+	ifs := []struct {
+		ID       string
+		CNPJ     string
+		Nome     string
+		Tipo     string
+		Segmento string
+		Plano    string
+	}{
+		{"demo", "12345678", "IF Demonstração SCD", "SCD", "S5", "pro"},
+		{"demo-banco", "00000000", "Banco Demo", "BC", "S1", "scale"},
+	}
+
+	stmt, err := d.Prepare(`
+		INSERT OR REPLACE INTO ifs (id, cnpj, nome, tipo, segmento, plano)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, i := range ifs {
+		if _, err := stmt.Exec(i.ID, i.CNPJ, i.Nome, i.Tipo, i.Segmento, i.Plano); err != nil {
+			return fmt.Errorf("insert if %s: %w", i.ID, err)
+		}
+	}
+	logger.Info("✓ ifs importadas", "total", len(ifs))
+	return nil
 }
 
 func seedCriticas(d *sql.DB, path string, logger *slog.Logger) error {

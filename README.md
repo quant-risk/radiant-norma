@@ -11,8 +11,8 @@ auditoria tamper-evident e camadas que o BCValidador não tem.
 
 <br>
 
-![Status](https://img.shields.io/badge/status-v1.2.0_✅-10b981?style=for-the-badge)
-![Sprint](https://img.shields.io/badge/sprint-3%2F4-6366f1?style=for-the-badge)
+![Status](https://img.shields.io/badge/status-v1.3.0_✅-10b981?style=for-the-badge)
+![Sprint](https://img.shields.io/badge/sprint-4%2F4-6366f1?style=for-the-badge)
 ![Stack](https://img.shields.io/badge/stack-Go_1.22+-00ADD8?style=for-the-badge&logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/license-proprietary-1e293b?style=for-the-badge)
 ![Coverage](https://img.shields.io/badge/cadocs-10_cobertos-8b5cf6?style=for-the-badge)
@@ -53,7 +53,7 @@ audit log com **hash chain** (LGPD + SOC 2), multi-tenant isolado por RLS.
 
 | CADOC | Sigla | Periodicidade | Status |
 |---|---|---|---|
-| **3040** | SCR — Risco de Crédito | Mensal | ✅ 361 regras, XSD gerado |
+| **3040** | SCR — Risco de Crédito | Mensal | ✅ 25 regras portadas em Go (B/F/C/S), 320 no DB |
 | **3044** | Eventos de Crédito (JSON) | Por evento | ✅ Schema + 17 regras T01-T19 |
 | **3050** | Estatísticas Agregadas | Mensal/diária | ✅ V11 — 170 regras |
 | **2030** | DRSAC — Risco ESG | Semestral | ⚠️ Críticas não-públicas (gap conhecido) |
@@ -64,7 +64,7 @@ audit log com **hash chain** (LGPD + SOC 2), multi-tenant isolado por RLS.
 | **2160** | DRL — Liquidez (LCR) | Diário | ✅ Modelos II BACEN |
 | **2170** | DLP — Liquidez LP (NSFR) | Mensal | ✅ Modelo de cálculo oficial |
 
-**1.099 regras de validação semântica** extraídas e executáveis em Go.
+**1.099 regras de validação semântica** extraídas; **25 regras 3040** portadas em Go com parser XML tipado.
 
 ---
 
@@ -87,6 +87,18 @@ audit log com **hash chain** (LGPD + SOC 2), multi-tenant isolado por RLS.
                     │  │ por data-  │  │  L3 Cross-doc  ★   │  │
                     │  │ base       │  │  L4 Histórico   ★  │  │
                     │  └────────────┘  └────────────────────┘  │
+                    │                       ▲                  │
+                    │  ┌─────────────┐      │ 25 regras 3040   │
+                    │  │ rules.      │──────┘ portadas em Go  │
+                    │  │ Registry    │       com parser XML    │
+                    │  │ (tipado)    │       tipado            │
+                    │  └─────────────┘                          │
+                    │                                          │
+                    │  ┌─────────────────────────────────────┐ │
+                    │  │  Radar Regulatório (Sprint 4)     │ │
+                    │  │  fetch BACEN → SHA-256 → diff    │ │
+                    │  │  baseline + alertas                │ │
+                    │  └─────────────────────────────────────┘ │
                     │                                          │
                     │  ┌─────────────────────────────────────┐ │
                     │  │  Audit Log · Hash Chain (LGPD/SOC2) │ │
@@ -161,15 +173,15 @@ Stack completa em [`backend/README.md`](backend/README.md).
 | **1** | Base documental + catálogo JSON estruturado | ✅ v1.0.0 |
 | **2** | Norma Audit spike (Go CLI + XSD gerado) | ✅ v1.1.0 |
 | **3** | Backend Go + API REST + Audit hash chain + STA stub | ✅ v1.2.0 |
-| **4** | Auth real (JWT/OAuth) + Postgres RLS + STA real (Playwright) + 30+ regras 3040 | 🔜 |
-| **5** | Norma Console (Next.js) + Radar regulatório (worker de mudanças) | ⏳ |
-| **6** | Cross-doc engine L3 + Histórico L4 + White-label multi-tenant | ⏳ |
+| **4** | Honesty Patch + 25 regras 3040 + Radar Regulatório | ✅ v1.3.0 |
+| **5** | Norma Console (Next.js) + Auth JWT + 30+ regras + Cross-doc L3 | 🔜 |
+| **6** | STA real (Playwright) + Postgres RLS + Histórico L4 | ⏳ |
 | **7** | SOC 2 Type II + DPA template + ICP-Brasil A3 | ⏳ |
 
 **Sub-produtos anunciados** (marca Radiant):
 
 - 🟢 **Norma ESG** — first-mover DRSAC 2030 (janela IN BCB 694/2025, ninguém cobre)
-- 🟡 **Norma Radar** — worker que detecta mudanças de leiaute em tempo real
+- 🟡 **Norma Radar** — worker que detecta mudanças de leiaute em tempo real ✅ Sprint 4
 - 🔵 **Norma Connect** — STA client Web/WS com retry + protocolo tracking
 - 🟣 **Norma Audit** — o que está nesse repo (o produto raiz)
 
@@ -178,14 +190,16 @@ Stack completa em [`backend/README.md`](backend/README.md).
 ## ✦ Métricas atuais
 
 ```
-Backend Go          10 arquivos · ~1.400 linhas
+Backend Go          14 arquivos · ~2.908 linhas
 Catálogo crítico    1.099 regras · 6 CADOCs com críticas executáveis
 Catálogo leiaute    4.244 linhas · 8 CADOCs
-Audit log entries   5 (chain validado · tamper-evident)
-Endpoints REST      7 funcionais · curl-testados
+Regras portadas Go  25 (Básicas B06-B15 + Formato F01-F05 + Campos C01-C05 + Semantica S01-S05)
+Audit log entries   N (chain validado · tamper-evident)
+Endpoints REST      13 funcionais · curl-testados (validate, rules, schemas, sta, radar)
 Material BACEN      137 arquivos · 50 MB capturados
 Concorrentes mapeados 12 (Mitra/Matera/cadoc.ai/LUZ/Dattos/BIBlue/…)
 PDFs profissionais  3 (README · ENG_REVERSA · PRODUTO_TESE_ROADMAP)
+Workers CLI         3 (api · worker · radar)
 ```
 
 ---
@@ -194,16 +208,18 @@ PDFs profissionais  3 (README · ENG_REVERSA · PRODUTO_TESE_ROADMAP)
 
 ```
 radiant-norma/
-├── backend/                     ★★ API REST + Norma Audit
-│   ├── cmd/{api,seed}/          entrypoints
+├── backend/                     ★★ API REST + Norma Audit + Radar
+│   ├── cmd/{api,seed,worker,radar}/ entrypoints (4 binários)
 │   ├── internal/
-│   │   ├── audit/               Norma Audit (L1+L2 portado)
-│   │   ├── schema/              Schema Registry
-│   │   ├── auditlog/            Hash chain tamper-evident
-│   │   ├── sta/                 STA client (stub → real)
-│   │   ├── db/                  SQLite + migrations embed.FS
-│   │   └── api/                 chi handlers + middleware
-│   └── migrations/              SQL versionado
+│   │   ├── audit/               Norma Audit (L1 + L2 via rules.Registry)
+│   │   │   └── rules/           25 regras 3040 portadas + parser XML tipado
+│   │   ├── schema/              Schema Registry versionado
+│   │   ├── auditlog/            Hash chain tamper-evident (LGPD/SOC 2)
+│   │   ├── sta/                 STA client (stub → Playwright em Sprint 6)
+│   │   ├── radar/               Radar Regulatório (fetch BACEN + diff)
+│   │   ├── db/                  SQLite + migrations embed.FS + tracking
+│   │   └── api/                 chi handlers + middleware (13 endpoints)
+│   └── migrations/              2 SQL files
 │
 ├── tools/                       ★ Spikes Go (Sprint 2)
 │   ├── xsdgen/                  gera XSD a partir de leiautes.json
@@ -227,8 +243,8 @@ radiant-norma/
 ├── README.md                    ★ este arquivo
 ├── ENG_REVERSA.md               ★ análise profunda de Mitra/Matera/cadoc.ai
 ├── PRODUTO_TESE_ROADMAP.md      ★ tese, personas, GTM, planos R$1,5k-12k
-├── CHANGELOG.md                 histórico de sprints
-├── SPRINT_2.md  SPRINT_3.md     retrospectivas
+├── CHANGELOG.md                 histórico de sprints (v1.0 → v1.3)
+├── SPRINT_2.md  SPRINT_3.md  SPRINT_4.md  retrospectivas
 └── _gen_pdfs.py                 ★ pipeline Pandoc + Chromium → PDF
 ```
 
@@ -256,14 +272,21 @@ Estes são **deliberadamente públicos** — não escondemos o que falta:
 - **2030 DRSAC críticas** — não publicamente disponível; FAQ do BACEN aponta
   pra página protegida por login. 5 URLs tentadas, todas retornaram erro.
   Aguardando solicitação formal.
+- **Cobertura regras 3040** — 25/320 regras portadas (7.8%). Sprint 5 cobre
+  Agregadas + Individualizadas pra chegar a 50%+.
 - **BCValidador oficial vs Go** — implementação Go reescreve as regras públicas
-  das planilhas `SCR3040_Criticas.xls`. Comparação byte-a-byte fica pra Sprint 4
+  das planilhas `SCR3040_Criticas.xls`. Comparação byte-a-byte fica pra Sprint 5
   via Docker (BCValidador é Java-only).
 - **STA real** — stub gera protocolo fake. Cliente real Web/WS (Playwright +
-  Sisbacen + PSTA300) entra na Sprint 4.
-- **Auth** — `X-IF-ID` simples na Sprint 3. JWT + OAuth2 + refresh tokens na 4.
+  Sisbacen + PSTA300) entra na Sprint 5.
+- **Auth** — `X-IF-ID` simples na Sprint 4. JWT + OAuth2 + refresh tokens na 5.
 - **Postgres RLS** — multi-tenant só identifica hoje. Isolamento por linha via
-  RLS policies na Sprint 4.
+  RLS policies na Sprint 5.
+- **Frontend Norma Console** — backend-only até Sprint 4. Next.js dashboard na 5.
+- **Radar URLs** — algumas URLs BACEN retornam 404 (BACEN muda paths). Sistema
+  é resiliente: baseline gravado mesmo quando fetch falha.
+- **Dedup 3040** — 14 warnings de UNIQUE constraint no seed (duplicatas reais
+  no JSON de origem). Pendente: dedup no `extract.py`.
 
 ---
 
