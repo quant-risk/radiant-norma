@@ -137,10 +137,33 @@ func (s *Server) listRulesByCadoc(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Filtra por ?enabled=true|false|all (default: all)
+	enabledFilter := r.URL.Query().Get("enabled")
+	var filtered []audit.Critica
+	for _, c := range criticas {
+		switch enabledFilter {
+		case "true":
+			if c.Enabled {
+				filtered = append(filtered, c)
+			}
+		case "false":
+			if !c.Enabled {
+				filtered = append(filtered, c)
+			}
+		default:
+			filtered = criticas // all
+		}
+	}
+	if enabledFilter == "" {
+		filtered = criticas
+	}
+
 	writeJSON(w, http.StatusOK, map[string]any{
 		"cadoc":    cadoc,
-		"rules":    criticas,
-		"total":    len(criticas),
+		"rules":    filtered,
+		"total":    len(filtered),
+		"total_all": len(criticas),
 	})
 }
 

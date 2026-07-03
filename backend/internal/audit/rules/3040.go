@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 // ============================================================
@@ -344,25 +343,39 @@ func (S03Ocultacao) Apply(_ context.Context, _ *Doc3040) error {
 
 // S04 — Crédito a liberar: não aplicabilidade.
 //
-// Verifica operações com modalidade "Crédito a Liberar" (Mod inicia com
-// "0101") — essas operações não devem ter vencimentos preenchidos.
+// Catálogo BACEN: "Não poderão ter preenchidos os vencimentos de crédito a
+// liberar (vencimentos 60 e 80) as modalidades 'crédito rotativo vinculado
+// a cartão de crédito' (0204), 'cartão de crédito - compra parcelada' (0210),
+// 'cartão de crédito - compra à vista' (1304), 'cheque especial e conta
+// garantida' (0201), 'cheque especial' (0213) e 'conta garantida' (0214)".
 //
-// TODO Sprint 5: validar contra catálogo BACEN o range exato de modalidades
-// que disparam essa regra (atualmente só testamos prefixo "0101").
+// Mapeamento IDs BACEN → campos do XML:
+//   - Vencimento 60 (31-60 dias) → Vencimentos.V150
+//   - Vencimento 80 (61-90 dias) → Vencimentos.V160
 type S04CreditoALiberar struct{}
 
 func (S04CreditoALiberar) Code() string   { return "S04" }
 func (S04CreditoALiberar) Sheet() string  { return "Semântica" }
 func (S04CreditoALiberar) Severity() string { return "E" }
 func (S04CreditoALiberar) Apply(_ context.Context, doc *Doc3040) error {
-	// Modalidade "Crédito a Liberar" (BACEN) tem prefixo "0101".
-	// Vencimentos devem ser zero — qualquer valor preenchido é erro.
+	// Modalidades onde "crédito a liberar" (venc 60 e 80) não pode ser preenchido.
+	creditoLiberarMods := map[string]bool{
+		"0204": true, // crédito rotativo vinculado a cartão de crédito
+		"0210": true, // cartão de crédito - compra parcelada
+		"1304": true, // cartão de crédito - compra à vista
+		"0201": true, // cheque especial e conta garantida
+		"0213": true, // cheque especial
+		"0214": true, // conta garantida
+	}
 	for i, ag := range doc.Agregados {
-		if strings.HasPrefix(ag.Mod, "0101") {
-			v := ag.Vencimentos
-			if v.V110 != "0" || v.V120 != "0" || v.V150 != "0" || v.V160 != "0" || v.V165 != "0" {
-				return fmt.Errorf("Agreg[%d]: crédito a liberar (Mod=%s) com vencimentos > 0", i, ag.Mod)
-			}
+		if !creditoLiberarMods[ag.Mod] {
+			continue
+		}
+		v := ag.Vencimentos
+		// Vencimentos "60" e "80" (= v150 e v160) devem ser zero.
+		if v.V150 != "0" || v.V160 != "0" {
+			return fmt.Errorf("Agreg[%d]: modalidade %s (crédito a liberar) não pode ter vencimentos 60/80 preenchidos (v150=%s v160=%s)",
+				i, ag.Mod, v.V150, v.V160)
 		}
 	}
 	return nil

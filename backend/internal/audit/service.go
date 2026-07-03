@@ -112,13 +112,18 @@ func (s *Service) Registry() *rules.Registry {
 	return s.registry
 }
 
-// LoadCriticas retorna todas as críticas habilitadas de um CADOC.
+// LoadCriticas retorna todas as críticas (habilitadas E desabilitadas) de um CADOC.
+//
+// Sprint 4+: retorna TODAS porque algumas regras implementadas no registry
+// podem estar desabilitadas no DB (BACEN marca habilitado?=n para regras
+// que ainda não estão em vigor). O applyRegra decide se roda cada uma
+// baseado no flag `enabled` da Critica.
 func (s *Service) LoadCriticas(ctx context.Context, cadocCode string) ([]Critica, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, cadoc_code, sheet, codigo, regra, descricao, gravidade,
 		       data_base_inicio, mensagem_erro, enabled
 		FROM criticas
-		WHERE cadoc_code = ? AND enabled = 1
+		WHERE cadoc_code = ?
 		ORDER BY sheet, codigo
 	`, cadocCode)
 	if err != nil {
@@ -193,6 +198,13 @@ func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*Valida
 		is3040 := req.CadocCode == "3040" && req.ContentType != "application/json"
 
 		for _, c := range criticas {
+			// Respeita flag `enabled` do DB (BACEN marca habilitado?=n para
+			// regras que NÃO estão em vigor na data-base corrente).
+			// Sem isso, o XML exemplo oficial (Mod=0213 com v150>0) falha.
+			if !c.Enabled {
+				continue
+			}
+
 			ruleErr := s.applyRegra(ctx, c, req, is3040, &cachedDoc)
 			if ruleErr == nil {
 				continue
