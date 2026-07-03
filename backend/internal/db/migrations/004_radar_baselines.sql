@@ -15,6 +15,9 @@
 --   - Sem poluição: ListAlerts filtra WHERE alert_type NOT LIKE '_baseline_%'
 --     hoje; com tabela nova, ListAlerts não precisa desse filtro
 --
+-- Sprint 6 v1.5.0 (F12.6 fix): usa ON CONFLICT DO NOTHING (portável cross-driver).
+-- SQLite 3.24+ e Postgres ambos suportam. INSERT OR IGNORE era SQLite-only.
+--
 -- NOTA: dados antigos (radar_alerts WHERE alert_type LIKE '_baseline_%')
 -- SÃO migrados. Em produção real isso seria problemático; em dev é OK
 -- porque dados existentes são ephemeral.
@@ -29,12 +32,10 @@ CREATE TABLE IF NOT EXISTS radar_baselines (
 );
 
 -- Migra baselines existentes de radar_alerts para radar_baselines.
--- ON CONFLICT IGNORE: se já houver dado na nova tabela, mantém (idempotente).
-INSERT OR IGNORE INTO radar_baselines (cadoc_code, alert_type, hash, source_url, updated_at)
+-- Idempotente cross-driver (SQLite 3.24+ + Postgres).
+INSERT INTO radar_baselines (cadoc_code, alert_type, hash, source_url, updated_at)
 SELECT cadoc_code, alert_type, description, source_url, detected_at
 FROM radar_alerts
-WHERE alert_type LIKE '_baseline_%';
+WHERE alert_type LIKE '_baseline_%'
+ON CONFLICT (cadoc_code, alert_type) DO NOTHING;
 
--- Opcional: limpar baselines migrados de radar_alerts após migração.
--- Comentado para preservar audit trail até validação final.
--- DELETE FROM radar_alerts WHERE alert_type LIKE '_baseline_%';

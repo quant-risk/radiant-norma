@@ -12,6 +12,7 @@ package crossdoc
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 	"time"
 )
@@ -42,10 +43,23 @@ type ValidationResponse struct {
 // Engine orquestra cross-doc validation.
 type Engine struct {
 	registry *Registry
+	logger   *slog.Logger // opcional; nil = usa slog.Default
 }
 
 func NewEngine(reg *Registry) *Engine {
 	return &Engine{registry: reg}
+}
+
+// SetLogger injeta logger customizado (tests silenciosos).
+func (e *Engine) SetLogger(l *slog.Logger) {
+	e.logger = l
+}
+
+func (e *Engine) log() *slog.Logger {
+	if e.logger != nil {
+		return e.logger
+	}
+	return slog.Default()
 }
 
 // Validate executa todas as regras do registry em paralelo (limitado a
@@ -57,8 +71,13 @@ func NewEngine(reg *Registry) *Engine {
 //   - Skip regra se algum doc obrigatório faltar
 //   - Run regra em goroutine (limitado)
 //   - WaitGroup espera todas terminarem
+//
+// Sprint 6 v1.5.0 (F12.5 fix): panic recover em cada goroutine de regra.
+// Sem isso, regra panicking crashava o server todo (chi Recoverer só
+// cobre o handler — não goroutines paralelas).
 func (e *Engine) Validate(ctx context.Context, req *ValidationRequest) *ValidationResponse {
 	start := time.Now()
+	logger := e.log()
 	resp := &ValidationResponse{
 		Passed:     true,
 		Errors:     []ValidationError{},
@@ -95,6 +114,22 @@ func (e *Engine) Validate(ctx context.Context, req *ValidationRequest) *Validati
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			// Sprint 6 v1.5.0 (F12.5 fix): panic recover — sem isso,
+			// uma regra panicking crasharia o server todo.
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Error("crossdoc rule panic recovered",
+						"rule", rule.Code(),
+						"panic", r)
+					mu.Lock()
+					resp.Errors = append(resp.Errors, ValidationError{
+						Code:     rule.Code(),
+						Severity: "E",
+						Message:  "internal error (recovered from panic)",
+					})
+					mu.Unlock()
+				}
+			}()
 			err := rule.Apply(ctx, docs)
 			mu.Lock()
 			defer mu.Unlock()

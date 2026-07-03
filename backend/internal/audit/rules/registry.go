@@ -163,15 +163,6 @@ func (r *Registry) All() []Rule {
 	return out
 }
 
-// AllRaw retorna todas as regras raw.
-func (r *Registry) AllRaw() []RawRule {
-	out := make([]RawRule, 0, len(r.rawRules))
-	for _, r := range r.rawRules {
-		out = append(out, r)
-	}
-	return out
-}
-
 // Builtin3040 retorna o registry com as regras 3040 implementadas.
 //
 // Cobre:

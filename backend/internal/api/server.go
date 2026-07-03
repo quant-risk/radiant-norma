@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -74,8 +75,11 @@ func (s *Server) Router() http.Handler {
 	// Middleware padrão
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
+	// Sprint 6 v1.5.0 (F12.8 fix): Recoverer ANTES de Logger para que
+	// panics que viram 500 sejam loggados (não engolidos pelo Logger
+	// que está acima na pilha).
 	r.Use(middleware.Recoverer)
+	r.Use(middleware.Logger)
 
 	// Health
 	r.Get("/healthz", s.healthz)
@@ -463,8 +467,17 @@ func (s *Server) triggerRadarScan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// R1 — Auth admin (Sprint 6 v1.5.0): bloqueia vetor de DOS-via-API.
-	// Sem ADMIN_TOKEN configurada, retorna 503 (fail closed).
-	if s.AdminAuth == nil || !s.AdminAuth.IsAdmin(r) {
+	// Sem ADMIN_TOKEN configurada, retorna 401 (fail closed).
+	//
+	// Sprint 6 v1.5.0 (F12.19 fix): defesa em profundidade — se AdminAuth
+	// é nil (misconfiguração), response 503 ao invés de nil deref panic.
+	if s.AdminAuth == nil {
+		logger := slog.Default()
+		logger.Error("AdminAuth não inicializado — Server mal configurado")
+		http.Error(w, "admin auth não configurado (Server misconfigured)", http.StatusServiceUnavailable)
+		return
+	}
+	if !s.AdminAuth.IsAdmin(r) {
 		w.Header().Set("WWW-Authenticate", "Bearer")
 		http.Error(w, s.AdminAuth.Challenge(), http.StatusUnauthorized)
 		return

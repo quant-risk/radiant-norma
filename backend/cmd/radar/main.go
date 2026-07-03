@@ -22,12 +22,21 @@ import (
 
 func main() {
 	var (
-		dbPath   = flag.String("db", "radiant.db", "path to SQLite database")
+		dbPath   = flag.String("db", "", "DSN — DB path (SQLite) ou postgres://... (Postgres). DATABASE_URL env sobrescreve.")
 		interval = flag.Duration("interval", 6*time.Hour, "interval between scans (default 6h)")
 		once     = flag.Bool("once", false, "scan once and exit")
 		verbose  = flag.Bool("v", false, "verbose (debug) logging")
 	)
 	flag.Parse()
+
+	// Sprint 6 v1.5.0 (F12.2 follow-up): DATABASE_URL > -db flag.
+	resolvedDB := *dbPath
+	if envDB := os.Getenv("DATABASE_URL"); envDB != "" {
+		resolvedDB = envDB
+	}
+	if resolvedDB == "" {
+		resolvedDB = "radiant.db" // dev default
+	}
 
 	level := slog.LevelInfo
 	if *verbose {
@@ -36,9 +45,9 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
 	slog.SetDefault(logger)
 
-	d, err := db.Open(*dbPath)
+	d, err := db.Open(resolvedDB)
 	if err != nil {
-		logger.Error("db open failed", "err", err)
+		logger.Error("db open failed", "err", err, "backend", db.Backend(resolvedDB))
 		os.Exit(1)
 	}
 	defer d.Close()
@@ -52,7 +61,8 @@ func main() {
 	svc.SetLogger(logger)
 
 	logger.Info("radar worker started",
-		"db", *dbPath,
+		"db", resolvedDB,
+		"backend", db.Backend(resolvedDB),
 		"interval", interval.String(),
 		"once", *once,
 	)

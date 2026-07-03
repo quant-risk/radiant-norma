@@ -14,6 +14,8 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/api"
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
+	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
+	crossrules "github.com/fortvna/radiant-norma/backend/internal/crossdoc/rules"
 	"github.com/fortvna/radiant-norma/backend/internal/db"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
@@ -25,16 +27,18 @@ func main() {
 	slog.SetDefault(logger)
 
 	addr := envOr("RADIANT_ADDR", ":8080")
-	dbPath := envOr("RADIANT_DB", "radiant.db")
+	// Sprint 6 v1.5.0 (F12.2 fix): DATABASE_URL tem prioridade — Postgres
+	// quando detecta prefixo postgres://. Fallback SQLite pra dev.
+	dbPath := envOr("DATABASE_URL", envOr("RADIANT_DB", "radiant.db"))
 
 	// DB
 	d, err := db.Open(dbPath)
 	if err != nil {
-		logger.Error("open db", "err", err)
+		logger.Error("open db", "err", err, "dsn_prefix", db.Backend(dbPath))
 		os.Exit(1)
 	}
 	defer d.Close()
-	logger.Info("db connected", "path", dbPath)
+	logger.Info("db connected", "backend", db.Backend(dbPath))
 
 	// Migrations
 	if err := db.Migrate(d); err != nil {
@@ -51,6 +55,30 @@ func main() {
 	radarSvc := radar.New(d, 6*time.Hour)
 
 	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc)
+
+	// Sprint 6 v1.5.0 — hardening components wiring.
+	// ANTES (v1.5.0 shipped): esses 4 componentes ficavam nil → endpoints
+	// /v1/crossdoc/validate e /v1/radar/scan retornavam 503/401.
+	// Validação 12 (F12.2): fix que ativa hardening em produção.
+
+	// W4 — cadoc list com cache 5min (sempre ativo; sem env var).
+	srv.CadocListCache = schema.NewCadocListCache(5 * time.Minute)
+
+	// R1 — DOS-via-API prevention. AdminAuth é FAIL CLOSED: sem token
+	// configurado, /v1/radar/scan retorna 401.
+	adminToken := os.Getenv("RADIANT_NORMA_ADMIN_TOKEN")
+	srv.AdminAuth = &radar.AdminAuth{Token: adminToken}
+	if adminToken == "" {
+		logger.Warn("RADIANT_NORMA_ADMIN_TOKEN não configurado — /v1/radar/scan retorna 401 (admin auth FAIL CLOSED)")
+	} else {
+		logger.Info("admin auth configurado", "token_prefix", adminToken[:min(8, len(adminToken))])
+	}
+	srv.ScanLimiter = radar.NewScanLimiter(1 * time.Minute)
+	srv.ScanCache = radar.NewScanCache(5 * time.Minute)
+
+	// Cross-Doc L3 — endpoint /v1/crossdoc/validate.
+	srv.CrossDoc = crossdoc.NewEngine(crossrules.BuiltinRegistry())
+
 	handler := srv.Router()
 
 	httpSrv := &http.Server{
@@ -101,4 +129,11 @@ func envOr(key, def string) string {
 		return v
 	}
 	return def
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
