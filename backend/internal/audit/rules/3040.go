@@ -192,15 +192,49 @@ func (F02Datas) Apply(_ context.Context, doc *Doc3040) error {
 	if doc.Root.DtBase == "" {
 		return errors.New("DtBase vazio")
 	}
-	// Aceita YYYY-MM (decisão mensal) e YYYY-MM-DD (data cheia)
+	// Aceita YYYY-MM (decisão mensal) e YYYY-MM-DD (data cheia).
+	// Validação semântica adicional: mês 01-12, dia 01-31 (best-effort — não
+	// considera anos bissextos; BACEN só usa dias 01-28 na prática).
 	if !datePattern.MatchString(doc.Root.DtBase) {
 		return fmt.Errorf("DtBase fora do padrão AAAA-MM[-DD]: %q", doc.Root.DtBase)
+	}
+	if err := validateDateSemantics(doc.Root.DtBase); err != nil {
+		return fmt.Errorf("DtBase inválida: %w", err)
 	}
 	return nil
 }
 
 // datePattern é o regex precompilado para F02 (perf: não compilar a cada chamada).
 var datePattern = regexp.MustCompile(`^\d{4}-\d{2}(-\d{2})?$`)
+
+// validateDateSemantics valida ranges (mês 01-12, dia 01-31).
+// Retorna nil se data é semanticamente válida.
+func validateDateSemantics(s string) error {
+	// Formato garantido pelo regex anterior
+	parts := strings.Split(s, "-")
+	if len(parts) < 2 {
+		return errors.New("formato inválido")
+	}
+
+	mes, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return fmt.Errorf("mês não numérico: %q", parts[1])
+	}
+	if mes < 1 || mes > 12 {
+		return fmt.Errorf("mês %d fora do range 01-12", mes)
+	}
+
+	if len(parts) == 3 {
+		dia, err := strconv.Atoi(parts[2])
+		if err != nil {
+			return fmt.Errorf("dia não numérico: %q", parts[2])
+		}
+		if dia < 1 || dia > 31 {
+			return fmt.Errorf("dia %d fora do range 01-31", dia)
+		}
+	}
+	return nil
+}
 
 // F03 — Código do contrato não pode ser apenas espaços.
 // Validação aplica nas tags <Cli>/<Oper>. No agregado, skip.

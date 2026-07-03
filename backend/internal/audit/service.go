@@ -119,6 +119,11 @@ func (s *Service) Registry() *rules.Registry {
 // podem estar desabilitadas no DB (BACEN marca habilitado?=n para regras
 // que ainda não estão em vigor). O applyRegra decide se roda cada uma
 // baseado no flag `enabled` da Critica.
+//
+// Usa sql.NullString/sql.NullTime para campos opcionais (gravidade,
+// data_base_inicio, mensagem_erro) — registros antigos podem ter NULL.
+// Sem isso, Scan falha com "converting NULL to string is unsupported"
+// e a validação inteira quebra (L2-LOAD).
 func (s *Service) LoadCriticas(ctx context.Context, cadocCode string) ([]Critica, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, cadoc_code, sheet, codigo, regra, descricao, gravidade,
@@ -135,10 +140,10 @@ func (s *Service) LoadCriticas(ctx context.Context, cadocCode string) ([]Critica
 	var out []Critica
 	for rows.Next() {
 		var c Critica
-		var grav sql.NullString
+		var grav, msg sql.NullString
 		var dbi sql.NullTime
 		if err := rows.Scan(&c.ID, &c.CadocCode, &c.Sheet, &c.Codigo, &c.Regra, &c.Descricao,
-			&grav, &dbi, &c.MensagemErro, &c.Enabled); err != nil {
+			&grav, &dbi, &msg, &c.Enabled); err != nil {
 			return nil, err
 		}
 		if grav.Valid {
@@ -146,6 +151,9 @@ func (s *Service) LoadCriticas(ctx context.Context, cadocCode string) ([]Critica
 		}
 		if dbi.Valid {
 			c.DataBaseInicio = dbi.Time
+		}
+		if msg.Valid {
+			c.MensagemErro = msg.String
 		}
 		out = append(out, c)
 	}

@@ -1,0 +1,85 @@
+# CI for Radiant Norma backend.
+#
+# Roda em todo push e PR. Falha se:
+#   - go vet encontra issues
+#   - go test -race falha (detecta data races)
+#   - coverage fica abaixo dos thresholds
+#
+# Performance: ~30s em máquina decente. Cache de Go modules acelera.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: macos-latest  # dev usa macOS; SQLite funciona igual
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Download Go modules
+        working-directory: backend
+        run: go mod download
+
+      - name: go vet
+        working-directory: backend
+        run: go vet ./...
+
+      - name: go build (compile all binaries)
+        working-directory: backend
+        run: |
+          go build ./cmd/api
+          go build ./cmd/worker
+          go build ./cmd/radar
+          go build ./cmd/_verify
+
+      - name: go test -race
+        working-directory: backend
+        run: go test -race -v ./...
+
+      - name: Coverage report
+        working-directory: backend
+        run: go test -cover ./... | tee coverage.txt
+
+      - name: Check coverage thresholds
+        working-directory: backend
+        run: |
+          # auditlog/ deve ter ≥85% (regra mais crítica — audit chain)
+          COV=$(grep "internal/auditlog" coverage.txt | grep -oE '[0-9]+\.[0-9]+%' | head -1 | tr -d '%')
+          echo "auditlog coverage: ${COV}%"
+          if (( $(echo "$COV < 85" | bc -l) )); then
+            echo "❌ auditlog coverage < 85% (got ${COV}%)"
+            exit 1
+          fi
+          echo "✓ auditlog coverage OK"
+
+          # radar/ deve ter ≥70%
+          COV=$(grep "internal/radar" coverage.txt | grep -oE '[0-9]+\.[0-9]+%' | head -1 | tr -d '%')
+          echo "radar coverage: ${COV}%"
+          if (( $(echo "$COV < 70" | bc -l) )); then
+            echo "❌ radar coverage < 70% (got ${COV}%)"
+            exit 1
+          fi
+          echo "✓ radar coverage OK"
+
+      - name: gofmt check
+        working-directory: backend
+        run: |
+          UNFORMATTED=$(gofmt -l .)
+          if [ -n "$UNFORMATTED" ]; then
+            echo "❌ Files not gofmt'd:"
+            echo "$UNFORMATTED"
+            exit 1
+          fi
+          echo "✓ all files formatted"

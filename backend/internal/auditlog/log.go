@@ -162,7 +162,7 @@ func (l *Logger) Verify() (bool, int, error) {
 
 		// 1. Chain check
 		if e.PrevHash != prevHash {
-			return false, count, fmt.Errorf("chain quebrada em id=%d (prev=%s esperado=%s)", e.ID, e.PrevHash[:12], prevHash[:12])
+			return false, count, fmt.Errorf("chain quebrada em id=%d (prev=%q esperado=%q)", e.ID, e.PrevHash, prevHash)
 		}
 
 		// 2. Entry hash recomputation
@@ -178,8 +178,8 @@ func (l *Logger) Verify() (bool, int, error) {
 		expectedHash := hex.EncodeToString(expectedSum[:])
 
 		if e.EntryHash != expectedHash {
-			return false, count, fmt.Errorf("entry hash inválido em id=%d (esperado=%s encontrado=%s) — entry foi modificada",
-				e.ID, expectedHash[:12], e.EntryHash[:12])
+			return false, count, fmt.Errorf("entry hash inválido em id=%d (esperado=%q encontrado=%q) — entry foi modificada",
+				e.ID, expectedHash, e.EntryHash)
 		}
 
 		prevHash = e.EntryHash

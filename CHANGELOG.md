@@ -2,6 +2,71 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v1.4.0 — 2026-07-03 (Sprint 5: Testes Unitários + 5 bugs latentes detectados)
+
+### 🎯 Objetivo da sprint
+Fechar o gap de "validação manual satura em 4-5 passadas". Implementar
+testes automatizados + CI para detectar regressões.
+
+### ✅ Entregas
+
+#### 🔴 P0 — Testes unitários (86 testes, ~70% coverage média)
+
+| Package | Testes | Coverage |
+|---|---|---|
+| `internal/testutil` | 1 | 45.0% |
+| `internal/auditlog` | 9 | 90.8% |
+| `internal/audit/rules` | 56 | 63.2% |
+| `internal/audit` | 12 | 68.7% |
+| `internal/radar` | 8 | 78.1% |
+
+#### 🔴 Bônus — 5 bugs latentes detectados pelos testes
+
+| # | Bug | Sev | Fix |
+|---|---|---|---|
+| 1 | auditlog.Verify panica em tampering (`[:12]` em string < 12 chars) | 🔴 Alta | Use `%q` format |
+| 2 | F02Datas aceita mês 13, dia 32 (só regex) | 🟡 Média | `validateDateSemantics` |
+| 3 | recordBaseline cria `_baseline_drsac faq` (espaço) | 🟡 Média | `baselineTypeFor` helper |
+| 4 | radar_alerts UNIQUE constraint viola em scans rápidos | 🔴 Alta | Migration 003 remove UNIQUE |
+| 5 | LoadCriticas quebra em `mensagem_erro=NULL` | 🔴 Alta | `sql.NullString` defensivo |
+
+#### 🟡 P1 — Infraestrutura
+
+- **`internal/testutil/db.go`** — helper `NewTestDB(t)` (SQLite in-memory + migrations)
+- **`backend/Makefile`** — 9 alvos (test, test-race, test-cover, lint, vet, fmt, seed, run-api, clean)
+- **`.github/workflows/test.yml`** — CI com `go vet`, `go test -race`, coverage thresholds, gofmt check
+- **`backend/README.md`** — quickstart + architecture + critical rules
+- **Healthz `version: "1.4.0"`**
+
+### 📊 Estatísticas
+
+```
+Testes:    0    → 86
+Coverage:  0%   → ~70% média
+CI:       none  → GitHub Actions (vet + race + coverage thresholds)
+Makefile: none  → 9 alvos
+```
+
+### 🏗️ Lições aprendidas
+
+**Testes encontram bugs que validação manual não pega.** 5 bugs latentes em
+~1000 linhas de código novo. Padrão: regression test > validação manual repetida.
+
+**`sql.NullString` mandatório para campos opcionais.** Sem isso, 1 INSERT
+manual ou migration antiga quebra toda a validação.
+
+**Regex não valida ranges.** `^\d{4}-\d{2}$` aceita "2020-13". Sempre
+combinar regex + range check.
+
+**UNIQUE em `(time, string)` é frágil.** Violava em scans rápidos. Removido.
+
+### 📂 Commits
+
+- v1.3.6 (commit `1cb5db6`): helper parseNum + S01/S05 + stress 200
+- v1.4.0 (commit local, este): testes + 5 bugs detectados + CI workflow
+
+---
+
 ## v1.3.6 — 2026-07-03 (6ª validação profunda: helper `parseNum` + stress 200 concurrent)
 
 ### 🎯 Objetivo da validação

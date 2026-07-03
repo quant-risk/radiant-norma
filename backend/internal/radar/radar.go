@@ -231,7 +231,7 @@ func (s *Service) fetchHash(ctx context.Context, url string) (string, error) {
 // Por simplicidade: usamos radar_alerts com tipo custom. Em produção,
 // tabela dedicada radar_baselines seria melhor.
 func (s *Service) lastKnownHash(ctx context.Context, src Source) (string, error) {
-	baselineType := "_baseline_" + strings.ToLower(src.Label)
+	baselineType := baselineTypeFor(src.Label)
 	var hash string
 	err := s.db.QueryRowContext(ctx, `
 		SELECT description FROM radar_alerts
@@ -244,12 +244,22 @@ func (s *Service) lastKnownHash(ctx context.Context, src Source) (string, error)
 	return hash, err
 }
 
+// baselineTypeFor retorna o alert_type usado internamente para baseline.
+// Normaliza espaços e caracteres não-ASCII para underscore (consistência
+// entre labels com múltiplas palavras como "DRSAC FAQ" → "_baseline_drsac_faq").
+func baselineTypeFor(label string) string {
+	lower := strings.ToLower(label)
+	// Substitui qualquer não-alfanumérico (espaço, hífen, etc) por underscore
+	replacer := strings.NewReplacer(" ", "_", "-", "_", ".", "_")
+	return "_baseline_" + replacer.Replace(lower)
+}
+
 // recordBaseline grava a hash como baseline (após scan ou mudança).
 //
 // Idempotente: atualiza a baseline existente se já houver, em vez de
 // inserir nova (evita inchar a tabela).
 func (s *Service) recordBaseline(ctx context.Context, src Source, hash string) error {
-	baselineType := "_baseline_" + strings.ToLower(src.Label)
+	baselineType := baselineTypeFor(src.Label)
 
 	// UPDATE se já existe baseline; senão INSERT.
 	// Estratégia: tenta UPDATE primeiro (afeta 0 rows se não existe), depois INSERT.
