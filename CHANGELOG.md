@@ -2,6 +2,52 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v1.4.2 — 2026-07-03 (Validação profunda 8: cleanup pós-v1.4.1 + DOS risk identificado)
+
+### 🎯 Objetivo da validação
+8ª validação profunda (solicitada por Henrique após release v1.4.1).
+Caçar issues introduzidas em v1.4.1 + identificar vetor de DOS.
+
+### 🐛 Bugs corrigidos (cleanup pós-v1.4.1)
+
+| # | Bug | Sev | Arquivo | Fix |
+|---|---|---|---|---|
+| F8.4 | Healthz reporta "1.4.0" mas versão é 1.4.1 | 🟡 Média | `api/server.go:89` | Bump para "1.4.1" |
+| F8.7 | TestHealthz hardcoda "1.4.0" | 🟡 Média | `api/server_test.go:74` | Atualizar para "1.4.1" |
+| F8.10 | Dead code `newTestService` em radar_test | 🟢 Baixa | `radar/radar_test.go` | Removido |
+| F8.11 | `srv` leak em TestFetchHash_Stable | 🟡 Média | `radar/radar_test.go` | Removido |
+| F8.12 | ShortHash tests instanciam DB sem usar | 🟢 Baixa | `radar/radar_test.go` | Removido `_ = d` |
+| F8.13 | VALIDATION_v1.4.0.md diz "3 testes" (eram 4) | 🟡 Média | `VALIDATION_v1.4.0.md` | Corrigido para 4 |
+| F8.14 | VALIDATION_v1.4.0.md referencia teste inexistente | 🟡 Média | `VALIDATION_v1.4.0.md` | Removido |
+| F8.8 | Docstring de server_test menciona teste removido | 🟢 Baixa | `api/server_test.go` | Corrigido |
+
+### 🔴 Risco identificado (vai pra Sprint 6)
+
+- **F8.15 / R1** — `triggerRadarScan` é vetor de DOS-via-API: cada POST dispara
+  3 HTTP requests pra bc.gov.br sem rate limiting. Adicionado como P0 em SPRINT_6.
+
+### 📊 Estatísticas
+
+```
+Testes:    99 (mantido — fixes não adicionam testes novos)
+Coverage:  ~70% média (mantido)
+Dead code: 2 → 0 (newTestService + srv leak)
+Doc stale: 3 → 0 (VALIDATION + docstring)
+Healthz:   "1.4.0" → "1.4.1" (consistente)
+```
+
+### 📂 Commits
+
+- v1.4.2 (commit local, este): cleanup pós-v1.4.1 + identificação R1
+
+### 🏗️ Documentação
+
+- **`VALIDATION_v1.4.1.md`** (NOVO) — 8ª validação profunda com 19 findings.
+  Status: DRAFT. R1 vai pra Sprint 6 P0.
+- **`SPRINT_6.md`** atualizado — R1 adicionado em backlog + P0 criteria.
+
+---
+
 ## v1.4.1 — 2026-07-03 (Validação profunda 7: F1 + F2 corrigidos, +13 testes)
 
 ### 🎯 Objetivo da validação

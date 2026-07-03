@@ -45,7 +45,7 @@ hash mal-formado no DB (corrupção, migration errada, INSERT manual), panica.
 **Diferente do bug do auditlog:** aqui o `lastHash` vem do DB (description da tabela
 `radar_alerts`), enquanto no auditlog o hash era interno (computado na hora).
 
-**Fix (v1.4.1):** helper `ShortHash(s string) string` em radar.go + 3 testes:
+**Fix (v1.4.1):** helper `ShortHash(s string) string` em radar.go + 4 testes:
 - `TestShortHash_Normal` — 64 chars → primeiros 12
 - `TestShortHash_Short` — 6 subtests: empty, 1, 5, 11, 12, 13 chars
 - `TestShortHash_NeverPanics` — smoke test defensivo
@@ -78,7 +78,8 @@ Mapeei via `grep -rn "auditLog\.Log\|AuditLog\.Log" --include="*.go" . | grep -v
 - `resolveRadarAlert` → `radar.alert.resolved` (target=radar, metadata={alert_id})
 - `triggerRadarScan` → `radar.scan.triggered` (target=radar, metadata={new_alerts})
 
-**Tests (v1.4.1):** `internal/api/server_test.go` (novo) com 3 testes E2E:
+**Tests (v1.4.1):** `internal/api/server_test.go` (novo) com 2 testes E2E +
+`TestHealthz` smoke (3 total):
 - `TestHealthz` — smoke test
 - `TestResolveRadarAlert_EmitsAudit` — verifica audit_log após resolve
 - `TestAuditEmission_Surface` — canário: detecta se alguém remover `auditLog.Log` no futuro

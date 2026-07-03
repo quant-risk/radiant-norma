@@ -27,13 +27,6 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/testutil"
 )
 
-// Helper: criar Service com logger silencioso
-func newTestService(t *testing.T, d interface{ Close() error }) *radar.Service {
-	t.Helper()
-	// (não usado aqui; Service criado direto nos tests)
-	return nil
-}
-
 // Helper: criar Source com URL de servidor HTTP fake
 func sourceWithServer(cadoc, label, url string) radar.Source {
 	return radar.Source{
@@ -206,11 +199,6 @@ func TestScanSource_BaselineIdempotent(t *testing.T) {
 // ============================================================
 
 func TestFetchHash_Stable(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = io.WriteString(w, "hello")
-	}))
-	defer srv.Close()
-
 	d := testutil.NewTestDB(t)
 	svc := radar.New(d, 1*time.Hour)
 
@@ -218,14 +206,13 @@ func TestFetchHash_Stable(t *testing.T) {
 	expectedSum := sha256.Sum256([]byte("hello"))
 	expectedHash := hex.EncodeToString(expectedSum[:])
 
-	// Acessa fetchHash indiretamente via ScanOnce
-	content := "hello"
-	srv2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = io.WriteString(w, content)
+	// Servidor HTTP fake que retorna "hello"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, "hello")
 	}))
-	defer srv2.Close()
+	defer srv.Close()
 
-	src := sourceWithServer("2030", "Test", srv2.URL)
+	src := sourceWithServer("2030", "Test", srv.URL)
 	if _, err := svc.ScanOnce(context.Background(), []radar.Source{src}); err != nil {
 		t.Fatalf("scan: %v", err)
 	}
@@ -334,9 +321,9 @@ func TestListAlerts(t *testing.T) {
 // ============================================================
 
 // TestShortHash_Normal valida comportamento normal (len >= 12).
+//
+// Função pura — não precisa de DB.
 func TestShortHash_Normal(t *testing.T) {
-	d := testutil.NewTestDB(t)
-	_ = d // não usa DB, só importa testutil pra padronizar
 	// SHA-256 hex tem 64 chars; [:12] deve retornar primeiros 12.
 	full := "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
 	got := radar.ShortHash(full)
@@ -348,10 +335,9 @@ func TestShortHash_Normal(t *testing.T) {
 
 // TestShortHash_Short valida o fix: hash com < 12 chars não panica.
 // Validação v1.4.0: mesmo padrão do auditlog.Verify v1.4.0 bug #1.
+//
+// Função pura — não precisa de DB.
 func TestShortHash_Short(t *testing.T) {
-	d := testutil.NewTestDB(t)
-	_ = d
-
 	cases := []struct {
 		name string
 		in   string
@@ -377,10 +363,9 @@ func TestShortHash_Short(t *testing.T) {
 
 // TestShortHash_NeverPanics garante que ShortHash NUNCA panica,
 // independente do input. Smoke test defensivo.
+//
+// Função pura — não precisa de DB.
 func TestShortHash_NeverPanics(t *testing.T) {
-	d := testutil.NewTestDB(t)
-	_ = d
-
 	inputs := []string{"", "x", "abc", strings.Repeat("y", 100), "\x00\x00\x00"}
 	for _, in := range inputs {
 		func() {

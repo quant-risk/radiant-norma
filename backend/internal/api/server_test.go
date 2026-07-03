@@ -9,9 +9,13 @@
 //     audit_log. Antes do fix v1.4.1, esse endpoint NÃO emitia audit
 //     — gap coberto em VALIDATION_v1.4.0.md.
 //
-//   - TestTriggerRadarScan_EmitsAudit (regressão F2): idem para
-//     POST /v1/radar/scan. Antes: scan manual (que dispara HTTP requests
-//     pro BACEN) não era auditado.
+//   - TestAuditEmission_Surface: canário — se alguém futuramente remover
+//     a chamada auditLog.Log(...) em resolveRadarAlert, este teste falha.
+//
+// NOTA: TestTriggerRadarScan_EmitsAudit foi REMOVIDO na 8ª validação porque
+// o handler chama ScanOnce com DefaultSources (3 URLs BACEN reais) e exigiria
+// httptest mock complexo. A cobertura do canário (TestAuditEmission_Surface)
+// já protege o caminho de regressão.
 //
 // Esses testes não cobrem 100% da API (validação, STA submit, schemas,
 // etc continuam cobertos indiretamente pelos testes dos services).
@@ -71,8 +75,8 @@ func TestHealthz(t *testing.T) {
 	if body["status"] != "ok" {
 		t.Errorf("status = %v, want ok", body["status"])
 	}
-	if body["version"] != "1.4.0" {
-		t.Errorf("version = %v, want 1.4.0", body["version"])
+	if body["version"] != "1.4.1" {
+		t.Errorf("version = %v, want 1.4.1", body["version"])
 	}
 }
 

@@ -17,6 +17,7 @@
 | Hardening | W1+W2 worker retry/lease | Sprint 5 P1 atrasado |
 | Hardening | W3 B01-B05 hardcoded | Sprint 4 P2 |
 | Hardening | W4 cadoc list hardcoded | Sprint 4 P2 |
+| Hardening | R1 triggerRadarScan DOS-via-API | **Validação 8 (v1.4.2)** |
 | Test | F6 schema/registry sem tests | Sprint 5 P0 pulado |
 | Test | F8 api tests restantes (~80%) | Validação 7 parcial |
 | Test | F7 migration idempotência | Validação 7 |
@@ -64,6 +65,13 @@ suficiente.
   - Carregar de `schema_versions` (cadocs com versão registrada) ou `criticas`
   - Cachear em memória (5min TTL)
   - Test: handler retorna cadocs do DB
+
+- **R1** — `triggerRadarScan` DOS-via-API risk (descoberto na 8ª validação)
+  - Cada POST `/v1/radar/scan` chama `ScanOnce(ctx, nil)` que dispara 3 HTTP
+    requests pra bc.gov.br. Sem rate limiting. Vetor de DOS em produção.
+  - Solução: rate limit por IF (1 scan/min), cache 5min (último resultado),
+    exigir role "admin" no auth (Sprint 6 inclui JWT/OAuth real)
+  - Test: `TestTriggerRadarScan_RateLimit` — 5 requests em 1s → 4 com 429
 
 ### 🟡 Frente 2 — Testes restantes (6h)
 
@@ -185,6 +193,7 @@ Documentação:
 - [ ] F3 race fix + regression test
 - [ ] W1 worker backoff + tests
 - [ ] W2 worker lease timeout + tests
+- [ ] **R1** triggerRadarScan rate limit (DOS prevention) + tests
 - [ ] F6 schema tests (≥70% coverage em `internal/schema`)
 - [ ] Postgres driver funciona end-to-end (docker compose up + migrate + API up)
 
