@@ -140,11 +140,46 @@ Sprint 6 vai focar em:
 2. **Driver Postgres** — `pgx` + Docker compose
 3. **Frontend** — Next.js dashboard (Sprint 7 ou 6?)
 4. **Cross-doc L3** — endpoint novo
+5. **Schema tests** — `internal/schema/registry_test.go` (F6 do VALIDATION_v1.4.0)
+6. **Record baseline race** — `INSERT ON CONFLICT` ou tx serializada (F3 do VALIDATION_v1.4.0)
 
-A infraestrutura de testes v1.4.0 dá confiança pra essas mudanças. Cada
+A infraestrutura de testes v1.4.0 + v1.4.1 dá confiança pra essas mudanças. Cada
 nova feature terá regression test desde o primeiro commit.
 
 ---
 
-**Decisão Sprint 5 fechada:** P0 completo, P1 parcial (sem L3 cross-doc).
-86 testes + CI workflow + Makefile + README. Suficiente pra próximo sprint.
+## 🆕 v1.4.1 — Pós-validação profunda 7
+
+> **Status:** patch aplicado após 7ª validação (ver `VALIDATION_v1.4.0.md`)
+> **Trigger:** Henrique pediu validação profunda + commit local + segue pra Sprint 6
+> **Mudanças:** F1 (ShortHash helper) + F2 (audit emission radar endpoints) + 13 testes novos
+
+### Fixes
+- **F1** (🟡 Média): `radar.go` tinha 4× `s[:12]` em hash — mesmo padrão do bug #1 v1.4.0
+- **F2** (🟡 Média): `resolveRadarAlert` + `triggerRadarScan` não emitiam audit
+
+### Tests (+13)
+- `internal/api/server_test.go` (NOVO): healthz + audit emission canary (3 testes)
+- `internal/radar/radar_test.go` (+4 testes): ShortHash normal/short/never-panics + RecordBaseline corrompido
+
+### Estatísticas
+```
+Testes:    86 → 99 (+13)
+Packages:  5 com testes → 6 com testes (+api)
+Coverage:  radar 78.1% → 78.8%, api NOVO 20.1%
+```
+
+### Gaps remanescentes (Sprint 6 backlog)
+| Gap | Validação | Prioridade Sprint 6 |
+|---|---|---|
+| F3 — recordBaseline race window | 7ª | P0 |
+| F6 — internal/schema sem tests | 7ª | P0 |
+| W1+W2 — worker hardening | 5ª | P0 |
+| L3 — cross-doc endpoint | 5ª | P1 |
+| PG — Postgres driver | 5ª | P1 |
+| F8 — api tests restantes | 7ª | P2 |
+
+---
+
+**Decisão Sprint 5 fechada:** P0 completo + v1.4.1 patch aplicado. 99 testes + CI
+workflow + Makefile + README + audit emission surface completa. Suficiente pra Sprint 6.
