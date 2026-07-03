@@ -2,7 +2,7 @@
 
 > **Engenharia reversa profunda para construção do Radiant Sentinel — plataforma SaaS da Radiant Risk Solutions (marca da Fortvna) que gera CADOCs para envio ao BACEN via STA, competindo com Mitra e Matera.**
 
-Base local de pesquisa, baixada e estruturada em **2026-07-03**, com todos os leiautes oficiais, instruções de preenchimento, normativos, manuais técnicos, XSDs, exemplos XML, materiais de concorrentes e **catálogo JSON estruturado de críticas + leiautes** pronto para o **Sentinel Audit** (L1 + L2).
+Base local de pesquisa **+ backend Go funcional** (Sprint 3), tudo commitado em git. Estruturada em **2026-07-03**, com todos os leiautes oficiais, instruções de preenchimento, normativos, manuais técnicos, XSDs, exemplos XML, materiais de concorrentes, **catálogo JSON estruturado de críticas + leiautes**, e **API REST backend** com Sentinel Audit + Schema Registry + STA stub.
 
 ---
 
@@ -12,7 +12,7 @@ Base local de pesquisa, baixada e estruturada em **2026-07-03**, com todos os le
 cadocs/
 ├── 3040/        # Dados de Risco de Crédito (SCR) — mensal
 ├── 3042/        # Substituição Parcial do 3040
-├── 3044/        # Dados de Eventos em Operações de Crédito (a partir de 11/2025)
+├── 3044/        # Dados de Eventos em Operações de Crédito (JSON, a partir de 11/2025)
 ├── 3050/        # Estatísticas Agregadas de Crédito e Arrendamento Mercantil
 ├── 2030-DRSAC/  # Risco Social, Ambiental e Climático (ESG) — semestral
 ├── 2060-DRM/    # Demonstrativo de Risco de Mercado
@@ -24,26 +24,25 @@ cadocs/
 ├── _normativos/ # Cartas-Circulares, Circulares, Resoluções BCB vigentes
 ├── _referencias/# STA, BCValidador, COSIF, Desig, exemplos XML 3026/3040
 ├── _concorrentes/# Engenharia reversa: Mitra, Matera, cadoc.ai, etc.
-└── _catalogos/  # ★ NOVO — Catálogo JSON estruturado (críticas + leiautes)
-    ├── criticas.json   # 1.081 regras de validação extraídas
-    ├── leiautes.json   # 4.244 linhas de campos por CADOC
-    ├── extract.py      # Script de re-extração
-    └── README.md       # Documentação do catálogo
+├── _catalogos/  # ★ Catálogo JSON estruturado (1.099 regras + 4.244 leiautes + 3044 schema)
+├── tools/       # ★ Spikes Go (xsdgen + sentinel-audit CLI)
+├── backend/     # ★★ Backend Go com API REST funcional (Sprint 3)
+├── CHANGELOG.md # Histórico de todas as sprints
+├── SPRINT_2.md  # Retrospectiva Sprint 2
+├── SPRINT_3.md  # Retrospectiva Sprint 3
+├── README.md / README.pdf (13p)
+├── ENG_REVERSA.md / ENG_REVERSA.pdf (11p)
+└── PRODUTO_TESE_ROADMAP.md / PRODUTO_TESE_ROADMAP.pdf (28p)
 ```
 
-**Inventário (atualizado 2026-07-03 14h30):** 137 arquivos · 60 MB.
-- **Leiautes oficiais:** 3040 (XLS), 3042, 3044 (PDF), 3050, 2030 DRSAC, 2060, 2061, 2062, 2070 (DDR), 2160, 2170
-- **Instruções de preenchimento:** todas, incluindo múltiplas versões históricas (DRM v2…v11, DLO 2018/2024/2025)
-- **XSDs:** 3045, 3026, 3050 TXB V4 + **★ 3040_generated.xsd** (gerado pelo xsdgen)
-- **XMLs de exemplo:** 3040 (3000 clientes + cessão), 3026
-- **Críticas (planilhas):** 3040 (361), 3050 V11 (170), 2061 DLO (518), 2070 DDR (11), **2060 DRM (22 extraídas do PDF)** — **1.082 regras**
-- **★ 3044 schema JSON** extraído do manual + 17 regras T01-T19
-- **Normativos:** 18 cartas-circulares, circulares e DRO 5050
-- **STA:** manuais Web + WS + FAQ + 2 apresentações
-- **BCValidador:** manual técnico oficial Deinf/Dine4 v1.3
-- **Concorrentes:** 29 páginas (Mitra, Matera, cadoc.ai, etc.)
-- **★ Catálogo estruturado:** JSON pronto para Sentinel Audit (1.099 regras totais com 3044)
-- **★ Spike técnico Go:** `tools/xsdgen/` + `tools/sentinel-audit/` rodando
+**Inventário (atualizado 2026-07-03 14h55):** 137 arquivos BACEN · 60 MB · 10 arquivos Go (1.4k linhas) · 7 endpoints REST · 968 críticas + 8 schemas no DB.
+- **Material BACEN capturado:** 137 arquivos (50 MB) — mesma lista da Sprint 2
+- **Catálogo JSON estruturado:** 1.099 regras de 6 CADOCs + 4.244 linhas de 8 CADOCs + 3044 schema
+- **Spike técnico Go (Sprint 2):** `tools/xsdgen/` + `tools/sentinel-audit/` rodando
+- **Backend Go (Sprint 3):** `backend/` com cmd/api, cmd/seed, internal/{db,schema,audit,auditlog,sta,api} + migrations embed.FS
+- **Stack:** Go 1.22+ · chi router · SQLite (modernc.org/sqlite, pure-Go) → Postgres em prod
+- **Endpoints funcionais (curl testados):** /healthz, /v1/schemas/{cadoc}, /v1/rules/{cadoc}, /v1/validate, /v1/sta/submit
+- **★ Decisão de linguagem (Go vs Rust) documentada no CHANGELOG § v1.2.0**
 
 ---
 
