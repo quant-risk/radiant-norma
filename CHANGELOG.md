@@ -2,6 +2,101 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v1.3.5 — 2026-07-03 (5ª validação profunda: race condition crítica no auditlog)
+
+### 🎯 Objetivo da validação
+**Caçar bugs latentes em código já validado 4 vezes.** Releitura linha-por-linha
+de auditlog, schema registry, parser 3040, worker, e testes E2E agressivos
+(stress test 50 reqs concorrentes).
+
+### 🔴 BUG CRÍTICO #1 — Race condition no auditlog (perda silenciosa de auditoria)
+
+**Arquivo:** `internal/db/db.go` (DSN)
+
+**Sintoma:** Comentários no `auditlog/log.go:7` e `db/migrate.go:7` declaravam
+"usa BEGIN IMMEDIATE (lock write no SQLite) pra evitar race". **Mas o código
+não usava!** `BeginTx(ctx, nil)` = `BEGIN DEFERRED` (default).
+
+**Falha empírica (probe com 50 goroutines concorrentes):**
+```
+SEM _txlock=immediate:
+  18 de 50 goroutines: "insert: database is locked (5) (SQLITE_BUSY)"
+  Chain: 8 entries (não 50) — 42% das auditorias PERDIDAS silenciosamente
+COM _txlock=immediate:
+  50 de 50: OK
+  Chain: 50 entries, válida
+```
+
+**Severidade:** 🔴 CRÍTICA — perda de audit log em LGPD/SOC 2 é falha grave
+de compliance. Não foi detectada antes porque testes E2E usavam requests
+sequenciais, não concorrentes.
+
+**Fix:** Adicionar `_txlock=immediate` ao DSN em `db.go`. Driver modernc-sqlite
+aplica `begin immediate` automaticamente em todas as transações, conforme
+[documentação do driver](https://pkg.go.dev/modernc.org/sqlite#hdr-_txlock).
+
+### 🟡 BUGS S04 — comparação string causava falsos positivos
+
+**Arquivo:** `internal/audit/rules/3040.go::S04CreditoALiberar`
+
+**Sintoma:** `if v.V150 != "0" || v.V160 != "0"` falhava em:
+- `v150=""` (Venc ausente) → `"" != "0"` → falso positivo
+- `v150="0.0"` (decimal zero) → `"0.0" != "0"` → falso positivo
+- `v150="  0  "` (whitespace) → `"  0  " != "0"` → falso positivo
+
+**Fix:** Usar `strconv.ParseFloat(strings.TrimSpace(...), 64)` e comparar com
+`!= 0`. Aceita qualquer representação de zero.
+
+```go
+v150, _ := strconv.ParseFloat(strings.TrimSpace(v.V150), 64)
+v160, _ := strconv.ParseFloat(strings.TrimSpace(v.V160), 64)
+if v150 != 0 || v160 != 0 { ... }
+```
+
+**Severidade:** 🟡 Média — falsos positivos não quebram auditoria mas geram
+ruído (BACEN investigaria regra que não falhou).
+
+### 📊 Validação E2E
+
+```
+✓ Stress test 50 validates concorrentes → 51/53 passed em 105ms
+✓ Audit chain após stress → 89 entries, válida
+✓ S04 edge cases:
+  - Mod=0213 sem <Venc>             → S04=0 (não é preenchido)
+  - Mod=0213 v150="0.0" v160="0.0" → S04=0 (decimal zero)
+  - Mod=0213 v150="  0  " v160="0" → S04=0 (whitespace)
+  - Mod=0213 v150="0"   v160="0"  → S04=0 (controle)
+  - Mod=0213 v150="500" v160="0"  → S04=1 (detectado)
+✓ S04 6 modalidades BACEN (0204, 0210, 1304, 0201, 0213, 0214) → detecta
+✓ S04 modalidades fora (0202, 0215, 19) → skip
+✓ Case-insensitive enabled filter
+✓ Worker 3 envios processados
+✓ Radar recordBaseline idempotente
+✓ Healthz uptime_seconds cresce corretamente
+✓ go vet clean, gofmt clean
+```
+
+### 🏗️ Lições aprendidas (cross-project)
+
+**1. Comentários sem código correspondente são hollow stubs.**
+`auditlog/log.go:7` e `db/migrate.go:7` diziam "BEGIN IMMEDIATE" mas o
+código usava `BeginTx(ctx, nil)` = DEFERRED. Lição: ou o código reflete o
+comentário, ou o comentário é removido.
+
+**2. Comentários "safe contra execução concorrente" precisam de teste de stress.**
+Múltiplas validações sequenciais não pegam race conditions. Precisa de
+goroutines concorrentes ou `go test -race`.
+
+**3. Comparação string de números é armadilha.**
+`!= "0"` falha em "0.0", "  0  ", "". Sempre use `strconv.ParseFloat` para
+valores numéricos, mesmo quando o tipo é string.
+
+### 📂 Commits
+- v1.3.4 (commit `e5951c7`): silent errors + case-insensitive + healthz uptime
+- v1.3.5 (commit local, este): race condition fix + S04 num parsing
+
+---
+
 ## v1.3.4 — 2026-07-03 (4ª validação profunda: silent errors + UX)
 
 ### 🎯 Objetivo da validação

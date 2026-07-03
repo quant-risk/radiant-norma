@@ -86,7 +86,7 @@ func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":         "ok",
 		"time":           time.Now().UTC().Format(time.RFC3339),
-		"version":        "1.3.4",
+		"version":        "1.3.5",
 		"uptime_seconds": int(time.Since(s.startedAt).Seconds()),
 	})
 }

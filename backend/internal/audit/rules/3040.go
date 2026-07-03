@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 // ============================================================
@@ -373,7 +374,11 @@ func (S04CreditoALiberar) Apply(_ context.Context, doc *Doc3040) error {
 		}
 		v := ag.Vencimentos
 		// Vencimentos "60" e "80" (= v150 e v160) devem ser zero.
-		if v.V150 != "0" || v.V160 != "0" {
+		// Parse numérico: aceita "0", "0.0", "  0  ", "" (vazio) como zero.
+		// Comparação string "!= \"0\"" daria falso positivo em "0.0" ou "".
+		v150, _ := strconv.ParseFloat(strings.TrimSpace(v.V150), 64)
+		v160, _ := strconv.ParseFloat(strings.TrimSpace(v.V160), 64)
+		if v150 != 0 || v160 != 0 {
 			return fmt.Errorf("Agreg[%d]: modalidade %s (crédito a liberar) não pode ter vencimentos 60/80 preenchidos (v150=%s v160=%s)",
 				i, ag.Mod, v.V150, v.V160)
 		}
