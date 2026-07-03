@@ -1,68 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 160" width="480" height="160" role="img" aria-label="Radiant Norma — Régua Radiante">
-  <defs>
-    <linearGradient id="bgR" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#020617"/>
-      <stop offset="60%" stop-color="#0a0f1f"/>
-      <stop offset="100%" stop-color="#1a1147"/>
-    </linearGradient>
-    <radialGradient id="normaGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="30%" stop-color="#c4b5fd"/>
-      <stop offset="70%" stop-color="#8b5cf6" stop-opacity="0.4"/>
-      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="rulerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.2"/>
-      <stop offset="50%" stop-color="#60a5fa" stop-opacity="0.9"/>
-      <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.2"/>
-    </linearGradient>
-    <linearGradient id="textR" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#60a5fa"/>
-      <stop offset="50%" stop-color="#a78bfa"/>
-      <stop offset="100%" stop-color="#f0abfc"/>
-    </linearGradient>
-    <clipPath id="clipR"><rect width="480" height="160" rx="16"/></clipPath>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 160" width="480" height="160" role="img" aria-label="Radiant Norma — Blockquote Bar">
+  <rect width="480" height="160" fill="#fafafa"/>
 
-  <g clip-path="url(#clipR)">
-    <rect width="480" height="160" fill="url(#bgR)"/>
+  <rect x="40" y="32" width="6" height="96" fill="#10b981"/>
 
-    <g transform="translate(40, 35)">
-      <line x1="55" y1="0" x2="55" y2="90" stroke="url(#rulerGrad)" stroke-width="2"/>
+  <text x="64" y="68"
+        font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Helvetica, sans-serif"
+        font-weight="200" font-size="14" fill="#737373" letter-spacing="10">RADIANT</text>
 
-      <g stroke="#a78bfa" stroke-linecap="round" opacity="0.55">
-        <line x1="50" y1="8"  x2="60" y2="8"  stroke-width="1.5"/>
-        <line x1="46" y1="22" x2="64" y2="22" stroke-width="1.5"/>
-        <line x1="50" y1="36" x2="60" y2="36" stroke-width="1.5"/>
-      </g>
+  <text x="64" y="108"
+        font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Helvetica, sans-serif"
+        font-weight="800" font-size="40" fill="#0a0a0a" letter-spacing="-1">NORMA</text>
 
-      <line x1="38" y1="45" x2="72" y2="45" stroke="#ffffff" stroke-width="2.2" opacity="0.95"/>
+  <text x="64" y="130"
+        font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Helvetica, sans-serif"
+        font-weight="500" font-size="9" fill="#525252" letter-spacing="2">Inteligência regulatória pra IF brasileira.</text>
 
-      <g stroke="#a78bfa" stroke-linecap="round" opacity="0.55">
-        <line x1="50" y1="54" x2="60" y2="54" stroke-width="1.5"/>
-        <line x1="46" y1="68" x2="64" y2="68" stroke-width="1.5"/>
-        <line x1="50" y1="82" x2="60" y2="82" stroke-width="1.5"/>
-      </g>
-
-      <circle cx="55" cy="45" r="24" fill="url(#normaGlow)"/>
-
-      <g stroke="#c4b5fd" stroke-width="1.1" stroke-linecap="round" opacity="0.6">
-        <line x1="55" y1="16" x2="55" y2="10"/>
-        <line x1="55" y1="80" x2="55" y2="74"/>
-        <line x1="22" y1="45" x2="16" y2="45"/>
-        <line x1="88" y1="45" x2="94" y2="45"/>
-        <line x1="32" y1="22" x2="27" y2="17"/>
-        <line x1="78" y1="22" x2="83" y2="17"/>
-        <line x1="32" y1="68" x2="27" y2="73"/>
-        <line x1="78" y1="68" x2="83" y2="73"/>
-      </g>
-
-      <circle cx="55" cy="45" r="5" fill="#ffffff"/>
-      <circle cx="55" cy="45" r="2.6" fill="#a78bfa"/>
-    </g>
-
-    <text x="165" y="68" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Helvetica, sans-serif" font-weight="200" font-size="36" fill="#e2e8f0" letter-spacing="10">RADIANT</text>
-    <text x="165" y="108" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Helvetica, sans-serif" font-weight="800" font-size="36" fill="url(#textR)" letter-spacing="8">NORMA</text>
-    <text x="166" y="132" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Helvetica, sans-serif" font-weight="500" font-size="9" fill="#94a3b8" letter-spacing="3.5">INTELIGÊNCIA REGULATÓRIA · BACEN · CADOCS</text>
-  </g>
+  <text x="64" y="146"
+        font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Helvetica, sans-serif"
+        font-weight="500" font-size="7" fill="#a3a3a3" letter-spacing="3">BACEN · CADOCS · 2026</text>
 </svg>

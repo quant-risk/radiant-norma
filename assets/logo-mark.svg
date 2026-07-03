@@ -1,59 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Radiant Norma mark — Régua Radiante">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Radiant Norma mark — N com blockquote bar">
   <defs>
-    <linearGradient id="rbg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#020617"/>
-      <stop offset="100%" stop-color="#1a1147"/>
-    </linearGradient>
-    <radialGradient id="rglow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="30%" stop-color="#c4b5fd"/>
-      <stop offset="70%" stop-color="#8b5cf6" stop-opacity="0.4"/>
-      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="rline" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.3"/>
-      <stop offset="50%" stop-color="#60a5fa"/>
-      <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.3"/>
-    </linearGradient>
-    <clipPath id="rclip"><rect width="120" height="120" rx="22"/></clipPath>
+    <clipPath id="markClip"><rect width="120" height="120" rx="22"/></clipPath>
   </defs>
 
-  <g clip-path="url(#rclip)">
-    <rect width="120" height="120" fill="url(#rbg)"/>
-    <rect x="0" y="0" width="120" height="3" fill="#8b5cf6"/>
+  <g clip-path="url(#markClip)">
+    <rect width="120" height="120" fill="#fafafa"/>
 
-    <g transform="translate(15, 15)">
-      <line x1="45" y1="0" x2="45" y2="90" stroke="url(#rline)" stroke-width="2"/>
+    <rect x="22" y="22" width="6" height="76" fill="#10b981"/>
 
-      <g stroke="#a78bfa" stroke-linecap="round" opacity="0.55">
-        <line x1="40" y1="8"  x2="50" y2="8"  stroke-width="1.5"/>
-        <line x1="36" y1="22" x2="54" y2="22" stroke-width="1.5"/>
-        <line x1="40" y1="36" x2="50" y2="36" stroke-width="1.5"/>
-      </g>
-
-      <line x1="28" y1="45" x2="62" y2="45" stroke="#ffffff" stroke-width="2.2" opacity="0.95"/>
-
-      <g stroke="#a78bfa" stroke-linecap="round" opacity="0.55">
-        <line x1="40" y1="54" x2="50" y2="54" stroke-width="1.5"/>
-        <line x1="36" y1="68" x2="54" y2="68" stroke-width="1.5"/>
-        <line x1="40" y1="82" x2="50" y2="82" stroke-width="1.5"/>
-      </g>
-
-      <circle cx="45" cy="45" r="24" fill="url(#rglow)"/>
-
-      <g stroke="#c4b5fd" stroke-width="1.1" stroke-linecap="round" opacity="0.6">
-        <line x1="45" y1="16" x2="45" y2="10"/>
-        <line x1="45" y1="80" x2="45" y2="74"/>
-        <line x1="14" y1="45" x2="8"  y2="45"/>
-        <line x1="76" y1="45" x2="82" y2="45"/>
-        <line x1="22" y1="22" x2="17" y2="17"/>
-        <line x1="68" y1="22" x2="73" y2="17"/>
-        <line x1="22" y1="68" x2="17" y2="73"/>
-        <line x1="68" y1="68" x2="73" y2="73"/>
-      </g>
-
-      <circle cx="45" cy="45" r="5" fill="#ffffff"/>
-      <circle cx="45" cy="45" r="2.6" fill="#a78bfa"/>
-    </g>
+    <text x="78" y="88" text-anchor="middle"
+          font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Helvetica, sans-serif"
+          font-weight="800" font-size="76" fill="#0a0a0a">N</text>
   </g>
 </svg>
