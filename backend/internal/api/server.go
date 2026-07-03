@@ -21,6 +21,16 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
+// Version é a versão da API reportada no /healthz e em metadata de log.
+//
+// Sprint 5 v1.4.3 (validação 9): single source of truth. Antes, a versão era
+// hardcoded em 2 lugares (`healthz` handler + `TestHealthz`), o que causava
+// "version bump ripple effects" toda vez que a versão mudava. Agora há 1 só
+// lugar — este constante — e todos os call sites referenciam aqui.
+//
+// Para bumpar: atualizar este string + CHANGELOG.md + tag git.
+const Version = "1.4.3"
+
 // Server agrega todos os serviços.
 type Server struct {
 	DB        *sql.DB
@@ -86,7 +96,7 @@ func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":         "ok",
 		"time":           time.Now().UTC().Format(time.RFC3339),
-		"version":        "1.4.1",
+		"version":        Version,
 		"uptime_seconds": int(time.Since(s.startedAt).Seconds()),
 	})
 }

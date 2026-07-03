@@ -7,7 +7,7 @@
 > **Escopo:** revisão profunda de `internal/radar/{radar,radar_test}.go`,
 > `internal/api/{server,server_test}.go`, `VALIDATION_v1.4.0.md`, `SPRINT_6.md`,
 > `CHANGELOG.md`, `SPRINT_5_RESULTS.md`
-> **Versão proposta:** v1.4.2 (patch — fixes de F8.4, F8.7-F8.10, F8.12, F8.13, F8.16)
+> **Versão proposta:** v1.4.2 (patch — fixes de F8.4, F8.7-F8.14; R1 F8.15 documentado)
 
 ## 🎯 Resumo executivo
 
@@ -16,7 +16,8 @@
 - ✅ F1 (ShortHash helper) + F2 (audit emission radar) aplicados
 - ✅ 6 packages com testes (incluindo api)
 - ⚠️ **Healthz ainda reporta "1.4.0"** — bump não foi feito
-- ⚠️ **Dead code + server leak + doc inconsistency** introduzidos na v1.4.1
+- ⚠️ **Dead code (`newTestService`) + server leak (`srv` em TestFetchHash) +
+  doc inconsistency** introduzidos ou deixados passar
 - ⚠️ **`triggerRadarScan` é vetor de DOS-via-API** (cada request = 3 HTTP pra BACEN)
 
 **Após validação 8 (v1.4.2):**
@@ -77,7 +78,7 @@ if body["version"] != "1.4.0" {
 que **não existe** (eu deletei na iteração anterior por não conseguir mockar
 `ScanOnce` com DefaultSources). Docstring promete cobertura que não existe.
 
-**Fix (v1.4.2):** docstring reescrita para refletir os 2 testes reais
+**Fix (v1.4.2):** docstring reescrita para refletir os 3 testes reais
 (TestHealthz, TestResolveRadarAlert_EmitsAudit, TestAuditEmission_Surface)
 + nota explicando por que `TestTriggerRadarScan_EmitsAudit` foi removido.
 

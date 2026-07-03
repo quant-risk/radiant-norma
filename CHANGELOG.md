@@ -2,6 +2,51 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v1.4.3 — 2026-07-03 (Validação profunda 9: Version constant + itoa cleanup + self-doc fix)
+
+### 🎯 Objetivo da validação
+9ª validação profunda (solicitada por Henrique após release v1.4.2).
+Auto-verificação do que escrevi na v1.4.2 + correção de bugs latentes que a v1.4.2 introduziu (sem perceber).
+
+### 🐛 Bugs corrigidos
+
+| # | Bug | Sev | Arquivo | Fix |
+|---|---|---|---|---|
+| F9.22 | `version` hardcoded em `healthz` + `TestHealthz` (ripple effect) | 🟡 Média | `api/server.go:89` + `api/server_test.go:78` | Constante `Version` exportada |
+| F9.24 | `itoa` customizado reinventando `strconv.FormatInt` | 🟢 Baixa | `api/server_test.go:185` | Wrapper deprecated sobre stdlib |
+| F9.14 | VALIDATION_v1.4.1.md diz "2 testes" (lista 3) | 🟢 Baixa | `VALIDATION_v1.4.1.md:80` | Corrigido para 3 |
+| F9.16 | VALIDATION_v1.4.1.md "Versão proposta" lista F8.16 (que é verificação, não fix) | 🟢 Baixa | `VALIDATION_v1.4.1.md:10` | Corrigido para F8.15 (R1) |
+
+### ✅ Entregas
+
+- **`internal/api/server.go`** — constante `Version = "1.4.3"` exportada.
+  `healthz` agora referencia `Version` em vez de string hardcoded.
+  Single source of truth para versão.
+- **`internal/api/server_test.go`** — `TestHealthz` referencia `api.Version`.
+  `itoa` virou wrapper deprecado sobre `strconv.FormatInt` (não reinventa stdlib).
+
+### 📊 Estatísticas
+
+```
+Testes:    99 (mantido)
+Coverage:  ~70% média (mantido)
+Healthz:   string hardcoded → constante Version (1 source of truth)
+itoa:      21 linhas → 3 linhas (stdlib wrapper)
+```
+
+### 📂 Commits
+
+- v1.4.3 (commit local, este): Version constant + itoa cleanup + self-doc fix
+
+### 🏗️ Documentação
+
+- **`VALIDATION_v1.4.1.md`** corrigido — test count self-inconsistency (F9.14)
+  + "Versão proposta" F8.16 → F8.15 (F9.16).
+- **`VALIDATION_v1.4.2.md`** (NOVO) — 9ª validação profunda com 25 findings.
+  Status: DRAFT.
+
+---
+
 ## v1.4.2 — 2026-07-03 (Validação profunda 8: cleanup pós-v1.4.1 + DOS risk identificado)
 
 ### 🎯 Objetivo da validação

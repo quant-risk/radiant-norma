@@ -28,6 +28,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/fortvna/radiant-norma/backend/internal/api"
@@ -75,8 +76,8 @@ func TestHealthz(t *testing.T) {
 	if body["status"] != "ok" {
 		t.Errorf("status = %v, want ok", body["status"])
 	}
-	if body["version"] != "1.4.1" {
-		t.Errorf("version = %v, want 1.4.1", body["version"])
+	if body["version"] != api.Version {
+		t.Errorf("version = %v, want %s", body["version"], api.Version)
 	}
 }
 
@@ -182,25 +183,10 @@ func TestAuditEmission_Surface(t *testing.T) {
 	}
 }
 
-// itoa converte int64 pra string (evita import strconv só pra isso).
+// itoa converte int64 pra string. Substituído por strconv.FormatInt na v1.4.3
+// (validação 9) — não há razão pra reinventar stdlib.
+//
+// Deprecated: use strconv.FormatInt(n, 10).
 func itoa(n int64) string {
-	if n == 0 {
-		return "0"
-	}
-	neg := n < 0
-	if neg {
-		n = -n
-	}
-	var buf [20]byte
-	i := len(buf)
-	for n > 0 {
-		i--
-		buf[i] = byte('0' + n%10)
-		n /= 10
-	}
-	if neg {
-		i--
-		buf[i] = '-'
-	}
-	return string(buf[i:])
+	return strconv.FormatInt(n, 10)
 }
