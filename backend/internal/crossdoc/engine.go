@@ -15,6 +15,8 @@ import (
 	"log/slog"
 	"sync"
 	"time"
+
+	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 )
 
 // ValidationRequest é a entrada do engine.
@@ -146,14 +148,23 @@ func (e *Engine) Validate(ctx context.Context, req *ValidationRequest) *Validati
 					} else {
 						resp.Warnings = append(resp.Warnings, ve)
 					}
-				} else {
-					// Erro genérico → warning
-					resp.Warnings = append(resp.Warnings, ValidationError{
-						Code:     rule.Code(),
-						Severity: rule.Severity(),
-						Message:  err.Error(),
-					})
-				}
+			} else {
+				// Erro genérico → warning.
+				//
+				// Validação 19 (F19.10): sanitizar err.Error(). Sem isso,
+				// vetor de disclosure via JSON response (Message de
+				// ValidationError é retornado pelo endpoint
+				// /v1/crossdoc/validate). Mensagem pública usa um label
+				// genérico; err.Error() (sanitizado) vai ao log para debug.
+				logger.Error("crossdoc rule generic error",
+					"rule", rule.Code(),
+					"err", loggerutil.SafeError(err))
+				resp.Warnings = append(resp.Warnings, ValidationError{
+					Code:     rule.Code(),
+					Severity: rule.Severity(),
+					Message:  "regra " + rule.Code() + " reportou erro",
+				})
+			}
 			}
 		}()
 	}

@@ -16,10 +16,12 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/fortvna/radiant-norma/backend/internal/audit/rules"
+	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 )
 
 // Critica representa uma regra de validação.
@@ -191,10 +193,17 @@ func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*Valida
 	// L1 — Parse XML/JSON
 	l1Err := s.validateL1Parse(req)
 	if l1Err != nil {
+		// Validação 19 (F19.11): sanitizar L1 parse error — não expor
+		// XML element names, attribute paths, ou SQL fragments.
+		// Log completo (sanitizado) para debug; response usa mensagem genérica.
+		logger := slog.Default()
+		logger.Error("audit L1 parse failed",
+			"cadoc", req.CadocCode,
+			"err", loggerutil.SafeError(l1Err))
 		resp.Errors = append(resp.Errors, ValidationError{
 			Critica:  Critica{Codigo: "L1-PARSE", CadocCode: req.CadocCode},
 			Severity: "E",
-			Message:  l1Err.Error(),
+			Message:  "documento XML/JSON inválido",
 		})
 		// L1 falhou: aborta L2 (regras semânticas que parseiam XML/JSON não rodam)
 		// sem isso, gera 13+ erros de "parser 3040 falhou" duplicados.
@@ -206,10 +215,16 @@ func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*Valida
 	// L2 — Regras semânticas (carrega críticas do DB e aplica as implementadas)
 	criticas, err := s.LoadCriticas(ctx, req.CadocCode)
 	if err != nil {
+		// Validação 19 (F19.12): sanitizar DB error — não expor SQL fragments
+		// ou table names via Message de ValidationError (vai pro JSON response).
+		logger := slog.Default()
+		logger.Error("audit L2 load failed",
+			"cadoc", req.CadocCode,
+			"err", loggerutil.SafeError(err))
 		resp.Errors = append(resp.Errors, ValidationError{
 			Critica:  Critica{Codigo: "L2-LOAD", CadocCode: req.CadocCode},
 			Severity: "E",
-			Message:  "Erro carregando críticas: " + err.Error(),
+			Message:  "erro carregando regras",
 		})
 	} else {
 		// Parseia o XML 3040 UMA vez (perf: 25 regras × 1 parse = 25x slowdown)
@@ -249,7 +264,11 @@ func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*Valida
 			ve := ValidationError{
 				Critica:  c,
 				Severity: sev,
-				Message:  ruleErr.Error(),
+				// Validação 19 (F19.13): sanitizar regra error via
+				// loggerutil.SafeError antes de expor no JSON response.
+				// SafeError preserva informação útil (mês 13, etc.) e
+				// só mascara DSN/password/host.
+				Message: loggerutil.SafeError(ruleErr),
 			}
 			if sev == "E" {
 				resp.Errors = append(resp.Errors, ve)
