@@ -230,7 +230,9 @@ func processEnvio(
 			"envio_id": e.ID,
 			"attempts": newAttempts,
 			"max":      MaxAttempts,
-			"err":      err.Error(),
+			// Validação 18 (F18.13): sanitizar err.Error() antes do AuditLog.
+			// AuditLog persiste em disco (LGPD/SOC2) — vetor persistente.
+			"err": loggerutil.SafeError(err),
 		})
 
 		logger.Error("envio submission failed",

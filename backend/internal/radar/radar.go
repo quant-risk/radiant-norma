@@ -20,6 +20,9 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
+	"github.com/fortvna/radiant-norma/backend/internal/version"
 )
 
 // Source é uma URL que o Radar monitora.
@@ -111,10 +114,12 @@ func (s *Service) ScanOnce(ctx context.Context, sources []Source) ([]Alert, erro
 	for _, src := range sources {
 		alert, err := s.scanSource(ctx, src)
 		if err != nil {
+			// Validação 18 (F18.9): sanitizar err (pode incluir DSN
+			// caso fonte seja re-escrita com auth params no futuro, ou
+			// detalhes de pgx se storage for migrado).
 			s.logger.Warn("scan source failed",
 				"cadoc", src.CadocCode,
-				"url", src.URL,
-				"err", err,
+				"err", loggerutil.SafeError(err),
 			)
 			continue
 		}
@@ -147,12 +152,13 @@ func (s *Service) scanSource(ctx context.Context, src Source) (*Alert, error) {
 	// Primeira vez ou hash igual → não é mudança
 	if lastHash == "" {
 		s.logger.Info("first scan, recording baseline",
-			"cadoc", src.CadocCode, "url", src.URL, "hash", ShortHash(hash))
+			"cadoc", src.CadocCode, "hash", ShortHash(hash))
 		if err := s.recordBaseline(ctx, src, hash); err != nil {
 			// Não silenciar: se baseline não gravou, próxima scan tenta de novo
 			// (loop de log "first scan" até DB voltar). Erro aqui é operacional.
+			// Validação 18 (F18.11): sanitizar err (pode incluir DSN).
 			s.logger.Error("recordBaseline failed (first scan)",
-				"cadoc", src.CadocCode, "err", err)
+				"cadoc", src.CadocCode, "err", loggerutil.SafeError(err))
 		}
 		return nil, nil
 	}
@@ -182,8 +188,10 @@ func (s *Service) scanSource(ctx context.Context, src Source) (*Alert, error) {
 	// Atualiza baseline — se falhar, próximo scan dispara alerta duplicado.
 	// Logamos warning para investigar; não silenciar.
 	if err := s.recordBaseline(ctx, src, hash); err != nil {
+		// Validação 18 (F18.12): sanitizar err.
 		s.logger.Warn("recordBaseline failed after alert — próximo scan pode duplicar",
-			"alert_id", id, "cadoc", src.CadocCode, "err", err)
+			"alert_id", id, "cadoc", src.CadocCode,
+			"err", loggerutil.SafeError(err))
 	}
 
 	s.logger.Info("CHANGE DETECTED",
@@ -201,7 +209,7 @@ func (s *Service) fetchHash(ctx context.Context, url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Radiant-Norma-Radar/1.5.0; +https://fortvna.com.br)")
+	req.Header.Set("User-Agent", fmt.Sprintf("Mozilla/5.0 (Radiant-Norma-Radar/%s; +https://fortvna.com.br)", version.Version))
 	req.Header.Set("Accept", "*/*")
 
 	resp, err := s.hc.Do(req)

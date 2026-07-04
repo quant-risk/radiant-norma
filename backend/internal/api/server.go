@@ -22,25 +22,24 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
+	"github.com/fortvna/radiant-norma/backend/internal/version"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 // Version é a versão da API reportada no /healthz e em metadata de log.
 //
-// Sprint 5 v1.4.3 (validação 9): single source of truth. Antes, a versão era
-// hardcoded em 2 lugares (`healthz` handler + `TestHealthz`), o que causava
-// "version bump ripple effects" toda vez que a versão mudava. Agora há 1 só
-// lugar — este constante — e todos os call sites referenciam aqui.
+// Validação 9 (v1.4.3): single source of truth dentro do package.
+// Validação 18 (v1.5.0): propagou para package compartilhado
+// `internal/version` (GAP-7.4 / F10.10). Esta constante é mantida
+// como re-export para callers existentes (`api.Version` permanece).
 //
-// Sprint 6 v1.5.0: GAP ARQUITETURAL CONHECIDO — radar.go tem versão
-// hardcoded no User-Agent (não importa api.Version por dependência unilateral).
-// Refator para internal/version/version.go está planejado para Sprint 7
-// (ver VALIDATION_v1.4.3.md F10.10).
+// Single source of truth: `internal/version/version.go`.
 //
-// Para bumpar: atualizar este string + radar.go::fetchHash User-Agent +
-// CHANGELOG.md + tag git.
-const Version = "1.5.0"
+// Bump de versão: alterar `internal/version/version.go::Version` +
+// CHANGELOG.md + tag git. NÃO tocar este arquivo (re-exporta
+// version.Version automaticamente).
+const Version = version.Version
 
 // Server agrega todos os serviços.
 type Server struct {
@@ -121,6 +120,59 @@ func (s *Server) Router() http.Handler {
 
 // --- Handlers ---
 
+// UserError registra o erro nos logs e retorna um código HTTP com mensagem
+// genérica. Não vaza err.Error() no body da response (vetor de information
+// disclosure: SQL fragments, JSON offsets, table names, etc.).
+//
+// Validação 18 (F18.1): estende F15.3 para TODAS as respostas — antes
+// havia `http.Error(w, err.Error(), 4xx)` que vazava metadata. Agora:
+//
+//   - Log do err com SafeError (camada logger)
+//   - Response: <label do erro> (genérico) com status apropriado
+//   - Caller não vê SQL/JSON/SQL driver detalhes
+//
+// Use para 4xx E 5xx. Para erros realmente corruptos (200 — warning
+// payload), use writeJSON diretamente com metadata explícita.
+//
+// Exportada para testes externos (ver internal/api/user_error_test.go).
+func (s *Server) UserError(w http.ResponseWriter, status int, ctx string, err error) {
+	logger := slog.Default()
+	logger.Error("server error",
+		"context", ctx,
+		"status", status,
+		"err", loggerutil.SafeError(err))
+	// Mensagem pública compacta, não inclui err.Error() cru.
+	publicMsg := "erro"
+	switch status {
+	case http.StatusBadRequest:
+		publicMsg = "requisição inválida"
+	case http.StatusUnauthorized:
+		publicMsg = "não autorizado"
+	case http.StatusForbidden:
+		publicMsg = "forbidden"
+	case http.StatusNotFound:
+		publicMsg = "não encontrado"
+	case http.StatusConflict:
+		publicMsg = "conflito"
+	case http.StatusUnprocessableEntity:
+		publicMsg = "entidade não processável"
+	case http.StatusTooManyRequests:
+		publicMsg = "rate limit excedido"
+	case http.StatusInternalServerError:
+		publicMsg = "erro interno (ver logs)"
+	case http.StatusServiceUnavailable:
+		publicMsg = "serviço indisponível"
+	}
+	http.Error(w, publicMsg, status)
+}
+
+// userError é o alias interno para UserError, mantido para código
+// pré-validação 18 que ainda chama s.userError(...).
+// Deprecated: use UserError.
+func (s *Server) userError(w http.ResponseWriter, status int, ctx string, err error) {
+	s.UserError(w, status, ctx, err)
+}
+
 // internalServerError retorna 500 com mensagem genérica + loga erro
 // sanitizado internamente.
 //
@@ -130,13 +182,11 @@ func (s *Server) Router() http.Handler {
 //
 // Resposta: "erro interno (correlation: <trace>)" — caller precisa de
 // logs correlacionados pra debug. Não vaza internals.
+//
+// DEPRECATED em validação 18: prefira UserError(w, 500, ctx, err) que
+// é a forma unificada.
 func (s *Server) internalServerError(w http.ResponseWriter, err error, ctx string) {
-	logger := slog.Default()
-	logger.Error("server error",
-		"context", ctx,
-		"path", "?", // settable pelo caller se quiser
-		"err", loggerutil.SafeError(err))
-	http.Error(w, "erro interno (ver logs)", http.StatusInternalServerError)
+	s.UserError(w, http.StatusInternalServerError, ctx, err)
 }
 
 func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
@@ -181,7 +231,9 @@ func (s *Server) getSchema(w http.ResponseWriter, r *http.Request) {
 	}
 	v, err := s.Schema.GetEffective(cadoc, time.Now())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		// Validação 18 (F18.1): err.Error() pode vazar SQL fragments. Use
+		// userError para sanitizar a resposta.
+		s.userError(w, http.StatusNotFound, "getSchema", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, v)
@@ -258,13 +310,16 @@ func (s *Server) validate(w http.ResponseWriter, r *http.Request) {
 	// Lê body
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		// Validação 18 (F18.1): err.Error() não vaza. Use userError.
+		s.userError(w, http.StatusBadRequest, "validate.readBody", err)
 		return
 	}
 
 	var req audit.ValidationRequest
 	if err := json.Unmarshal(body, &req); err != nil {
-		http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+		// Validação 18 (F18.1): err.Error() do json.Unmarshal pode incluir
+		// offsets e field names — vetor de information disclosure.
+		s.userError(w, http.StatusBadRequest, "validate.jsonUnmarshal", err)
 		return
 	}
 
@@ -311,7 +366,8 @@ func (s *Server) staSubmit(w http.ResponseWriter, r *http.Request) {
 
 	if r.Header.Get("Content-Type") == "application/json" && len(body) > 0 {
 		if err := json.Unmarshal(body, &sub); err != nil {
-			http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+			// Validação 18 (F18.1): err.Error() não vaza JSON parser detail.
+			s.userError(w, http.StatusBadRequest, "staSubmit.jsonUnmarshal", err)
 			return
 		}
 	} else {
@@ -366,14 +422,16 @@ func (s *Server) staSubmit(w http.ResponseWriter, r *http.Request) {
 		statusFromResult(result), result.ProtocolSTA)
 	if dbErr != nil {
 		// Falha em persistir não bloqueia a response (STA já aceitou), mas avisamos
+		// Validação 18 (F18.14): sanitizar err.Error() antes do AuditLog.
+		// AuditLog persiste em disco — vetor de disclosure persistente se raw.
 		_, _ = s.AuditLog.Log(ifID, r.RemoteAddr, "sta.submit.persist_failed",
-			sub.CadocCode, body, map[string]any{"err": dbErr.Error()})
+			sub.CadocCode, body, map[string]any{"err": loggerutil.SafeError(dbErr)})
 		writeJSON(w, http.StatusOK, map[string]any{
 			"protocol_sta": result.ProtocolSTA,
 			"accepted":     result.Accepted,
 			"rejection":    result.Rejection,
 			"envio_id":     envioID,
-			"warning":      "envio não persistido: " + dbErr.Error(),
+			"warning":      "envio não persistido (ver logs)",
 		})
 		return
 	}
@@ -466,7 +524,8 @@ func (s *Server) resolveRadarAlert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.Radar.ResolveAlert(r.Context(), id); err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		// Validação 18 (F18.1): err.Error() de UPDATE pode vazar SQL fragments.
+		s.userError(w, http.StatusNotFound, "resolveRadarAlert", err)
 		return
 	}
 
@@ -579,13 +638,15 @@ func (s *Server) crossdocValidate(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		// Validação 18 (F18.1): err.Error() não vaza.
+		s.userError(w, http.StatusBadRequest, "crossdocValidate.readBody", err)
 		return
 	}
 
 	var req crossdoc.ValidationRequest
 	if err := json.Unmarshal(body, &req); err != nil {
-		http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+		// Validação 18 (F18.1): err.Error() não vaza JSON parse detail.
+		s.userError(w, http.StatusBadRequest, "crossdocValidate.jsonUnmarshal", err)
 		return
 	}
 

@@ -108,16 +108,16 @@ Commits:       10 commits Sprint 6 (v1.4.3 e v1.4.4 são anteriores à tag v1.4.
 Migrations:    3 (001-003) → 5 (001-005)
 Regras audit:  25 tipadas → 25 tipadas + 5 raw (B01-B05)
 
-### 🩹 Validações 11-17 (post-ship hardening, in-place)
+### 🩹 Validações 11-18 (post-ship hardening, in-place)
 
 > **Detalhe:** cada validação profunda pós-release encontrou gaps reais
 > (vetor pgx, reinvent-stdlib, DSN leak, deadlock panic, panic recover,
-> http.Error 500, http.Error 4xx disclosure). Documentados em
-> `VALIDATION_v1.5.0.md`, `VALIDATION_v1.5.0_DEEPER.md`,
+> http.Error 500, http.Error 4xx disclosure, audit log persistente).
+> Documentados em `VALIDATION_v1.5.0.md`, `VALIDATION_v1.5.0_DEEPER.md`,
 > `VALIDATION_v1.5.0_DEEPEST.md`, `VALIDATION_v1.5.0_DEEPEST2.md`,
-> `VALIDATION_v1.5.0_DEEPEST3.md`.
+> `VALIDATION_v1.5.0_DEEPEST3.md`, `VALIDATION_v1.5.0_DEEPEST4.md`.
 
-Resumo consolidado (validações 11-17):
+Resumo consolidado (validações 11-18):
 
 | Validação | Findings | Críticos | Observação |
 |-----------|----------|----------|------------|
@@ -128,10 +128,19 @@ Resumo consolidado (validações 11-17):
 | 15 | 4 | 1 | pgx error leak (F15.1 PLUG inicial) + http 500 disclosure |
 | 16 | 4 | 1 (F16.5 confirmou F15.1 PLUG) | Sweep universal SafeError + regex ampliado |
 | 17 | 3 | 0 | Warn-level cmd/seed edge cases |
+| 18 | 8 | 3 | HTTP 4xx disclosure (7 vetores) + audit log persistente (2) + GAP-7.4 version |
+| **TOTAL** | **46** | **11** | |
 
 Pacote `internal/loggerutil` (F15.1 + F16.5 fix) cobre vetores reais
 DSN canonical, pgx key=value, password=X solto, ?password= em query.
-7 validações seguidas com findings (~5-15 cada) — pattern confirmado.
+8 validações seguidas com findings — pattern confirmado.
+
+**Cobertura final pós-validação 18:**
+- Logger (Error/Warn/Info/Debug) com err → 100% via SafeError
+- HTTP responses 4xx/5xx com err → 100% via UserError (F18.1)
+- AuditLog persistence com err → 100% via SafeError (F18.13/14)
+- Version drift cross-pkg → 100% via internal/version (F18.4)
+- Radar logger Error/Warn → 100% via SafeError (F18.9/11/12)
 
 **Versão:** inalterada (v1.5.0). Apenas hardening interno.
 Regras cross:  0 → 3 (XD-001/002/003)
