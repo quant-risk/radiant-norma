@@ -2,7 +2,146 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
-## v1.5.0 — 2026-07-03 (Sprint 6: Hardening P0 + Cross-Doc L3 + Postgres driver) ✅
+## v3.0.0 — 2026-07-04 (Sprint 9: Frontend Redesign — Onda 1 + 2 + 3) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 9 (Frontend redesign completo)
+> **Trigger:** Feedback direto — UX/UI anterior "pobrinho", falta de inteligência, sem modern features
+> **Versão:** major (frontend redesign + inteligência + features modernas)
+> **Foco:** Design system tokens, layout shell, command palette, dark mode, inteligência operacional
+
+### 🎯 Resumo
+
+Frontend completamente reformulado em 3 ondas entregues juntas:
+- **Onda 1 — Visual moderno + elegante:** design system (tokens semânticos light/dark,
+  tipografia Inter + JetBrains Mono, accent violet), 9 componentes primitivos (Button,
+  Card, Badge, Skeleton, Tooltip, Kbd, Separator, EmptyState), layout shell (Sidebar
+  colapsável 256px + Topbar sticky com breadcrumbs), 7 páginas reformuladas.
+- **Onda 2 — Inteligência:** página `/insights` com heatmap temporal (CADOC × dia),
+  top regras falhando, comparativo temporal, recomendações acionáveis, insights
+  pre-computados no dashboard (anomalia / trend-up / trend-down / recommendation /
+  opportunity / warning).
+- **Onda 3 — Features modernas:** command palette ⌘K global com fuzzy search
+  (regras / alertas / CADOCs / navegação / ações), dark mode com FOUC prevention,
+  activity feed timeline, comparação temporal, drill-down em modal.
+
+### 🎨 Design system (novo)
+
+| Token | Light | Dark | Notas |
+|-------|-------|------|-------|
+| Accent | violet-600 (`#7c3aed`) | violet-400 | Decisão consciente: NÃO usar sky/blue (clichê fintech) |
+| Surface | slate-50 → white → slate-100 | slate-950 → slate-900 → slate-950 | 3 camadas (DEFAULT/raised/sunken) |
+| Ink | slate-900 → 600 → 400 | slate-50 → 400 → 500 | Hierarquia 3 níveis |
+| Border | slate-200 / 100 / 300 | slate-800 / 900 / 700 | 3 intensidades |
+| Font sans | Inter Variable | — | via next/font/google |
+| Font mono | JetBrains Mono | — | códigos CADOC, IDs |
+
+Princípios visuais:
+- Light mode NÃO branco puro (slate-50 — reduz fadiga em sessões longas)
+- Dark mode NÃO preto puro (slate-950 — profundidade + contraste)
+- Sombras sutis (3 níveis) sem preto saturado (cara de 2015)
+- Animações em `cubic-bezier` (out-quart / out-expo) — 200-300ms feels "vivo"
+- Skeleton screens (não spinners) em loading states
+- Cards neutros por default, raised em hover, micro-elevação -translate-y-px
+
+### 🧩 Componentes criados (15+)
+
+**Primitives (`src/components/ui/`):**
+- `Button` — 5 variants × 3 sizes × loading state, ícones alinhados, focus-visible
+- `Card` — 4 variants × 4 padding sizes, interactive mode com hover
+- `Badge` — 5 tones × 3 styles, dot opcional, ícone opcional (WCAG 1.4.1)
+- `Skeleton` + `SkeletonText` — shimmer animation
+- `Tooltip` — implementação leve sem Radix, 4 positions
+- `Kbd` — keyboard shortcut visual (⌘, ↵, esc)
+- `Separator` — horizontal/vertical
+- `EmptyState` — ícone + título + descrição + CTA obrigatória
+
+**Layout (`src/components/layout/`):**
+- `Sidebar` — 256px colapsável (64px), 2 grupos (Operação/Inteligência), live badge,
+  role indicator no footer
+- `Topbar` — breadcrumbs + title + command palette trigger + theme toggle + actions
+- `AppShell` — wrapper que junta Sidebar + Topbar + CommandPalette
+- `CommandPalette` — ⌘K global com fuzzy match, 6 grupos (Navegação/Ações/Tema/Regras/Alertas/CADOCs)
+
+**Domain (`src/components/domain/`):**
+- `StatCard` — KPI com 1 número + delta + sparkline (SVG inline)
+- `AlertCard` — alerta radar com severity colorida + iconografia semântica
+- `RuleCard` — regra 3040 com code/severity/example + enable toggle
+- `InsightCard` — card de insight com kind-based iconografia + confidence + impact
+- `Heatmap` — matriz CADOC × período com escala sequential/divergent
+- `ActivityFeed` — timeline vertical com kind metadata + payload colapsável
+
+### 📄 Páginas reformuladas
+
+| Página | Antes | Depois |
+|--------|-------|--------|
+| `/login` | Form básico com select nativo | Layout split: brand panel + form, 3 IFs como cards selecionáveis, gradient glow |
+| `/` Dashboard | 4 stat cards simples + nav textual | Hero strip com 1 hero number + 4 KPIs com sparkline + "O que precisa de atenção" priorizado + 3 insights + activity feed + cobertura CADOC com progress bars |
+| `/radar` | Lista textual com border-l colorido | Summary cards (Críticos/Atenção/Info) + agrupamento por CADOC + AlertCard redesenhado |
+| `/regras` | Grid simples, agrupado por categoria | Toolbar com search + filter chips (categoria/severidade/status) + drill-down modal + toggle enable/disable persistido em localStorage |
+| `/envios` | Placeholder "TODO Sprint 8" | Tabela de envios recentes com status visual + KPIs (Total/Aprovados/Pendente/Rejeitados) + cards de CADOCs disponíveis com próximo deadline |
+| `/auditoria` | Texto explicativo | Activity feed timeline + stats (eventos / integridade chain / último hash) + side panel "Como funciona" + compliance badges (LGPD/SOC2/BACEN) |
+| `/insights` | **(não existia)** | Comparativo temporal (4 KPIs com delta) + heatmap 14d + top regras falhando + recomendações priorizadas |
+
+### 🐛 Bug pego (e fixado)
+
+| # | Bug | Onde | Sev | Fix |
+|---|-----|------|-----|-----|
+| B1 | `kid` mismatch entre verifier (`""`) e dev-signer (`"k1"`) | `backend/cmd/api/main.go:78` | 🔴 Alta | Ambos lados usam `envOr("RADIANT_JWT_KID", "k1")` |
+
+Sintoma: `/v1/auth/dev-token` retornava 200 com JWT, mas qualquer endpoint autenticado
+voltava 401 "invalid token". Smoke test local pegou antes de subir pra prod.
+
+Lição: **unit tests não substituem smoke test end-to-end.** Os 13 hardening sweeps
+(v15-v23) olharam vetores de disclosure, não fluxo de auth. Browser real descobre
+o que curl com `Authorization: Bearer` não descobre.
+
+### 🔒 Verificações que passaram
+
+| Probe | Resultado |
+|-------|-----------|
+| `npm run type-check` | ✅ 0 errors |
+| `npm run build` | ✅ 11 rotas compiladas, First Load JS ~87KB shared |
+| Backend rebuild | ✅ kid mismatch fix aplicado |
+| `/healthz` | 200 |
+| `/v1/auth/dev-token` | 200 + JWT |
+| 7 rotas frontend (sem auth) | 200 (login) + 200 (empty session, ~7KB) |
+| 6 rotas autenticadas (com cookie) | 200 com conteúdo real (24-145KB) |
+| Smoke test command palette (deep-link) | ✅ `/regras?focus=B12` renderiza modal |
+
+### 🚀 Como abrir
+
+```bash
+# Backend (com dev-token + JWT bridge)
+RADIANT_ADDR=:8421 RADIANT_DEV_AUTH=1 RADIANT_DEV_TOKEN=1 \
+  RADIANT_DEV_JWT_PRIVATE_KEY=/tmp/radiant-dev-private.pem \
+  /tmp/radiant-api &
+
+# Frontend (precisa da pubkey pra verify JWT no SSR)
+cd frontend
+PUBKEY=$(cat /tmp/radiant-dev-public.pem | tr -d '\n')
+NEXT_PUBLIC_RADIANT_API_JWT_PUBKEY="$PUBKEY" \
+NEXT_PUBLIC_RADIANT_API_JWT_ISSUER="radiant-norma" \
+RADIANT_API_URL=http://localhost:8421 \
+  npx next dev --port 4180 &
+```
+
+Abrir: http://localhost:4180 → login com qualquer IF/role → explorar.
+
+### 📚 Conhecimento consolidado
+
+- **Probes empíricos > constantes:** `kid mismatch` foi pego por smoke test, não por
+  test que mocka o verifier isoladamente. Pattern replicável: smoke test E2E em
+  todo endpoint que cruza fronteira de sistema.
+- **Hollow stub é vetor de regressão silenciosa:** frontend "pobrinho" não é só
+  estética — é falta de design system. Cada página tinha sua própria paleta de
+  cinzas hardcoded, sem tokens compartilhados. Fix: tokens semânticos centralizados
+  em `globals.css` + `tailwind.config.ts`.
+- **Dark mode precisa de FOUC prevention:** sem `<script>` inline em `<head>`
+  aplicando classe `dark` antes da hidratação, user vê flash branco em dark mode
+  em todo F5. Pattern: `themeScript` em `theme-provider.tsx` + `suppressHydrationWarning`.
+
+## v2.1.0 — 2026-07-04 (Sprint 8a: JWT bridge real — dev-token) ✅
 
 > **Status:** ✅ Shipped
 > **Sprint:** Sprint 6 (ver `SPRINT_6.md` + `SPRINT_6_RESULTS.md`)

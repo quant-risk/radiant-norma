@@ -75,7 +75,13 @@ func main() {
 		}
 		keyring := auth.NewKeyring()
 		keyring.Add(&auth.Key{
-			Kid:       os.Getenv("RADIANT_JWT_KID"),
+			// Mesmo default do dev-signer (linha 140/146) — "k1".
+			// Antes (Sprint 8a shipped): usava os.Getenv puro → "" quando
+			// env não setada, enquanto signer usava envOr(..., "k1").
+			// Resultado: tokens mintados tinham kid="k1" no header, mas
+			// keyring do verifier tinha kid="" → 401 invalid token.
+			// Smoke test local (2026-07-04) pegou o mismatch end-to-end.
+			Kid:       envOr("RADIANT_JWT_KID", "k1"),
 			PublicKey: pub,
 			Active:    true,
 			CreatedAt: time.Now(),

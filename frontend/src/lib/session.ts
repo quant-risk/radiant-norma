@@ -8,7 +8,8 @@
 // Em prod: cookie value é JWT RS256. Verify via jose.
 
 import { cookies } from 'next/headers'
-import { verifyJwtServer, type Session } from './auth'
+import { verifyJwtServer } from './auth-server'
+import type { Session } from './auth'
 
 export async function getServerSession(): Promise<Session | null> {
   const cookieStore = cookies()

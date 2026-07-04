@@ -1,10 +1,14 @@
-// Auth/session helpers para o frontend.
+// Auth/session helpers para o frontend (client-only).
 //
 // Backend emite JWT RS256. Frontend armazena no cookie httpOnly
 // `rn_jwt` setado pelo /api/login endpoint.
 //
 // `useSession()` hook: retorna current user, role, e refresh
 // callback. Usa Zustand para client-side state + auto-refresh.
+//
+// IMPORTANTE: server-side JWT verify (verifyJwtServer) vive em
+// auth-server.ts. Não importar daqui em server components —
+// `'use client'` directive descarta server-only code do bundle.
 
 'use client'
 
@@ -14,7 +18,7 @@ import { api } from './api'
 export interface Session {
   token: string
   if_id: string
-  role: 'if' | 'admin' | 'readonly'
+  role: 'if' | 'admin' | 'auditor' | 'readonly'
   sub: string
   expires_at: string // RFC3339
 }
@@ -43,30 +47,6 @@ export const useSession = create<SessionState>((set) => ({
   },
   logout: () => set({ session: null }),
 }))
-
-// Server-side: verificar JWT em server components / route handlers.
-// Usa chave pública do env NEXT_PUBLIC_RADIANT_API_JWT_PUBKEY.
-import { jwtVerify, importSPKI } from 'jose'
-
-export async function verifyJwtServer(token: string): Promise<Session | null> {
-  const pubKeyPem = process.env.NEXT_PUBLIC_RADIANT_API_JWT_PUBKEY
-  if (!pubKeyPem) return null
-  try {
-    const pubKey = await importSPKI(pubKeyPem, 'RS256')
-    const { payload } = await jwtVerify(token, pubKey, {
-      issuer: process.env.NEXT_PUBLIC_RADIANT_API_JWT_ISSUER,
-    })
-    return {
-      token,
-      if_id: String(payload['if_id']),
-      role: payload['role'] as Session['role'],
-      sub: String(payload.sub),
-      expires_at: new Date((payload.exp as number) * 1000).toISOString(),
-    }
-  } catch {
-    return null
-  }
-}
 
 // Re-export api for convenience.
 export { api }
