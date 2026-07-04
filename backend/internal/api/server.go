@@ -18,6 +18,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
+	"github.com/fortvna/radiant-norma/backend/internal/auth"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
@@ -50,6 +51,11 @@ type Server struct {
 	STAClient sta.Client
 	Radar     *radar.Service
 	CrossDoc  *crossdoc.Engine // Sprint 6 v1.5.0 — Cross-Doc L3
+
+	// Sprint 7a (v1.6.0): JWT verifier. Se nil, X-IF-ID fallback
+	// (dev mode via RADIANT_DEV_AUTH=1) ainda funciona.
+	Auth *auth.Verifier
+
 	startedAt time.Time
 
 	// Sprint 6 v1.5.0 (R1) — DOS-via-API prevention.
@@ -95,7 +101,9 @@ func (s *Server) Router() http.Handler {
 		// com folga para casos extremos (3040 com 50k linhas).
 		r.Use(maxBodyBytesMiddleware(10 << 20)) // 10 MiB
 
-		r.Use(s.authMiddleware) // X-IF-ID obrigatório
+		// Sprint 7a (v1.6.0): JWT middleware substitui X-IF-ID.
+		// Fallback para X-IF-ID apenas em dev mode.
+		r.Use(auth.Middleware(s.Auth))
 
 		// Schemas
 		r.Get("/schemas", s.listSchemas)

@@ -65,6 +65,11 @@ func newTestServer(t *testing.T) (*api.Server, *sql.DB) {
 	srv.ScanCache = radar.NewScanCache(5 * time.Minute)
 	srv.AdminAuth = &radar.AdminAuth{Token: "test-admin-token"}
 	srv.CadocListCache = schema.NewCadocListCache(5 * time.Minute)
+
+	// Dev mode habilitado por default nos tests legacy (que usam X-IF-ID).
+	// Tests novos Sprint 7a podem desabilitar via t.Setenv("RADIANT_DEV_AUTH", "")
+	// ANTES de chamar newTestServer — escopo do t.Setenv deve envolver handler.ServeHTTP.
+	t.Setenv("RADIANT_DEV_AUTH", "1")
 	return srv, d
 }
 

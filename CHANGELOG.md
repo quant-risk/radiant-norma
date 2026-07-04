@@ -268,3 +268,53 @@ integration tests).
 ---
 
 ## v1.4.4 — 2026-07-03 (Validação profunda 10: itoa removed + User-Agent bump + self-doc fix)
+## v1.6.0 — 2026-07-03 (Sprint 7a: Auth JWT real)
+
+> **Status:** Shipped
+> **Sprint:** Sprint 7a (SPRINT_7.md)
+> **Versão:** minor (auth infra nova)
+
+### 🎯 Auth JWT Real — substitui X-IF-ID placeholder
+
+**Crítico:** X-IF-ID era string trust, sem auth real. F24.1 fechou vetor
+de auth bypass (qualquer string era aceita). Sprint 7a introduz
+**JWT bearer RS256** com claims tipadas, issuer pinning, key rotation.
+
+### Features
+
+- **internal/auth pkg:** Verifier RS256, Claims tipadas, Keyring rotação.
+- **cmd/jwt-mint:** dev tool para gerar tokens (file-based private key).
+- **cmd/api/main.go:** JWT verifier setup via env var
+  `RADIANT_JWT_PUBLIC_KEY`. Dev mode via `RADIANT_DEV_AUTH=1` para
+  migration helper (X-IF-ID fallback).
+
+### Vetores fechados (validação 24)
+
+- F24.1 auth bypass (crítico)
+- F24.2 dev mode migration (médio)
+- F24.3 key rotation grace (médio)
+- F24.4 cmd/jwt-mint (baixo)
+- F24.5 issuer pinning (baixo)
+
+### Tests
+
+- 253 → 270 tests passing (+17 com auth).
+- vet-clean, race-clean, build-clean.
+
+### Compatibility
+
+- Default: JWT obrigatório. X-IF-ID retorna 401.
+- Dev (`RADIANT_DEV_AUTH=1`): X-IF-ID fallback para migration.
+- Production: configurar `RADIANT_JWT_PUBLIC_KEY` (PEM-encoded).
+
+### Files (Sprint 7a)
+
+- backend/internal/auth/{jwt,claims,keyring,middleware}.go (NOVO)
+- backend/internal/auth/jwt_test.go (NOVO)
+- backend/cmd/jwt-mint/main.go (NOVO)
+- backend/internal/api/server.go (modified — middleware swap)
+- backend/cmd/api/main.go (modified — env var wiring)
+- backend/CHANGELOG.md (modified — esta entrada)
+- VALIDATION_v1.6.0.md (NOVO)
+
+---

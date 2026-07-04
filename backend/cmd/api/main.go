@@ -14,6 +14,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/api"
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
+	"github.com/fortvna/radiant-norma/backend/internal/auth"
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 	crossrules "github.com/fortvna/radiant-norma/backend/internal/crossdoc/rules"
 	"github.com/fortvna/radiant-norma/backend/internal/db"
@@ -58,6 +59,40 @@ func main() {
 	radarSvc := radar.New(d, 6*time.Hour)
 
 	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc)
+
+	// Sprint 7a (v1.6.0): JWT verifier setup.
+	//
+	// Lê chave pública de env var (PEM-encoded). Default: dev fallback
+	// X-IF-ID via RADIANT_DEV_AUTH=1. Prod: setar RADIANT_JWT_PUBLIC_KEY.
+	//
+	// Em produção, recomenda-se AWS KMS / Vault para rotação da chave
+	// sem downtime (Sprint 8 follow-up).
+	if pubKeyPEM := os.Getenv("RADIANT_JWT_PUBLIC_KEY"); pubKeyPEM != "" {
+		pub, err := auth.ParsePublicKeyPEM([]byte(pubKeyPEM))
+		if err != nil {
+			logger.Error("parse JWT public key", "err", loggerutil.SafeError(err))
+			os.Exit(1)
+		}
+		keyring := auth.NewKeyring()
+		keyring.Add(&auth.Key{
+			Kid:       os.Getenv("RADIANT_JWT_KID"),
+			PublicKey: pub,
+			Active:    true,
+			CreatedAt: time.Now(),
+		})
+		srv.Auth = auth.NewVerifier(auth.Config{
+			Issuer: os.Getenv("RADIANT_JWT_ISSUER"),
+			Leeway: 30 * time.Second,
+		}, keyring)
+		logger.Info("JWT verifier ativo", "issuer", os.Getenv("RADIANT_JWT_ISSUER"))
+	} else if os.Getenv("RADIANT_DEV_AUTH") == "1" {
+		logger.Warn("RADIANT_DEV_AUTH=1 — X-IF-ID aceito. NÃO USE EM PRODUÇÃO.")
+	} else {
+		logger.Error("RADIANT_JWT_PUBLIC_KEY não configurada — /v1/* retorna 401. " +
+			"Para dev: set RADIANT_DEV_AUTH=1. Para prod: configure chave pública.")
+		// Não os.Exit: middlewares podem ser configurados via /readyz
+		// sem auth, então healthcheck ainda funciona.
+	}
 
 	// Sprint 6 v1.5.0 — hardening components wiring.
 	// ANTES (v1.5.0 shipped): esses 4 componentes ficavam nil → endpoints
