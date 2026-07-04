@@ -1,11 +1,16 @@
 /**
- * /envios — visão consolidada de envios STA.
+ * /envios — lista envios STA com filtros URL-driven.
  *
- * Sprint 8c: dados reais de /v1/envios (lista) e /v1/envios/stats (KPIs).
+ * Sprint 8d: filtros são lidos via `searchParams` (Next.js App Router).
+ * Cada filtro vira ?key=value na URL → share-able, bookmark-able,
+ * back/forward funciona.
+ *
+ * Componentes:
+ *   - Server-side: lê searchParams, faz fetch com filtros, renderiza tabela
+ *   - Client-side: FilterBar (chips) + ExportMenu (CSV/JSON/URL)
  */
 
 import {
-  Send,
   Database,
   Upload,
   Inbox,
@@ -14,6 +19,7 @@ import {
   AlertTriangle,
   XCircle,
 } from 'lucide-react'
+import Link from 'next/link'
 import { getServerSession } from '@/lib/session'
 import { apiFetch } from '@/lib/api-fetch'
 import { AppShell } from '@/components/layout/app-shell'
@@ -22,6 +28,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatCard } from '@/components/domain/stat-card'
+import { ExportMenu } from '@/components/domain/export-menu'
+import { EnviosFilterBar } from './filter-bar'
 import { formatRelativeCompact } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
@@ -57,6 +65,10 @@ interface Schema {
   latest_version: string
 }
 
+interface PageProps {
+  searchParams: { [key: string]: string | string[] | undefined }
+}
+
 const statusMeta = {
   accepted: { label: 'Aprovado', tone: 'success' as const, icon: CheckCircle2 },
   pending: { label: 'Pendente', tone: 'warning' as const, icon: Clock },
@@ -73,7 +85,12 @@ function nextDeadline(cadoc: string): string {
   return days === 1 ? 'amanhã' : `em ${days} dias`
 }
 
-export default async function EnviosPage() {
+function str(v: string | string[] | undefined): string | undefined {
+  if (Array.isArray(v)) return v[0]
+  return v || undefined
+}
+
+export default async function EnviosPage({ searchParams }: PageProps) {
   const session = await getServerSession()
   if (!session) {
     return (
@@ -83,9 +100,18 @@ export default async function EnviosPage() {
     )
   }
 
+  // Parse filtros URL-driven (Sprint 8d)
+  const filters = {
+    cadoc: str(searchParams.cadoc),
+    status: str(searchParams.status),
+    period: str(searchParams.period),
+  }
+
   const [enviosRes, statsRes, schemasRes] = await Promise.allSettled([
     apiFetch<{ envios: Envio[]; total: number }>(
-      '/v1/envios?limit=100',
+      `/v1/envios?limit=100${filters.cadoc ? `&cadoc=${filters.cadoc}` : ''}${
+        filters.status ? `&status=${filters.status}` : ''
+      }${filters.period ? `&period=${filters.period}` : ''}`,
       {},
       session.token,
     ),
@@ -119,20 +145,27 @@ export default async function EnviosPage() {
           { label: 'Envios' },
         ],
         actions: (
-          <Button variant="primary" size="sm" leftIcon={<Upload className="size-3.5" />}>
-            Novo envio
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExportMenu
+              endpoint="/v1/envios"
+              filters={filters}
+              label="Exportar"
+            />
+            <Button variant="primary" size="sm" leftIcon={<Upload className="size-3.5" />}>
+              Novo envio
+            </Button>
+          </div>
         ),
       }}
     >
       <div className="space-y-6 max-w-7xl">
-        {/* KPIs reais */}
+        {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             label="Total"
             value={stats?.total ?? 0}
             tone="neutral"
-            icon={<Send className="size-4" />}
+            icon={<Database className="size-4" />}
           />
           <StatCard
             label="Aprovados"
@@ -154,13 +187,32 @@ export default async function EnviosPage() {
           />
         </div>
 
-        {/* Tabela de envios */}
+        {/* Filter bar (Sprint 8d) — atualiza URL state */}
+        <EnviosFilterBar
+          currentFilters={filters}
+          cadocOptions={schemas.map((s) => ({ value: s.cadoc, label: s.cadoc }))}
+        />
+
+        {/* Tabela */}
         <Card padding="none">
           <div className="px-6 py-4 border-b border-border flex items-center justify-between">
             <div>
-              <CardTitle>Envios recentes</CardTitle>
+              <CardTitle>
+                Envios recentes
+                {filters.cadoc && (
+                  <span className="ml-2 text-sm font-normal text-ink-muted">
+                    · CADOC {filters.cadoc}
+                  </span>
+                )}
+                {filters.status && (
+                  <span className="ml-2 text-sm font-normal text-ink-muted">
+                    · status {filters.status}
+                  </span>
+                )}
+              </CardTitle>
               <CardDescription>
-                Últimos 30 dias · ordenado por mais recente
+                {envios.length} resultado{envios.length !== 1 ? 's' : ''}
+                {Object.values(filters).some(Boolean) && ' (filtrado)'}
               </CardDescription>
             </div>
           </div>
@@ -168,13 +220,28 @@ export default async function EnviosPage() {
           {envios.length === 0 ? (
             <EmptyState
               icon={<Inbox className="size-6" />}
-              title="Nenhum envio registrado"
-              description="Quando você fizer envios via STA Submit, eles aparecerão aqui com status e regras passadas/falhadas."
+              title={
+                Object.values(filters).some(Boolean)
+                  ? 'Nenhum envio com esses filtros'
+                  : 'Nenhum envio registrado'
+              }
+              description={
+                Object.values(filters).some(Boolean)
+                  ? 'Tente limpar os filtros ou aguarde novos envios.'
+                  : 'Quando você fizer envios via STA Submit, eles aparecerão aqui.'
+              }
               action={
-                <Button variant="outline" size="sm">
-                  <Send className="size-3.5" />
-                  Fazer primeiro envio
-                </Button>
+                Object.values(filters).some(Boolean) ? (
+                  <Link href="/envios">
+                    <Button variant="outline" size="sm">
+                      Limpar filtros
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button variant="outline" size="sm">
+                    Fazer primeiro envio
+                  </Button>
+                )
               }
             />
           ) : (

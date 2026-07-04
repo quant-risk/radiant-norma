@@ -331,7 +331,80 @@ func TestInsightsRecommendations_ConcentrationRule(t *testing.T) {
 	}
 }
 
-// --- listAuditLog ---
+// --- CSV export (Sprint 8d) ---
+
+func TestListEnvios_CSVExport(t *testing.T) {
+	d := testutil.NewTestDB(t)
+	testutil.SeedTestEnvios(t, d, "demo", []testutil.EnvioFixture{
+		{ID: "E1", Cadoc: "3040", Status: "accepted", RulesPassed: 50, RulesFailed: 2},
+	})
+
+	srv := &Server{DB: d}
+	req := httptest.NewRequest("GET", "/v1/envios?format=csv", nil)
+	req.Header.Set("X-IF-ID", "demo")
+	w := httptest.NewRecorder()
+	srv.listEnvios(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	ct := w.Header().Get("Content-Type")
+	if !strings.HasPrefix(ct, "text/csv") {
+		t.Errorf("expected text/csv, got %s", ct)
+	}
+	cd := w.Header().Get("Content-Disposition")
+	if !strings.Contains(cd, "attachment") || !strings.Contains(cd, "envios-demo.csv") {
+		t.Errorf("expected attachment + filename, got %q", cd)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "cadoc_code") || !strings.Contains(body, "status") {
+		t.Errorf("CSV missing expected columns, got header: %s", body[:200])
+	}
+	if !strings.Contains(body, "3040") || !strings.Contains(body, "accepted") {
+		t.Errorf("CSV missing data values, got: %s", body)
+	}
+}
+
+func TestListAuditLog_CSVExport(t *testing.T) {
+	d := testutil.NewTestDB(t)
+	testutil.SeedTestAuditEvents(t, d, []testutil.AuditEventFixture{
+		{IFID: "demo", Action: "envio.approved", Description: "demo event"},
+	})
+
+	srv := &Server{DB: d}
+	req := httptest.NewRequest("GET", "/v1/audit_log?format=csv", nil)
+	req.Header.Set("X-IF-ID", "demo")
+	w := httptest.NewRecorder()
+	srv.listAuditLog(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	ct := w.Header().Get("Content-Type")
+	if !strings.HasPrefix(ct, "text/csv") {
+		t.Errorf("expected text/csv, got %s", ct)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "actor") || !strings.Contains(body, "action") {
+		t.Errorf("CSV missing expected columns, got header: %s", body[:200])
+	}
+	if !strings.Contains(body, "system") || !strings.Contains(body, "envio.approved") {
+		t.Errorf("CSV missing data values, got: %s", body)
+	}
+}
+
+func TestExport_InvalidFormat(t *testing.T) {
+	d := testutil.NewTestDB(t)
+	srv := &Server{DB: d}
+	req := httptest.NewRequest("GET", "/v1/envios?format=xml", nil)
+	req.Header.Set("X-IF-ID", "demo")
+	w := httptest.NewRecorder()
+	srv.listEnvios(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for invalid format, got %d", w.Code)
+	}
+}
 
 func TestListAuditLog_NonAdminSeesOnlyOwnIF(t *testing.T) {
 	d := testutil.NewTestDB(t)

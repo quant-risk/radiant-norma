@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
@@ -113,6 +114,19 @@ func (s *Server) listEnvios(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		envios = append(envios, e)
+	}
+
+	// Sprint 8d: ?format=csv|json. JSON é default (compatibilidade).
+	// Whitelist estrita: csv → CSV; vazio/missing → JSON; outros → 400.
+	switch strings.ToLower(r.URL.Query().Get("format")) {
+	case "csv":
+		writeCSV(w, "envios-"+ifID, enviosToRows(envios))
+		return
+	case "", "json":
+		// fallback abaixo
+	default:
+		http.Error(w, `{"error":"format inválido (use 'json' ou 'csv')"}`, http.StatusBadRequest)
+		return
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -282,6 +296,22 @@ func (s *Server) listAuditLog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = chainCheckedEntries // disponível pra response se quisermos expor
+
+	// Sprint 8d: ?format=csv|json.
+	switch strings.ToLower(r.URL.Query().Get("format")) {
+	case "csv":
+		filename := "audit-log"
+		if callerIF != "" {
+			filename = "audit-log-" + callerIF
+		}
+		writeCSV(w, filename, auditEventsToRows(events))
+		return
+	case "", "json":
+		// fallback abaixo
+	default:
+		http.Error(w, `{"error":"format inválido (use 'json' ou 'csv')"}`, http.StatusBadRequest)
+		return
+	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"events":      events,

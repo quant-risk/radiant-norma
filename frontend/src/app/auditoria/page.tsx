@@ -1,15 +1,13 @@
 /**
  * /auditoria — audit log tamper-evident (LGPD/SOC 2 compliance).
  *
- * Sprint 8c: dados reais de /v1/audit_log (admin only). AuditLog nativo
- * (audit_log table com SHA-256 chain) verifica integridade.
+ * Sprint 8d: filtros URL-driven + ExportMenu (CSV/JSON).
  */
 
 import {
   Shield,
   Hash,
   Lock,
-  Download,
   Activity as ActivityIcon,
 } from 'lucide-react'
 import { getServerSession } from '@/lib/session'
@@ -21,6 +19,8 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatCard } from '@/components/domain/stat-card'
 import { ActivityFeed, type ActivityItem } from '@/components/domain/activity-feed'
+import { ExportMenu } from '@/components/domain/export-menu'
+import { AuditFilterBar } from './filter-bar'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,6 +39,15 @@ interface AuditResponse {
   events: AuditEvent[]
   total: number
   chain_valid: boolean
+}
+
+interface PageProps {
+  searchParams: { [key: string]: string | string[] | undefined }
+}
+
+function str(v: string | string[] | undefined): string | undefined {
+  if (Array.isArray(v)) return v[0]
+  return v || undefined
 }
 
 function normalizeAction(action: string): ActivityItem['kind'] {
@@ -67,7 +76,7 @@ function normalizeAction(action: string): ActivityItem['kind'] {
   }
 }
 
-export default async function AuditoriaPage() {
+export default async function AuditoriaPage({ searchParams }: PageProps) {
   const session = await getServerSession()
   if (!session) {
     return (
@@ -77,8 +86,17 @@ export default async function AuditoriaPage() {
     )
   }
 
+  const filters = {
+    action: str(searchParams.action),
+    if_id: str(searchParams.if_id),
+  }
+
+  const query = `/v1/audit_log?limit=100${
+    filters.action ? `&action=${filters.action}` : ''
+  }${filters.if_id ? `&if_id=${filters.if_id}` : ''}`
+
   const res = await Promise.allSettled([
-    apiFetch<AuditResponse>('/v1/audit_log?limit=100', {}, session.token),
+    apiFetch<AuditResponse>(query, {}, session.token),
   ])
   const auditData: AuditResponse | null =
     res[0].status === 'fulfilled' ? res[0].value : null
@@ -105,19 +123,16 @@ export default async function AuditoriaPage() {
           { label: 'Auditoria' },
         ],
         actions: (
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<Download className="size-3.5" />}
-            disabled={events.length === 0}
-          >
-            Exportar
-          </Button>
+          <ExportMenu
+            endpoint="/v1/audit_log"
+            filters={filters}
+            label="Exportar"
+          />
         ),
       }}
     >
       <div className="space-y-6 max-w-6xl">
-        {/* Integridade da chain */}
+        {/* Chain integrity stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard
             label="Eventos"
@@ -142,6 +157,9 @@ export default async function AuditoriaPage() {
           />
         </div>
 
+        {/* Filter bar (Sprint 8d) */}
+        <AuditFilterBar currentFilters={filters} />
+
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Activity feed */}
           <div className="lg:col-span-2">
@@ -161,7 +179,11 @@ export default async function AuditoriaPage() {
                 <EmptyState
                   icon={<ActivityIcon className="size-6" />}
                   title="Sem eventos no período"
-                  description="Nenhum evento de auditoria registrado para esta IF ainda."
+                  description={
+                    Object.values(filters).some(Boolean)
+                      ? 'Nenhum evento com esses filtros.'
+                      : 'Nenhum evento de auditoria registrado para esta IF ainda.'
+                  }
                 />
               ) : (
                 <ActivityFeed items={activity} />
