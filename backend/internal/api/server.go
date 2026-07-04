@@ -56,6 +56,11 @@ type Server struct {
 	// (dev mode via RADIANT_DEV_AUTH=1) ainda funciona.
 	Auth *auth.Verifier
 
+	// Sprint 8a (v2.1.0): dev-token signer. Se setado, /v1/auth/dev-token
+	// emite JWT in-process (requer RADIANT_DEV_TOKEN=1 para ativar).
+	// Em prod, IdP externo emite tokens — DevSigner fica nil.
+	DevSigner *auth.Signer
+
 	startedAt time.Time
 
 	// Sprint 6 v1.5.0 (R1) — DOS-via-API prevention.
@@ -129,6 +134,13 @@ func (s *Server) Router() http.Handler {
 		// Cross-Doc L3 (Sprint 6 v1.5.0) — diferencial proprietário.
 		// Valida ecossistema inteiro (3040 ↔ 4111 ↔ DRSAC) em paralelo.
 		r.Post("/crossdoc/validate", s.crossdocValidate)
+	})
+
+	// Sprint 8a (v2.1.0): dev-token endpoint (FRENTE do middleware JWT).
+	// Não exige auth (é o que GERA auth tokens para o cliente). Defense:
+	// retorna 404 se RADIANT_DEV_TOKEN != "1" — esconde endpoint em prod.
+	r.Route("/v1/auth", func(r chi.Router) {
+		r.Post("/dev-token", s.devTokenHandler)
 	})
 
 	return r

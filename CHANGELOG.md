@@ -662,3 +662,162 @@ Segurança auth:              vetor cross-tenant injection FECHADO
 ```
 
 ---
+
+## v2.1.0 — 2026-07-04 (Sprint 8a: JWT bridge real)
+
+> **Status:** Shipped
+> **Sprint:** Sprint 8a (ver SPRINT_8.md + SPRINT_8_RESULTS.md)
+> **Versão:** **minor** — nova feature (dev-token mint in-process)
+> **Trigger:** Gaps remanescentes de Sprint 7c — frontend usava JWT fake (`dev:<if>:<role>`) enquanto backend exigia JWT RS256 real
+
+### 🎯 Resumo
+
+Sprint 8a entrega **bridge JWT real frontend↔backend**. Em dev, frontend
+`/api/login` chama novo endpoint `POST /v1/auth/dev-token` que emite JWT
+RS256 in-process. Cookie `rn_jwt` passa a armazenar JWT real (não string
+opaca). Backend JWT verifier (mesma chave pública carregada em
+`RADIANT_JWT_PUBLIC_KEY`) aceita os tokens.
+
+### ✨ Features
+
+#### 🔴 Backend — `internal/auth/mint.go` (NOVO, 145 LOC)
+
+Helper `auth.Signer` que encapsula signing JWT RS256:
+- `NewSigner(SignerConfig)` — cria a partir de PEM-encoded private key.
+- `NewSignerFromFile(path, kid, issuer)` — shorthand para file path.
+- `Mint(Claims)` — assina JWT, valida claims antes.
+- `MintSimple(ifID, role, ttl)` — helper dev/demo com validação
+  integrada (alfanumérico + dash + underscore, max 64 chars).
+- `TTLCap = 30 dias`, `TTLDefault = 24h`.
+
+#### 🔴 Backend — `internal/api/auth_handlers.go` (NOVO, 173 LOC)
+
+Novo endpoint `POST /v1/auth/dev-token`:
+- Ativado por `RADIANT_DEV_TOKEN=1` env.
+- Requer chave privada (path `RADIANT_DEV_JWT_PRIVATE_KEY` ou inline
+  `RADIANT_DEV_JWT_PRIVATE_KEY_PEM`).
+- **404** quando flag off (esconde endpoint em prod).
+- **503** quando flag on mas signer não configurado.
+- **400** quando if_id ausente, role inválida, ttl inválido.
+- Audit emission: `auth.dev_token.minted` for forensic trail.
+- TTL clamp: max 30 dias (defesa contra tokens de vida excessiva).
+
+#### 🔴 Backend — `internal/api/server.go` (modified)
+
+- Field `DevSigner *auth.Signer` adicionado.
+- Router ganha `r.Route("/v1/auth", ...)` FORA do group `/v1` com JWT
+  middleware (precisa estar acessível sem auth, mas com flag guard).
+
+#### 🟡 Backend — `cmd/jwt-mint/main.go` (refactored)
+
+- Lógica de signing delegada para `auth.Signer` (DRY).
+- TTL clamp aplicado.
+- Sub-claim default agora = ifID (não "dev-user").
+
+#### 🟡 Frontend — `src/app/api/login/route.ts` (rewritten)
+
+- Chama `POST /v1/auth/dev-token` no backend.
+- 502 quando backend offline (era silencioso).
+- 503 com hint quando dev-token endpoint disabled.
+- Cookie `rn_jwt` agora armazena JWT real (string `eyJ...` em vez de
+  `dev:<if>:<role>`).
+
+### 🧪 Tests adicionados (18 novos)
+
+#### `internal/auth/mint_test.go` (13 testes)
+
+```
+✓ TestNewSigner_ValidPEM
+✓ TestNewSigner_PEMvazio
+✓ TestNewSigner_KidVazio
+✓ TestNewSigner_IssuerVazio
+✓ TestSigner_Mint_ValidClaims
+✓ TestSigner_Mint_InvalidClaims
+✓ TestSigner_MintSimple
+✓ TestSigner_MintSimple_Validations (8 subtests)
+✓ TestSigner_Roundtrip (sign+verify)
+✓ TestSigner_IssuerOverride
+✓ TestTTLCap
+```
+
+#### `internal/api/auth_handlers_test.go` (8 testes)
+
+```
+✓ TestDevToken_EndpointDisabled (404 quando flag off)
+✓ TestDevToken_SignerMissing (503 quando signer nil)
+✓ TestDevToken_MintValid (happy path + JWT 3-parts + kid=k1)
+✓ TestDevToken_AdminRole
+✓ TestDevToken_InvalidRole
+✓ TestDevToken_MissingIFID
+✓ TestDevToken_TTLClamp (60d pedido → 30d cap)
+✓ TestDevToken_Roundtrip (header contém kid=k1)
+```
+
+### 📊 Estatísticas
+
+```
+Sprint 8a entrega:
+  Backend tests:        304 → 322 (+18 novos = 13 mint + 8 dev-token - 3 setup)
+  Backend code:         ~315 LOC new (mint.go 145 + auth_handlers.go 173 - go.sum)
+  Frontend code:        ~70 LOC rewritten (login route)
+  OpenAPI:              14 → 15 endpoints (1 novo: /v1/auth/dev-token)
+  Build/lint/type-check all clean
+```
+
+### Compatibility
+
+- **Backwards compat**: dev mode X-IF-ID fallback (`RADIANT_DEV_AUTH=1`)
+  continua funcionando para tests legacy.
+- **JWT real bridge**: agora funcional end-to-end. Frontend → Backend
+  dev-token → JWT válido → backend verifier aceita.
+- **Prod safety**: `/v1/auth/dev-token` retorna 404 (não 503) quando
+  flag off. Endpoint existence hidden.
+
+### Setup necessário
+
+```bash
+# 1. Gerar par RSA dev (PKCS#1)
+openssl genrsa -out dev-private.pem 2048
+openssl rsa -in dev-private.pem -pubout -out dev-public.pem
+
+# 2. Backend dev mode
+export RADIANT_DEV_TOKEN=1
+export RADIANT_DEV_JWT_PRIVATE_KEY=./dev-private.pem
+export RADIANT_JWT_PUBLIC_KEY="$(cat dev-public.pem)"
+export RADIANT_JWT_ISSUER=radiant-norma
+export RADIANT_JWT_KID=k1
+
+# 3. Frontend dev mode (já suportado via NEXT_PUBLIC_RADIANT_DEV_MODE=1)
+export NEXT_PUBLIC_RADIANT_DEV_MODE=1
+
+# 4. Start backend
+cd backend && go run ./cmd/api
+
+# 5. Start frontend
+cd frontend && npm run dev
+
+# Frontend /login → POST /api/login → calls /v1/auth/dev-token → JWT real
+```
+
+### Files (Sprint 8a)
+
+**Backend (NOVO):**
+- `backend/internal/auth/mint.go` (Signer helper)
+- `backend/internal/auth/mint_test.go` (13 testes)
+- `backend/internal/api/auth_handlers.go` (dev-token handler)
+- `backend/internal/api/auth_handlers_test.go` (8 testes)
+
+**Backend (modified):**
+- `backend/internal/api/server.go` (DevSigner field + route wire)
+- `backend/cmd/api/main.go` (DevSigner config reading env)
+- `backend/cmd/jwt-mint/main.go` (refactored to use Signer)
+- `backend/docs/api/openapi.yaml` (1 novo endpoint + 2 schemas)
+
+**Frontend (rewritten):**
+- `frontend/src/app/api/login/route.ts` (chama backend real)
+
+**Docs:**
+- `CHANGELOG.md` (esta entry)
+- `SPRINT_8_RESULTS.md` (NOVO)
+
+---

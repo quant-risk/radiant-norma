@@ -1,17 +1,31 @@
 // NextAuth.js-like route para dev/demo login.
 //
-// Em prod: integra com backend JWT real (Sprint 7a v1.6.0).
-// Aqui: dev helper que pega `if_id` via body, chama backend
-// `cmd/jwt-mint` (em dev) ou backend `/v1/auth/dev-token`
-// (TODO Sprint 8+).
+// Sprint 8a (v2.1.0): bridge JWT real frontend↔backend.
 //
-// Resposta: 200 com JWT string (frontend armazena em cookie httpOnly).
+// Fluxo:
+//   1. User → /login → POST /api/login com if_id + role
+//   2. Frontend chama backend POST /v1/auth/dev-token (que retorna JWT RS256)
+//   3. Cookie rn_jwt httpOnly setado com JWT
+//   4. SSR pages leem via next/headers cookies()
+//   5. Server proxy /v1-api/proxy/[...path] injeta Authorization via JWT
+//   6. Backend JWT verifier (mesma chave pública em keyring) aceita token
+//
+// Em produção: tokens emitidos por IdP externo. /v1/auth/dev-token retorna
+// 404. Frontend redireciona para IdP OAuth flow.
 
 import { NextRequest, NextResponse } from 'next/server'
 
 interface LoginRequest {
   if_id: string
   role?: 'if' | 'admin' | 'readonly'
+}
+
+interface DevTokenResponse {
+  token: string
+  if_id: string
+  role: string
+  expires_at: string
+  ttl_seconds: number
 }
 
 export async function POST(req: NextRequest) {
@@ -25,37 +39,60 @@ export async function POST(req: NextRequest) {
 
   const role = body.role ?? 'if'
 
-  // Dev mode: gerar JWT via dev endpoint. Em prod, vem do IdP.
-  const apiUrl = process.env.RADIANT_API_URL || 'http://localhost:8080'
-  let token: string
-
-  // Opção 1: backend dev endpoint (TODO Sprint 8).
-  // Opção 2: server-side gera JWT usando private key from env
-  //          (NÃO recom — usar cmd/jwt-mint local em dev).
+  // Sprint 8a: bridge to backend /v1/auth/dev-token.
   //
-  // Para simplicidade: usamos o dev_endpoint se existir, senão
-  // fallback para X-IF-ID sem JWT (RADIANT_DEV_AUTH=1 no backend).
-  const devMode = process.env.NEXT_PUBLIC_RADIANT_DEV_MODE === '1'
+  // Em prod: IdP externo emite token (Sprint 9+). Por enquanto, frontend
+  // chama backend para gerar JWT RS256 in-process.
+  const apiUrl = process.env.RADIANT_API_URL || 'http://localhost:8080'
 
-  if (devMode) {
-    // Dev: reusa X-IF-ID via header. Frontend passa via cookie.
-    // Backend aceita X-IF-ID quando RADIANT_DEV_AUTH=1.
-    // Aqui só retornamos um "fake" token para que o axios
-    // interceptor set o Authorization via cookie separado.
-    token = `dev:${body.if_id}:${role}`
-  } else {
-    // Production sem IdP configurado: 503.
+  let token: string
+  let expiresAt: string
+
+  try {
+    const r = await fetch(`${apiUrl}/v1/auth/dev-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        if_id: body.if_id,
+        role,
+        ttl_seconds: 7 * 24 * 60 * 60, // 7 dias
+      }),
+    })
+
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({ error: `dev-token failed: ${r.status}` }))
+      const status = r.status === 404 ? 503 : 400
+      return NextResponse.json(
+        {
+          error: err.error || 'dev-token failed',
+          hint: r.status === 404
+            ? 'Backend dev-token endpoint disabled. Set RADIANT_DEV_TOKEN=1 e RADIANT_DEV_JWT_PRIVATE_KEY no backend.'
+            : undefined,
+        },
+        { status },
+      )
+    }
+
+    const data: DevTokenResponse = await r.json()
+    token = data.token
+    expiresAt = data.expires_at
+  } catch (e) {
+    // Backend unreachable — fail loud com hint claro.
     return NextResponse.json(
-      { error: 'JWT issuance not configured. Set NEXT_PUBLIC_RADIANT_DEV_MODE=1 (dev only)' },
-      { status: 503 },
+      {
+        error: 'backend unreachable',
+        detail: e instanceof Error ? e.message : String(e),
+        hint: 'Verifique se backend Go está rodando em RADIANT_API_URL.',
+      },
+      { status: 502 },
     )
   }
 
-  // Set httpOnly cookie for security
+  // Set httpOnly cookie com JWT real.
   const response = NextResponse.json({
     if_id: body.if_id,
     role,
-    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    expires_at: expiresAt,
   })
   response.cookies.set({
     name: 'rn_jwt',
@@ -65,8 +102,6 @@ export async function POST(req: NextRequest) {
     path: '/',
     maxAge: 7 * 24 * 60 * 60,
     // Validação 27 (F27.16): secure flag condicional ao NODE_ENV.
-    // Em dev local (HTTP), secure=true quebraria o cookie.
-    // Em prod (HTTPS), secure=true impede leak via HTTP downgrade.
     secure: process.env.NODE_ENV === 'production',
   })
 

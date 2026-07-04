@@ -122,6 +122,42 @@ func main() {
 	// Cross-Doc L3 — endpoint /v1/crossdoc/validate.
 	srv.CrossDoc = crossdoc.NewEngine(crossrules.BuiltinRegistry())
 
+	// Sprint 8a (v2.1.0) — dev-token endpoint /v1/auth/dev-token.
+	//
+	// Ativado por env RADIANT_DEV_TOKEN=1. Requer chave privada RSA
+	// configurada (RADIANT_DEV_JWT_PRIVATE_KEY=path ou
+	// RADIANT_DEV_JWT_PRIVATE_KEY_PEM=conteúdo PEM inline).
+	//
+	// Em produção: dev-token endpoint fica disabled (404). Tokens devem
+	// ser emitidos por IdP externo (Keycloak/Okta/etc) — Sprint 9+.
+	if os.Getenv("RADIANT_DEV_TOKEN") == "1" {
+		var signer *auth.Signer
+		var err error
+
+		if pemPath := os.Getenv("RADIANT_DEV_JWT_PRIVATE_KEY"); pemPath != "" {
+			signer, err = auth.NewSignerFromFile(
+				pemPath,
+				envOr("RADIANT_JWT_KID", "k1"),
+				envOr("RADIANT_JWT_ISSUER", "radiant-norma"),
+			)
+		} else if pemInline := os.Getenv("RADIANT_DEV_JWT_PRIVATE_KEY_PEM"); pemInline != "" {
+			signer, err = auth.NewSigner(auth.SignerConfig{
+				PrivateKeyPEM: pemInline,
+				Kid:           envOr("RADIANT_JWT_KID", "k1"),
+				Issuer:        envOr("RADIANT_JWT_ISSUER", "radiant-norma"),
+			})
+		}
+
+		if err != nil {
+			logger.Error("dev-token signer setup", "err", loggerutil.SafeError(err))
+			os.Exit(1)
+		}
+		if signer != nil {
+			srv.DevSigner = signer
+			logger.Warn("RADIANT_DEV_TOKEN=1 — /v1/auth/dev-token ATIVO. NÃO USE EM PRODUÇÃO.")
+		}
+	}
+
 	handler := srv.Router()
 
 	httpSrv := &http.Server{
