@@ -172,8 +172,10 @@ func (r *Registry) All() []Rule {
 //   - Campos Obrigatórios: C01-C05 (obrigatoriedade condicional)
 //   - Semântica: S01-S05 (semântica geral)
 //
-// Total: 25 regras tipadas + 5 regras raw = 30 entradas no registry.
-// Sprint 6 v1.5.0 (W3): B01-B05 movidas do hardcode em service.go para cá.
+// Total: 60 regras (Sprint 7b v1.7.0):
+//   - 5 raw (B01-B05)
+//   - 25 originais (Sprint 4)
+//   - 30 novas (Sprint 7b: B16-B25, F06-F15, C06-C10, S06-S10)
 func Builtin3040() *Registry {
 	r := NewRegistry()
 
@@ -184,7 +186,7 @@ func Builtin3040() *Registry {
 	r.RegisterRaw(B04CodificacaoDeclarada{})
 	r.RegisterRaw(B05ArquivoNaoVazio{})
 
-	// Básicas B06-B15
+	// Básicas B06-B15 (Sprint 4)
 	r.Register(B06RemessaIncompativel{})
 	r.Register(B07ComposicaoRemessa{})
 	r.Register(B08ParteRejeitada{})
@@ -196,26 +198,64 @@ func Builtin3040() *Registry {
 	r.Register(B14MaxOpDivergentes3042{})
 	r.Register(B15MaxOpDivergentes3040{})
 
-	// Formato F01-F05
+	// Formato F01-F05 (Sprint 4)
 	r.Register(F01TaxaEfetivaAnual{})
 	r.Register(F02Datas{})
 	r.Register(F03CodigoContrato{})
 	r.Register(F04Conglomerado{})
 	r.Register(F05RefBacenSicor{})
 
-	// Campos Obrigatórios C01-C05
+	// Campos Obrigatórios C01-C05 (Sprint 4)
 	r.Register(C01CamposObrigatoriosPJ{})
 	r.Register(C02CamposNaoObrigatorios{})
 	r.Register(C03GarantiasNaoFidejussorias{})
 	r.Register(C04GarantiasFidejussorias{})
 	r.Register(C05CessoesCoobrigacao{})
 
-	// Semântica S01-S05
+	// Semântica S01-S05 (Sprint 4)
 	r.Register(S01DetalhamentoCliente{})
 	r.Register(S02VendorInfo{})
 	r.Register(S03Ocultacao{})
 	r.Register(S04CreditoALiberar{})
 	r.Register(S05LimiteCredito{})
+
+	// Sprint 7b / v1.7.0 — Básicas expandidas B16-B25 (10 regras)
+	r.Register(B16TotalizadoresCoerentes{})
+	r.Register(B17DtBaseFormato{})
+	r.Register(B18TpArqValido{})
+	r.Register(B19EmailValido{})
+	r.Register(B20TelefoneValido{})
+	r.Register(B21CNPJRaiz{})
+	r.Register(B22NomeRespObrigatorio{})
+	r.Register(B23MinimoUmAgregado{})
+	r.Register(B24DtBaseNaoFutura{})
+	r.Register(B25QtdOperacoesPositivo{})
+
+	// Sprint 7b / v1.7.0 — Formato expandido F06-F15 (10 regras)
+	r.Register(F06ClassOpValido{})
+	r.Register(F07ModalidadeValida{})
+	r.Register(F08NatuOpValido{})
+	r.Register(F09UFLocaliz{})
+	r.Register(F10VincMEOp{})
+	r.Register(F11PrzProvm{})
+	r.Register(F12TpCliValido{})
+	r.Register(F13DesempOpValido{})
+	r.Register(F14FaixaVlrValida{})
+	r.Register(F15OrigemRecValida{})
+
+	// Sprint 7b / v1.7.0 — Campos Obrigatórios C06-C10 (5 regras)
+	r.Register(C06ProvConsttd{})
+	r.Register(C07VencimentosObrigatorio{})
+	r.Register(C08EmailParaContato{})
+	r.Register(C09TotalCliObrigatorio{})
+	r.Register(C10ClassOpObrigatorio{})
+
+	// Sprint 7b / v1.7.0 — Semânticas S06-S10 (5 regras)
+	r.Register(S06QtdOpZero{})
+	r.Register(S07Mod0213Risco{})
+	r.Register(S08PFRiscoMin{})
+	r.Register(S09SomaVencimentos{})
+	r.Register(S10PropriaNaoME{})
 
 	return r
 }

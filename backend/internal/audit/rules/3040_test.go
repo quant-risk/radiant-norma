@@ -354,20 +354,29 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 	r := rules.Builtin3040()
 	codes := r.Codes()
 
-	// Sprint 6 v1.5.0 (W3): B01-B05 adicionadas como RawRule (rawRules map).
-	// Total agora: 5 raw + 25 tipadas = 30.
+	// Sprint 7b / v1.7.0: 60 regras — 5 raw + 55 tipadas.
 	expectedCodigos := []string{
 		// Básicas raw (Sprint 6 v1.5.0 / W3)
 		"B01", "B02", "B03", "B04", "B05",
-		// Básicas tipadas
+		// Básicas tipadas (Sprint 4)
 		"B06", "B07", "B08", "B09", "B10",
 		"B11", "B12", "B13", "B14", "B15",
-		// Formato
+		// Básicas expandidas (Sprint 7b / v1.7.0)
+		"B16", "B17", "B18", "B19", "B20",
+		"B21", "B22", "B23", "B24", "B25",
+		// Formato (Sprint 4)
 		"F01", "F02", "F03", "F04", "F05",
-		// Campos Obrigatórios
+		// Formato expandido (Sprint 7b)
+		"F06", "F07", "F08", "F09", "F10",
+		"F11", "F12", "F13", "F14", "F15",
+		// Campos Obrigatórios (Sprint 4)
 		"C01", "C02", "C03", "C04", "C05",
-		// Semântica
+		// Campos Obrigatórios expandidos (Sprint 7b)
+		"C06", "C07", "C08", "C09", "C10",
+		// Semântica (Sprint 4)
 		"S01", "S02", "S03", "S04", "S05",
+		// Semântica expandida (Sprint 7b)
+		"S06", "S07", "S08", "S09", "S10",
 	}
 
 	if len(codes) != len(expectedCodigos) {

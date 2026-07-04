@@ -205,8 +205,11 @@ func TestBuiltin3040_HasB06toB15AsTyped(t *testing.T) {
 func TestBuiltin3040_TotalRulesIs(t *testing.T) {
 	r := rules.Builtin3040()
 	total := len(r.Codes())
-	// 5 raw + 25 tipadas = 30
-	if total != 30 {
-		t.Errorf("Total regras = %d, want 30 (5 raw + 25 tipadas)", total)
+	// Sprint 7b / v1.7.0: 5 raw + 55 tipadas = 60
+	//   - 5 raw (B01-B05)
+	//   - 25 originais (B06-B15, F01-F05, C01-C05, S01-S05)
+	//   - 30 novas (B16-B25, F06-F15, C06-C10, S06-S10)
+	if total != 60 {
+		t.Errorf("Total regras = %d, want 60 (Sprint 7b: 5 raw + 55 tipadas)", total)
 	}
 }
