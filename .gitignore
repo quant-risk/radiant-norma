@@ -16,6 +16,10 @@ _*.exe
 # Migrations run output.
 migrations/applied/
 
+# Catalog extraction log (dev tool).
+_catalogos/_extracao.log
+_catalogos/*.log
+
 # Test artifacts.
 *.out
 *.cover
