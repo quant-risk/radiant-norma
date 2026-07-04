@@ -1,51 +1,30 @@
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
+# Go build artifacts — devem ser construídos por `make build`, não commit.
+api
+api-*
+worker
+worker-*
+radar
+radar-*
+_verify
+_*.exe
 
-# Build temporário (Pandoc gera e remove)
-_build_*.html
-
-# Logs temporários
-*.log
-!.gitkeep
-
-# Backup
-*.bak
-*.tmp
-
-# IDE
-.vscode/
-.idea/
-*.swp
-
-# Python
-__pycache__/
-*.pyc
-.venv/
-venv/
-
-# Não commitar catálogo grande (regenerável)
-# Mas como tá pequeno (1.7 MB) e é insumo do Norma Audit, mantemos
-# _catalogos/criticas.json
-# _catalogos/leiautes.json
-
-# Não commitar arquivos grandes > 50 MB (PDFs pesados, etc.)
-# Mas até agora todos < 10 MB
-
-# Backend runtime — gerados, não commitar
-backend/radiant.db
-backend/radiant.db-shm
-backend/radiant.db-wal
+# Database files — runtime SQLite.
 *.db
 *.db-shm
 *.db-wal
-backend/api
-backend/seed
-backend/worker
 
-# Backend Go
-backend/vendor/
+# Migrations run output.
+migrations/applied/
 
-# Materiais que podem ser baixados novamente
-_catalogos/_extracao.log
+# Test artifacts.
+*.out
+*.cover
+*.html
+coverage.txt
+*.test
+
+# Editor/OS noise.
+.DS_Store
+.idea/
+.vscode/
+*.swp
