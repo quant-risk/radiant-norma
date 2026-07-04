@@ -9,7 +9,11 @@
  *   3. Title (título do alerta)
  *   4. Description (snippet)
  *   5. Metadata (timestamp relativo, source URL)
- *   6. Action (resolver)
+ *   6. Action (resolver via server action inline)
+ *
+ * Resolve action usa Next.js server action via API direta (fetch),
+ * NÃO prop function — server actions inline como prop em client
+ * component é anti-pattern (validação 29 / C1).
  */
 import * as React from 'react'
 import {
@@ -36,7 +40,6 @@ export interface AlertCardProps {
   source_url: string
   detected_at: string
   resolved?: boolean
-  onResolve?: (id: number) => Promise<void> | void
 }
 
 const severityConfig: Record<
@@ -81,18 +84,29 @@ export function AlertCard({
   source_url,
   detected_at,
   resolved,
-  onResolve,
 }: AlertCardProps) {
   const cfg = severityConfig[severity]
   const Icon = cfg.icon
   const [resolving, setResolving] = React.useState(false)
 
   async function handleResolve() {
-    if (!onResolve) return
     setResolving(true)
     try {
-      await onResolve(id)
-    } finally {
+      // Validação 29 (C1 fix): chamada direta via fetch em vez de
+      // server action inline como prop. Backend já é o source of truth
+      // (POST /v1/radar/alerts/:id/resolve).
+      //
+      // Cookie httpOnly `rn_jwt` é enviado automaticamente (same-origin).
+      const r = await fetch(`/api/radar/alerts/${id}/resolve`, {
+        method: 'POST',
+      })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      // Full page refresh para o server component re-renderizar.
+      // Alternativa futura: router.refresh() + useTransition.
+      window.location.reload()
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('resolve alert failed', e)
       setResolving(false)
     }
   }
@@ -158,7 +172,7 @@ export function AlertCard({
               <ExternalLink className="size-3" />
               Fonte BACEN
             </a>
-            {!resolved && onResolve && (
+            {!resolved && (
               <Button
                 size="sm"
                 variant="ghost"

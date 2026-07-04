@@ -3,17 +3,14 @@
 /**
  * Sidebar — navegação primária.
  *
- * Estrutura:
- *   - Header com logo + IF badge (mostra IF ativo)
- *   - 1 seção "Operação" (Dashboard, Envios, Radar, Regras)
- *   - 1 seção "Inteligência" (Insights, Auditoria)
- *   - Footer com settings + user menu
- *
- * Persistente em ≥1024px (256px); em <1024px vira drawer (será implementado
- * via estado no Topbar).
- *
- * Estado persistido: item ativo é derivado do pathname (não estado local).
+ * Validação 29:
+ *   - H1 fix: collapsed state persiste em localStorage
+ *   - H2 fix: mobile drawer (<1024px) — abre/fecha via botão hamburger
+ *     no Topbar (controlado via prop)
+ *   - H6 fix: badge 'count' removido (dead code — só 'live' tinha render)
+ *   - C8-adjacent fix: active state match mais estrito
  */
+
 import * as React from 'react'
 import Link from 'next/link'
 import type { Route } from 'next'
@@ -38,6 +35,8 @@ interface Session {
 
 interface SidebarProps {
   session: Session
+  mobileOpen?: boolean
+  onMobileClose?: () => void
 }
 
 const NAV_GROUPS: Array<{
@@ -46,7 +45,7 @@ const NAV_GROUPS: Array<{
     href: Route
     label: string
     icon: React.ComponentType<{ className?: string }>
-    badge?: 'count' | 'live'
+    badge?: 'live'
   }>
 }> = [
   {
@@ -61,25 +60,114 @@ const NAV_GROUPS: Array<{
   {
     label: 'Inteligência',
     items: [
-      { href: '/insights', label: 'Insights', icon: Sparkles, badge: 'count' },
+      { href: '/insights', label: 'Insights', icon: Sparkles },
       { href: '/auditoria', label: 'Auditoria', icon: History },
     ],
   },
 ]
 
-export function Sidebar({ session }: SidebarProps) {
-  const pathname = usePathname()
-  const [collapsed, setCollapsed] = React.useState(false)
+function isActiveRoute(pathname: string | null, itemHref: Route): boolean {
+  if (!pathname) return false
+  if (pathname === itemHref) return true
+  // Strict prefix match: /radar/foo mas NÃO /radar-extras
+  if (itemHref === '/') return false // Dashboard só match exato
+  return pathname.startsWith(`${itemHref}/`)
+}
 
-  return (
+export function Sidebar({ session, mobileOpen, onMobileClose }: SidebarProps) {
+  const pathname = usePathname()
+  // H1 fix: collapsed state hidratado de localStorage no mount
+  const [collapsed, setCollapsed] = React.useState(false)
+  const [hydrated, setHydrated] = React.useState(false)
+
+  React.useEffect(() => {
+    setHydrated(true)
+    const stored = localStorage.getItem('rn_sidebar_collapsed')
+    if (stored === '1') setCollapsed(true)
+  }, [])
+
+  React.useEffect(() => {
+    if (hydrated) {
+      localStorage.setItem('rn_sidebar_collapsed', collapsed ? '1' : '0')
+    }
+  }, [collapsed, hydrated])
+
+  // H2 fix: fecha drawer mobile ao navegar
+  React.useEffect(() => {
+    onMobileClose?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
+
+  // SSR-safe: evita render diferente do client no primeiro paint
+  const widthClass = hydrated ? (collapsed ? 'w-16' : 'w-64') : 'w-64'
+
+  // Desktop sidebar
+  const desktopSidebar = (
     <aside
       className={cn(
         'hidden lg:flex flex-col h-screen sticky top-0 z-30',
         'bg-surface-raised border-r border-border',
         'transition-[width] duration-200 ease-out',
-        collapsed ? 'w-16' : 'w-64',
+        widthClass,
       )}
     >
+      <SidebarContent
+        session={session}
+        collapsed={hydrated ? collapsed : false}
+        pathname={pathname}
+        onToggleCollapse={() => setCollapsed((c) => !c)}
+      />
+    </aside>
+  )
+
+  // Mobile drawer (H2)
+  const mobileDrawer = mobileOpen ? (
+    <div className="lg:hidden fixed inset-0 z-40">
+      <div
+        className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm animate-fade-in-fast"
+        onClick={onMobileClose}
+        aria-hidden
+      />
+      <aside
+        className={cn(
+          'absolute left-0 top-0 bottom-0 w-64',
+          'bg-surface-raised border-r border-border shadow-xl',
+          'animate-slide-down flex flex-col',
+        )}
+      >
+        <SidebarContent
+          session={session}
+          collapsed={false}
+          pathname={pathname}
+          onToggleCollapse={() => {
+            onMobileClose?.()
+          }}
+        />
+      </aside>
+    </div>
+  ) : null
+
+  return (
+    <>
+      {desktopSidebar}
+      {mobileDrawer}
+    </>
+  )
+}
+
+function SidebarContent({
+  session,
+  collapsed,
+  pathname,
+  onToggleCollapse,
+}: {
+  session: Session
+  collapsed: boolean
+  pathname: string | null
+  onToggleCollapse: () => void
+}) {
+  return (
+    <>
       {/* Logo + IF */}
       <div
         className={cn(
@@ -120,9 +208,7 @@ export function Sidebar({ session }: SidebarProps) {
             )}
             <ul className="space-y-0.5">
               {group.items.map((item) => {
-                const active =
-                  pathname === item.href ||
-                  (item.href !== '/' && pathname?.startsWith(item.href))
+                const active = isActiveRoute(pathname, item.href)
                 const Icon = item.icon
 
                 const link = (
@@ -180,7 +266,7 @@ export function Sidebar({ session }: SidebarProps) {
         )}
       >
         <button
-          onClick={() => setCollapsed((c) => !c)}
+          onClick={onToggleCollapse}
           className={cn(
             'flex items-center gap-3 px-3 h-9 rounded-md w-full',
             'text-sm font-medium text-ink-muted hover:bg-surface-sunken hover:text-ink transition-colors',
@@ -216,6 +302,6 @@ export function Sidebar({ session }: SidebarProps) {
           </div>
         )}
       </div>
-    </aside>
+    </>
   )
 }

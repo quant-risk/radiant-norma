@@ -9,7 +9,6 @@
 import { Radar as RadarIcon } from 'lucide-react'
 import { apiFetch } from '@/lib/api-fetch'
 import { getServerSession } from '@/lib/session'
-import { resolveAlert } from './actions'
 import { AppShell } from '@/components/layout/app-shell'
 import { AlertCard } from '@/components/domain/alert-card'
 import { Card, CardTitle, CardDescription } from '@/components/ui/card'
@@ -197,14 +196,7 @@ export default async function RadarPage() {
                 </div>
                 <div className="grid gap-3">
                   {cadocAlerts.map((alert) => (
-                    <AlertCard
-                      key={alert.id}
-                      {...alert}
-                      onResolve={async (id) => {
-                        'use server'
-                        await resolveAlert(id)
-                      }}
-                    />
+                    <AlertCard key={alert.id} {...alert} />
                   ))}
                 </div>
               </section>

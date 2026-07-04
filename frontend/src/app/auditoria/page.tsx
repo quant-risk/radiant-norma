@@ -1,12 +1,12 @@
 /**
- * /auditoria — audit log tamper-evident (LGPD/SOC 2).
+ * /auditoria — audit log tamper-evident (LGPD/SOC 2 compliance).
  *
- * Sprint 8: vai puxar /v1/audit_log (admin only). Por enquanto: activity
- * feed mock + explicabilidade do mecanismo de hash chain.
+ * Validação 29 (C5 fix): NÃO finge integridade. Até o backend expor
+ * /v1/audit_log, mostra empty state honesto com explicabilidade do
+ * mecanismo de hash chain.
  */
 
 import {
-  History,
   Shield,
   Hash,
   Lock,
@@ -15,79 +15,12 @@ import {
 } from 'lucide-react'
 import { getServerSession } from '@/lib/session'
 import { AppShell } from '@/components/layout/app-shell'
-import {
-  ActivityFeed,
-  type ActivityItem,
-} from '@/components/domain/activity-feed'
 import { Card, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { StatCard } from '@/components/domain/stat-card'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export const dynamic = 'force-dynamic'
-
-// Mock audit log (vai vir de /v1/audit_log)
-const mockAuditLog: ActivityItem[] = [
-  {
-    id: 'a1',
-    kind: 'envio.approved',
-    timestamp: new Date(Date.now() - 12 * 60_000).toISOString(),
-    actor: '9999901',
-    description: 'CADOC 3040 base 05/2026 aprovado · 58 regras passaram',
-    payload: { envio_id: 'ENV-2026-00184', rules_passed: 58 },
-  },
-  {
-    id: 'a2',
-    kind: 'radar.detected',
-    timestamp: new Date(Date.now() - 47 * 60_000).toISOString(),
-    description: 'URL BACEN 3040 alterada · severidade warn',
-    payload: { cadoc: '3040', old_url: 'https://...', new_url: 'https://...' },
-  },
-  {
-    id: 'a3',
-    kind: 'rule.enabled',
-    timestamp: new Date(Date.now() - 2 * 3600_000).toISOString(),
-    actor: '9999901',
-    description: 'Regra B12 habilitada — campos obrigatórios',
-    payload: { rule: 'B12', previous: 'disabled' },
-  },
-  {
-    id: 'a4',
-    kind: 'schema.synced',
-    timestamp: new Date(Date.now() - 5 * 3600_000).toISOString(),
-    description: 'Schema 3040 v8.2.1 sincronizado do portal BACEN',
-    payload: { schema: '3040', from: '8.2.0', to: '8.2.1' },
-  },
-  {
-    id: 'a5',
-    kind: 'auth.login',
-    timestamp: new Date(Date.now() - 8 * 3600_000).toISOString(),
-    actor: '9999901',
-    payload: { ip: '10.0.x.x', user_agent: 'Chrome/macOS' },
-  },
-  {
-    id: 'a6',
-    kind: 'envio.rejected',
-    timestamp: new Date(Date.now() - 26 * 3600_000).toISOString(),
-    description: 'CADOC 3040 base 04/2026 rejeitado · 10 regras falharam',
-    payload: { envio_id: 'ENV-2026-00181', rules_failed: 10 },
-  },
-  {
-    id: 'a7',
-    kind: 'rule.disabled',
-    timestamp: new Date(Date.now() - 32 * 3600_000).toISOString(),
-    actor: '9999901',
-    description: 'Regra S05 desabilitada — sem impacto',
-    payload: { rule: 'S05', reason: 'false_positive' },
-  },
-  {
-    id: 'a8',
-    kind: 'auth.dev_token',
-    timestamp: new Date(Date.now() - 48 * 3600_000).toISOString(),
-    actor: '9999901',
-    description: 'Token dev mintado (apenas dev mode)',
-  },
-]
 
 export default async function AuditoriaPage() {
   const session = await getServerSession()
@@ -99,10 +32,8 @@ export default async function AuditoriaPage() {
     )
   }
 
-  // Verificação da chain (mock — em prod: backend faz auditlog.Verify())
-  const chainValid = true
-  const lastHash = 'a1b2c3d4e5f67890'
-
+  // Validação 29 (C5 fix): chainValid = true era hardcoded → fingia
+  // integridade LGPD/SOC 2. Agora: empty state honesto até ter dados.
   return (
     <AppShell
       session={session}
@@ -114,54 +45,52 @@ export default async function AuditoriaPage() {
           { label: 'Auditoria' },
         ],
         actions: (
-          <Button variant="outline" size="sm" leftIcon={<Download className="size-3.5" />}>
+          <Button variant="outline" size="sm" leftIcon={<Download className="size-3.5" />} disabled>
             Exportar
           </Button>
         ),
       }}
     >
       <div className="space-y-6 max-w-6xl">
-        {/* Integridade da chain */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <StatCard
-            label="Eventos (30d)"
-            value={mockAuditLog.length * 142}
-            tone="neutral"
-            icon={<ActivityIcon className="size-4" />}
-            helpText="Eventos verificados · sem falhas"
-          />
-          <StatCard
-            label="Integridade da chain"
-            value={chainValid ? 'OK' : 'QUEBRADA'}
-            tone={chainValid ? 'success' : 'critical'}
-            icon={<Shield className="size-4" />}
-            helpText="SHA-256 hash chain verificada"
-          />
-          <StatCard
-            label="Último hash"
-            value={lastHash}
-            tone="neutral"
-            icon={<Hash className="size-4" />}
-            helpText="8 primeiros caracteres"
-          />
-        </div>
+        {/* Banner de status */}
+        <Card padding="lg" className="text-center bg-warning-50/50 dark:bg-warning-950/20 border-warning-200 dark:border-warning-900">
+          <div className="size-12 mx-auto mb-4 rounded-full bg-warning-100 dark:bg-warning-950 text-warning-600 dark:text-warning-400 flex items-center justify-center">
+            <ActivityIcon className="size-6" />
+          </div>
+          <CardTitle className="mb-2">
+            Audit log ainda não populado
+          </CardTitle>
+          <CardDescription className="max-w-md mx-auto">
+            Quando o backend expor{' '}
+            <code className="text-2xs font-mono bg-surface-raised px-1 py-0.5 rounded">
+              GET /v1/audit_log
+            </code>{' '}
+            (Sprint 8c, role admin), esta página vai listar eventos imutáveis
+            com SHA-256 hash chain, contadores de integridade, e o último
+            hash verificado.
+          </CardDescription>
+          <Badge tone="warning" variant="soft" className="mt-3">
+            aguardando dados
+          </Badge>
+        </Card>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Activity feed */}
+          {/* Empty state principal */}
           <div className="lg:col-span-2">
-            <Card padding="md">
-              <div className="flex items-center justify-between mb-4">
+            <Card padding="none">
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
                 <div>
                   <CardTitle>Eventos recentes</CardTitle>
                   <CardDescription>
                     Audit log imutável com SHA-256 hash chain
                   </CardDescription>
                 </div>
-                <Badge tone="success" variant="soft" dot>
-                  verificado
-                </Badge>
               </div>
-              <ActivityFeed items={mockAuditLog} />
+              <EmptyState
+                icon={<ActivityIcon className="size-6" />}
+                title="Sem eventos no período"
+                description="Nenhum evento de auditoria registrado para esta IF ainda."
+              />
             </Card>
           </div>
 

@@ -6,12 +6,16 @@
  * Client component: filtros (categoria, severidade, status), busca
  * fuzzy, drill-down em modal. Toggle enable/disable persistido em
  * localStorage (Sprint 8c vai mover pro backend).
+ *
+ * Validação 29:
+ *   - C8 fix: outer é <div role="button"> (não <button>) pra permitir
+ *     toggle button interno sem HTML inválido.
+ *   - H4 fix: modal tem ESC handler + click outside.
  */
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import {
   Search,
-  BookCheck,
   Filter,
   X,
   ChevronRight,
@@ -70,8 +74,13 @@ export function RegrasClient({ rules }: RegrasClientProps) {
     const stored = localStorage.getItem('rn_disabled_rules')
     if (stored) {
       try {
-        setDisabled(new Set(JSON.parse(stored)))
-      } catch {}
+        const parsed = JSON.parse(stored) as unknown
+        if (Array.isArray(parsed)) {
+          setDisabled(new Set(parsed.filter((x): x is string => typeof x === 'string')))
+        }
+      } catch {
+        // ignore malformed localStorage
+      }
     }
   }, [])
 
@@ -87,7 +96,8 @@ export function RegrasClient({ rules }: RegrasClientProps) {
       const rule = rules.find((r) => r.code === focusCode)
       if (rule) setFocused(rule)
     }
-  }, [rules])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -103,25 +113,41 @@ export function RegrasClient({ rules }: RegrasClientProps) {
     })
   }, [rules, query, categoryFilter, severityFilter, enabledOnly, disabled])
 
-  const counts = {
-    B: rules.filter((r) => r.category === 'B').length,
-    F: rules.filter((r) => r.category === 'F').length,
-    C: rules.filter((r) => r.category === 'C').length,
-    S: rules.filter((r) => r.category === 'S').length,
-    E: rules.filter((r) => r.severity === 'E').length,
-    A: rules.filter((r) => r.severity === 'A').length,
-    I: rules.filter((r) => r.severity === 'I').length,
-    enabled: rules.length - disabled.size,
-  }
+  const counts = useMemo(
+    () => ({
+      B: rules.filter((r) => r.category === 'B').length,
+      F: rules.filter((r) => r.category === 'F').length,
+      C: rules.filter((r) => r.category === 'C').length,
+      S: rules.filter((r) => r.category === 'S').length,
+      E: rules.filter((r) => r.severity === 'E').length,
+      A: rules.filter((r) => r.severity === 'A').length,
+      I: rules.filter((r) => r.severity === 'I').length,
+      enabled: rules.length - disabled.size,
+    }),
+    [rules, disabled],
+  )
 
-  function toggleRule(code: string) {
+  const toggleRule = useCallback((code: string) => {
     setDisabled((d) => {
       const next = new Set(d)
       if (next.has(code)) next.delete(code)
       else next.add(code)
       return next
     })
-  }
+  }, [])
+
+  // H4 fix: ESC handler para fechar modal
+  useEffect(() => {
+    if (!focused) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        setFocused(null)
+      }
+    }
+    window.addEventListener('keydown', onKey, { capture: true })
+    return () => window.removeEventListener('keydown', onKey, { capture: true })
+  }, [focused])
 
   return (
     <>
@@ -147,6 +173,7 @@ export function RegrasClient({ rules }: RegrasClientProps) {
               <button
                 onClick={() => setQuery('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-subtle hover:text-ink"
+                aria-label="Limpar busca"
               >
                 <X className="size-3.5" />
               </button>
@@ -238,14 +265,24 @@ export function RegrasClient({ rules }: RegrasClientProps) {
           {filtered.map((r) => {
             const sev = severityMeta[r.severity]
             const isDisabled = disabled.has(r.code)
+            // C8 fix: outer é <div role="button"> pra evitar <button> aninhado.
             return (
-              <button
+              <div
                 key={r.code}
+                role="button"
+                tabIndex={0}
                 onClick={() => setFocused(r)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setFocused(r)
+                  }
+                }}
                 className={cn(
-                  'text-left rounded-lg border bg-surface-raised p-4',
+                  'text-left rounded-lg border bg-surface-raised p-4 cursor-pointer',
                   'transition-all duration-150 hover:shadow-md hover:border-border-strong',
-                  'group relative',
+                  'group relative outline-none',
+                  'focus-visible:ring-2 focus-visible:ring-accent-400/40',
                   isDisabled
                     ? 'border-border opacity-50'
                     : 'border-border hover:-translate-y-px',
@@ -293,7 +330,7 @@ export function RegrasClient({ rules }: RegrasClientProps) {
                 <div className="mt-2 flex items-center justify-end">
                   <ChevronRight className="size-3.5 text-ink-subtle group-hover:text-accent-600 group-hover:translate-x-0.5 transition-all" />
                 </div>
-              </button>
+              </div>
             )
           })}
         </div>
@@ -358,6 +395,7 @@ function RuleDetailModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
+      aria-labelledby="rule-modal-title"
     >
       <div
         className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm animate-fade-in-fast"
@@ -383,13 +421,14 @@ function RuleDetailModal({
                 </span>
               )}
             </div>
-            <h2 className="text-lg font-semibold text-ink">
+            <h2 id="rule-modal-title" className="text-lg font-semibold text-ink">
               {cat.description}
             </h2>
           </div>
           <button
             onClick={onClose}
             className="size-8 rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink flex items-center justify-center"
+            aria-label="Fechar modal (ESC)"
           >
             <X className="size-4" />
           </button>

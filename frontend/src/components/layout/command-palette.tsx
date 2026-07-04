@@ -220,8 +220,15 @@ export function CommandPalette({
         setOpen(false)
       }
     }
+    function onOpenEvent() {
+      setOpen(true)
+    }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('rn:open-command-palette', onOpenEvent)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('rn:open-command-palette', onOpenEvent)
+    }
   }, [open])
 
   React.useEffect(() => {
