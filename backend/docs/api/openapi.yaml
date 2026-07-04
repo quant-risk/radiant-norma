@@ -1,0 +1,527 @@
+openapi: 3.0.3
+info:
+  title: Radiant Norma API
+  description: |
+    API REST do Radiant Norma — backend Go para validação CADOCs 3040,
+    monitoramento regulatório (radar), envios STA e auditoria LGPD/SOC2.
+
+    ## Autenticação (Sprint 7a / v1.6.0)
+
+    Production: JWT bearer RS256 via header `Authorization: Bearer <token>`.
+    Issuer pin (`iss`) + `kid` para key rotation. Role-based access (if/admin/readonly).
+
+    Dev mode: `RADIANT_DEV_AUTH=1` aceita `X-IF-ID` como fallback (migration).
+
+    ## Conventions
+
+    - Datas: ISO 8601 (YYYY-MM-DD) ou RFC3339 (com tempo)
+    - IDs: integer for radar alerts; string for cadoc codes
+    - Errors: JSON `{"error": "<message>"}` com UserError pattern
+    - Audit: writes tamper-evident hash chain para todo mutante
+  version: "2.0.0"
+  contact:
+    name: Fortvna Radiant Norma
+    url: https://fortvna.com.br
+servers:
+  - url: http://localhost:8080
+    description: Local development
+  - url: https://api.radiant-norma.fortvna.com.br
+    description: Production (placeholder)
+
+tags:
+  - name: meta
+    description: Healthcheck + version
+  - name: schemas
+    description: CADOC schema registry
+  - name: rules
+    description: Validation rules (audit)
+  - name: validate
+    description: Validation endpoints (L1+L2+L3)
+  - name: sta
+    description: STA submission endpoints
+  - name: radar
+    description: Regulatory change radar
+  - name: crossdoc
+    description: Cross-document L3 validation
+
+paths:
+  /healthz:
+    get:
+      tags: [meta]
+      summary: Liveness check
+      description: Always 200 if process alive. K8s liveness probe.
+      security: []
+      responses:
+        "200":
+          description: Process alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /readyz:
+    get:
+      tags: [meta]
+      summary: Readiness check
+      description: Pings DB. K8s readiness probe.
+      security: []
+      responses:
+        "200":
+          description: DB available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+        "503":
+          description: DB unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /v1/schemas:
+    get:
+      tags: [schemas]
+      summary: List CADOCs
+      description: Returns list of CADOC codes known to the registry (cached 5min).
+      responses:
+        "200":
+          description: CADOC list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CadocListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/schemas/{cadoc}:
+    get:
+      tags: [schemas]
+      summary: Get effective schema for a CADOC
+      parameters:
+        - name: cadoc
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "3040"
+      responses:
+        "200":
+          description: Schema details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Schema"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/schemas/{cadoc}/versions:
+    get:
+      tags: [schemas]
+      summary: List versions for a CADOC
+      parameters:
+        - name: cadoc
+          in: path
+          required: true
+          schema:
+              type: string
+      responses:
+        "200":
+          description: Version list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchemaVersionList"
+
+  /v1/rules:
+    get:
+      tags: [rules]
+      summary: List CADOCs with their rules
+      responses:
+        "200":
+          description: CADOC list with rule counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CadocListResponse"
+
+  /v1/rules/{cadoc}:
+    get:
+      tags: [rules]
+      summary: List rules for a specific CADOC
+      description: Filter via ?enabled=true|false|all (default all).
+      parameters:
+        - name: cadoc
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: enabled
+          in: query
+          schema:
+            type: string
+            enum: [true, false, all]
+      responses:
+        "200":
+          description: Rules with severity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RulesByCadocResponse"
+
+  /v1/validate:
+    post:
+      tags: [validate]
+      summary: Validate CADOC submission
+      description: |
+        L1 parse + L2 semantic (regra) + Optional L3 cross-doc.
+        XML ou JSON payload. Returns errors and warnings.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidationRequest"
+      responses:
+        "200":
+          description: Validation result (can have errors)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /v1/sta/submit:
+    post:
+      tags: [sta]
+      summary: Submit to STA (stub)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Submission"
+      responses:
+        "200":
+          description: Submission accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmissionResponse"
+
+  /v1/radar/alerts:
+    get:
+      tags: [radar]
+      summary: List regulatory alerts
+      description: Alerts emitted when BACEN content has changed.
+      parameters:
+        - name: unresolved
+          in: query
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        "200":
+          description: Alert list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarAlertList"
+
+  /v1/radar/alerts/{id}:
+    get:
+      tags: [radar]
+      summary: Get a single alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Alert detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarAlert"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/radar/alerts/{id}/resolve:
+    post:
+      tags: [radar]
+      summary: Resolve an alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Resolved successfully
+
+  /v1/radar/scan:
+    post:
+      tags: [radar]
+      summary: Trigger manual scan (admin only)
+      security:
+        - bearerAuth: [admin]
+      responses:
+        "200":
+          description: New alerts (or empty)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarScanResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          description: Rate limit exceeded
+
+  /v1/crossdoc/validate:
+    post:
+      tags: [crossdoc]
+      summary: Cross-document validation (L3)
+      description: Validate ecosystem across multiple CADOCs.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrossDocRequest"
+      responses:
+        "200":
+          description: Cross-doc validation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrossDocResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT RS256 with claims {sub, if_id, role, iss, exp, iat}.
+        Header: Authorization: Bearer <token>.
+        Default kid format: <issuer-prefix>-<key-version>.
+        For dev convenience, X-IF-ID header works when RADIANT_DEV_AUTH=1.
+
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status: {type: string, enum: [ok, ready]}
+        time: {type: string, format: date-time}
+        version: {type: string, example: "1.6.0"}
+        uptime_seconds: {type: integer}
+        db: {type: string, example: "ok", description: "DB ping result"}
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: {type: string, description: "Public-safe error message"}
+
+    CadocListResponse:
+      type: object
+      required: [cadocs, total]
+      properties:
+        cadocs:
+          type: array
+          items: {type: string, example: "3040"}
+        total: {type: integer}
+
+    Schema:
+      type: object
+      properties:
+        id: {type: integer}
+        cadoc_code: {type: string}
+        effective_from: {type: string, format: date}
+        source_uri: {type: string, format: uri}
+        fields_json: {type: object, additionalProperties: true}
+        xsd: {type: string}
+        changelog: {type: string}
+        created_at: {type: string, format: date-time}
+
+    SchemaVersionList:
+      type: array
+      items:
+        $ref: "#/components/schemas/Schema"
+
+    RulesByCadocResponse:
+      type: object
+      required: [cadoc, rules]
+      properties:
+        cadoc: {type: string}
+        rules:
+          type: array
+          items:
+            $ref: "#/components/schemas/Critica"
+        total: {type: integer}
+        total_all: {type: integer, description: "Total before filter"}
+
+    Critica:
+      type: object
+      properties:
+        codigo: {type: string, example: "B06"}
+        cadoc_code: {type: string, example: "3040"}
+        sheet: {type: string}
+        regra: {type: string}
+        descricao: {type: string}
+        gravidade: {type: string, enum: [E, A, I]}
+
+    ValidationRequest:
+      type: object
+      required: [cadoc_code]
+      properties:
+        cadoc_code: {type: string, example: "3040"}
+        xml: {type: string, description: "Base64 ou raw XML/JSON"}
+        content_type: {type: string, default: "application/xml"}
+
+    ValidationResponse:
+      type: object
+      properties:
+        passed: {type: boolean}
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationError"
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationError"
+        rules_run:
+          type: array
+          items: {type: string}
+        rules_skip:
+          type: array
+          items: {type: string}
+        duration_ms: {type: integer}
+        executed_at: {type: string, format: date-time}
+
+    ValidationError:
+      type: object
+      properties:
+        code: {type: string}
+        codigo: {type: string}
+        severity: {type: string, enum: [E, A]}
+        message: {type: string, description: "Public-safe error message"}
+
+    Submission:
+      type: object
+      properties:
+        cnpj: {type: string}
+        cadoc_code: {type: string}
+        data_base: {type: string, format: date}
+        xml: {type: string}
+        zip: {type: string, format: byte}
+
+    SubmissionResponse:
+      type: object
+      properties:
+        protocol_sta: {type: string}
+        accepted: {type: boolean}
+        rejection: {type: string}
+        envio_id: {type: string}
+        warning: {type: string}
+
+    RadarAlert:
+      type: object
+      properties:
+        id: {type: integer}
+        cadoc_code: {type: string}
+        alert_type: {type: string}
+        severity: {type: string, enum: [info, warn, critical]}
+        title: {type: string}
+        description: {type: string}
+        source_url: {type: string, format: uri}
+        detected_at: {type: string, format: date-time}
+        resolved: {type: boolean}
+
+    RadarAlertList:
+      type: object
+      properties:
+        alerts:
+          type: array
+          items: {$ref: "#/components/schemas/RadarAlert"}
+        total: {type: integer}
+
+    RadarScanResponse:
+      type: object
+      properties:
+        new_alerts:
+          type: array
+          items: {$ref: "#/components/schemas/RadarAlert"}
+        count: {type: integer}
+        cached: {type: boolean}
+        cached_at: {type: string, format: date-time}
+
+    CrossDocRequest:
+      type: object
+      properties:
+        cadocs:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            {"3040": "<xml>...</xml>", "4111": "<xml>...</xml>"}
+
+    CrossDocResponse:
+      type: object
+      properties:
+        passed: {type: boolean}
+        errors:
+          type: array
+          items: {$ref: "#/components/schemas/ValidationError"}
+        warnings:
+          type: array
+          items: {$ref: "#/components/schemas/ValidationError"}
+        rules_run:
+          type: array
+          items: {type: string}
+        rules_skip:
+          type: array
+          items: {type: string}
+        duration_ms: {type: integer}
+        executed_at: {type: string, format: date-time}
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid auth
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Auth ok, role insufficient
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    BadRequest:
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"

@@ -1,0 +1,39 @@
+{
+  "name": "radiant-norma-console",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Frontend Next.js 14 (App Router) + Tailwind + shadcn/ui — dashboard IF para validação CADOCs 3040, alertas radar, regras e auditoria LGPD.",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "generate-api-types": "openapi-typescript ../backend/docs/api/openapi.yaml -o src/lib/api-types.d.ts",
+    "fetch-api-types": "curl $RADIANT_API_URL/openapi.yaml -o ./openapi.yaml || cp ../backend/docs/api/openapi.yaml ./openapi.yaml"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.59.0",
+    "axios": "^1.7.7",
+    "clsx": "^2.1.1",
+    "jose": "^5.9.6",
+    "lucide-react": "^0.460.0",
+    "next": "^14.2.18",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.53.0",
+    "tailwind-merge": "^2.5.4",
+    "zod": "^3.23.8",
+    "zustand": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "openapi-typescript": "^7.4.2",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.3"
+  }
+}
