@@ -108,17 +108,19 @@ Commits:       10 commits Sprint 6 (v1.4.3 e v1.4.4 são anteriores à tag v1.4.
 Migrations:    3 (001-003) → 5 (001-005)
 Regras audit:  25 tipadas → 25 tipadas + 5 raw (B01-B05)
 
-### 🩹 Validações 11-19 (post-ship hardening, in-place)
+### 🩹 Validações 11-20 (post-ship hardening, in-place)
 
 > **Detalhe:** cada validação profunda pós-release encontrou gaps reais
 > (vetor pgx, reinvent-stdlib, DSN leak, deadlock panic, panic recover,
 > http.Error 500, http.Error 4xx disclosure, audit log persistente,
-> JSON Message field disclosure). Documentados em `VALIDATION_v1.5.0.md`,
+> JSON Message field disclosure, token format disclosure, DOS-via-large-body,
+> SafeError perf 1MB). Documentados em `VALIDATION_v1.5.0.md`,
 > `VALIDATION_v1.5.0_DEEPER.md`, `VALIDATION_v1.5.0_DEEPEST.md`,
 > `VALIDATION_v1.5.0_DEEPEST2.md`, `VALIDATION_v1.5.0_DEEPEST3.md`,
-> `VALIDATION_v1.5.0_DEEPEST4.md`, `VALIDATION_v1.5.0_DEEPEST5.md`.
+> `VALIDATION_v1.5.0_DEEPEST4.md`, `VALIDATION_v1.5.0_DEEPEST5.md`,
+> `VALIDATION_v1.5.0_DEEPEST6.md`.
 
-Resumo consolidado (validações 11-19):
+Resumo consolidado (validações 11-20):
 
 | Validação | Findings | Críticos | Observação |
 |-----------|----------|----------|------------|
@@ -131,19 +133,27 @@ Resumo consolidado (validações 11-19):
 | 17 | 3 | 0 | Warn-level cmd/seed edge cases |
 | 18 | 8 | 3 | HTTP 4xx disclosure (7 vetores) + audit log persistente (2) + GAP-7.4 version |
 | 19 | 7 | 4 | JSON Message field disclosure (audit+crossdoc, 4 vetores) |
-| **TOTAL** | **53** | **15** | |
+| 20 | 7 | 2 | Token format leak + DOS-via-large-body (maxBodyBytes middleware) |
+| **TOTAL** | **60** | **17** | |
 
-Pacote `internal/loggerutil` (F15.1 + F16.5 fix) cobre vetores reais
-DSN canonical, pgx key=value, password=X solto, ?password= em query.
+Pacote `internal/loggerutil` (F15.1 + F16.5 + F20.6 + F20.7) cobre:
+- DSN canonical (postgres://, mysql://, etc)
+- pgx key=value (`user=X database=Y`)
+- password=X solto e ?password=X em query
+- Bearer/JWT/Authorization-style tokens
+- Vendor-specific token prefixes (ghp_, ya29., AKIA, xoxb-, sk_live_, etc)
+- 16KB truncation para mensagens gigantes
 9 validações seguidas com findings — pattern confirmado.
 
-**Cobertura final pós-validação 19 (5 vetores paralelos err.Error()):**
+**Cobertura final pós-validação 20 (6 vetores paralelos + 2 arquiteturais):**
 - Logger (Error/Warn/Info/Debug) com err → 100% via SafeError (F15.1+)
 - HTTP responses 4xx/5xx com err → 100% via UserError (F18.1)
 - AuditLog persistence com err → 100% via SafeError (F18.13/14)
 - Version drift cross-pkg → 100% via internal/version (F18.4)
 - Radar logger Error/Warn → 100% via SafeError (F18.9/11/12)
-- **JSON response Message field** → 100% via SafeError (F19.10-13)
+- JSON response Message field → 100% via SafeError (F19.10-13)
+- **Token formats** → 100% via commonTokens regex (F20.6)
+- **DOS-via-large-body** → 100% via MaxBytesReader middleware (F20.3)
 
 **Versão:** inalterada (v1.5.0). Apenas hardening interno.
 Regras cross:  0 → 3 (XD-001/002/003)

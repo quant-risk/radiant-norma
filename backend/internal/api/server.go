@@ -87,6 +87,14 @@ func (s *Server) Router() http.Handler {
 
 	// API v1
 	r.Route("/v1", func(r chi.Router) {
+		// Validação 20 (F20.3): MaxBytesReader middleware — limita payload
+		// de entrada a 10MB. Sem isso, atacante autenticado (X-IF-ID válido)
+		// pode enviar body gigante (1GB) e causar OOM via io.ReadAll.
+		//
+		// 10MB é suficiente para XMLs de CADOC (geralmente 50KB-5MB),
+		// com folga para casos extremos (3040 com 50k linhas).
+		r.Use(maxBodyBytesMiddleware(10 << 20)) // 10 MiB
+
 		r.Use(s.authMiddleware) // X-IF-ID obrigatório
 
 		// Schemas
@@ -116,6 +124,41 @@ func (s *Server) Router() http.Handler {
 	})
 
 	return r
+}
+
+// --- Middleware ---
+
+// maxBodyBytesMiddleware limita o tamanho do body de leitura
+// para evitar DOS-via-large-body (F20.3).
+//
+// Validação 20: r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+// wraps the body, returning an error on Read when maxBytes é excedido.
+// Sem isso, atacante autenticado pode enviar body 1GB e causar OOM.
+//
+// maxBytes: tamanho máximo em bytes (ex: 10 MiB = 10<<20).
+//
+// Em caso de overflow, o handler vai receber um erro que não é nil;
+// via json.Decode/sql/etc vai propagar para UserError com 400/413.
+func maxBodyBytesMiddleware(maxBytes int64) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Body != nil && r.ContentLength > maxBytes {
+				// Rejeitar ANTES de ler — rápido, sem alocar.
+				w.Header().Set("Connection", "close")
+				http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+				return
+			}
+			r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// MaxBodyBytesMiddlewareForTest expõe o middleware para tests externos.
+// Misma implementação, apenas renomeada para evitar nome uppercase
+// chochar com chi.Router.
+func MaxBodyBytesMiddlewareForTest(maxBytes int64, next http.Handler) http.Handler {
+	return maxBodyBytesMiddleware(maxBytes)(next)
 }
 
 // --- Handlers ---
