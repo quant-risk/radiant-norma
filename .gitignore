@@ -1,12 +1,12 @@
 # Go build artifacts — devem ser construídos por `make build`, não commit.
-api
-api-*
-worker
-worker-*
-radar
-radar-*
-_verify
-_*.exe
+/backend/api
+/backend/api-*
+/backend/worker
+/backend/worker-*
+/backend/radar
+/backend/radar-*
+/backend/_verify
+/_*.exe
 
 # Database files — runtime SQLite.
 *.db
