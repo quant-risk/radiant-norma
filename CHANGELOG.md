@@ -2,6 +2,73 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.1.0 — 2026-07-04 (Sprint 8c: Backend Intelligence + Frontend Wiring) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 8c (destrava o design system do Sprint 9)
+> **Trigger:** Validação 29 (v3.0.0) — 6 endpoints faltando + 4 páginas em empty state
+> **Versão:** minor (features novos)
+
+### 🎯 Resumo
+
+Sprint 8c entrega os 6 endpoints faltantes (`/v1/envios`, `/v1/audit_log`,
+`/v1/insights/{kpis,heatmap,rules/top-failing,recommendations}`) + seed data
+realista (56 envios, 320 rule_failures, audit_events) + wiring frontend que
+substitui empty states por dados reais. Antes 4/6 páginas estavam em empty
+state honesto (criado na validação 29); agora 6/6 mostram dados.
+
+### 📊 Backend (Go)
+
+- **Migration 006** — adiciona colunas em `envios` (rules_passed, rules_failed,
+  period, duration_ms, approver) + tabela `audit_events` (denormalizada de
+  audit_log pra UI) + tabela `rule_failures` (alimenta heatmap + top-failing)
+- **7 handlers novos** em `internal/api/sprint8c_handlers.go`:
+  - `GET /v1/envios` — lista filtrada por IF (cadoc, status, period, limit)
+  - `GET /v1/envios/stats` — KPIs agregados
+  - `GET /v1/audit_log` — admin-only; filtros if_id/action/limit; chain_valid
+  - `GET /v1/insights/kpis` — current vs previous (delta% aprovação, falhas, duração)
+  - `GET /v1/insights/heatmap?days=N` — matriz CADOC × dia (com strftime)
+  - `GET /v1/insights/rules/top-failing?limit=N` — count + delta_pct + trend_direction
+  - `GET /v1/insights/recommendations` — heurística 3 regras ativas
+
+### 🌱 Seed (`cmd/seed-sprint8c`)
+
+- 56 envios STA (30 dias) com distribuição ponderada:
+  70% accepted, 15% rejected, 10% pending, 5% error
+- 320 rule_failures com pesos realistas (F23=28%, B12=18%, S05=12%, ...)
+- Audit events denormalizados (sta.submit, envio.approved/rejected, login)
+- **Idempotente** com `rand.NewSource(42)` (dados determinísticos)
+
+### 🎨 Frontend (Next.js)
+
+- **Dashboard**: hero copy dinâmico, KPIs reais (envios com delta, taxa
+  aprovação, alertas, CADOCs), activity feed real do audit_log
+- **/insights**: 4 KPIs comparativos + heatmap real com escala sequential +
+  top 10 regras falhando com delta% + 3 recomendações heurísticas
+- **/envios**: tabela real com badges de status + KPIs (Total/Aprovados/
+  Pendentes/Rejeitados)
+- **/auditoria**: 3 StatCards (eventos/chain_valid/verificação) + activity
+  feed completo + badges de compliance (LGPD/SOC2/BACEN)
+
+### 🐛 Decisões técnicas + fix sutil
+
+- **Strftime + timezone**: SQLite `strftime('%Y-%m-%d', ...)` retorna NULL
+  silencioso quando recebe formato RFC3339 com timezone offset. Fix:
+  seed agora usa `Format("2006-01-02 15:04:05")` (UTC, sem timezone).
+- **Test expectations**: `internal/db/migrate_test.go` agora espera 6
+  migrations (era 5).
+- **Promise.allSettled**: SSR das páginas tolera falha em qualquer endpoint
+  isoladamente — não derruba a página.
+
+### 🔒 Verificações
+
+- `go test ./...` — 14/14 packages (incluindo internal/api com handlers novos)
+- `npm run type-check` — 0 errors
+- `npm run lint` — ✔ No ESLint warnings or errors
+- `npm run build` — 11 rotas + 1 API route
+- Smoke test E2E com seed: 6 rotas autenticadas 200, conteúdo real validado
+  (17 aprovados, F23/B12 top regras, ENV-* IDs reais)
+
 ## v3.0.0 — 2026-07-04 (Sprint 9: Frontend Redesign — Onda 1 + 2 + 3) ✅
 
 > **Status:** ✅ Shipped

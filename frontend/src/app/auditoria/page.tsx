@@ -1,9 +1,8 @@
 /**
  * /auditoria — audit log tamper-evident (LGPD/SOC 2 compliance).
  *
- * Validação 29 (C5 fix): NÃO finge integridade. Até o backend expor
- * /v1/audit_log, mostra empty state honesto com explicabilidade do
- * mecanismo de hash chain.
+ * Sprint 8c: dados reais de /v1/audit_log (admin only). AuditLog nativo
+ * (audit_log table com SHA-256 chain) verifica integridade.
  */
 
 import {
@@ -14,13 +13,59 @@ import {
   Activity as ActivityIcon,
 } from 'lucide-react'
 import { getServerSession } from '@/lib/session'
+import { apiFetch } from '@/lib/api-fetch'
 import { AppShell } from '@/components/layout/app-shell'
 import { Card, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { StatCard } from '@/components/domain/stat-card'
+import { ActivityFeed, type ActivityItem } from '@/components/domain/activity-feed'
 
 export const dynamic = 'force-dynamic'
+
+interface AuditEvent {
+  id: number
+  if_id: string
+  actor: string
+  action: string
+  target: string
+  description: string
+  payload?: Record<string, unknown>
+  created_at: string
+}
+
+interface AuditResponse {
+  events: AuditEvent[]
+  total: number
+  chain_valid: boolean
+}
+
+function normalizeAction(action: string): ActivityItem['kind'] {
+  switch (action) {
+    case 'envio.approved':
+    case 'sta.submit':
+      return 'envio.approved'
+    case 'envio.rejected':
+      return 'envio.rejected'
+    case 'radar.detected':
+      return 'radar.detected'
+    case 'radar.resolved':
+      return 'radar.detected'
+    case 'rule.disabled':
+      return 'rule.disabled'
+    case 'rule.enabled':
+      return 'rule.enabled'
+    case 'schema.synced':
+      return 'schema.synced'
+    case 'auth.login':
+      return 'auth.login'
+    case 'auth.dev_token':
+      return 'auth.dev_token'
+    default:
+      return 'envio.approved'
+  }
+}
 
 export default async function AuditoriaPage() {
   const session = await getServerSession()
@@ -32,8 +77,23 @@ export default async function AuditoriaPage() {
     )
   }
 
-  // Validação 29 (C5 fix): chainValid = true era hardcoded → fingia
-  // integridade LGPD/SOC 2. Agora: empty state honesto até ter dados.
+  const res = await Promise.allSettled([
+    apiFetch<AuditResponse>('/v1/audit_log?limit=100', {}, session.token),
+  ])
+  const auditData: AuditResponse | null =
+    res[0].status === 'fulfilled' ? res[0].value : null
+
+  const events: AuditEvent[] = auditData?.events ?? []
+  const chainValid = auditData?.chain_valid ?? false
+  const activity: ActivityItem[] = events.map((e) => ({
+    id: `audit-${e.id}`,
+    kind: normalizeAction(e.action),
+    timestamp: e.created_at,
+    actor: e.actor,
+    description: e.description,
+    payload: e.payload,
+  }))
+
   return (
     <AppShell
       session={session}
@@ -45,52 +105,67 @@ export default async function AuditoriaPage() {
           { label: 'Auditoria' },
         ],
         actions: (
-          <Button variant="outline" size="sm" leftIcon={<Download className="size-3.5" />} disabled>
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Download className="size-3.5" />}
+            disabled={events.length === 0}
+          >
             Exportar
           </Button>
         ),
       }}
     >
       <div className="space-y-6 max-w-6xl">
-        {/* Banner de status */}
-        <Card padding="lg" className="text-center bg-warning-50/50 dark:bg-warning-950/20 border-warning-200 dark:border-warning-900">
-          <div className="size-12 mx-auto mb-4 rounded-full bg-warning-100 dark:bg-warning-950 text-warning-600 dark:text-warning-400 flex items-center justify-center">
-            <ActivityIcon className="size-6" />
-          </div>
-          <CardTitle className="mb-2">
-            Audit log ainda não populado
-          </CardTitle>
-          <CardDescription className="max-w-md mx-auto">
-            Quando o backend expor{' '}
-            <code className="text-2xs font-mono bg-surface-raised px-1 py-0.5 rounded">
-              GET /v1/audit_log
-            </code>{' '}
-            (Sprint 8c, role admin), esta página vai listar eventos imutáveis
-            com SHA-256 hash chain, contadores de integridade, e o último
-            hash verificado.
-          </CardDescription>
-          <Badge tone="warning" variant="soft" className="mt-3">
-            aguardando dados
-          </Badge>
-        </Card>
+        {/* Integridade da chain */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <StatCard
+            label="Eventos"
+            value={events.length}
+            tone="neutral"
+            icon={<ActivityIcon className="size-4" />}
+            helpText="Eventos retornados pelo /v1/audit_log"
+          />
+          <StatCard
+            label="Integridade da chain"
+            value={chainValid ? 'OK' : 'QUEBRADA'}
+            tone={chainValid ? 'success' : 'critical'}
+            icon={<Shield className="size-4" />}
+            helpText="SHA-256 hash chain verificada pelo backend"
+          />
+          <StatCard
+            label="Última verificação"
+            value="agora"
+            tone="neutral"
+            icon={<Hash className="size-4" />}
+            helpText="Cada request valida o chain completo"
+          />
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Empty state principal */}
+          {/* Activity feed */}
           <div className="lg:col-span-2">
-            <Card padding="none">
-              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+            <Card padding="md">
+              <div className="flex items-center justify-between mb-4">
                 <div>
                   <CardTitle>Eventos recentes</CardTitle>
                   <CardDescription>
                     Audit log imutável com SHA-256 hash chain
                   </CardDescription>
                 </div>
+                <Badge tone={chainValid ? 'success' : 'warning'} variant="soft" dot>
+                  {chainValid ? 'verificado' : 'aguardando'}
+                </Badge>
               </div>
-              <EmptyState
-                icon={<ActivityIcon className="size-6" />}
-                title="Sem eventos no período"
-                description="Nenhum evento de auditoria registrado para esta IF ainda."
-              />
+              {activity.length === 0 ? (
+                <EmptyState
+                  icon={<ActivityIcon className="size-6" />}
+                  title="Sem eventos no período"
+                  description="Nenhum evento de auditoria registrado para esta IF ainda."
+                />
+              ) : (
+                <ActivityFeed items={activity} />
+              )}
             </Card>
           </div>
 
@@ -99,9 +174,7 @@ export default async function AuditoriaPage() {
             <Card padding="md">
               <div className="flex items-center gap-2 mb-3">
                 <Lock className="size-4 text-accent-600 dark:text-accent-400" />
-                <h3 className="text-md font-semibold text-ink">
-                  Como funciona
-                </h3>
+                <h3 className="text-md font-semibold text-ink">Como funciona</h3>
               </div>
               <ol className="space-y-3 text-sm text-ink-muted">
                 <li className="flex gap-3">
@@ -147,9 +220,7 @@ export default async function AuditoriaPage() {
             </Card>
 
             <Card padding="md">
-              <h3 className="text-md font-semibold text-ink mb-2">
-                Compliance
-              </h3>
+              <h3 className="text-md font-semibold text-ink mb-2">Compliance</h3>
               <ul className="space-y-2 text-sm text-ink-muted">
                 <li className="flex items-start gap-2">
                   <Badge tone="success" variant="soft" className="shrink-0 mt-0.5">

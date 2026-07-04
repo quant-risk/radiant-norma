@@ -55,8 +55,8 @@ func TestMigrate_AppliesAllMigrations(t *testing.T) {
 		t.Fatalf("query: %v", err)
 	}
 	// 5 migrations: 001, 002, 003, 004 (radar_baselines), 005 (worker hardening)
-	if count != 5 {
-		t.Errorf("schema_migrations tem %d entries, want 5", count)
+	if count != 6 {
+		t.Errorf("schema_migrations tem %d entries, want 6", count)
 	}
 }
 
@@ -74,8 +74,8 @@ func TestMigrate_Idempotent(t *testing.T) {
 	if err := d.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&count); err != nil {
 		t.Fatal(err)
 	}
-	if count != 5 {
-		t.Errorf("Após 2x migrate: %d entries, want 5 (idempotente)", count)
+	if count != 6 {
+		t.Errorf("Após 2x migrate: %d entries, want 6 (idempotente)", count)
 	}
 }
 
@@ -205,8 +205,8 @@ func TestMigrate_FreshSchemaVersionsTable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Após migrate: %v", err)
 	}
-	if count != 5 {
-		t.Errorf("schema_migrations tem %d, want 5", count)
+	if count != 6 {
+		t.Errorf("schema_migrations tem %d, want 6", count)
 	}
 }
 

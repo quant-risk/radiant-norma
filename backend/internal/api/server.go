@@ -134,6 +134,18 @@ func (s *Server) Router() http.Handler {
 		// Cross-Doc L3 (Sprint 6 v1.5.0) — diferencial proprietário.
 		// Valida ecossistema inteiro (3040 ↔ 4111 ↔ DRSAC) em paralelo.
 		r.Post("/crossdoc/validate", s.crossdocValidate)
+
+		// Sprint 8c (v3.1.0) — endpoints de inteligência que destravam
+		// o frontend v3.0.0 (estava em empty states por falta de dados).
+		r.Get("/envios", s.listEnvios)
+		r.Get("/envios/stats", s.enviosStats)
+		r.Get("/audit_log", s.listAuditLog)
+		r.Route("/insights", func(r chi.Router) {
+			r.Get("/kpis", s.insightsKPIs)
+			r.Get("/heatmap", s.insightsHeatmap)
+			r.Get("/rules/top-failing", s.insightsTopFailingRules)
+			r.Get("/recommendations", s.insightsRecommendations)
+		})
 	})
 
 	// Sprint 8a (v2.1.0): dev-token endpoint (FRENTE do middleware JWT).
