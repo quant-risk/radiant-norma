@@ -13,6 +13,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 )
 
 // Version representa uma versão de leiaute de um CADOC.
@@ -190,11 +192,16 @@ func (r *Registry) ListCadocs(ctx context.Context) ([]string, error) {
 // + criticas. Com cache, 99% das chamadas retornam memória.
 //
 // Em produção: trocar para Redis (in-memory não escala horizontalmente).
+//
+// Validação 22 (F22.2): singleflight adicionado para evitar cache
+// stampede (thundering herd) — sem isso, N goroutines em cache-miss
+// simultâneo executam fetch() em paralelo, sobrecarregando DB.
 type CadocListCache struct {
-	mu        sync.Mutex
-	cadocs    []string
-	cachedAt  time.Time
-	ttl       time.Duration
+	mu       sync.Mutex
+	cadocs   []string
+	cachedAt time.Time
+	ttl      time.Duration
+	sf       singleflight.Group
 }
 
 func NewCadocListCache(ttl time.Duration) *CadocListCache {
@@ -206,7 +213,14 @@ func NewCadocListCache(ttl time.Duration) *CadocListCache {
 // fetch() é um func que retorna ([]string, error) — abstração para que
 // possa ser usado tanto em produção (Registry.ListCadocs) quanto em
 // testes (fake).
+//
+// Validação 22 (F22.2): usa singleflight para evitar cache stampede.
+// Se N goroutines chamarem GetOrFetch simultaneamente com cache
+// expirado, apenas 1 chama fetch(); N-1 esperam o resultado e
+// compartilham. Re-check dentro do singleflight evita race entre
+// primeira checagem e Do().
 func (c *CadocListCache) GetOrFetch(fetch func() ([]string, error)) ([]string, error) {
+	// Cache fast path.
 	c.mu.Lock()
 	if len(c.cadocs) > 0 && time.Since(c.cachedAt) < c.ttl {
 		out := make([]string, len(c.cadocs))
@@ -216,19 +230,40 @@ func (c *CadocListCache) GetOrFetch(fetch func() ([]string, error)) ([]string, e
 	}
 	c.mu.Unlock()
 
-	// Cache miss — fetch (fora do lock para não bloquear readers)
-	cadocs, err := fetch()
+	// Cache miss / expirado — singleflight protege DB.
+	v, err, _ := c.sf.Do("cadocs", func() (any, error) {
+		// Re-check dentro do singleflight — outra goroutine pode ter
+		// acabado de popular o cache entre a primeira checagem e o Do.
+		c.mu.Lock()
+		if len(c.cadocs) > 0 && time.Since(c.cachedAt) < c.ttl {
+			out := make([]string, len(c.cadocs))
+			copy(out, c.cadocs)
+			c.mu.Unlock()
+			return out, nil
+		}
+		c.mu.Unlock()
+
+		cadocs, fetchErr := fetch()
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		c.mu.Lock()
+		c.cadocs = cadocs
+		c.cachedAt = time.Now()
+		c.mu.Unlock()
+		return cadocs, nil
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	c.mu.Lock()
-	c.cadocs = make([]string, len(cadocs))
-	copy(c.cadocs, cadocs)
-	c.cachedAt = time.Now()
-	c.mu.Unlock()
-
-	return cadocs, nil
+	cadocs, ok := v.([]string)
+	if !ok {
+		return nil, fmt.Errorf("internal: singleflight returned non-[]string (%T)", v)
+	}
+	// Caller recebe slice novo (não referenciar interno).
+	out := make([]string, len(cadocs))
+	copy(out, cadocs)
+	return out, nil
 }
 
 // Invalidate limpa cache (usado em testes ou após mudanças manuais).
