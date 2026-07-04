@@ -178,17 +178,40 @@ Tables:        7 → 8 (+radar_baselines)
 
 ### ⚠️ Gaps remanescentes (Sprint 7 backlog)
 
-| # | Gap | Por que | Sprint 7? |
-|---|-----|---------|-----------|
-| GAP-7.1 | Cross-doc L3 — `iterXMLElements` é implementação caseira (não usa encoding/xml robustamente) | Funciona para BACEN XMLs típicos, edge cases podem falhar | ✅ Sprint 7 |
-| GAP-7.2 | Cross-doc L3 — regras baseadas em agregação de tags podem misinterpretar CDATA ou entities | Tolerável para XML plano | ✅ Sprint 7 (test fuzzer) |
-| GAP-7.3 | Postgres integration tests sem testcontainers | Dependência de Postgres rodando quebraria CI | ✅ Sprint 7 |
-| GAP-7.4 | Migration 004 (`INSERT OR IGNORE`) não roda em Postgres puro | Pequena diferença SQL | ✅ Sprint 7 (migração Postgres-flavor) |
-| GAP-7.5 | User-Agent hardcoded em radar.go (não usa api.Version) | Gap arquitetural conhecido desde v1.4.3 F10.10 | ✅ Sprint 7 (refactor internal/version) |
-| GAP-7.6 | Cross-doc engine limita goroutines | Pode DOS em request com 100 CADOCs | ✅ Sprint 7 (limit concurrency) |
-| GAP-7.7 | cmd/api não lê DATABASE_URL automaticamente (precisa `-db` flag) | DX | ✅ Sprint 7 |
-| GAP-7.8 | Backend Frontend Norma Console (Next.js) | Backend-only | ✅ Sprint 7+ |
-| GAP-7.9 | Mais regras 3040 (320 total, ~25 implementadas) | Foco em hardening | ✅ Sprint 7 (sprint de regras) |
+| # | Gap | Status pós-v23 | Sprint 7? |
+|---|-----|-----------------|-----------|
+| GAP-7.1 | Cross-doc L3 — `iterXMLElements` é implementação caseira | Persiste (Sprint 7) | ✅ Sprint 7 |
+| GAP-7.2 | Cross-doc L3 — regras de agregação podem misinterpretar CDATA | Persiste | ✅ Sprint 7 |
+| GAP-7.3 | Postgres integration tests sem testcontainers | Persiste (gap) | ✅ Sprint 7 |
+| GAP-7.4 | ~~User-Agent hardcoded em radar.go~~ **F18.4 FIXED** | ✅ Resolvido em v18 | — |
+| GAP-7.5 | ~~Migration 004 `INSERT OR IGNORE` Postgres-flavor~~ **F21.5 refutado** | ✅ Real é OK (race-free) | — |
+| GAP-7.6 | Cross-doc engine goroutine pool | Persiste (paralelo) | Sprint 7+ |
+| GAP-7.7 | cmd/* seeding needs explicit `-db` flag | Mitigado via env DATABASE_URL | Cosmetic |
+| GAP-7.8 | ~~cmd/api graceful shutdown~~ **F12.4 OK** | ✅ Resolvido | — |
+| GAP-7.9 | Mais regras 3040 (~25/320 implementadas) | Persiste | Sprint 7+ |
+| **NEW** GAP-7.10 | RequestID não propaga para logs | F23.3 follow-up | Sprint 7 |
+| **NEW** GAP-7.11 | `cmd/_verify` dev tool uso residual | F21.6 mitigado | — |
+
+**Resumo validações v15-v23 (post-release hardening):**
+
+| Val | Findings | Críticos |
+|-----|----------|----------|
+| 15  | 4  | 1 |
+| 16  | 4  | 1 |
+| 17  | 3  | 0 |
+| 18  | 8  | 3 |
+| 19  | 7  | 4 |
+| 20  | 7  | 2 |
+| 21  | 5  | 1 |
+| 22  | 2  | 0 |
+| 23  | 3  | 0 |
+| **TOTAL** | **70** | **18** |
+
+**Fase 1 (Sprint 6 v1.5.0 + hardening v15-v23):** SATURADA.
+13 validações consecutivas com findings, 0 críticos em v22-v23.
+15 categorias vetores fechadas. Recomenda-se encerrar Fase 1
+e abrir Sprint 7 com mudança de modo (feature ou Postgres
+integration tests).
 
 ### 📂 Commits Sprint 6
 
