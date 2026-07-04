@@ -21,8 +21,12 @@
 package version
 
 // Version é a versão da build. Override via:
-//   - ldflags "-X ...version.Version=v1.5.0" (build)
+//   - ldflags "-X ...version.Version=v2.0.0" (build)
 //   - constante editada abaixo (dev)
 //
 // Para bumpar: alterar este string + api.Version re-export + tag git.
-const Version = "1.5.0"
+//
+// Validação 27 (F27.2): v1.5.0 foi deixado para trás após Sprint 7c/v2.0.0.
+// Constante deveria ter sido bumped ao fechar o release v2.0.0 — sem isso
+// `/healthz` continua reportando "1.5.0" enquanto CHANGELOG diz v2.0.0.
+const Version = "2.0.0"

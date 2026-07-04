@@ -5,6 +5,7 @@
 
 import { apiFetch } from '@/lib/api-fetch'
 import { getServerSession } from '@/lib/session'
+import { ResolveButton } from '@/components/resolve-alert-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -85,6 +86,3 @@ export default async function RadarPage() {
     </main>
   )
 }
-
-// Client button for resolving.
-import { ResolveButton } from '@/components/resolve-alert-button'

@@ -27,12 +27,25 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 
+# Argumento VERSION para bake da versão em build-time (Validação 27 F27.2).
+# Override no docker build: --build-arg VERSION=2.0.1+commit123
+ARG VERSION=2.0.0
+ENV VERSION=${VERSION}
+
 # Copia o resto e build os 4 binários.
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w" -o /out/api ./cmd/api
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w" -o /out/worker ./cmd/worker
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w" -o /out/radar ./cmd/radar
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w" -o /out/verify ./cmd/_verify
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags "-s -w -X 'github.com/fortvna/radiant-norma/backend/internal/version.Version=${VERSION}'" \
+    -o /out/api ./cmd/api
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags "-s -w -X 'github.com/fortvna/radiant-norma/backend/internal/version.Version=${VERSION}'" \
+    -o /out/worker ./cmd/worker
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags "-s -w -X 'github.com/fortvna/radiant-norma/backend/internal/version.Version=${VERSION}'" \
+    -o /out/radar ./cmd/radar
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags "-s -w -X 'github.com/fortvna/radiant-norma/backend/internal/version.Version=${VERSION}'" \
+    -o /out/verify ./cmd/_verify
 
 # ============ Stage 2: runtime ============
 FROM alpine:3.19

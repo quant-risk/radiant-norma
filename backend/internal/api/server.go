@@ -377,9 +377,10 @@ func (s *Server) listRulesByCadoc(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) validate(w http.ResponseWriter, r *http.Request) {
-	ifID := r.Header.Get("X-IF-ID")
+	// Validação 27 (F27.1): getIfID prioriza auth.Claims (JWT) > header X-IF-ID.
+	ifID := getIfID(r)
 	if ifID == "" {
-		http.Error(w, "X-IF-ID required", http.StatusUnauthorized)
+		http.Error(w, "authentication required", http.StatusUnauthorized)
 		return
 	}
 
@@ -430,9 +431,10 @@ func (s *Server) validate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) staSubmit(w http.ResponseWriter, r *http.Request) {
-	ifID := r.Header.Get("X-IF-ID")
+	// Validação 27 (F27.1): getIfID prioriza auth.Claims (JWT) > header X-IF-ID.
+	ifID := getIfID(r)
 	if ifID == "" {
-		http.Error(w, "X-IF-ID required", http.StatusUnauthorized)
+		http.Error(w, "authentication required", http.StatusUnauthorized)
 		return
 	}
 
@@ -588,7 +590,8 @@ func (s *Server) getRadarAlert(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) resolveRadarAlert(w http.ResponseWriter, r *http.Request) {
-	ifID := r.Header.Get("X-IF-ID")
+	// Validação 27 (F27.1): Claims (JWT) > X-IF-ID header.
+	ifID := getIfID(r)
 	if s.Radar == nil {
 		http.Error(w, "radar não inicializado", http.StatusServiceUnavailable)
 		return
@@ -614,7 +617,8 @@ func (s *Server) resolveRadarAlert(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) triggerRadarScan(w http.ResponseWriter, r *http.Request) {
-	ifID := r.Header.Get("X-IF-ID")
+	// Validação 27 (F27.1): Claims (JWT) > X-IF-ID header.
+	ifID := getIfID(r)
 	if s.Radar == nil {
 		http.Error(w, "radar não inicializado", http.StatusServiceUnavailable)
 		return
@@ -705,7 +709,8 @@ func (s *Server) triggerRadarScan(w http.ResponseWriter, r *http.Request) {
 //
 // Resposta: ValidationResponse com passed, errors[], warnings[], rules_run[].
 func (s *Server) crossdocValidate(w http.ResponseWriter, r *http.Request) {
-	ifID := r.Header.Get("X-IF-ID")
+	// Validação 27 (F27.1): Claims (JWT) > X-IF-ID header.
+	ifID := getIfID(r)
 
 	if s.CrossDoc == nil {
 		http.Error(w, "crossdoc engine não inicializado", http.StatusServiceUnavailable)
@@ -790,6 +795,26 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 }
 
 // --- Helpers ---
+
+// getIfID retorna o tenant identifier priorizando auth.Claims (JWT, source-of-truth)
+// populado pelo auth.Middleware (Sprint 7a v1.6.0+). Fallback para X-IF-ID header
+// apenas em dev mode (`RADIANT_DEV_AUTH=1`) onde o middleware aceita X-IF-ID direto.
+//
+// Por que: handlers lendo `r.Header.Get("X-IF-ID")` direto são vetor de
+// cross-tenant injection — cliente com JWT válido para tenant A injeta
+// X-IF-ID header de tenant B para escrever audit_log como B. Helper centraliza
+// a regra: Claims (JWT validated) > header.
+//
+// Em prod (sem RADIANT_DEV_AUTH=1): middleware bloqueia clientes sem JWT antes
+// de chegar aqui, então helper sempre retorna Claims.IFID.
+//
+// Validação 27 (F27.1): fechar o gap deixado por Sprint 7a.
+func getIfID(r *http.Request) string {
+	if claims, err := auth.ClaimsFromContext(r.Context()); err == nil && claims != nil && claims.IFID != "" {
+		return claims.IFID
+	}
+	return r.Header.Get("X-IF-ID")
+}
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")

@@ -3,7 +3,7 @@
 // Difere de api.ts (client): usa next/headers para ler cookie
 // durante SSR e adiciona Authorization header automaticamente.
 
-import { headers } from 'next/headers'
+import { cookies } from 'next/headers'
 
 const API_URL = process.env.RADIANT_API_URL || 'http://localhost:8080'
 
@@ -34,9 +34,7 @@ export async function apiFetch<T>(
 
 // Lê token do cookie via next/headers (server side).
 async function getCookieToken(): Promise<string | undefined> {
-  // `cookies()` foi removido em headers() no Next 14 server components.
-  // Usar cookies() é mais limpo — mas para evitar dup import, leitura
-  // direta:
-  const { cookies } = await import('next/headers')
+  // Validação 27 (F27.13): antes era `await import('next/headers')` —
+  // dynamic import anti-pattern (Next 14 ESM). Top-level estático.
   return (await cookies()).get('rn_jwt')?.value
 }

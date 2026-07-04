@@ -307,6 +307,22 @@ Endpoints backend: 14        Endpoints backend: 14 (inalterado)
 | **NEW** GAP-7.16 | CI/CD npm install + frontend docker build | Persiste | Sprint 8 |
 | **NEW** GAP-7.17 | Backend endpoints para envios/audit/dashboard stats | Frontend placeholders | Sprint 8 |
 
+### 🟢 v2.0.0.post1 (Validação 27) — fixes aplicados em 2026-07-04
+
+| # | Bug | Sev | Fix | Tests |
+|---|-----|-----|-----|-------|
+| F27.1 | Handlers liam X-IF-ID cru → 401 "X-IF-ID required" em prod JWT-only | 🔴 Alta | Helper `getIfID` em `internal/api/server.go` que prioriza `Claims.IFID` | 3 testes regressão (`ifid_test.go`) |
+| F27.2 | `/healthz` retornava `"version":"1.5.0"` | 🔴 Alta | `const Version = "2.0.0"` em `internal/version/version.go` + ldflags no Dockerfile | — |
+| F27.4 | Axios client interceptor tentava ler cookie httpOnly (no-op) | 🟡 Média | Removido interceptor | — |
+| F27.5 | ResolveButton client enviava `Bearer undefined` | 🟡 Média | Removida lógica; server proxy injeta automaticamente | — |
+| F27.6 | Frontend sem ESLint config | 🟡 Média | `.eslintrc.json` extends next/core-web-vitals + eslint devDeps | `npm run lint` clean |
+| F27.10 | OpenAPI HealthStatus.version example "1.6.0" inconsistente | 🟢 Baixa | Atualizado para "2.0.0" + description | — |
+| F27.13 | `api-fetch.ts` dynamic import anti-pattern | 🟢 Baixa | Top-level static import | — |
+| F27.14 | `radar/page.tsx` import no final do arquivo | 🟢 Baixa | Movido para topo | — |
+| F27.16 | Cookie `rn_jwt` sem `secure` flag | 🟢 Baixa | `secure: NODE_ENV === 'production'` | — |
+
+Ver `VALIDATION_v2.0.0_POST.md` para cobertura completa dos 27 findings.
+
 ## 🏗️ Lições aprendidas (memory candidates)
 
 1. **F23.2 era PLUG, vetor real era auth bypass total.** Validação

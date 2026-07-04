@@ -553,3 +553,112 @@ First Load JS shared: 87.3 kB
 - `frontend/package-lock.json` (lockfile commitado)
 
 ---
+
+## v2.0.1 — 2026-07-04 (27ª validação: 9 findings fechados)
+
+> **Status:** Shipped
+> **Sprint:** Validação 27 (VALIDATION_v2.0.0_POST.md)
+> **Versão:** **patch** — 2 críticos + 4 médios + 3 polimentos fechados
+> **Trigger:** Henrique pediu validação profunda pós-tag v2.0.0
+> **Versão anterior:** v2.0.0.post
+
+### 🎯 Resumo
+
+Validação 27 fechou **9 findings** deixados pela release v2.0.0. Sem
+esses fixes, deployment em produção real quebraria todos os 5 endpoints
+mutantes (`/v1/validate`, `/v1/sta/submit`, `/v1/radar/alerts/{id}/resolve`,
+`/v1/radar/scan`, `/v1/crossdoc/validate`) por vetor de leitura errada
+de auth claims. Além disso, `/healthz` reportaria `1.5.0` em vez de
+`2.0.0` (doc drift quebrando consumers).
+
+### 🐛 Bugs corrigidos (por severidade)
+
+#### 🔴 Críticos (2)
+
+| # | Bug | Fix |
+|---|-----|-----|
+| F27.1 | Handlers liam `X-IF-ID` cru do header ao invés de `auth.ClaimsFromContext` — em prod com JWT-only, todos os 5 endpoints mutantes retornariam 401 "X-IF-ID required". Vetor de cross-tenant se cliente injetasse X-IF-ID malicioso com JWT válido. | Helper `getIfID(r)` em `internal/api/server.go` que prioriza `Claims.IFID` (JWT validated) e fallback X-IF-ID só em dev mode. Substituído nos 5 callsites. 3 testes de regressão em `ifid_test.go` (Claims, fallback header, vazio, edge-case Claims.IFID vazio). |
+| F27.2 | `/healthz` retornava `"version":"1.5.0"` enquanto CHANGELOG/SPRINT_7_RESULTS diziam v2.0.0 — const `version.Version` foi deixada hardcoded em v1.5.0. Doc drift quebra consumers que checam versão. | `const Version = "2.0.0"` em `internal/version/version.go`. Dockerfile parametrizado com `ARG VERSION` + ldflags `-X ...version.Version=${VERSION}` para build-time override. OpenAPI `HealthStatus.version` example atualizado para "2.0.0". |
+
+#### 🟡 Médios (4)
+
+| # | Bug | Fix |
+|---|-----|-----|
+| F27.4 | Axios client `api.interceptors.request.use` tentava ler `rn_jwt` via `document.cookie` — código morto (cookie é httpOnly, JS não lê). | Removido interceptor. Client Axios agora é só para endpoints públicos / server-side. Documentado no header do arquivo. |
+| F27.5 | ResolveButton (client-side) construía `Authorization: Bearer undefined` quando cookie httpOnly resultava em `token = undefined`. | Removida lógica. Server-side proxy `/v1-api/proxy/[...path]/route.ts` injeta Authorization automaticamente via `next/headers cookies()`. |
+| F27.6 | Frontend sem `.eslintrc.json` — `npm run lint` falhava com prompt interativo pedindo config. | Adicionado `.eslintrc.json` extends `next/core-web-vitals`. Instalado `eslint@^8.57.0` + `eslint-config-next@^14.2.18` como devDeps. `npm run lint` agora reporta "✔ No ESLint warnings or errors". |
+| F27.10 | OpenAPI `HealthStatus.version` example "1.6.0" inconsistente com `info.version` ("2.0.0") e com `/healthz` (que retornava 1.5.0 antes do F27.2 fix). | Atualizado para "2.0.0" + description nota sobre ldflags. |
+
+#### 🟢 Polimentos (3)
+
+| # | Issue | Fix |
+|---|-------|-----|
+| F27.13 | `frontend/src/lib/api-fetch.ts` usava `await import('next/headers')` (dynamic import anti-pattern em Next 14 ESM). | Movido para top-level `import { cookies } from 'next/headers'`. |
+| F27.14 | `frontend/src/app/radar/page.tsx` tinha `import { ResolveButton }` no final do arquivo (anti-pattern). | Movido para topo com outros imports. |
+| F27.16 | Cookie `rn_jwt` sem `secure: true` flag — em prod (HTTPS) sem secure flag pode vazar em HTTP downgrade. | Adicionado `secure: process.env.NODE_ENV === 'production'` em `frontend/src/app/api/login/route.ts`. Dev local (HTTP) continua funcional. |
+
+### 📊 Estatísticas
+
+```
+Auth flow:
+  Antes: Claim JWT populado → handler ignorava → 401 "X-IF-ID required"
+  Depois: Claim JWT populado → getIfID() retorna Claims.IFID → endpoint funciona
+  
+Version reporting:
+  Antes: /healthz → "1.5.0"
+  Depois: /healthz → "2.0.0" (const) ou "v2.0.1+commit..." (ldflags)
+
+Tests:
+  Antes: 301 tests
+  Depois: 304 tests (+3 F27.1 regression)
+
+Build artifacts:
+  Antes: front build passa, lint broken
+  Depois: front build + lint + type-check all clean
+```
+
+### Compatibility
+
+- **Backwards compat**: dev mode (`RADIANT_DEV_AUTH=1`) continua
+  funcionando. Helper getIfID fallback para X-IF-ID header mantém
+  tests legacy passando.
+- **JWT-only prod**: agora funciona end-to-end (Sprint 7a fechou metade;
+  F27.1 fechou a outra metade).
+
+### Files (v2.0.1)
+
+**Backend:**
+- `backend/internal/auth/middleware.go` (add `WithClaims` helper)
+- `backend/internal/api/server.go` (add `getIfID` helper + substituir 5 callsites)
+- `backend/internal/api/ifid_test.go` (NOVO, 4 testes)
+- `backend/internal/version/version.go` (const 1.5.0 → 2.0.0)
+- `backend/Dockerfile` (ARG VERSION + ldflags em 4 binários)
+
+**OpenAPI / docs:**
+- `backend/docs/api/openapi.yaml` (version example + description)
+
+**Frontend:**
+- `frontend/src/lib/api.ts` (remove Axios interceptor)
+- `frontend/src/lib/api-fetch.ts` (import dinâmico → top-level)
+- `frontend/src/app/radar/page.tsx` (import no topo)
+- `frontend/src/components/resolve-alert-button.tsx` (remove Bearer undefined)
+- `frontend/src/app/api/login/route.ts` (secure flag conditional)
+- `frontend/.eslintrc.json` (NOVO)
+- `frontend/package.json` + package-lock.json (eslint devDeps)
+
+---
+
+## v2.0.0+ → v2.0.1 — Cumulative over 27ª validação
+
+```
+Findings fechados:           9 (2 críticos + 4 médios + 3 polimentos)
+Backend tests:               301 → 304 (+3 regressão F27.1)
+Frontend lint:               broken → clean (Strict Next config)
+Frontend build:              ✓ unchanged
+Frontend bundle:             -200B (radiar removido)
+Doc drift:                   5 sync items (LOC, paths, version example,
+                             file count, secure flag)
+Segurança auth:              vetor cross-tenant injection FECHADO
+```
+
+---

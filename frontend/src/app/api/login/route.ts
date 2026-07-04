@@ -64,6 +64,10 @@ export async function POST(req: NextRequest) {
     sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60,
+    // Validação 27 (F27.16): secure flag condicional ao NODE_ENV.
+    // Em dev local (HTTP), secure=true quebraria o cookie.
+    // Em prod (HTTPS), secure=true impede leak via HTTP downgrade.
+    secure: process.env.NODE_ENV === 'production',
   })
 
   return response

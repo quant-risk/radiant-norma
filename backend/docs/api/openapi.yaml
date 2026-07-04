@@ -327,7 +327,7 @@ components:
       properties:
         status: {type: string, enum: [ok, ready]}
         time: {type: string, format: date-time}
-        version: {type: string, example: "1.6.0"}
+        version: {type: string, example: "2.0.0", description: "Build version (from internal/version via ldflags)"}
         uptime_seconds: {type: integer}
         db: {type: string, example: "ok", description: "DB ping result"}
 

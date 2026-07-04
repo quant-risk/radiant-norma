@@ -107,3 +107,12 @@ func ClaimsFromContext(ctx context.Context) (*Claims, error) {
 	}
 	return c, nil
 }
+
+// WithClaims retorna um context com Claims anexado. Útil para testes e
+// para handlers que querem injetar claims em sub-requests.
+//
+// Em runtime, o Middleware popula o context diretamente — callers comuns
+// usam ClaimsFromContext para ler, não WithClaims para escrever.
+func WithClaims(ctx context.Context, c *Claims) context.Context {
+	return context.WithValue(ctx, ctxClaimsKey, c)
+}
