@@ -83,7 +83,7 @@ func (s *Server) Router() http.Handler {
 
 	// Health
 	r.Get("/healthz", s.healthz)
-	r.Get("/readyz", s.healthz)
+	r.Get("/readyz", s.readyz) // Validação 23 (F23.1): separado de /healthz
 
 	// API v1
 	r.Route("/v1", func(r chi.Router) {
@@ -233,11 +233,36 @@ func (s *Server) internalServerError(w http.ResponseWriter, err error, ctx strin
 }
 
 func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
+	// Liveness check — sempre OK enquanto processo está vivo.
+	// Não checa dependências externas (DB, network). Sem isso, restart
+	// loop em K8s se DB falhar temporariamente.
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":         "ok",
 		"time":           time.Now().UTC().Format(time.RFC3339),
 		"version":        Version,
 		"uptime_seconds": int(time.Since(s.startedAt).Seconds()),
+	})
+}
+
+// readyz — Validação 23 (F23.1): separado de healthz.
+//
+// Readiness check — verifica dependências críticas (DB). Usado por K8s
+// readiness probe para tirar pod do load balancer se DB estiver
+// indisponível. Sem isso, requests entram em pod zumbi.
+func (s *Server) readyz(w http.ResponseWriter, r *http.Request) {
+	if s.DB == nil {
+		http.Error(w, "db not configured", http.StatusServiceUnavailable)
+		return
+	}
+	// Ping com context do request (cancela se cliente desconecta).
+	if err := s.DB.PingContext(r.Context()); err != nil {
+		http.Error(w, "db unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":  "ready",
+		"db":      "ok",
+		"version": Version,
 	})
 }
 
@@ -728,11 +753,29 @@ func keysOf(m map[string]string) []string {
 
 func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Em Sprint 4: validar JWT/OAuth
-		// Por enquanto, X-IF-ID obrigatório (multi-tenant simples)
-		if r.Header.Get("X-IF-ID") == "" {
+		ifID := r.Header.Get("X-IF-ID")
+		// Validação 23 (F23.2): validar formato do X-IF-ID. Sem isso,
+		// atacante envia X-IF-ID de 10KB → logado no audit_log → incha
+		// disco. Limites:
+		//   - max 64 chars (CNPJ raiz tem 8; reservei margem)
+		//   - charset alfanumérico + dash + underscore
+		if ifID == "" {
 			http.Error(w, `{"error":"X-IF-ID header required"}`, http.StatusUnauthorized)
 			return
+		}
+		if len(ifID) > 64 {
+			http.Error(w, `{"error":"X-IF-ID too long (max 64)"}`, http.StatusBadRequest)
+			return
+		}
+		for _, c := range ifID {
+			ok := (c >= 'a' && c <= 'z') ||
+				(c >= 'A' && c <= 'Z') ||
+				(c >= '0' && c <= '9') ||
+				c == '-' || c == '_'
+			if !ok {
+				http.Error(w, `{"error":"X-IF-ID contains invalid character"}`, http.StatusBadRequest)
+				return
+			}
 		}
 		next.ServeHTTP(w, r)
 	})
