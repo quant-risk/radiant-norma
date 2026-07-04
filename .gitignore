@@ -32,3 +32,15 @@ coverage.txt
 .idea/
 .vscode/
 *.swp
+
+# Frontend (Next.js) — node_modules e build output não vão pro git.
+# package-lock.json é commitado (lockfile de aplicação).
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.turbo/
+frontend/coverage/
+frontend/.env.local
+frontend/.env.*.local
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts.bak

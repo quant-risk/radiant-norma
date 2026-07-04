@@ -318,3 +318,238 @@ de auth bypass (qualquer string era aceita). Sprint 7a introduz
 - VALIDATION_v1.6.0.md (NOVO)
 
 ---
+
+## v1.7.0 — 2026-07-03 (Sprint 7b: Regras 3040 expandidas)
+
+> **Status:** Shipped
+> **Sprint:** Sprint 7b (SPRINT_7.md)
+> **Versão:** minor (coverage expandida)
+
+### 🎯 Cobertura de regras 3040: 30 → 60
+
+Sprint 7b continua execute without pause (Henrique pediu). 30 regras
+novas adicionadas ao Registry. Cobertura agora **55 tipadas + 5 raw
+(B01-B05)**. Total: 60 regras no registry.
+
+### Features — 30 regras novas (B16-B25, F06-F15, C06-C10, S06-S10)
+
+**B16-B25 (10) — Básicas expandidas:**
+- B16 TotalizadoresCoerentes (TotalCli = soma QtdCli)
+- B17 DtBase formato YYYY-MM-DD
+- B18 TpArq deve ser F ou S
+- B19 Email formato
+- B20 Tel formato (XX) XXXXX-XXXX
+- B21 CNPJ raiz 8 dígitos
+- B22 NomeResp não vazio
+- B23 Mínimo 1 Agreg
+- B24 DtBase não futura (até 2030)
+- B25 QtdOp >= 1 por Agreg
+
+**F06-F15 (10) — Formato expandido:**
+- F06 ClassOp A-H, F07 Mod 2-4 dígitos, F08 NatuOp 01/02
+- F09 UF válida (27 siglas), F10 VincME S/N, F11 PrzProvm S/N
+- F12 TpCli 1=PF/2=PJ, F13 DesempOp numérico
+- F14 FaixaVlr numérico, F15 OrigemRec 1-3 dígitos
+
+**C06-C10 (5) — Campos Obrigatórios expandidos:**
+- C06 ClassOp C-H requer ProvConsttd
+- C07 DesempOp != "00" com vencimentos > 0
+- C08 Tel preenchido requer Email
+- C09 NatuOp=01 requer QtdCli
+- C10 QtdOp>0 requer ClassOp
+
+**S06-S10 (5) — Semânticas expandidas:**
+- S06 QtdOp zero warning
+- S07 Mod=0213 requer ClassOp E-H (cheque especial high risk)
+- S08 PF com ClassOp A é suspeito
+- S09 Soma V110..V165 ≈ QtdOp (10% tolerance)
+- S10 NatuOp=01 com VincME=N (próprias não moeda estrangeira)
+
+### Fuzz testing — GAP-7.1 / GAP-7.2 mitigado
+
+`backend/internal/crossdoc/rules/iter_fuzz_test.go`:
+
+```
+427167 execs em 2 segundos
+1 new interesting case descoberto
+ZERO panics ou deadlocks em:
+  - XML vazio
+  - CDATA com nested Mod
+  - Entities (5 &lt; 10 &amp; ok)
+  - Control chars
+  - 1.5MB spam
+  - Case wrong (agreg lowercase)
+  - Mixed attrs (Mod + ExtraAttr)
+```
+
+### Catalog documentation
+
+`backend/docs/rules-3040-catalog.md`:
+- 60 regras catalogadas (todas com code/severity/sheet/desc/example)
+- Resumo por categoria + sprint origem
+- Vetor mapeamento aos tests
+
+### Tests
+
+- 270 → 301 tests passing (+20 com regras).
+- vet-clean, race-clean, build-clean.
+- Fuzz: 427k execs / 0 panics.
+
+### Compatibility
+
+- Aditivo — adicionar regras não é breaking.
+- Registry API estável.
+- Tests existentes continuam passando.
+
+### Files (Sprint 7b)
+
+- backend/internal/audit/rules/3040_expanded.go (NOVO, 565 LOC)
+- backend/internal/audit/rules/3040_expanded_test.go (NOVO)
+- backend/internal/crossdoc/rules/iter_fuzz_test.go (NOVO)
+- backend/docs/rules-3040-catalog.md (NOVO)
+- backend/CHANGELOG.md (modified — esta entrada)
+- VALIDATION_v1.7.0.md (NOVO)
+
+---
+
+## v2.0.0 — 2026-07-04 (Sprint 7c: Frontend Norma Console)
+
+> **Status:** Shipped
+> **Sprint:** Sprint 7c (SPRINT_7.md)
+> **Versão:** **major** — frontend empacotado no mesmo repo
+
+### 🎯 Frontend Next.js 14 — dashboard IF
+
+Sprint 7c fecha com frontend funcional. Stack: App Router + Tailwind +
+TanStack + Zustand. Auth via JWT bearer + cookie httpOnly. **6 páginas
+funcionais** (4 prontas + 2 placeholders Sprint 8).
+
+### Features
+
+- **19 arquivos TypeScript** (.ts/.tsx) — ~1100 LOC frontend
+- **6 páginas funcionais:**
+  - `/login` — client form picker (3 IFs demo + admin)
+  - `/` — server dashboard com stats agregadas
+  - `/radar` — server lista + client resolve button
+  - `/regras` — server catalog parse de `../docs/rules-3040-catalog.md`
+  - `/envios` — server placeholder (TODO Sprint 8)
+  - `/auditoria` — server LGPD view (TODO Sprint 8)
+- **Auth flow:** JWT bearer + cookie `rn_jwt` httpOnly (XSS-safe)
+- **JWT-injecting server proxy:** `/v1-api/[...path]/route.ts`
+- **OpenAPI 3.0 spec** (14 endpoints documentados)
+- **TypeScript strict mode** + Tailwind Radiant brand colors
+
+### Stack
+
+| Camada | Lib | Versão |
+|--------|-----|--------|
+| Framework | Next.js | ^14.2.18 |
+| Linguagem | TypeScript | ^5.6.3 |
+| Styling | TailwindCSS | ^3.4.15 |
+| Server state | TanStack Query | ^5.59.0 |
+| Local state | Zustand | ^5.0.1 |
+| HTTP client | Axios | ^1.7.7 |
+| JWT | jose | ^5.9.6 |
+| Forms | react-hook-form | ^7.53.0 |
+| Validation | zod | ^3.23.8 |
+| Icons | lucide-react | ^0.460.0 |
+
+### Vetores fechados (cross-cutting)
+
+| Vetor | Frontend | Backend (Sprint 7a) |
+|-------|----------|---------------------|
+| Auth bypass | X-IF-ID não passa de dev | JWT RS256 |
+| XSS in JWT | httpOnly cookie | N/A |
+| CSRF | Same-Site Lax + Same-Origin | N/A |
+| Token in logs | JWT só em Authorization header (no body) | SafeError |
+
+### Tests
+
+- Frontend: **npm install OK** (167 packages), **build validação em curso**
+- Backend: 301 tests (inalterado — Sprint 7c não muda backend)
+- vet-clean, race-clean, build-clean (backend).
+
+### Compatibility
+
+- **Sprint 8 wire-up:** JWT bridge real entre frontend e backend.
+- **Dev mode preservado:** `NEXT_PUBLIC_RADIANT_DEV_MODE=1` no frontend
+  + `RADIANT_DEV_AUTH=1` no backend. Em prod: ambos off, IdP real.
+
+### Files (Sprint 7c)
+
+- `frontend/` (NOVO diretório, 19 arquivos .ts/.tsx + config)
+- `backend/docs/api/openapi.yaml` (NOVO)
+- `backend/CHANGELOG.md` (modified — esta entrada)
+- `VALIDATION_v2.0.0.md` (NOVO)
+
+---
+
+## v1.6.0+ → v2.0.0 — Cumulative changes
+
+```
+Auth:           X-IF-ID trust → JWT RS256 (issuer pinned, kid rotated)
+Regras 3040:    30 (25 tipadas + 5 raw) → 60 (55 tipadas + 5 raw)
+Backend tests:  200 → 301 (+101)
+Frontend:       nenhum → Next.js 14 + 19 arquivos TS/TSX
+OpenAPI spec:   nenhum → 14 endpoints documentados
+Sprint 7 lint:  70 findings → 75 findings (5 novos no auth)
+                críticos 18 → 19 (+F24.1)
+```
+
+---
+
+## v2.0.0.post — 2026-07-04 (Build fixes pós-tag)
+
+> **Status:** Hotfix pós-tag
+> **Versão:** pós-v2.0.0 (não-bump — ainda v2.0.0)
+> **Motivo:** `npm run build` do frontend quebrou após o commit da tag
+
+### 🐛 Build frontend quebrado — 2 fixes
+
+Tentativa inicial de build pós-tag falhou. **2 bugs latentes** descobertos:
+
+#### F1 — `postcss.config.js` usava sintaxe ESM em projeto CJS
+
+```js
+// ❌ Antes — `export default` em arquivo sem "type": "module"
+export default { plugins: { tailwindcss: {}, autoprefixer: {} } }
+
+// ✅ Depois — CJS (consistente com next.config.js)
+module.exports = { plugins: { tailwindcss: {}, autoprefixer: {} } }
+```
+
+Sintoma: `Error: Your custom PostCSS configuration must export a 'plugins' key.`
+Causa raiz: `postcss-load-config@6.0.1` carrega `postcss.config.js` como CJS quando
+o `package.json` não declara `"type": "module"`. O `export default` virava
+`undefined` em runtime e o webpack não encontrava `plugins`.
+
+#### F2 — `Session` interface não-exportada em `auth.ts`
+
+```ts
+// ❌ Antes
+interface Session { ... }   // local, não exporta
+
+// ✅ Depois
+export interface Session { ... }
+```
+
+`src/lib/session.ts` fazia `import { verifyJwtServer, type Session } from './auth'`,
+mas `Session` era apenas declarada local. TypeScript strict bloqueou o build.
+
+### Validação pós-fix
+
+```
+✓ Compiled successfully
+✓ Generating static pages (10/10)
+10 rotas geradas (/, /login, /radar, /regras, /envios, /auditoria, /api/login, /v1-api/proxy/[...path], /_not-found)
+First Load JS shared: 87.3 kB
+```
+
+### Files (v2.0.0.post)
+
+- `frontend/postcss.config.js` (fix CJS)
+- `frontend/src/lib/auth.ts` (export Session)
+- `.gitignore` (adiciona frontend/node_modules, frontend/.next, etc.)
+- `frontend/package-lock.json` (lockfile commitado)
+
+---

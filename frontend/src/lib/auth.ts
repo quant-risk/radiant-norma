@@ -11,7 +11,7 @@
 import { create } from 'zustand'
 import { api } from './api'
 
-interface Session {
+export interface Session {
   token: string
   if_id: string
   role: 'if' | 'admin' | 'readonly'
