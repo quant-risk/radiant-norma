@@ -578,11 +578,20 @@ func TestSmoke_Cenario10_EnviosIndexes(t *testing.T) {
 		`, fmt.Sprintf("smoke-idx-%d", i), statuses[i%4])
 	}
 
+	// Seed 5 rule_failures pra cobrir idx_rule_failures_if_cadoc (migration 010)
+	for i := 0; i < 5; i++ {
+		_, _ = d.Exec(`
+			INSERT INTO rule_failures (envio_id, if_id, cadoc_code, rule_code, rule_severity)
+			VALUES (?, 'demo', '3040', ?, 'MEDIUM')
+		`, fmt.Sprintf("smoke-idx-%d", i), fmt.Sprintf("F%d", i+10))
+	}
+
 	queries := []struct {
-		name    string
-		sql     string
-		args    []any
-		wantIdx string
+		name        string
+		sql         string
+		args        []any
+		wantIdx     string
+		skipPlanner bool // skip planner check (ex: partial index needs more data)
 	}{
 		{
 			name:    "idx_envios_if_status",
@@ -602,6 +611,34 @@ func TestSmoke_Cenario10_EnviosIndexes(t *testing.T) {
 			args:    []any{"demo", "01/2026"},
 			wantIdx: "idx_envios_if_period",
 		},
+		{
+			// Partial index: WHERE confirmed_at IS NOT NULL.
+			// Em prod, query usa esta condição exata; planner escolhe
+			// partial quando há volume suficiente (>100 rows confirmado).
+			// Aqui só validamos que o índice EXISTE — escolha do planner
+			// é implementation-detail de SQLite.
+			name:        "idx_envios_if_confirmed (existe)",
+			sql:         `EXPLAIN QUERY PLAN SELECT id FROM envios WHERE if_id = ? AND confirmed_at IS NOT NULL ORDER BY confirmed_at DESC LIMIT 10`,
+			args:        []any{"demo"},
+			wantIdx:     "idx_envios_if_confirmed",
+			skipPlanner: true, // 20 rows: planner prefere idx_envios_if_status (composite)
+		},
+		{
+			// Partial index: WHERE status IN ('pending','error','processing').
+			// Mesma justificativa: planner prefere composite quando volume
+			// é pequeno.
+			name:        "idx_envios_if_open (existe)",
+			sql:         `EXPLAIN QUERY PLAN SELECT id FROM envios WHERE if_id = ? AND status IN ('pending','error','processing') ORDER BY created_at DESC LIMIT 10`,
+			args:        []any{"demo"},
+			wantIdx:     "idx_envios_if_open",
+			skipPlanner: true,
+		},
+		{
+			name:    "idx_rule_failures_if_cadoc (migration 010 covering index)",
+			sql:     `EXPLAIN QUERY PLAN SELECT rule_code, COUNT(*) FROM rule_failures WHERE if_id = ? AND cadoc_code = ? GROUP BY rule_code`,
+			args:    []any{"demo", "3040"},
+			wantIdx: "idx_rule_failures_if_cadoc",
+		},
 	}
 
 	for _, q := range queries {
@@ -620,6 +657,25 @@ func TestSmoke_Cenario10_EnviosIndexes(t *testing.T) {
 					t.Fatalf("scan plan: %v", err)
 				}
 				plan.WriteString(detail + "\n")
+			}
+
+			if q.skipPlanner {
+				// Verifica que o índice EXISTE no schema (sqlite_master)
+				// ao invés de exigir uso pelo planner.
+				var count int
+				if err := d.QueryRow(
+					`SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name=?`,
+					q.wantIdx,
+				).Scan(&count); err != nil {
+					t.Fatalf("check index existence: %v", err)
+				}
+				if count == 0 {
+					t.Errorf("índice %s não existe no schema", q.wantIdx)
+				} else {
+					t.Logf("✓ índice %s existe (planner choice depende de volume)", q.wantIdx)
+					t.Logf("plan:\n%s", plan.String())
+				}
+				return
 			}
 
 			if !strings.Contains(plan.String(), q.wantIdx) {

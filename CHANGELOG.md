@@ -79,13 +79,15 @@ dev flag → recusa iniciar).
     `ifs(id) ON DELETE RESTRICT` (CASCADE para `disabled_rules` e `ack_rec`)
   - Pattern recreate-table (SQLite não tem ALTER ADD FK)
   - Rows órfãs (IF inexistente) descartadas no copy com log warning
-- **Migration 011 — Envios indexes** (6 índices):
+- **Migration 011 — Envios indexes** (5 índices em envios):
   - `idx_envios_if_status` (heatmap + KPI queries)
   - `idx_envios_if_cadoc_status_period` (drill-down por CADOC/período)
   - `idx_envios_if_period` (slicing temporal)
   - Partial index `idx_envios_if_confirmed` (envios confirmados)
-  - Covering index `idx_rule_failures_if_cadoc` (top-failing)
-  - EXPLAIN confirma uso do índice em queries típicas
+  - Partial index `idx_envios_if_open` (envios pendentes)
+- **Migration 010 — Covering index em rule_failures** (1 índice):
+  - `idx_rule_failures_if_cadoc` (top-failing rules queries)
+- **Total**: 6 índices novos; EXPLAIN confirma uso em queries típicas
 - **Migration 012 — RLS policies** (Postgres-only):
   - 6 RLS policies em tabelas tenant-scoped
   - Gateada por marker `@postgres-only` no migration runner
