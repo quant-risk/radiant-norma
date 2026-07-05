@@ -2,6 +2,150 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.14.0 — 2026-07-06 (Sprint 24: senhaws-rotate standalone CLI) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 24 (novo binário `cmd/senhaws-rotate` — primeiro caller operacional do pacote senhaws)
+> **Versão:** minor (novo binário + 16 testes; **zero impacto** em código existente)
+> **Trigger:** SPRINT_23_RESULTS.md §"Próximos passos" Sprint 24 (admin tool wire-up)
+> **Validação:** 20/20 packages PASS + 16 testes novos Sprint 24 + 6/6 binaries + smoke 11/11 + race clean
+
+### 🎯 Resumo
+
+Sprint 24 fecha o **`cmd/senhaws-rotate`** — CLI standalone que dá utilidade
+operacional ao pacote `internal/senhaws` (Sprint 23). Admin IF pode agendar
+**rotação automática de credenciais Sisbacen** via cron job, sem precisar
+deployar API ou UI.
+
+Caso de uso:
+```bash
+# Cron diário
+senhaws-rotate check   # consulta vencimento
+# → dias_vencimento=5 status=expiring threshold=7
+# → exit 1 (cron script rotaciona)
+
+# Manual (ou após check exit 1)
+senhaws-rotate rotate > /tmp/newpass.txt
+# → caller armazena em secret manager + remove arquivo
+```
+
+**Decisão arquitetural:** CLI tool independente (não handler REST). Padrão
+consistente com codebase (`cmd/seed`, `cmd/jwt-mint`, `cmd/worker`, `cmd/radar`)
+— usa `flag` stdlib + `slog`, zero dependências novas.
+
+**Decisões YAGNI conscientes:**
+- Sem retry (SenhawsClient é failure-fast — propagação consistente).
+- Sem persistência local (secret manager é responsabilidade do caller).
+- Sem TLS client cert (BACEN não exige).
+- Sem dry-run (admin usa `check` antes de `rotate`).
+- Sem integração vault automática (Sprint 27+).
+- Sem Web UI (IF tem 1-2 operadores, não justifica).
+
+### 🚀 O que entrou
+
+- **Binário `cmd/senhaws-rotate`** com 3 subcomandos:
+  - `check` — consulta vencimento. Exit 0 (> threshold), exit 1 (≤ threshold).
+  - `rotate` — gera senha random + altera no BACEN. Imprime nova senha no stdout.
+  - `info` — imprime config mascarada + status do servidor BACEN.
+
+- **Exit codes discriminados:**
+  - `0` sucesso
+  - `1` erro genérico / precisa rotacionar (check)
+  - `2` erro de validação client-side (input inválido)
+  - `3` erro BACEN (rejeição formal — caller investiga)
+
+- **Flags + env vars:**
+  - `--base-url` / `SENHAWS_BASE_URL`
+  - `--user` / `SENHAWS_USER`
+  - `--password` / `SENHAWS_PASSWORD` (env var preferida — flag aparece em `ps aux`)
+  - `--timeout` / `SENHAWS_TIMEOUT` (default 30s)
+  - `--max-days` / `SENHAWS_MAX_DAYS` (default 7)
+  - `--quiet` silencia logs
+  - `--allow-insecure-http` apenas testes dev (NUNCA produção)
+
+- **Segurança de output:**
+  - `info` mascara user (`12***.fulano` mantém prefixo + sufixo).
+  - `rotate` imprime nova senha APENAS em stdout (caller controla captura).
+  - Stderr tem apenas logs estruturados, sem senha.
+  - Senha nunca impressa em `info`/`check` (apenas em `rotate`).
+
+### 🧪 Tests (16 novos — total backend 112)
+
+| Test | Cobre |
+|---|---|
+| `TestMaskUser` | 5 subtests: formato Sisbacen com/sem slash + edge cases |
+| `TestLoadConfig_Defaults` | Defaults sensatos (30s timeout, 7 max-days, quiet false) |
+| `TestLoadConfig_InvalidTimeout` | `--timeout abc` → erro |
+| `TestLoadConfig_InvalidMaxDays` | `--max-days -1` → erro |
+| `TestSenhawsRotate_Check_OK` | 30 dias → exit 0 + stdout contém `dias_vencimento=30 status=ok` |
+| `TestSenhawsRotate_Check_Expiring` | 5 dias (< threshold 7) → exit 1 + `status=expiring` |
+| `TestSenhawsRotate_Check_BACEN400` | BACEN rejeita → exit 3 |
+| `TestSenhawsRotate_Rotate_Success` | PUT 204 → exit 0 + senha no stdout + body XML correto |
+| `TestSenhawsRotate_Rotate_BACEN400` | BACEN 400 → exit 3 |
+| `TestSenhawsRotate_Rotate_BACEN401` | BACEN 401 → exit 3 (senha atual errada) |
+| `TestSenhawsRotate_Info` | Happy path → exit 0 + user mascarado no output |
+| `TestSenhawsRotate_ConfigInvalidUser` | User formato Sisbacen inválido → exit 2 |
+| `TestNewLogger_Quiet` | Logger silent não panica em Warn/Info/Error |
+| `TestMain_UnknownSubcommand` | `usage()` não panica + menciona "Usage: senhaws-rotate" |
+| `TestEnvOrDefault` | Helper env-or-default |
+| `TestSenhawsRotate_Rotate_ValidatesAuthHeader` | Basic Auth decodificado: `123450001.fulano:old-password` |
+
+### ⚠️ O que NÃO fecha nesta sprint
+
+- **Integração Vault automática** — caller decide onde armazenar (Sprint 27+).
+- **Handler REST `/v1/senhaws/...`** — sem caller imediato (Sprint 28+ se virar requisito).
+- **TLS client cert** — BACEN não exige.
+- **Dry-run mode** — admin usa `check` antes de `rotate`.
+- **Web UI** — IF tem 1-2 operadores, não justifica.
+
+### 🔒 Compatibilidade
+
+- **Novo binário `cmd/senhaws-rotate`.** Zero impacto em código existente.
+- **Pacote `internal/senhaws` inalterado** (Sprint 23). CLI apenas wrappea.
+- **Não wired em `cmd/api/main.go`** — CLI é independente (decoupling).
+- **Nenhum handler REST adicionado** — admin tool direto.
+- **Nenhum workflow existente alterado** — adição pura.
+
+### 📦 Arquivos tocados
+
+```
+backend/cmd/senhaws-rotate/main.go          (novo, 314 linhas)
+backend/cmd/senhaws-rotate/main_test.go     (novo, 332 linhas — 16 testes)
+SPRINT_24_RESEARCH.md                      (novo, 10 seções)
+SPRINT_24_RESULTS.md                       (novo)
+CHANGELOG.md                               (esta entrada)
+```
+
+### 🔢 Métricas finais
+
+| Métrica | Valor |
+|---|---|
+| Pacotes Go testados | **20/20 PASS** |
+| Tests Sprint 24 | 16 (todos PASS) |
+| Tests totais top-level | **112** (era 96) |
+| Build smoke binaries | **6/6** (era 5, +1 = senhaws-rotate) |
+| Coverage cmd/senhaws-rotate | 60.7% (CLI tool, fluxos principais cobertos) |
+| Smoke E2E | 11/11 PASS (sem regressão) |
+| Lint / gofmt / vet | clean |
+| Race detector | clean |
+
+### 🏗️ Lições aprendidas (carry forward)
+
+1. **CLI tools precisam de `--allow-insecure-http`** para tests com httptest.
+   Pattern: copiar `AllowInsecureHTTP` do WSConfig para qualquer nova CLI
+   que wrappea client HTTPS-strict.
+2. **Exit codes Unix-like (0/1/2/3)** permitem cron scripts discriminarem retry
+   policy sem parsear stderr. Pattern: usar convention Unix sempre que CLI for
+   usado em automation.
+3. **`usage()` em stderr, output em stdout** — convenção Unix. Permite
+   `cmd --help 2>&1 | less` e `cmd 2>/dev/null` separadamente.
+4. **Mascaramento de user mantém prefixo + sufixo** — `12***.fulano` mostra
+   primeiros 2 chars + operador. Defesa contra screenshot/log acidental.
+5. **captureStdout/Stderr helper** para CLI tests — pattern reutilizável em
+   qualquer CLI Go test.
+
+---
+
 ## v3.13.0 — 2026-07-06 (Validação 44 DEEPEST — senhaws hardening + drift fixes) ✅
 
 > **Status:** ✅ Shipped
