@@ -20,6 +20,7 @@ import { getServerSession } from '@/lib/session'
 import { AppShell } from '@/components/layout/app-shell'
 import { StatCard } from '@/components/domain/stat-card'
 import { AlertCard } from '@/components/domain/alert-card'
+import { DashboardLiveRefresh } from '@/components/domain/dashboard-live-refresh'
 import { ActivityFeed, type ActivityItem } from '@/components/domain/activity-feed'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -230,6 +231,7 @@ export default async function DashboardPage() {
         title: 'Dashboard',
         subtitle: 'Visão geral da operação regulatória',
         breadcrumbs: [{ label: 'Radiant Norma', href: '/' }, { label: 'Dashboard' }],
+        actions: <DashboardLiveRefresh />,
       }}
       commandData={{
         rules: rules.map((r) => ({

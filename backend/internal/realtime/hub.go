@@ -168,6 +168,11 @@ func (h *Hub) Stats() (subs int, totalEvents, dropped uint64) {
 //
 // Cada evento: "event: <kind>\ndata: <json>\n\n". Heartbeat a cada 30s
 // ("event: heartbeat\ndata: {}\n\n") pra manter conexão viva em NATs.
+//
+// IFID resolution (em ordem):
+//   1. Header X-IF-ID (dev fallback / direct header)
+//   2. Context value key "if_id" (populado pelo api/sse_handler.go
+//      lendo Claims do JWT middleware — evita import cycle)
 func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ifID := getIfID(r)
 
@@ -222,10 +227,12 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // --- helpers ---
 
-// getIfID lê IF do contexto (middleware JWT) ou X-IF-ID fallback.
+// getIfID lê IF do contexto (injetado pelo api/sse_handler.go) ou
+// X-IF-ID fallback (dev mode).
+//
+// Recebe string key "if_id" — context key type é opaque (string-typed
+// no caller). Isso evita import cycle (realtime não importa auth).
 func getIfID(r *http.Request) string {
-	// Por simplicidade e pra evitar circular import, lemos direto do
-	// context. Em produção, usar auth.ClaimsFromContext.
 	if v := r.Context().Value("if_id"); v != nil {
 		if s, ok := v.(string); ok {
 			return s

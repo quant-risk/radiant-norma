@@ -29,6 +29,7 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatCard } from '@/components/domain/stat-card'
 import { ExportMenu } from '@/components/domain/export-menu'
+import { EnviosLiveRefresh } from '@/components/domain/envios-live-refresh'
 import { EnviosFilterBar } from './filter-bar'
 import { formatRelativeCompact } from '@/lib/format'
 
@@ -146,6 +147,7 @@ export default async function EnviosPage({ searchParams }: PageProps) {
         ],
         actions: (
           <div className="flex items-center gap-2">
+            <EnviosLiveRefresh />
             <ExportMenu
               endpoint="/v1/envios"
               filters={filters}

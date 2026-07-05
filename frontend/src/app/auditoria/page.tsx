@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { StatCard } from '@/components/domain/stat-card'
 import { ActivityFeed, type ActivityItem } from '@/components/domain/activity-feed'
 import { ExportMenu } from '@/components/domain/export-menu'
+import { AuditoriaLiveRefresh } from '@/components/domain/auditoria-live-refresh'
 import { AuditFilterBar } from './filter-bar'
 
 export const dynamic = 'force-dynamic'
@@ -123,11 +124,14 @@ export default async function AuditoriaPage({ searchParams }: PageProps) {
           { label: 'Auditoria' },
         ],
         actions: (
-          <ExportMenu
-            endpoint="/v1/audit_log"
-            filters={filters}
-            label="Exportar"
-          />
+          <div className="flex items-center gap-2">
+            <AuditoriaLiveRefresh />
+            <ExportMenu
+              endpoint="/v1/audit_log"
+              filters={filters}
+              label="Exportar"
+            />
+          </div>
         ),
       }}
     >

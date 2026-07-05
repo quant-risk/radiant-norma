@@ -11,6 +11,7 @@ import { apiFetch } from '@/lib/api-fetch'
 import { getServerSession } from '@/lib/session'
 import { AppShell } from '@/components/layout/app-shell'
 import { AlertCard } from '@/components/domain/alert-card'
+import { RadarLiveRefresh } from '@/components/domain/radar-live-refresh'
 import { Card, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -103,6 +104,7 @@ export default async function RadarPage() {
           { label: 'Radiant Norma', href: '/' },
           { label: 'Radar' },
         ],
+        actions: <RadarLiveRefresh />,
       }}
       commandData={{
         alerts: alerts.map((a) => ({
