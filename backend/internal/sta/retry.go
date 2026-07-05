@@ -21,6 +21,7 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -59,11 +60,12 @@ type RetryConfig struct {
 // Implementa Client — caller substitui inner por RetryingClient onde antes
 // passava inner. Drop-in replacement.
 //
-// Não é seguro para concorrência com mutação de RetryConfig após construção.
-// cfg é copiada por valor; OnRetry callback é seguro (chamado em goroutine do caller).
+// Thread-safe: rng é protegido por mutex. Submit pode ser chamado de
+// múltiplas goroutines simultaneamente (batch worker paralelo, por ex.).
 type RetryingClient struct {
 	inner Client
 	cfg   RetryConfig
+	rngMu sync.Mutex
 	rng   *rand.Rand
 }
 
@@ -86,8 +88,8 @@ func NewRetryingClient(inner Client, cfg RetryConfig) (*RetryingClient, error) {
 		cfg.BackoffFactor = 2.0
 	}
 	if cfg.Jitter == 0 {
-		// Default 0.5 mantém paridade com versões anteriores que
-		// também usavam jitter ±50% (definido via nova flag).
+		// Default 0.5 = ±50%. Escolha comum em sistemas distribuídos
+		// (Sufficient randomization without excessive spread).
 		cfg.Jitter = 0.5
 	}
 	if cfg.Jitter < 0 || cfg.Jitter > 1 {
@@ -260,12 +262,15 @@ func (r *RetryingClient) computeBackoff(attempt int) time.Duration {
 
 // applyJitter randomiza backoff em ±Jitter (0..1).
 // BackoffBase=1s, Jitter=0.5 → [500ms, 1500ms].
+//
+// Thread-safe via rngMu (rand.Rand não é thread-safe).
 func (r *RetryingClient) applyJitter(backoff time.Duration) time.Duration {
 	if r.cfg.Jitter == 0 {
 		return backoff
 	}
-	// Random em [-Jitter, +Jitter] * backoff.
+	r.rngMu.Lock()
 	j := (r.rng.Float64()*2 - 1) * r.cfg.Jitter
+	r.rngMu.Unlock()
 	jittered := float64(backoff) * (1 + j)
 	if jittered < 0 {
 		jittered = 0

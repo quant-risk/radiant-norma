@@ -26,7 +26,7 @@ sem caller imediato. Se virar problema operacional, Sprint 24+.
 mínima: `parseSTAError` agora retorna `*STAError` direto. **Tests Sprint 18 continuam
 passando** (todos usam `strings.Contains`, robustos a mudança de tipo de erro).
 
-**17 testes novos** no pacote sta. Total STA: **81 testes top-level** (era 63 antes da Sprint 22).
+**18 testes novos** no pacote sta (12 httptest STA + 6 unit puros). Total STA: **81 testes top-level** (era 63 antes da Sprint 22).
 
 ## Entregas
 
@@ -168,8 +168,8 @@ retry silencioso continuou.
 |---|---|
 | Arquivos novos | 2 (`retry.go` + `retry_test.go`) |
 | Arquivos modificados | 1 (`ws.go` — fix parseSTAError) |
-| Testes Sprint 22 | 17 (12 httptest STA + 5 unit tests puros) |
-| Total STA | 81 testes top-level |
+| Testes Sprint 22 | 18 top-level (12 httptest STA + 6 unit puros) |
+| Total STA | 81 testes top-level (era 63 antes da Sprint 22) |
 | Packages PASS | 18/18 |
 | Build OK | 5/5 binaries |
 | Smoke E2E | 11/11 PASS |
@@ -230,7 +230,7 @@ testa o caminho de Submit completo via httptest.
 - [x] Backoff exponencial com jitter implementado
 - [x] `OnRetry` callback opcional (audit_log hook)
 - [x] `sleepWithContext` respeita `ctx.Done()`
-- [x] 17 testes httptest STA (12 cenários integração + 5 unit tests puros)
+- [x] 18 testes httptest STA (12 cenários integração + 6 unit puros)
 - [x] 18/18 packages PASS + smoke + gofmt/vet
 - [x] Bug fix encontrado (validação 42 F-S22-1): `parseSTAError` agora retorna `*STAError` direto
 - [x] SPRINT_22_RESEARCH.md + SPRINT_22_RESULTS.md + CHANGELOG v3.12.0

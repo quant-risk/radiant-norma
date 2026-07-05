@@ -8,7 +8,7 @@
 > **Sprint:** Sprint 22 (retry exponencial — defense contra falhas transientes BACEN)
 > **Versão:** minor (1 novo wrapper + bug fix em parseSTAError; **sem breaking changes**)
 > **Trigger:** SPRINT_21_RESULTS.md §"Próximos passos" Sprint 22
-> **Validação:** 18/18 packages PASS + 17 testes novos Sprint 22 (12 httptest + 5 unit) + smoke 11/11
+> **Validação:** 18/18 packages PASS + 18 testes novos Sprint 22 (12 httptest + 6 unit puros) + smoke 11/11
 
 ### 🎯 Resumo
 
@@ -102,7 +102,7 @@ retorna `*STAError` direto. **Tests Sprint 18 continuam passando** (todos usam
 
 ```
 backend/internal/sta/retry.go            (novo, ~280 linhas — RetryConfig + RetryingClient + helpers)
-backend/internal/sta/retry_test.go       (novo, ~500 linhas — 17 testes + subtests)
+backend/internal/sta/retry_test.go       (novo, ~480 linhas — 18 testes top-level + 11 subtests)
 backend/internal/sta/ws.go              (modificado — parseSTAError agora retorna *STAError)
 SPRINT_22_RESEARCH.md                    (novo, 9 seções)
 SPRINT_22_RESULTS.md                     (novo)

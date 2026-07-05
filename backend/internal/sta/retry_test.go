@@ -9,10 +9,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -133,7 +133,7 @@ func TestNewRetryingClient_Validacao(t *testing.T) {
 			if err == nil {
 				t.Fatalf("esperava erro contendo %q", tt.wantErr)
 			}
-			if !contains(err.Error(), tt.wantErr) {
+			if !strings.Contains(err.Error(), tt.wantErr) {
 				t.Errorf("erro deveria mencionar %q, got %v", tt.wantErr, err)
 			}
 		})
@@ -281,7 +281,7 @@ func TestRetryingClient_MaxAttemptsExhausted(t *testing.T) {
 	if err == nil {
 		t.Fatal("esperava erro após MaxAttempts")
 	}
-	if !contains(err.Error(), "3 tentativas") {
+	if !strings.Contains(err.Error(), "3 tentativas") {
 		t.Errorf("erro deveria mencionar tentativas, got %v", err)
 	}
 }
@@ -336,7 +336,7 @@ func TestRetryingClient_ContextCancel(t *testing.T) {
 	if err == nil {
 		t.Fatal("esperava erro de context cancel")
 	}
-	if !contains(err.Error(), "cancelled") && !errors.Is(err, context.Canceled) {
+	if !strings.Contains(err.Error(), "cancelled") && !errors.Is(err, context.Canceled) {
 		t.Errorf("erro deveria mencionar cancel, got %v", err)
 	}
 }
@@ -481,26 +481,5 @@ func TestIsNetworkError(t *testing.T) {
 	}
 }
 
-// contains é helper local (strings.Contains é muito verboso pra testes).
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr ||
-		(len(s) > 0 && len(substr) > 0 && sFind(s, substr)))
-}
-
-// sFind evita import extra de strings. Implementação naive (single-pass).
-func sFind(s, substr string) bool {
-	if len(substr) == 0 {
-		return true
-	}
-	for i := 0; i+len(substr) <= len(s); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}
-
 // _ para evitar unused import warnings em builds que removem algum dos testes.
-var _ = slog.Default
-var _ = http.MethodGet
 var _ atomic.Int32
