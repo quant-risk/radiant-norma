@@ -29,15 +29,19 @@ import (
 //
 // Roteamento:
 //
-//	POST /arquivos                      → handlePost
-//	PUT  /arquivos/{protocolo}/conteudo → handlePut
+//	POST /arquivos                                       → handlePost
+//	PUT  /arquivos/{protocolo}/conteudo                  → handlePut
+//	GET  /arquivos/{protocolo}/conteudo                  → handleGetConteudo
+//	GET  /arquivos/{protocolo}/posicaoupload             → handleGetPosicao
 //
 // Se requireBasicAuth for true, retorna 401 quando header Authorization
 // ausente (espelha comportamento real do BACEN).
 type mockSTA struct {
-	requireBasicAuth bool
-	handlePost       func(w http.ResponseWriter, r *http.Request)
-	handlePut        func(w http.ResponseWriter, r *http.Request, protocolo string)
+	requireBasicAuth  bool
+	handlePost        func(w http.ResponseWriter, r *http.Request)
+	handlePut         func(w http.ResponseWriter, r *http.Request, protocolo string)
+	handleGetConteudo func(w http.ResponseWriter, r *http.Request, protocolo string)
+	handleGetPosicao  func(w http.ResponseWriter, r *http.Request, protocolo string)
 }
 
 func (m *mockSTA) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -63,6 +67,24 @@ func (m *mockSTA) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		protocolo = strings.TrimSuffix(protocolo, "/conteudo")
 		if m.handlePut != nil {
 			m.handlePut(w, r, protocolo)
+			return
+		}
+	case r.Method == http.MethodGet &&
+		strings.HasPrefix(r.URL.Path, "/arquivos/") &&
+		strings.HasSuffix(r.URL.Path, "/posicaoupload"):
+		protocolo := strings.TrimPrefix(r.URL.Path, "/arquivos/")
+		protocolo = strings.TrimSuffix(protocolo, "/posicaoupload")
+		if m.handleGetPosicao != nil {
+			m.handleGetPosicao(w, r, protocolo)
+			return
+		}
+	case r.Method == http.MethodGet &&
+		strings.HasPrefix(r.URL.Path, "/arquivos/") &&
+		strings.HasSuffix(r.URL.Path, "/conteudo"):
+		protocolo := strings.TrimPrefix(r.URL.Path, "/arquivos/")
+		protocolo = strings.TrimSuffix(protocolo, "/conteudo")
+		if m.handleGetConteudo != nil {
+			m.handleGetConteudo(w, r, protocolo)
 			return
 		}
 	}
@@ -610,4 +632,554 @@ func TestSubmit_RespostaEnormeCapada(t *testing.T) {
 		CNPJ:      "demo",
 		XML:       "<root/>",
 	})
+}
+
+// ============================================================
+// Sprint 19 (v3.9.0) — read side: StatusUpload + Download
+//
+// Spec: SPRINT_19_RESEARCH.md §2.1 (Seção 5.3.1 manual BACEN) + §2.2
+// (Seção 6.1.1 manual BACEN). Cada teste abaixo mapeia uma linha da tabela
+// de erros esperada ou um caso happy path.
+// ============================================================
+
+// sucessoPosicaoUploadHandler retorna mockSTA configurado para responder
+// 200 OK com XML de posicaoupload completo (RangesRecebidos + Situacao).
+// Content-Type do GET omitido conforme manual §5.3.1.
+func sucessoPosicaoUploadHandler() *mockSTA {
+	return &mockSTA{
+		requireBasicAuth: true,
+		handleGetPosicao: func(w http.ResponseWriter, r *http.Request, protocolo string) {
+			if r.Header.Get("Content-Type") != "" {
+				http.Error(w, "Content-Type deveria ser omitido (manual §5.3.1)", http.StatusBadRequest)
+				return
+			}
+			w.Header().Set("Content-Type", "application/xml")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Resultado>
+<Protocolo>123</Protocolo>
+<RangesRecebidos>0-3;5-8;100-199</RangesRecebidos>
+<Situacao>Transmissão pendente</Situacao>
+</Resultado>`))
+		},
+	}
+}
+
+// TestWSClient_StatusUpload_HappyPath — Seção 5.3.1.
+func TestWSClient_StatusUpload_HappyPath(t *testing.T) {
+	_, client := newMockSTA(t, sucessoPosicaoUploadHandler())
+
+	status, err := client.StatusUpload(context.Background(), "123")
+	if err != nil {
+		t.Fatalf("StatusUpload: %v", err)
+	}
+	if status == nil {
+		t.Fatal("status nil")
+	}
+	if status.Protocolo != "123" {
+		t.Errorf("Protocolo = %q, esperado 123", status.Protocolo)
+	}
+	if got, want := len(status.RangesRecebidos), 3; got != want {
+		t.Errorf("len(RangesRecebidos) = %d, esperado %d", got, want)
+	}
+	if status.RangesRecebidos[0].Start != 0 || status.RangesRecebidos[0].End != 3 {
+		t.Errorf("RangesRecebidos[0] = %+v, esperado {0,3}", status.RangesRecebidos[0])
+	}
+	if status.RangesRecebidos[1].Start != 5 || status.RangesRecebidos[1].End != 8 {
+		t.Errorf("RangesRecebidos[1] = %+v, esperado {5,8}", status.RangesRecebidos[1])
+	}
+	if status.RangesRecebidos[2].Start != 100 || status.RangesRecebidos[2].End != 199 {
+		t.Errorf("RangesRecebidos[2] = %+v, esperado {100,199}", status.RangesRecebidos[2])
+	}
+	if status.Situacao != UploadUploadPendente {
+		t.Errorf("Situacao = %v, esperado UploadUploadPendente (%q)",
+			status.Situacao, status.Situacao.String())
+	}
+	if status.SituacaoRaw != "Transmissão pendente" {
+		t.Errorf("SituacaoRaw = %q, esperado %q", status.SituacaoRaw, "Transmissão pendente")
+	}
+}
+
+// TestWSClient_StatusUpload_RangesEmpty — RangesRecebidos vazio + Situacao
+// "Transmissão não iniciada" (caso real de novo protocolo).
+func TestWSClient_StatusUpload_RangesEmpty(t *testing.T) {
+	mock := sucessoPosicaoUploadHandler()
+	mock.handleGetPosicao = func(w http.ResponseWriter, r *http.Request, protocolo string) {
+		w.Header().Set("Content-Type", "application/xml")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Resultado>
+<Protocolo>456</Protocolo>
+<RangesRecebidos></RangesRecebidos>
+<Situacao>Transmissão não iniciada</Situacao>
+</Resultado>`))
+	}
+	_, client := newMockSTA(t, mock)
+
+	status, err := client.StatusUpload(context.Background(), "456")
+	if err != nil {
+		t.Fatalf("StatusUpload: %v", err)
+	}
+	if len(status.RangesRecebidos) != 0 {
+		t.Errorf("RangesRecebidos deveria ser vazio, got %+v", status.RangesRecebidos)
+	}
+	if status.Situacao != UploadSituacaoNaoIniciada {
+		t.Errorf("Situacao = %v, esperado UploadSituacaoNaoIniciada", status.Situacao)
+	}
+}
+
+// TestWSClient_StatusUpload_403 — protocolo de outra IF (Seção 5.3.1).
+func TestWSClient_StatusUpload_403(t *testing.T) {
+	mock := sucessoPosicaoUploadHandler()
+	mock.handleGetPosicao = func(w http.ResponseWriter, r *http.Request, protocolo string) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Resultado><Erro><Codigo>403</Codigo><Descricao>Protocolo não pertence à instituição</Descricao></Erro></Resultado>`))
+	}
+	_, client := newMockSTA(t, mock)
+
+	_, err := client.StatusUpload(context.Background(), "999")
+	if err == nil {
+		t.Fatal("esperava erro em 403")
+	}
+	var staErr *STAError
+	if !errorsAs(err, &staErr) {
+		t.Fatalf("erro deveria ser *STAError, got %T: %v", err, err)
+	}
+	if staErr.StatusCode != http.StatusForbidden {
+		t.Errorf("StatusCode = %d, esperado 403", staErr.StatusCode)
+	}
+	if !strings.Contains(staErr.Message, "não pertence") {
+		t.Errorf("Message deve mencionar 'não pertence', got %q", staErr.Message)
+	}
+	if staErr.Protocolo != "999" {
+		t.Errorf("Protocolo ecoado = %q, esperado 999", staErr.Protocolo)
+	}
+}
+
+// TestWSClient_StatusUpload_BadXMLFallback — 200 OK mas body não parseia.
+// Esperado: erro de parse (não STAError), porque status HTTP é 200.
+func TestWSClient_StatusUpload_BadXMLFallback(t *testing.T) {
+	mock := sucessoPosicaoUploadHandler()
+	mock.handleGetPosicao = func(w http.ResponseWriter, r *http.Request, protocolo string) {
+		w.Header().Set("Content-Type", "application/xml")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`not valid xml`))
+	}
+	_, client := newMockSTA(t, mock)
+
+	_, err := client.StatusUpload(context.Background(), "123")
+	if err == nil {
+		t.Fatal("esperava erro de parse")
+	}
+	if !strings.Contains(err.Error(), "parse posicaoupload") {
+		t.Errorf("erro deve mencionar parse posicaoupload, got %v", err)
+	}
+}
+
+// TestWSClient_StatusUpload_EmptyProtocolo — sanity check defensivo.
+func TestWSClient_StatusUpload_EmptyProtocolo(t *testing.T) {
+	c, _ := NewWSClient(WSConfig{
+		BaseURL:           "http://127.0.0.1:0",
+		User:              "123450001.x",
+		Password:          "p",
+		AllowInsecureHTTP: true,
+	})
+	_, err := c.StatusUpload(context.Background(), "")
+	if err == nil {
+		t.Fatal("esperava erro em protocolo vazio")
+	}
+	if !strings.Contains(err.Error(), "protocolo requerido") {
+		t.Errorf("erro deveria mencionar 'protocolo requerido', got %v", err)
+	}
+}
+
+// sucessoDownloadHandler retorna mockSTA configurado para responder 200 OK
+// com headers completos (ETag, Last-Modified, X-Content-Hash) + body ZIP.
+//
+// `content` é o body que será enviado (default "ZIP binário fake").
+// Se contentHeader hash não bater com SHA-256(content), use
+// sucessoDownloadHandlerCustomHash pra simular bug BACEN.
+func sucessoDownloadHandler() (*mockSTA, []byte) {
+	content := []byte("PK\x03\x04 ZIP binário fake")
+	sum := sha256.Sum256(content)
+	hash := "SHA-256 " + hex.EncodeToString(sum[:])
+
+	mock := &mockSTA{
+		requireBasicAuth: true,
+		handleGetConteudo: func(w http.ResponseWriter, r *http.Request, protocolo string) {
+			if r.Header.Get("Content-Type") != "" {
+				http.Error(w, "Content-Type deveria ser omitido (manual §6.1.1)", http.StatusBadRequest)
+				return
+			}
+			w.Header().Set("ETag", `"abc123"`)
+			w.Header().Set("Last-Modified", "Thu, 01 Dec 2022 12:00:00 GMT")
+			w.Header().Set("X-Content-Hash", hash)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(content)
+		},
+	}
+	return mock, content
+}
+
+// TestWSClient_Download_HappyPath — Seção 6.1.1.
+func TestWSClient_Download_HappyPath(t *testing.T) {
+	mock, expectedContent := sucessoDownloadHandler()
+	_, client := newMockSTA(t, mock)
+
+	res, err := client.Download(context.Background(), "123")
+	if err != nil {
+		t.Fatalf("Download: %v", err)
+	}
+	if res == nil {
+		t.Fatal("res nil")
+	}
+	if !bytes.Equal(res.Conteudo, expectedContent) {
+		t.Errorf("Conteúdo = %q, esperado %q", res.Conteudo, expectedContent)
+	}
+	if res.ContentHash == "" {
+		t.Error("ContentHash vazio")
+	}
+	wantSum := sha256.Sum256(expectedContent)
+	wantHex := hex.EncodeToString(wantSum[:])
+	if res.ContentHash != wantHex {
+		t.Errorf("ContentHash = %q, esperado %q", res.ContentHash, wantHex)
+	}
+	if res.ETag != `"abc123"` {
+		t.Errorf("ETag = %q, esperado %q", res.ETag, `"abc123"`)
+	}
+	if res.LastModified != "Thu, 01 Dec 2022 12:00:00 GMT" {
+		t.Errorf("LastModified = %q", res.LastModified)
+	}
+	if !strings.HasPrefix(res.ContentHashHeader, "SHA-256 ") {
+		t.Errorf("ContentHashHeader = %q, esperado prefixo SHA-256", res.ContentHashHeader)
+	}
+}
+
+// TestWSClient_Download_HashMismatch — X-Content-Hash com valor errado
+// (cenário: BACEN bugou ou proxy transparente corrompeu body).
+func TestWSClient_Download_HashMismatch(t *testing.T) {
+	mock, _ := sucessoDownloadHandler()
+	mock.handleGetConteudo = func(w http.ResponseWriter, r *http.Request, protocolo string) {
+		// Hash intencionalmente errado (todos zeros).
+		w.Header().Set("X-Content-Hash", "SHA-256 0000000000000000000000000000000000000000000000000000000000000000")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("body real"))
+	}
+	_, client := newMockSTA(t, mock)
+
+	_, err := client.Download(context.Background(), "123")
+	if err == nil {
+		t.Fatal("esperava erro de hash mismatch")
+	}
+	if !errorsIs(err, ErrContentHashMismatch) {
+		t.Fatalf("erro deveria ser ErrContentHashMismatch, got %v", err)
+	}
+}
+
+// TestWSClient_Download_404 — protocolo inexistente (Seção 6.1.1).
+func TestWSClient_Download_404(t *testing.T) {
+	mock := &mockSTA{
+		requireBasicAuth: true,
+		handleGetConteudo: func(w http.ResponseWriter, r *http.Request, protocolo string) {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Resultado><Erro><Codigo>404</Codigo><Descricao>Protocolo não encontrado</Descricao></Erro></Resultado>`))
+		},
+	}
+	_, client := newMockSTA(t, mock)
+
+	_, err := client.Download(context.Background(), "999")
+	if err == nil {
+		t.Fatal("esperava erro em 404")
+	}
+	var staErr *STAError
+	if !errorsAs(err, &staErr) {
+		t.Fatalf("erro deveria ser *STAError, got %T: %v", err, err)
+	}
+	if staErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d, esperado 404", staErr.StatusCode)
+	}
+	if !strings.Contains(staErr.Message, "não encontrado") {
+		t.Errorf("Message = %q", staErr.Message)
+	}
+}
+
+// TestWSClient_Download_410 — arquivo não disponível (Seção 6.1.1).
+func TestWSClient_Download_410(t *testing.T) {
+	mock := &mockSTA{
+		requireBasicAuth: true,
+		handleGetConteudo: func(w http.ResponseWriter, r *http.Request, protocolo string) {
+			w.WriteHeader(http.StatusGone)
+			_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Resultado><Erro><Codigo>410</Codigo><Descricao>O arquivo não está disponível para download</Descricao></Erro></Resultado>`))
+		},
+	}
+	_, client := newMockSTA(t, mock)
+
+	_, err := client.Download(context.Background(), "888")
+	if err == nil {
+		t.Fatal("esperava erro em 410")
+	}
+	var staErr *STAError
+	if !errorsAs(err, &staErr) {
+		t.Fatalf("erro deveria ser *STAError, got %T: %v", err, err)
+	}
+	if staErr.StatusCode != http.StatusGone {
+		t.Errorf("StatusCode = %d, esperado 410", staErr.StatusCode)
+	}
+}
+
+// TestWSClient_Download_BodyTooLarge — BACEN misbehaving: body > 100 MiB
+// deve ser capado, não estourar memória. Esperado *STAError 413.
+func TestWSClient_Download_BodyTooLarge(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip em -short; aloca 100+ MiB")
+	}
+	mock := &mockSTA{
+		requireBasicAuth: true,
+		handleGetConteudo: func(w http.ResponseWriter, r *http.Request, protocolo string) {
+			// Content-Length FALSO (BACEN bug): diz 1 KB mas envia 120 MiB.
+			// Cap do cliente é em bytes lidos, não em Content-Length.
+			hash := strings.Repeat("0", 64)
+			w.Header().Set("X-Content-Hash", "SHA-256 "+hash)
+			w.WriteHeader(http.StatusOK)
+			// 120 MiB (> maxDownloadBodyBytes de 100 MiB).
+			padding := bytes.Repeat([]byte("X"), 120<<20)
+			_, _ = w.Write(padding)
+		},
+	}
+	srv := httptest.NewServer(mock)
+	defer srv.Close()
+
+	client, err := NewWSClient(WSConfig{
+		BaseURL:           srv.URL,
+		User:              "12345/0001.fulano",
+		Password:          "senha",
+		Timeout:           30 * time.Second,
+		AllowInsecureHTTP: true,
+	})
+	if err != nil {
+		t.Fatalf("NewWSClient: %v", err)
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("panic em body gigante: %v", r)
+		}
+	}()
+
+	_, err = client.Download(context.Background(), "123")
+	if err == nil {
+		t.Fatal("esperava erro de body grande")
+	}
+	var staErr *STAError
+	if !errorsAs(err, &staErr) {
+		t.Fatalf("erro deveria ser *STAError, got %T: %v", err, err)
+	}
+	if staErr.StatusCode != http.StatusRequestEntityTooLarge {
+		t.Errorf("StatusCode = %d, esperado 413", staErr.StatusCode)
+	}
+	if !strings.Contains(staErr.Message, "cap") {
+		t.Errorf("Message deve mencionar cap defensivo, got %q", staErr.Message)
+	}
+}
+
+// TestWSClient_Download_HeaderMalformed — BACEN mudou formato do header
+// (defesa contra versionamento futuro).
+func TestWSClient_Download_HeaderMalformed(t *testing.T) {
+	mock := &mockSTA{
+		requireBasicAuth: true,
+		handleGetConteudo: func(w http.ResponseWriter, r *http.Request, protocolo string) {
+			// Formato errado: MD5 em vez de SHA-256 (cenário hipotético BACEN v2.0).
+			w.Header().Set("X-Content-Hash", "MD5 abcdef0123456789")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("body"))
+		},
+	}
+	_, client := newMockSTA(t, mock)
+
+	_, err := client.Download(context.Background(), "123")
+	if err == nil {
+		t.Fatal("esperava erro de header malformado")
+	}
+	if !errorsIs(err, ErrContentHashHeaderMalformed) {
+		t.Fatalf("erro deveria ser ErrContentHashHeaderMalformed, got %v", err)
+	}
+}
+
+// TestWSClient_Download_MissingHeader — BACEN esqueceu de mandar header
+// (defesa contra regressão).
+func TestWSClient_Download_MissingHeader(t *testing.T) {
+	mock := &mockSTA{
+		requireBasicAuth: true,
+		handleGetConteudo: func(w http.ResponseWriter, r *http.Request, protocolo string) {
+			// Sem X-Content-Hash.
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("body"))
+		},
+	}
+	_, client := newMockSTA(t, mock)
+
+	_, err := client.Download(context.Background(), "123")
+	if err == nil {
+		t.Fatal("esperava erro de header ausente")
+	}
+	var staErr *STAError
+	if !errorsAs(err, &staErr) {
+		t.Fatalf("erro deveria ser *STAError, got %T: %v", err, err)
+	}
+	if staErr.Code != "MISSING_X_CONTENT_HASH" {
+		t.Errorf("Code = %q, esperado MISSING_X_CONTENT_HASH", staErr.Code)
+	}
+}
+
+// TestWSClient_Download_EmptyProtocolo — sanity check defensivo.
+func TestWSClient_Download_EmptyProtocolo(t *testing.T) {
+	c, _ := NewWSClient(WSConfig{
+		BaseURL:           "http://127.0.0.1:0",
+		User:              "123450001.x",
+		Password:          "p",
+		AllowInsecureHTTP: true,
+	})
+	_, err := c.Download(context.Background(), "")
+	if err == nil {
+		t.Fatal("esperava erro em protocolo vazio")
+	}
+	if !strings.Contains(err.Error(), "protocolo requerido") {
+		t.Errorf("erro deveria mencionar 'protocolo requerido', got %v", err)
+	}
+}
+
+// ============================================================
+// Helpers para tests Sprint 19 (errorsAs/errorsIs wrapped)
+// ============================================================
+//
+// Go 1.13+ tem errors.As/Is mas o file usa imports compactos — encapsulamos
+// aqui pra evitar adicionar mais imports e manter diff pequeno.
+
+func errorsAs(err error, target interface{}) bool {
+	for err != nil {
+		if e, ok := err.(*STAError); ok {
+			if t, ok := target.(**STAError); ok {
+				*t = e
+				return true
+			}
+		}
+		type unwrapper interface{ Unwrap() error }
+		u, ok := err.(unwrapper)
+		if !ok {
+			return false
+		}
+		err = u.Unwrap()
+	}
+	return false
+}
+
+func errorsIs(err, target error) bool {
+	for err != nil {
+		if err == target {
+			return true
+		}
+		type unwrapper interface{ Unwrap() error }
+		u, ok := err.(unwrapper)
+		if !ok {
+			return false
+		}
+		err = u.Unwrap()
+	}
+	return false
+}
+
+// ============================================================
+// Unit tests — pure functions (parseRanges, parseUploadSituacao, parseXContentHash)
+// ============================================================
+
+func TestParseRanges_Cases(t *testing.T) {
+	tests := []struct {
+		in   string
+		want []Range
+	}{
+		{"", nil},
+		{"0-3", []Range{{0, 3}}},
+		{"0-3;5-8", []Range{{0, 3}, {5, 8}}},
+		{"100-199;200-299", []Range{{100, 199}, {200, 299}}},
+		// Defense: lixo descartado silenciosamente.
+		{"abc-def", nil},
+		{"0-3;;5-8", []Range{{0, 3}, {5, 8}}},
+		{"0-3;malformed", []Range{{0, 3}}},
+		{"5-3", nil},  // end < start → descarta
+		{"-1-3", nil}, // start negativo (parse fail) → descarta
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			got := parseRanges(tt.in)
+			if len(got) != len(tt.want) {
+				t.Fatalf("len = %d, esperado %d (got=%+v)", len(got), len(tt.want), got)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("[%d] = %+v, esperado %+v", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestParseUploadSituacao_Cases(t *testing.T) {
+	tests := []struct {
+		in   string
+		want UploadSituacao
+	}{
+		{"", UploadSituacaoUnknown},
+		{"Transmissão não iniciada", UploadSituacaoNaoIniciada},
+		{"Transmissão pendente", UploadUploadPendente},
+		{"Transmissão finalizada", UploadSituacaoFinalizada},
+		{"valor futuro desconhecido", UploadSituacaoUnknown},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			if got := parseUploadSituacao(tt.in); got != tt.want {
+				t.Errorf("got %v, esperado %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestParseXContentHash_Cases(t *testing.T) {
+	validHash := strings.Repeat("a", 64)
+	validHeader := "SHA-256 " + validHash
+
+	tests := []struct {
+		name    string
+		header  string
+		want    string
+		wantErr bool
+	}{
+		{"valid", validHeader, validHash, false},
+		{"valid uppercase hash", "SHA-256 " + strings.ToUpper(validHash), validHash, false},
+		{"valid SHA-256 case insensitive", "sha-256 " + validHash, validHash, false},
+		{"empty", "", "", true},
+		{"no space", "SHA-256" + validHash, "", true},
+		{"wrong algorithm", "MD5 " + validHash, "", true},
+		{"too short hash", "SHA-256 abc", "", true},
+		{"non-hex char", "SHA-256 " + strings.Repeat("z", 64), "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseXContentHash(tt.header)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("esperava erro, got hash=%q", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("não esperava erro, got %v", err)
+			}
+			if got != tt.want {
+				t.Errorf("got %q, esperado %q", got, tt.want)
+			}
+		})
+	}
 }

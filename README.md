@@ -182,10 +182,11 @@ Stack completa em [`backend/README.md`](backend/README.md).
 | **13** | CSRF + Cross-Tenant + DB Integrity + Rate Limit | ✅ v3.5.2 |
 | **14–16** | Drill-down insights + Design system + Redis rate limiter | ✅ v3.6.0 |
 | **17** | Observability + Production Hardening + lint automation | ✅ v3.7.0 |
-| **18** | STA WS nativo (substituir Playwright) + cert A1/A3 | 🔜 Roadmap |
+| **18** | STA WS nativo (substituir Playwright) + cert A1/A3 | ✅ v3.8.0 |
+| **19** | STA WS read side (Download + StatusUpload + X-Content-Hash) | ✅ v3.9.0 |
 
-Última release estável: **v3.7.1** (5 validações profundas + 70+ findings históricos,
-0 HIGH abertos, 17/17 packages `-race` PASS).
+Última release estável: **v3.9.0** (Sprint 19 STA WS read side — Download + StatusUpload
+com validação X-Content-Hash ponta-a-ponta; 18/18 packages PASS, 37 testes STA).
 
 **Sub-produtos anunciados** (marca Radiant):
 

@@ -3,11 +3,18 @@
 // Sprint 18 (v3.8.0): cliente REST contra https://sta-h.bcb.gov.br/staws (homologação)
 // ou https://sta.bcb.gov.br/staws (produção).
 //
+// Sprint 19 (v3.9.0): read side — WSClient.StatusUpload (Seção 5.3.1) e
+// WSClient.Download (Seção 6.1.1). Validação X-Content-Hash obrigatória.
+//
 // Implementa o fluxo de envio em 2 fases (Seções 5.1 + 5.2 do manual oficial):
 //  1. POST /arquivos com XML <Parametros> (IdentificadorDocumento, Hash, Tamanho, etc.)
 //     → 201 Created + <Resultado><Protocolo>{NUM}</Protocolo></Resultado>
 //  2. PUT /arquivos/{protocolo}/conteudo com conteúdo binário (ZIP)
 //     → 200 OK
+//
+// E o fluxo de leitura:
+//  3. GET /arquivos/{protocolo}/posicaoupload → status + ranges recebidos
+//  4. GET /arquivos/{protocolo}/conteudo → arquivo binário + X-Content-Hash
 //
 // Auth: HTTP Basic preemptivo (RFC 7617). Header:
 //
@@ -23,16 +30,19 @@
 //
 // O cliente:
 //   - Calcula SHA-256 do payload ANTES do POST (Seção 2.4 do manual)
+//   - Compara SHA-256 do body do Download com X-Content-Hash do header
+//     (Seção 6.1.1, validação obrigatória de integridade — manual linha 641-643)
 //   - Respeita timeout configurado
 //   - Sanitiza error bodies (não vaza err.Error() cru — F18.1 defense)
 //   - Emite audit emission em failure (S17.6 pattern — mas ainda
 //     sem audit_log wiring aqui; feito no handler do /v1/sta/submit)
 //
-// Limitações V1 (cobertas em Sprint 19+):
+// Limitações V1 (cobertas em Sprint 20+):
 //   - Sem retry exponencial
 //   - Sem range/resume upload (chunked)
-//   - Sem download (recebimento)
-//   - Sem senha rotation / consulta disponibilidade
+//   - Sem range/conditional download (single-call apenas)
+//   - Sem listagem /arquivos/disponiveis (Sprint 20)
+//   - Sem alteração situacao /arquivos/situacao (Sprint 20)
 //   - Sem cache de senhaws endpoints
 //
 // Referência: _referencias/STA_Manual_WebServices.pdf (BACEN, julho/2022).
@@ -58,12 +68,63 @@ import (
 	"time"
 )
 
-// maxResponseBodyBytes limita o tamanho da response BACEN que vamos ler.
+// maxResponseBodyBytes limita o tamanho da response BACEN que vamos ler
+// para responses pequenas (XML de protocolo, posicaoupload, erros).
 // Defense-in-depth contra BACEN mal-comportado ou proxy transparente que
-// retorne body gigante (DoS via memory). Manual Seção 5.1.1 / 5.2.1 não
-// limita tamanho do body, mas responses esperadas são pequenas (XML de
-// protocolo ~few KB, PUT sucesso vazio, erros <10 KB).
+// retorne body gigante (DoS via memory). Manual Seção 5.1.1 / 5.2.1 / 5.3.1
+// não limita tamanho do body, mas responses esperadas são pequenas
+// (~few KB para XML de protocolo/posicaoupload, vazio para PUT sucesso,
+// <10 KB para erros).
 const maxResponseBodyBytes = 10 << 20 // 10 MiB
+
+// maxDownloadBodyBytes limita o tamanho do body do Download.
+// CADOC real raramente >10 MB (ZIP com poucas dezenas de milhares de linhas
+// de relatório). 100 MiB é folgado mas prudente — se BACEN algum dia enviar
+// arquivo de 500 MB (improvável), cliente recebe erro claro em vez de
+// estouro de memória silencioso.
+//
+// Decisão (Sprint 19): não truncar silenciosamente. Body excedente → erro
+// *STAError{StatusCode: 413} para o caller decidir (retry? chunked download
+// via range? falhar graciosamente?).
+const maxDownloadBodyBytes = 100 << 20 // 100 MiB
+
+// Sentinel errors — callers usam errors.Is() para classificar.
+var (
+	// ErrContentHashMismatch: SHA-256 do body não bate com header X-Content-Hash.
+	// Erro fatal — não adianta retry, BACEN mandou dado corrompido. Caller deve
+	// abortar e abrir ticket com BACEN.
+	ErrContentHashMismatch = errors.New("STA: X-Content-Hash do BACEN não bate com SHA-256 do body")
+
+	// ErrContentHashHeaderMalformed: header X-Content-Hash existe mas não segue
+	// formato esperado "SHA-256 {64-hex}". Defense contra BACEN mudar formato
+	// sem atualizar IF — caller recebe sentinel distinto pra diferenciar
+	// "BACEN mudou header" de "BACEN mandou lixo".
+	ErrContentHashHeaderMalformed = errors.New("STA: header X-Content-Hash malformado (esperado: SHA-256 {64-hex})")
+)
+
+// STAError representa rejeição formal do BACEN STA WS (4xx/5xx com XML
+// formato Listagem 4 do manual). Distinct de erros de transporte (rede,
+// parse, timeout) que retornam err tipado diferente.
+//
+// StatusCode: HTTP status cru (404, 403, 410, 400, ...).
+// Code: código extraído de <Erro><Codigo> (mesmo valor de StatusCode hoje,
+// mantido para evolução futura se BACEN mudar).
+// Message: <Erro><Descricao> cru.
+// Protocolo: se conhecido, eco do protocolo que originou o erro (útil pra
+// audit correlacionar com submission).
+type STAError struct {
+	StatusCode int
+	Code       string
+	Message    string
+	Protocolo  string
+}
+
+func (e *STAError) Error() string {
+	if e.Protocolo != "" {
+		return fmt.Sprintf("BACEN STA error %d (protocolo=%s): %s", e.StatusCode, e.Protocolo, e.Message)
+	}
+	return fmt.Sprintf("BACEN STA error %d: %s", e.StatusCode, e.Message)
+}
 
 // sisbacenUserRegex is the canonical format Sisbacen: 5 dígitos (IF code)
 // + 4 dígitos (dependência) + "." + operador alfanumérico/underscore/dash.
@@ -340,6 +401,206 @@ func (c *WSClient) parseSTAError(status int, body []byte) error {
 	}
 	// Body não parseou — retorna status + truncated body.
 	return fmt.Errorf("BACEN STA HTTP %d: %s", status, truncate(body, 200))
+}
+
+// parseSTAErrorTyped é a versão tipada de parseSTAError — retorna *STAError
+// em vez de error opaco. Usada por StatusUpload e Download onde o caller
+// precisa inspecionar StatusCode (ex: 404 protocolo inexistente, 410 arquivo
+// não disponível).
+//
+// protocolo é eco do protocolo que originou o erro (string vazia se N/A).
+func (c *WSClient) parseSTAErrorTyped(status int, body []byte, protocolo string) error {
+	var xe xmlError
+	if err := xml.Unmarshal(body, &xe); err == nil && xe.Erro.Codigo != 0 {
+		return &STAError{
+			StatusCode: status,
+			Code:       strconv.Itoa(xe.Erro.Codigo),
+			Message:    xe.Erro.Descricao,
+			Protocolo:  protocolo,
+		}
+	}
+	// Body não parseou — fallback STAError com body cru truncado.
+	return &STAError{
+		StatusCode: status,
+		Code:       fmt.Sprintf("HTTP_%d", status),
+		Message:    truncate(body, 200),
+		Protocolo:  protocolo,
+	}
+}
+
+// ============================================================
+// Sprint 19 (v3.9.0) — read side: StatusUpload + Download
+// ============================================================
+
+// StatusUpload consulta a situação de um envio em andamento no BACEN.
+//
+// Endpoint: GET /arquivos/{protocolo}/posicaoupload (Seção 5.3.1 do manual).
+//
+// Retorna:
+//   - (*UploadStatus, nil) em sucesso — RangesRecebidos parseado, Situacao
+//     tipado como enum (3 valores oficiais do manual).
+//   - (nil, *STAError) em rejeição formal BACEN (400/403/404/410).
+//     Caller pode errors.As(err, &staErr) pra inspecionar StatusCode.
+//   - (nil, err) em erro de transporte (rede, timeout, parse falho).
+//
+// Use case típico: cliente tem protocolo "12345" e quer retomar upload
+// interrompido — chama StatusUpload pra saber que bytes BACEN já recebeu
+// (RangesRecebidos) antes de fazer PUT só da parte que falta.
+func (c *WSClient) StatusUpload(ctx context.Context, protocolo string) (*UploadStatus, error) {
+	if protocolo == "" {
+		return nil, errors.New("protocolo requerido")
+	}
+
+	url := c.cfg.BaseURL + "/arquivos/" + protocolo + "/posicaoupload"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", c.basicAuthHeader())
+	// Content-Type intencionalmente omitido — manual §5.3.1 linha 451:
+	// "O cabeçalho HTTP da requisição não deve conter o campo Content-Type".
+
+	resp, err := c.cfg.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodyBytes))
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, c.parseSTAErrorTyped(resp.StatusCode, respBody, protocolo)
+	}
+
+	var p posicaoUploadResponse
+	if err := xml.Unmarshal(respBody, &p); err != nil {
+		return nil, fmt.Errorf("parse posicaoupload XML: %w (body=%s)", err, truncate(respBody, 200))
+	}
+
+	return &UploadStatus{
+		Protocolo:       p.Protocolo,
+		RangesRecebidos: parseRanges(p.RangesRecebidos),
+		Situacao:        parseUploadSituacao(p.Situacao),
+		SituacaoRaw:     p.Situacao,
+	}, nil
+}
+
+// Download baixa o arquivo binário de um protocolo do BACEN (Seção 6.1.1).
+//
+// Endpoint: GET /arquivos/{protocolo}/conteudo (recebimento completo).
+//
+// Validação obrigatória (manual linha 641-643): o cliente computa SHA-256
+// do body e compara com header X-Content-Hash do BACEN. Mismatch →
+// ErrContentHashMismatch (sentinel). Não-recuperável.
+//
+// Retorna:
+//   - (*DownloadResult, nil) em sucesso com integridade validada.
+//   - (nil, *STAError) em rejeição formal BACEN:
+//   - 400: erro genérico XML Listagem 4
+//   - 404: protocolo inexistente
+//   - 410: arquivo não disponível para download
+//   - (nil, ErrContentHashMismatch) se BACEN mandou body com hash divergente.
+//   - (nil, ErrContentHashHeaderMalformed) se X-Content-Hash existe mas formato mudou.
+//   - (nil, *STAError{StatusCode: 413}) se body excede 100 MiB (cap).
+//   - (nil, err) em erro de transporte (rede, timeout).
+func (c *WSClient) Download(ctx context.Context, protocolo string) (*DownloadResult, error) {
+	if protocolo == "" {
+		return nil, errors.New("protocolo requerido")
+	}
+
+	url := c.cfg.BaseURL + "/arquivos/" + protocolo + "/conteudo"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", c.basicAuthHeader())
+	// Content-Type intencionalmente omitido — manual §6.1.1 linha 620.
+
+	resp, err := c.cfg.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	// Lê body com cap (defense in depth). Se exceder maxDownloadBodyBytes,
+	// retornamos *STAError 413 sem alocar 500 MB indevidamente.
+	limited := io.LimitReader(resp.Body, maxDownloadBodyBytes+1) // +1 pra detectar overflow
+	body, err := io.ReadAll(limited)
+	if err != nil {
+		return nil, fmt.Errorf("read download body: %w", err)
+	}
+	if int64(len(body)) > maxDownloadBodyBytes {
+		return nil, &STAError{
+			StatusCode: http.StatusRequestEntityTooLarge,
+			Code:       fmt.Sprintf("HTTP_%d", http.StatusRequestEntityTooLarge),
+			Message:    fmt.Sprintf("body excede %d bytes (cap defensivo)", maxDownloadBodyBytes),
+			Protocolo:  protocolo,
+		}
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, c.parseSTAErrorTyped(resp.StatusCode, body, protocolo)
+	}
+
+	// Validação X-Content-Hash — obrigatória conforme manual §6.1.1.
+	hashHeader := resp.Header.Get("X-Content-Hash")
+	if hashHeader == "" {
+		return nil, &STAError{
+			StatusCode: http.StatusBadGateway,
+			Code:       "MISSING_X_CONTENT_HASH",
+			Message:    "BACEN não retornou header X-Content-Hash (esperado conforme manual §6.1.1)",
+			Protocolo:  protocolo,
+		}
+	}
+	wantHash, malformedErr := parseXContentHash(hashHeader)
+	if malformedErr != nil {
+		return nil, fmt.Errorf("%w: %v (header=%q)", ErrContentHashHeaderMalformed, malformedErr, hashHeader)
+	}
+
+	// SHA-256 do body (Seção 2.4 do manual — mesmo algoritmo do upload).
+	sum := sha256.Sum256(body)
+	gotHash := hex.EncodeToString(sum[:])
+
+	if gotHash != wantHash {
+		return nil, fmt.Errorf("%w: esperado=%s got=%s (body=%d bytes)",
+			ErrContentHashMismatch, wantHash, gotHash, len(body))
+	}
+
+	return &DownloadResult{
+		Conteudo:          body,
+		ContentHash:       gotHash,
+		ETag:              resp.Header.Get("ETag"),
+		LastModified:      resp.Header.Get("Last-Modified"),
+		ContentHashHeader: hashHeader,
+	}, nil
+}
+
+// parseXContentHash extrai o SHA-256 hex de header X-Content-Hash no formato
+// "SHA-256 {64-hex}". Manual §6.1.1: "X-Content-Hash: SHA-256 {hash_arquivo}".
+//
+// Retorna (hash, nil) em sucesso ou ("", err) se header malformado. Erro
+// é wrappeado pelo caller como ErrContentHashHeaderMalformed.
+func parseXContentHash(header string) (string, error) {
+	header = strings.TrimSpace(header)
+	parts := strings.SplitN(header, " ", 2)
+	if len(parts) != 2 {
+		return "", fmt.Errorf("formato esperado 'SHA-256 <hash>', got %q", header)
+	}
+	algo := strings.TrimSpace(parts[0])
+	hash := strings.TrimSpace(parts[1])
+	if !strings.EqualFold(algo, "SHA-256") {
+		return "", fmt.Errorf("algoritmo esperado SHA-256, got %q", algo)
+	}
+	// SHA-256 hex = 64 chars [0-9a-fA-F].
+	if len(hash) != 64 {
+		return "", fmt.Errorf("hash esperado 64 chars hex, got %d chars", len(hash))
+	}
+	for _, c := range hash {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return "", fmt.Errorf("hash contém char não-hex em %q", hash)
+		}
+	}
+	return strings.ToLower(hash), nil
 }
 
 // truncate retorna os primeiros n bytes de b com "..." se truncar.

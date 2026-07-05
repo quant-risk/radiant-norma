@@ -2,6 +2,134 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.9.0 — 2026-07-06 (Sprint 19: STA WS read side — Download + StatusUpload) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 19 (read side do WSClient — caminho natural da Sprint 18)
+> **Versão:** minor (2 métodos novos em `*WSClient`; **sem breaking changes**)
+> **Trigger:** SPRINT_19_RESEARCH.md — caminho "pesquisa primeiro" replicado
+> **Validação:** 18/18 packages PASS + 14 testes novos Sprint 19 (37 totais STA) + smoke 11/11
+
+### 🎯 Resumo
+
+Sprint 19 fecha o **read side** do `WSClient` iniciado na Sprint 18. Agora
+a IF pode (a) **consultar situação de upload** antes de retomar
+(`StatusUpload`) e (b) **baixar arquivo completo** com validação de
+integridade ponta-a-ponta (`Download`). X-Content-Hash é validado
+**obrigatoriamente** — manual §6.1.1 linhas 641-643 é explícito que o
+header existe pra isso. Erros formais BACEN retornam `*STAError` tipado
+(caller inspeciona StatusCode via `errors.As`).
+
+Funcionalidades ainda fora: range/conditional download, listagem
+`/arquivos/disponiveis`, alteração `/arquivos/situacao`, retry exponencial.
+Ficam para Sprint 20+.
+
+### 🚀 O que entrou
+
+- **`WSClient.StatusUpload(ctx, protocolo) (*UploadStatus, error)`** — GET
+  `/arquivos/{protocolo}/posicaoupload` (manual §5.3.1). Retorna protocolo
+  ecoado + `RangesRecebidos` parseado como `[]Range{Start,End}` + `Situacao`
+  como enum tipado (`UploadSituacaoNaoIniciada` | `UploadUploadPendente`
+  | `UploadSituacaoFinalizada` | `Unknown`). `SituacaoRaw` guarda string
+  cru pra audit/debug.
+
+- **`WSClient.Download(ctx, protocolo) (*DownloadResult, error)`** — GET
+  `/arquivos/{protocolo}/conteudo` (manual §6.1.1). Retorna binário +
+  `ContentHash` (SHA-256 computado pelo cliente) + `ETag` + `LastModified`
+  + `ContentHashHeader` (valor cru do X-Content-Hash pra audit).
+
+- **Validação X-Content-Hash obrigatória** — manual §6.1.1: "X-Content-Hash
+  não é padrão HTTP, foi criado pelo BACEN para validação de integridade".
+  Cliente computa SHA-256 do body e compara com header. Mismatch →
+  `ErrContentHashMismatch` (sentinel). Header malformado →
+  `ErrContentHashHeaderMalformed` (sentinel distinto, defesa contra BACEN
+  mudar formato no futuro).
+
+- **`*STAError` type** — rejeição formal BACEN com `StatusCode` + `Code`
+  + `Message` + `Protocolo`. Distinct de erros de transporte (rede, parse).
+  `errors.As(err, &staErr)` é a forma canônica de inspecionar.
+
+- **Cap defensivo no body do Download: 100 MiB** via `io.LimitReader`.
+  CADOC real raramente >10 MB; 100 MiB é folgado mas prudente. Acima →
+  `*STAError{StatusCode: 413}` (não truncar silenciosamente — quebraria
+  ZIP parsing downstream).
+
+- **`parseRanges`, `parseUploadSituacao`, `parseXContentHash`** —
+  funções pure com tratamento defensivo (lixo descartado silenciosamente,
+  não crash). Cobertura via subtests table-driven.
+
+### 📚 Pesquisa + spec documentada (SPRINT_19_RESEARCH.md)
+
+10 seções cobrindo: contexto, spec extraída do manual, decisões de design
+(7), o que **NÃO** entra (7 itens), decisão sobre handlers REST, plano
+de testes, critérios de done, riscos, referências.
+
+**Achados-chave:**
+- `X-Content-Hash` é header customizado BACEN (não RFC) — validar é
+  **obrigação contratual**, não opcional.
+- Manual §6.1.1 linha 620: "não deve conter Content-Type" (já é default
+  Go, mas documentado).
+- `RangesRecebidos` formato `0-3;5-8` — manual §5.3.1 linha 466-468
+  explícito sobre separadores.
+- 3 valores oficiais de `Situacao` (não-iniciada / pendente / finalizada)
+  — enum tipado protege contra typos.
+
+### 🧪 Tests (14 novos — total 37 STA)
+
+| Test | Cobre |
+|---|---|
+| `TestWSClient_StatusUpload_HappyPath` | §5.3.1 com RangesRecebidos 0-3;5-8;100-199 + Situacao pendente |
+| `TestWSClient_StatusUpload_RangesEmpty` | RangesRecebidos="" + Situacao "não iniciada" |
+| `TestWSClient_StatusUpload_403` | Protocolo de outra IF → `*STAError{StatusCode: 403}` |
+| `TestWSClient_StatusUpload_BadXMLFallback` | 200 OK mas body não parseia (XML inválido) |
+| `TestWSClient_StatusUpload_EmptyProtocolo` | Sanity check defensivo (string vazia) |
+| `TestWSClient_Download_HappyPath` | §6.1.1 com ETag + Last-Modified + X-Content-Hash correto |
+| `TestWSClient_Download_HashMismatch` | X-Content-Hash com SHA errado → sentinel |
+| `TestWSClient_Download_404` | Protocolo inexistente → `*STAError{StatusCode: 404}` |
+| `TestWSClient_Download_410` | Arquivo não disponível → `*STAError{StatusCode: 410}` |
+| `TestWSClient_Download_BodyTooLarge` | 120 MiB de body → `*STAError{StatusCode: 413}` (cap 100 MiB) |
+| `TestWSClient_Download_HeaderMalformed` | `MD5 abc` em vez de `SHA-256 ...` → sentinel header malformed |
+| `TestWSClient_Download_MissingHeader` | BACEN esqueceu X-Content-Hash → `*STAError{MISSING_X_CONTENT_HASH}` |
+| `TestWSClient_Download_EmptyProtocolo` | Sanity check defensivo |
+| `TestParse{Ranges,UploadSituacao,XContentHash}_Cases` | Unit tests pure functions (9 + 5 + 8 subtests) |
+
+**Total:** 16 top-level tests Sprint 19 (com 38 subtests table-driven =
+54 RUNs). Tudo PASS.
+
+### ⚠️ O que NÃO fecha nesta sprint
+
+- **Handlers REST `/v1/sta/download` + `/v1/sta/status`** — sem caller
+  imediato. Decisão YAGNI documentada em SPRINT_19_RESEARCH.md §5.
+- **Range/conditional download** (manual §6.4) — útil pra arquivos
+  gigantes, mas CADOC real raramente >10MB. Sprint 21+.
+- **Listagem `/arquivos/disponiveis`** (manual §8.1.1) — Sprint 20.
+- **Alteração `/arquivos/situacao`** (manual §7.1) — Sprint 20.
+- **Retry exponencial** — ortogonal. Sprint 22 via wrapper middleware.
+- **Range/parallel upload** (manual §5.5+5.6) — Sprint 21+.
+
+### 🔒 Compatibilidade
+
+- `Client` interface **inalterada** — StubClient e WSClient mantêm
+  contrato `Submit(ctx, sub) (*Result, error)`. Novos métodos
+  `StatusUpload` + `Download` são exclusivos de `*WSClient` (StubClient
+  não os tem — caller recebe erro de compilação claro).
+- `cmd/api/main.go` **sem mudanças** — `sta.NewClientFromEnv()` já
+  decide stub vs ws. WSClient agora expõe 4 métodos (Submit +
+  StatusUpload + Download).
+- `RADIANT_STA_BACKEND=stub` (default) preserva comportamento de todas
+  as 18 sprints anteriores. `ws` continua opt-in.
+
+### 📦 Arquivos tocados
+
+```
+backend/internal/sta/ws.go         (+268 linhas — 2 métodos + STAError + sentinel)
+backend/internal/sta/ws_types.go   (+90 linhas — UploadStatus, Range, UploadSituacao, DownloadResult + 3 helpers)
+backend/internal/sta/ws_test.go    (+489 linhas — 14 testes + 3 subtests table-driven)
+SPRINT_19_RESEARCH.md              (novo, 219 linhas — 10 seções)
+SPRINT_19_RESULTS.md               (novo)
+CHANGELOG.md                       (esta entrada)
+```
+
 ## v3.8.0 — 2026-07-05 (Sprint 18: STA WS nativo — V1 skeleton) ✅
 
 > **Status:** ✅ Shipped
