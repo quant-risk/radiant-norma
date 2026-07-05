@@ -187,9 +187,11 @@ Stack completa em [`backend/README.md`](backend/README.md).
 | **20** | STA WS listagem / disponiveis + alteração / situacao + handlers REST | ✅ v3.10.0 |
 | **21** | STA WS chunked transfer (range upload §5.6 + range download §6.4) | ✅ v3.11.0 |
 | **22** | STA WS retry exponencial wrapper (5xx + network transiente) | ✅ v3.12.0 |
+| **23** | senhaws BACEN — credential rotation programática (§9.1 + §9.2) | ✅ v3.13.0 |
 
-Última release estável: **v3.12.0** (Sprint 22 STA WS retry exponencial wrapper — `RetryingClient`
-com backoff 1s/2s/4s + jitter ±50% em 5xx/network; 18/18 packages PASS, 81 testes STA, smoke 11/11).
+Última release estável: **v3.13.0** (Sprint 23 senhaws BACEN — `SenhawsClient.AlterarSenha` §9.1 +
+`ConsultarVencimento` §9.2 com validações client-side + `*SenhaError` tipado; 19/19 packages PASS,
+94 testes backend, smoke 11/11, race clean).
 
 **Sub-produtos anunciados** (marca Radiant):
 

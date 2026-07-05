@@ -2,6 +2,104 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.13.0 — 2026-07-06 (Sprint 23: senhaws BACEN — credential rotation) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 23 (novo pacote `internal/senhaws` — credential rotation programática)
+> **Versão:** minor (novo pacote + 1 tipo de erro; **zero impacto** em código existente)
+> **Trigger:** SPRINT_22_RESULTS.md §"Próximos passos" Sprint 23
+> **Validação:** 19/19 packages PASS + 13 testes novos Sprint 23 (12 top-level + 8 subtests) + smoke 11/11 + race clean
+
+### 🎯 Resumo
+
+Sprint 23 entrega **gestão programática de credenciais Sisbacen** via senhaws BACEN
+(manual §9.1 + §9.2). Admin IF pode agendar rotação automática de senha (cron job)
+sem precisar acessar o site STA Web no browser.
+
+Caso de uso:
+1. Cron diário chama `ConsultarVencimento()`. Se < 7 dias, chama `AlterarSenha(novaSenha)`.
+2. Cron atualiza secret manager (env var / vault / AWS Secrets Manager).
+3. Próxima call STA usa senha nova automaticamente.
+
+**Decisão arquitetural:** pacote separado `internal/senhaws`. Senhaws é serviço
+**diferente** do STA WS (URLs www9.bcb.gov.br/senhaws vs sta-h.bcb.gov.br/staws).
+Misturar em `sta` quebraria single responsibility.
+
+**Decisões YAGNI conscientes:**
+- Sem handler REST — admin tool direto, não UI.
+- Sem wire em `cmd/api/main.go` — caller opta-in.
+- Sem retry wrapper (RetryingClient) — failure fast é apropriado pra admin (retry mascara bugs).
+
+### 🚀 O que entrou
+
+- **Novo pacote `internal/senhaws`** com:
+  - `SenhawsConfig { BaseURL, User, Password, Timeout, HTTPClient, AllowInsecureHTTP, Logger }`
+  - `NewSenhawsClient(cfg)` — valida config (HTTPS, formato Sisbacen, non-empty)
+  - `(*SenhawsClient).AlterarSenha(ctx, novaSenha) error` — PUT `/senha` (manual §9.1)
+  - `(*SenhawsClient).ConsultarVencimento(ctx) (int, error)` — GET `/senha/vencimento` (§9.2)
+  - `*SenhaError` — erros formais tipados (StatusCode + Code + Message)
+  - `GerarSenhaRandom() string` — helper opcional (16 bytes hex)
+
+- **Validações client-side:**
+  - Senha vazia → erro imediato
+  - Senha < 8 chars ou > 128 chars → erro
+  - Senha == senha atual → erro
+  - HTTPS obrigatório (com `AllowInsecureHTTP` escape hatch pra tests)
+  - Formato Sisbacen exato (`^(\d{5}\d{4}|\d{5}/\d{4})\.[A-Za-z0-9_-]+$`)
+
+- **Defesa contra BACEN bug (ConsultarVencimento):**
+  - `<DiasVencimentoSenha></DiasVencimentoSenha>` vazio → erro
+  - `<DiasVencimentoSenha>abc</DiasVencimentoSenha>` (não-inteiro) → erro
+  - `<DiasVencimentoSenha>-1</DiasVencimentoSenha>` (negativo) → erro
+
+- **Cap defensivo** — `maxResponseBodyBytes = 1 MiB` (senhaws responses são pequenas).
+
+- **Thread-safety** — `cfg` é read-only após construção. Caller serializa se rotaciona
+  concorrentemente com calls STA ativas.
+
+### 🧪 Tests (13 novos — total backend 94)
+
+| Test | Cobre |
+|---|---|
+| `TestNewSenhawsClient_Validacao` | 8 subtests: BaseURL/User/Password vazios + formato Sisbacen + válidos |
+| `TestSenhawsClient_AlterarSenha_HappyPath` | PUT 204 + body XML correto (Senha/NovaSenha/Confirmacao) + Basic Auth decodificado |
+| `TestSenhawsClient_AlterarSenha_400` | BACEN rejeita → `*SenhaError{400}` |
+| `TestSenhawsClient_AlterarSenha_401` | Senha atual errada → `*SenhaError{401}` |
+| `TestSenhawsClient_AlterarSenha_Validacoes` | 7 subtests: vazia/curta/longa/mesma senha/válidas |
+| `TestSenhawsClient_ConsultarVencimento_HappyPath` | GET 200 + 30 dias |
+| `TestSenhawsClient_ConsultarVencimento_400` | BACEN rejeita |
+| `TestSenhawsClient_ConsultarVencimento_BadXML` | 200 OK mas body não parsea |
+| `TestSenhawsClient_ConsultarVencimento_DiasVazios` | 200 OK com `<DiasVencimentoSenha></DiasVencimentoSenha>` |
+| `TestSenhawsClient_ConsultarVencimento_NaoInteiro` | 200 OK com texto não-numérico |
+| `TestSenhawsClient_ConsultarVencimento_Negativo` | 200 OK com dias < 0 |
+| `TestGerarSenhaRandom` | Helper 16 bytes hex (10 iterações) |
+| `TestSenhaError_Error` | Format `"BACEN senhaws error N: msg"` |
+
+### ⚠️ O que NÃO fecha nesta sprint
+
+- **Handlers REST `/v1/senhaws/...`** — admin tool direto. UI seria Sprint 24+.
+- **Wire no `cmd/api/main.go`** — não tem consumer imediato. Caller opta-in.
+- **Retry wrapper** — failure fast é apropriado pra admin (retry mascara bugs).
+- **Vault integration** — caller decide onde armazenar.
+- **Tests contra BACEN real** — Sprint 24 (precisa credenciais Sisbacen).
+
+### 🔒 Compatibilidade
+
+- Novo pacote `internal/senhaws`. Zero impacto em código existente.
+- `cmd/api/main.go` inalterado.
+- `internal/sta/*` inalterado.
+- `internal/api/*` inalterado.
+
+### 📦 Arquivos tocados
+
+```
+backend/internal/senhaws/senhaws.go      (novo, 313 linhas)
+backend/internal/senhaws/senhaws_test.go (novo, 433 linhas)
+SPRINT_23_RESEARCH.md                    (novo, 10 seções)
+SPRINT_23_RESULTS.md                     (novo)
+CHANGELOG.md                            (esta entrada)
+```
+
 ## v3.12.0 — 2026-07-06 (Sprint 22: STA WS retry exponencial wrapper) ✅
 
 > **Status:** ✅ Shipped
