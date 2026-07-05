@@ -29,4 +29,12 @@ package version
 // Validação 27 (F27.2): v1.5.0 foi deixado para trás após Sprint 7c/v2.0.0.
 // Constante deveria ter sido bumped ao fechar o release v2.0.0 — sem isso
 // `/healthz` continua reportando "1.5.0" enquanto CHANGELOG diz v2.0.0.
-const Version = "2.0.0"
+//
+// Histórico de bumps:
+//   v1.5.0 (Sprint 6)  → v2.0.0 (Sprint 7c, validação 27 fix)
+//   v2.0.0             → v2.1.0 (Sprint 8a, JWT bridge)
+//   v2.1.0             → v3.0.0 (Sprint 9, frontend redesign)
+//   v3.0.0             → v3.1.0 (Sprint 8c, backend intelligence)
+//   v3.1.0             → v3.2.0 (Sprint 8d, URL filters + CSV/JSON export)
+//   v3.2.0             → v3.3.0 (Sprint 10, real-time SSE)
+const Version = "3.3.0"

@@ -2,6 +2,93 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.3.0 — 2026-07-05 (Sprint 10: Real-Time SSE — Backend) ✅
+
+> **Status:** ✅ Shipped (backend; frontend em Sprint 11)
+> **Sprint:** Sprint 10 (real-time push — alertas sem F5)
+> **Versão:** minor (new capability)
+
+### 🎯 Resumo
+
+Sprint 10 entrega real-time push via Server-Sent Events (SSE). Backend
+publica eventos no Hub in-process; clientes subscritos recebem sem F5.
+Activity feed e alertas atualizam ao vivo. Chain LGPD/SOC2 mantido —
+HubAwareLogger é decorator (não substitui) do auditlog.Logger.
+
+### 📡 Backend (Go)
+
+- **Novo package `internal/realtime`** — Hub SSE com pub/sub:
+  - `Hub` (sync.RWMutex + channels buffered 32) — `Publish`/`Subscribe`/`Stats`
+  - `HubAwareLogger` decorator — delega `auditlog.Logger.Log` + publica evento
+  - Backpressure: subscriber lento recebe drop (logged) + counter incrementado
+  - Heartbeat 30s via SSE comment frame (mantém conexão viva em NAT)
+  - `ServeHTTP` retorna `text/event-stream` com X-Accel-Buffering: no
+- **Filter por IFID** — `Publish(IFID="demo")` só entrega pra subscribers
+  com mesmo `ifID`. `IFID=""` é broadcast.
+- **Interface `auditLogAPI`** em `internal/api/server.go` — `*auditlog.Logger`
+  E `*realtime.HubAwareLogger` satisfazem. Permite wrap sem mudar assinatura.
+- **Endpoint `GET /v1/events/stream`** — mesma auth do resto (JWT/X-IF-ID).
+  Envia `event: connected` na abertura + eventos conforme publicadas.
+- **15/15 packages test OK** — 11 tests novos (hub pub/sub, filter,
+  backpressure, concurrent publishers, HTTP SSE handler, HubAwareLogger
+  wrapper, Verify chain intacto).
+
+### 🧪 Validação
+
+- Smoke test: `curl -N /v1/events/stream` → connected event chega.
+- `POST /v1/sta/submit` → audit event `sta.submit` chega em <100ms no stream.
+- Filter test: subscriber de `if_id=demo` recebe; subscriber de `if_id=other`
+  NÃO recebe evento de demo (broadcast IFID-aware funcionando).
+- Sem front-end smoke (Sprint 11 cobre EventSource hook + auto-reconnect).
+
+### ⚠️ Breaking changes
+
+- Nenhuma. SSE é opt-in (cliente conecta em `/v1/events/stream`).
+- Backend continua emitindo audit events normalmente (SSE é adicional).
+
+---
+
+## v3.2.0 — 2026-07-04 (Sprint 8d: URL-Driven Filters + CSV/JSON Export) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 8d (power-user UX)
+> **Versão:** minor (features novos)
+
+### 🎯 Resumo
+
+Sprint 8d entrega o que faltava pra power users reproduzirem views: filtros
+persistem na URL + export direto em CSV/JSON. Antes, filtros eram state
+local (perdiam no refresh) e export não existia (copy/paste da tabela).
+
+### 🔧 Backend (Go)
+
+- **Novo arquivo `internal/api/export.go`** — `writeCSV` + `writeJSONOrCSV`
+  helpers. `enviosToRows` / `auditEventsToRows` / `alertasToRows` convertem
+  DTOs em `map[string]string` pra CSV (sort alfabético de colunas).
+- **`listEnvios` e `listAuditLog`** agora aceitam `?format=csv|json`:
+  - `?format=csv` → `text/csv; charset=utf-8` + `Content-Disposition: attachment`
+  - `?format=json` → JSON (default, retrocompatível)
+  - `?format=other` → 400 com mensagem clara
+- **CSV RFC 4180** — quoting de campos com comma/quote/newline.
+- **3 tests novos E2E** — listEnvios CSV/JSON, listAuditLog CSV/JSON, formato inválido.
+
+### 🌐 Frontend (Next.js)
+
+- **`components/domain/export-menu.tsx`** — dropdown com 3 ações:
+  Exportar CSV, Exportar JSON, Copiar URL (link com query state atual).
+- **`app/envios/filter-bar.tsx`** + **`app/auditoria/filter-bar.tsx`** —
+  filtros controlled (cadoc, status, period, action) sincronizados com
+  URL via `router.push(?key=value)`. State é share-able + bookmark-able.
+
+### 🎯 Por que URL-driven
+
+- Refresh mantém filtros (URL é source of truth)
+- Bookmark + share de view específica
+- Back/forward do browser funciona
+- Auditoria: query string visível em logs/access logs
+
+---
+
 ## v3.1.0 — 2026-07-04 (Sprint 8c: Backend Intelligence + Frontend Wiring) ✅
 
 > **Status:** ✅ Shipped

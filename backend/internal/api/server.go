@@ -18,6 +18,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
+	"github.com/fortvna/radiant-norma/backend/internal/realtime"
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
@@ -47,7 +48,7 @@ type Server struct {
 	DB        *sql.DB
 	Schema    *schema.Registry
 	Audit     *audit.Service
-	AuditLog  *auditlog.Logger
+	AuditLog  auditLogAPI
 	STAClient sta.Client
 	Radar     *radar.Service
 	CrossDoc  *crossdoc.Engine // Sprint 6 v1.5.0 — Cross-Doc L3
@@ -72,10 +73,21 @@ type Server struct {
 	// Sprint 6 v1.5.0 (W4) — cadoc list cache.
 	// listSchemas / listRules consultam DB mas com cache 5min.
 	CadocListCache *schema.CadocListCache
+
+	// Sprint 10 — SSE hub para real-time push (alertas/audit/envios).
+	// Se nil, /v1/events/stream retorna 503.
+	EventsHub *realtime.Hub
+}
+
+// auditLogAPI é interface mínima que *auditlog.Logger e *realtime.HubAwareLogger
+// ambos satisfazem. Permite wrap sem mudar assinatura do Server.
+type auditLogAPI interface {
+	Log(ifID, actor, action, target string, payload []byte, metadata any) (*auditlog.Entry, error)
+	Verify() (bool, int, error)
 }
 
 // NewServer cria um Server.
-func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al *auditlog.Logger, staClient sta.Client, rad *radar.Service) *Server {
+func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service) *Server {
 	return &Server{DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient, Radar: rad, startedAt: time.Now()}
 }
 
@@ -146,6 +158,11 @@ func (s *Server) Router() http.Handler {
 			r.Get("/rules/top-failing", s.insightsTopFailingRules)
 			r.Get("/recommendations", s.insightsRecommendations)
 		})
+
+		// Sprint 10 — SSE real-time stream.
+		// Auth vem do middleware JWT global (acima).
+		// Stream filtra por IF automaticamente (atrás de IF=auth).
+		r.Get("/events/stream", s.eventsStreamHandler)
 	})
 
 	// Sprint 8a (v2.1.0): dev-token endpoint (FRENTE do middleware JWT).

@@ -20,6 +20,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/db"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
+	"github.com/fortvna/radiant-norma/backend/internal/realtime"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
 )
@@ -59,6 +60,15 @@ func main() {
 	radarSvc := radar.New(d, 6*time.Hour)
 
 	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc)
+
+	// Sprint 10 — Hub SSE + wrap audit logger pra publicar eventos em
+	// real-time. Em produção, hub pode ser substituído por Kafka/Redis
+	// pub/sub sem mudar a API.
+	eventsHub := realtime.NewHub(logger)
+	srv.EventsHub = eventsHub
+	hubAwareLog := realtime.WrapAuditLog(audLog, eventsHub)
+	srv.AuditLog = hubAwareLog
+	logger.Info("SSE hub inicializado", "subs", 0)
 
 	// Sprint 7a (v1.6.0): JWT verifier setup.
 	//
