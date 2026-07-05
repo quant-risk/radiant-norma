@@ -145,16 +145,16 @@ func (c *SenhawsClient) basicAuthHeader() string {
 //   - err em transporte / validação client-side.
 func (c *SenhawsClient) AlterarSenha(ctx context.Context, novaSenha string) error {
 	if novaSenha == "" {
-		return errors.New("novaSenha não pode ser vazia")
+		return &ValidationError{Field: "novaSenha", Message: "não pode ser vazia"}
 	}
 	if len(novaSenha) < 8 {
-		return errors.New("novaSenha deve ter no mínimo 8 chars")
+		return &ValidationError{Field: "novaSenha", Message: "deve ter no mínimo 8 chars"}
 	}
 	if len(novaSenha) > 128 {
-		return errors.New("novaSenha deve ter no máximo 128 chars")
+		return &ValidationError{Field: "novaSenha", Message: "deve ter no máximo 128 chars"}
 	}
 	if novaSenha == c.cfg.Password {
-		return errors.New("novaSenha deve ser diferente da senha atual")
+		return &ValidationError{Field: "novaSenha", Message: "deve ser diferente da senha atual"}
 	}
 
 	params := senhaParams{
@@ -280,6 +280,29 @@ type SenhaError struct {
 
 func (e *SenhaError) Error() string {
 	return fmt.Sprintf("BACEN senhaws error %d: %s", e.StatusCode, e.Message)
+}
+
+// ValidationError representa rejeição de validação client-side (input inválido).
+//
+// Validação 45 (Sprint 24 follow-up F-S24-45-1): caller distingue de transporte
+// via errors.As(err, &valErr). Substitui heurística substring que era frágil
+// (sensível a i18n, refactor de mensagens).
+//
+// Uso típico:
+//
+//	if errors.As(err, &valErr) { /* mostra mensagem amigável, exit 2 */ }
+//	else if errors.As(err, &senErr) { /* exit 3, BACEN rejeitou */ }
+//	else { /* transporte, retry */ }
+type ValidationError struct {
+	Field   string
+	Message string
+}
+
+func (e *ValidationError) Error() string {
+	if e.Field != "" {
+		return fmt.Sprintf("validação %s: %s", e.Field, e.Message)
+	}
+	return fmt.Sprintf("validação: %s", e.Message)
 }
 
 // parseSenhaError extrai erro tipado de body XML.

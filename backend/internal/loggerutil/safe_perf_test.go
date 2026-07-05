@@ -40,12 +40,13 @@ func TestSafeError_TypicalMessage_Performance(t *testing.T) {
 	got := loggerutil.SafeError(errors.New(bigMsg))
 	elapsed := time.Since(start)
 
-	// Sob -race: overhead ~10x. Threshold é alto (>200ms) porque
-	// race detector adiciona custo significativo. Sem -race seria
-	// < 5ms. O ponto é detectar regressões cataclísmicas, não
-	// otimizar microperformance.
-	if elapsed > 250*time.Millisecond {
-		t.Errorf("SafeError lento demais: %v em 16KB (esperado <250ms sob -race)", elapsed)
+	// Validação 45 (F-S24-45-15): threshold aumentado de 250ms para 500ms.
+	// -race detector adiciona ~10x overhead. Em suite completa (20 packages
+	// em paralelo), CPU disputada causa picos até ~400ms. Sem -race seria
+	// <5ms. O ponto é detectar regressões cataclísmicas, não otimizar
+	// microperformance.
+	if elapsed > 500*time.Millisecond {
+		t.Errorf("SafeError lento demais: %v em 16KB (esperado <500ms sob -race)", elapsed)
 	}
 	if strings.Contains(got, "secret") {
 		t.Errorf("vaza password")
@@ -65,8 +66,10 @@ func TestSafeError_OversizedMessage_Performance(t *testing.T) {
 	got := loggerutil.SafeError(errors.New(huge))
 	elapsed := time.Since(start)
 
-	if elapsed > 250*time.Millisecond {
-		t.Errorf("SafeError lento em oversized: %v (esperado <250ms sob -race)", elapsed)
+	// Validação 45 (F-S24-45-15): threshold aumentado de 250ms para 500ms
+	// (mesma justificativa do test anterior).
+	if elapsed > 500*time.Millisecond {
+		t.Errorf("SafeError lento em oversized: %v (esperado <500ms sob -race)", elapsed)
 	}
 	if !strings.Contains(got, "[TRUNCATED") {
 		t.Errorf("oversized message não foi truncada: len=%d", len(got))

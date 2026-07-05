@@ -45,6 +45,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"strings"
@@ -116,19 +117,14 @@ func envOrDefault(key, def string) string {
 // newLogger cria logger estruturado respeitando --quiet.
 func newLogger(quiet bool) *slog.Logger {
 	if quiet {
-		// Silent logger — slog.New(slog.DiscardHandler equivalent via NewTextHandler(io.Discard).
-		return slog.New(slog.NewTextHandler(discardWriter{}, nil))
+		// Silent logger — descarta todos os logs (io.Discard stdlib).
+		return slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 	return slog.New(slog.NewTextHandler(os.Stderr, nil))
 }
 
-// discardWriter é io.Writer que descarta tudo (silencia logs).
-type discardWriter struct{}
-
-func (discardWriter) Write(p []byte) (int, error) { return len(p), nil }
-
-// maskUser mascara user Sisbacen mantendo prefixo + suffixo.
-// Ex: "123450001.fulano" → "12***01.fulano".
+// maskUser mascara user Sisbacen mantendo prefixo + sufixo.
+// Ex: "123450001.fulano" → "12***.fulano" (mostra primeiros 2 chars + operador).
 // Defesa contra screenshot/log acidental.
 func maskUser(user string) string {
 	at := strings.IndexByte(user, '.')
@@ -177,7 +173,10 @@ func runCheck(ctx context.Context, cfg *config, logger *slog.Logger) int {
 }
 
 // runRotate implementa subcomando rotate.
-func runRotate(ctx context.Context, cfg *config, logger *slog.Logger) int {
+//
+// novaSenha: se vazia, gera senha random via GerarSenhaRandom (default prod).
+// Se passada, usa o valor (útil para testes + caller que quer senha custom).
+func runRotate(ctx context.Context, cfg *config, logger *slog.Logger, novaSenha string) int {
 	client, err := senhaws.NewSenhawsClient(senhaws.SenhawsConfig{
 		BaseURL:           cfg.baseURL,
 		User:              cfg.user,
@@ -191,7 +190,9 @@ func runRotate(ctx context.Context, cfg *config, logger *slog.Logger) int {
 		return exitClientError
 	}
 
-	novaSenha := senhaws.GerarSenhaRandom()
+	if novaSenha == "" {
+		novaSenha = senhaws.GerarSenhaRandom()
+	}
 
 	if err := client.AlterarSenha(ctx, novaSenha); err != nil {
 		var senErr *senhaws.SenhaError
@@ -199,12 +200,12 @@ func runRotate(ctx context.Context, cfg *config, logger *slog.Logger) int {
 			fmt.Fprintf(os.Stderr, "erro BACEN senhaws %d: %s\n", senErr.StatusCode, senErr.Message)
 			return exitBACENError
 		}
-		fmt.Fprintf(os.Stderr, "erro: %v\n", err)
-		// Erro client-side (validação) vs transporte. Client-side retorna errors.New
-		// ou fmt.Errorf direto — mensagem menciona "deve ter" ou "nao pode" — heurística.
-		if strings.Contains(err.Error(), "deve") || strings.Contains(err.Error(), "não pode") || strings.Contains(err.Error(), "diferente") {
+		var valErr *senhaws.ValidationError
+		if errors.As(err, &valErr) {
+			fmt.Fprintf(os.Stderr, "erro de validacao: %s\n", valErr.Message)
 			return exitClientError
 		}
+		fmt.Fprintf(os.Stderr, "erro transporte: %v\n", err)
 		return exitGenericError
 	}
 
@@ -304,7 +305,7 @@ func main() {
 	case "check":
 		exitCode = runCheck(ctx, cfg, logger)
 	case "rotate":
-		exitCode = runRotate(ctx, cfg, logger)
+		exitCode = runRotate(ctx, cfg, logger, "")
 	case "info":
 		exitCode = runInfo(ctx, cfg, logger)
 	case "-h", "--help", "help":

@@ -245,7 +245,7 @@ func TestSenhawsRotate_Rotate_Success(t *testing.T) {
 	cfg := baseCfg(srv.URL)
 
 	stdout := captureStdout(t, func() {
-		code := runRotate(context.Background(), cfg, silentLogger())
+		code := runRotate(context.Background(), cfg, silentLogger(), "")
 		if code != exitOK {
 			t.Errorf("exit code = %d, esperado %d", code, exitOK)
 		}
@@ -273,7 +273,7 @@ func TestSenhawsRotate_Rotate_BACEN400(t *testing.T) {
 	}, nil)
 	cfg := baseCfg(srv.URL)
 
-	code := runRotate(context.Background(), cfg, silentLogger())
+	code := runRotate(context.Background(), cfg, silentLogger(), "")
 	if code != exitBACENError {
 		t.Errorf("exit code = %d, esperado %d (BACEN error)", code, exitBACENError)
 	}
@@ -288,7 +288,7 @@ func TestSenhawsRotate_Rotate_BACEN401(t *testing.T) {
 	}, nil)
 	cfg := baseCfg(srv.URL)
 
-	code := runRotate(context.Background(), cfg, silentLogger())
+	code := runRotate(context.Background(), cfg, silentLogger(), "")
 	if code != exitBACENError {
 		t.Errorf("exit code = %d, esperado %d (BACEN auth error)", code, exitBACENError)
 	}
@@ -340,6 +340,82 @@ func TestSenhawsRotate_ConfigInvalidUser(t *testing.T) {
 	}
 }
 
+// TestSenhawsRotate_Rotate_ValidationError — Validação 45 (F-S24-45-1):
+// erros client-side (senha curta/longa/igual) devem resultar em exit 2.
+// Antes do fix, heurística de substring era frágil.
+//
+// NOTA: senha vazia é omitida — CLI converte "" para GerarSenhaRandom()
+// (default prod). Test de validação de senha vazia está em
+// internal/senhaws TestSenhawsClient_AlterarSenha_ErrorsAs_Validation.
+func TestSenhawsRotate_Rotate_ValidationError(t *testing.T) {
+	srv := mockSenhawsServer(t, func(w http.ResponseWriter, r *http.Request) {
+		// Não deveria ser chamado — validação client-side acontece antes.
+		t.Errorf("mock não deveria ser chamado para erro de validação")
+		w.WriteHeader(http.StatusNoContent)
+	}, nil)
+	cfg := baseCfg(srv.URL)
+
+	tests := []struct {
+		name string
+		nova string
+	}{
+		{"curta", "abc"},
+		{"longa", strings.Repeat("a", 129)},
+		{"mesma senha", "old-password"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			code := runRotate(context.Background(), cfg, silentLogger(), tt.nova)
+			if code != exitClientError {
+				t.Errorf("exit code = %d, esperado %d (client validation error)", code, exitClientError)
+			}
+		})
+	}
+}
+
+// TestSenhawsRotate_Info_BACENError — caminho de erro BACEN (runInfo → exit 3).
+func TestSenhawsRotate_Info_BACENError(t *testing.T) {
+	srv := mockSenhawsServer(t, nil, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = io.WriteString(w, `<?xml version="1.0"?>
+<Resultado><Erro><Codigo>400</Codigo><Descricao>user invalido</Descricao></Erro></Resultado>`)
+	})
+	cfg := baseCfg(srv.URL)
+
+	stdout := captureStdout(t, func() {
+		code := runInfo(context.Background(), cfg, silentLogger())
+		if code != exitBACENError {
+			t.Errorf("exit code = %d, esperado %d (BACEN error)", code, exitBACENError)
+		}
+	})
+
+	if !strings.Contains(stdout, "bacen_status=error") {
+		t.Errorf("stdout deveria conter bacen_status=error, got %q", stdout)
+	}
+}
+
+// TestSenhawsRotate_Info_ConfigError — caminho de config inválida (runInfo → exit 2).
+func TestSenhawsRotate_Info_ConfigError(t *testing.T) {
+	cfg := &config{
+		baseURL:  "https://example.com/senhaws",
+		user:     "fulano", // formato Sisbacen inválido
+		password: "p",
+		timeout:  2 * time.Second,
+		maxDays:  7,
+	}
+
+	stdout := captureStdout(t, func() {
+		code := runInfo(context.Background(), cfg, silentLogger())
+		if code != exitClientError {
+			t.Errorf("exit code = %d, esperado %d (client error)", code, exitClientError)
+		}
+	})
+
+	if !strings.Contains(stdout, "bacen_status=config_error") {
+		t.Errorf("stdout deveria conter bacen_status=config_error, got %q", stdout)
+	}
+}
+
 // TestNewLogger_Quiet — logger quiet descarta output.
 func TestNewLogger_Quiet(t *testing.T) {
 	logger := newLogger(true)
@@ -374,17 +450,19 @@ func TestEnvOrDefault(t *testing.T) {
 	}
 }
 
-// TestSenhawsRotate_Rotate_ValidatesAuthHeader — verifica Basic Auth decodificado.
+// TestSenhawsRotate_Rotate_ValidatesAuthHeader — verifica Basic Auth decodificado + método PUT + Content-Type.
 func TestSenhawsRotate_Rotate_ValidatesAuthHeader(t *testing.T) {
-	var capturedAuth string
+	var capturedAuth, capturedMethod, capturedContentType string
 	srv := mockSenhawsServer(t, func(w http.ResponseWriter, r *http.Request) {
 		capturedAuth = r.Header.Get("Authorization")
+		capturedMethod = r.Method
+		capturedContentType = r.Header.Get("Content-Type")
 		w.WriteHeader(http.StatusNoContent)
 	}, nil)
 	cfg := baseCfg(srv.URL)
 
 	_ = captureStdout(t, func() {
-		runRotate(context.Background(), cfg, silentLogger())
+		runRotate(context.Background(), cfg, silentLogger(), "")
 	})
 
 	if !strings.HasPrefix(capturedAuth, "Basic ") {
@@ -397,6 +475,13 @@ func TestSenhawsRotate_Rotate_ValidatesAuthHeader(t *testing.T) {
 	}
 	if string(decoded) != "123450001.fulano:old-password" {
 		t.Errorf("credenciais erradas, got %q", string(decoded))
+	}
+	// Validação 45 (F-S24-45-4): verificar método HTTP e Content-Type também.
+	if capturedMethod != http.MethodPut {
+		t.Errorf("método HTTP = %q, esperado PUT", capturedMethod)
+	}
+	if capturedContentType != "application/xml" {
+		t.Errorf("Content-Type = %q, esperado application/xml", capturedContentType)
 	}
 }
 

@@ -273,6 +273,62 @@ func TestSenhawsClient_AlterarSenha_Validacoes(t *testing.T) {
 	}
 }
 
+// TestSenhawsClient_AlterarSenha_ErrorsAs_Validation — Validação 45 (F-S24-45-1):
+// erros client-side devem ser detectáveis via errors.As(&valErr).
+func TestSenhawsClient_AlterarSenha_ErrorsAs_Validation(t *testing.T) {
+	mock := successSenhaMock()
+	_, sc := newSenhawsClientForTest(t, mock)
+
+	cases := []struct {
+		name      string
+		nova      string
+		wantMsg   string
+		wantField string
+	}{
+		{"vazia", "", "não pode ser vazia", "novaSenha"},
+		{"curta", "abc", "mínimo 8 chars", "novaSenha"},
+		{"longa", strings.Repeat("a", 129), "máximo 128 chars", "novaSenha"},
+		{"mesma", "old-password", "diferente da senha atual", "novaSenha"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := sc.AlterarSenha(context.Background(), tc.nova)
+			if err == nil {
+				t.Fatalf("esperava erro, got nil")
+			}
+			var valErr *ValidationError
+			if !errors.As(err, &valErr) {
+				t.Fatalf("erro deveria ser *ValidationError, got %T: %v", err, err)
+			}
+			if valErr.Field != tc.wantField {
+				t.Errorf("Field = %q, esperado %q", valErr.Field, tc.wantField)
+			}
+			if !strings.Contains(valErr.Message, tc.wantMsg) {
+				t.Errorf("Message = %q, esperado conter %q", valErr.Message, tc.wantMsg)
+			}
+		})
+	}
+}
+
+// TestValidationError_Error — formato do Error().
+func TestValidationError_Error(t *testing.T) {
+	tests := []struct {
+		name string
+		err  *ValidationError
+		want string
+	}{
+		{"com field", &ValidationError{Field: "novaSenha", Message: "curta"}, "validação novaSenha: curta"},
+		{"sem field", &ValidationError{Message: "invalid input"}, "validação: invalid input"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.err.Error(); got != tt.want {
+				t.Errorf("Error() = %q, esperado %q", got, tt.want)
+			}
+		})
+	}
+}
+
 // TestSenhawsClient_ConsultarVencimento_HappyPath — GET 200 + dias.
 func TestSenhawsClient_ConsultarVencimento_HappyPath(t *testing.T) {
 	mock := &mockSenhaws{

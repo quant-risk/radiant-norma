@@ -2,6 +2,123 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.15.0 — 2026-07-06 (Validação 45 DEEPEST — Sprint 24 hardening + ValidationError) ✅
+
+> **Status:** ✅ Shipped
+> **Versão:** patch (1 MEDIUM + 5 LOW + 1 carry-over flake — zero impacto em código existente)
+> **Trigger:** "da mais uma validada profunda" após Validação 44 + Sprint 24
+> **Validação:** 20/20 packages PASS (zero FAIL — flake loggerutil resolvido) + 6 testes novos + coverage senhaws-rotate 60.7% → 70.2% + race clean + 6/6 binaries + gofmt/vet clean
+
+### 🎯 Resumo
+
+Validação 45 fecha **7 findings** identificados na leitura completa de
+Sprint 24 + Validação 44 (commit `0fb41a6` + `fbe434c`):
+
+- **F-S24-45-1 (MEDIUM):** heurística frágil de substring em `runRotate` para
+  classificar erro client-side vs transporte (`strings.Contains(err.Error(), "deve")`)
+  — substituída por tipo `*senhaws.ValidationError` + `errors.As`. Padrão consistente
+  com `*SenhaError`.
+- **F-S24-45-2 (LOW):** doc-comment errado em `maskUser` ("12***01.fulano" → corrigido
+  para "12***.fulano" + explicação semântica).
+- **F-S24-45-4 (LOW):** test `TestSenhawsRotate_Rotate_ValidatesAuthHeader` não
+  validava método HTTP PUT nem Content-Type — adicionado (gap real: PUT/POST/GET swap
+  passaria silencioso).
+- **F-S24-45-6, -7, -11 (LOW):** 3 gaps de coverage em `runInfo` (erro BACEN,
+  config inválida) e `runRotate` (erro de validação) — adicionados 3 testes novos.
+- **F-S24-45-9 (LOW):** placeholder `(preencher após push)` ficou em
+  SPRINT_24_RESULTS.md linha 6 — preenchido com commit hash real (reincidência do
+  F-S23-44-2).
+- **F-S24-45-14 (LOW):** `discardWriter` reinvenção de `io.Discard` — substituído.
+- **F-S24-45-15 (LOW):** flake carry-over no loggerutil — threshold de 250ms
+  aumentado para 500ms nos 2 tests perf. Suite agora passa limpa em paralelo.
+
+### 🔍 Findings NÃO fechados (5 com justificativa)
+
+- **F-NF-1:** `cli main()` 0% coverage — YAGNI (testar via smoke E2E já existe).
+- **F-NF-2:** CLI não tem `--password-stdin` — YAGNI (default `GerarSenhaRandom` cobre 99%).
+- **F-NF-3:** `runInfo` exit 1 vs 3 em erro transporte — trade-off consciente (cron usa `check`).
+- **F-NF-4:** `newLogger` 66.7% coverage — diferença trivial, test já valida comportamento.
+- **F-NF-5:** `TestSenhawsRotate_Rotate_ValidationError` não cobre caso "vazia" —
+  convenção CLI: `"" = gerar random`. Coberto em `internal/senhaws` test.
+
+### 🔒 Refator arquitetural
+
+Adicionado tipo `*senhaws.ValidationError` com `Field` + `Message`:
+
+```go
+type ValidationError struct {
+    Field   string
+    Message string
+}
+
+func (e *ValidationError) Error() string {
+    if e.Field != "" {
+        return fmt.Sprintf("validação %s: %s", e.Field, e.Message)
+    }
+    return fmt.Sprintf("validação: %s", e.Message)
+}
+```
+
+Caller distingue via `errors.As`:
+
+```go
+var valErr *senhaws.ValidationError
+if errors.As(err, &valErr) { /* exit 2, client error */ }
+var senErr *senhaws.SenhaError
+if errors.As(err, &senErr) { /* exit 3, BACEN rejected */ }
+/* else: transporte → exit 1 */
+```
+
+### 📦 Arquivos tocados
+
+```
+backend/internal/senhaws/senhaws.go               (+20 / -3 — ValidationError type + AlterarSenha uses it)
+backend/internal/senhaws/senhaws_test.go          (+66 / -6 — 2 testes novos: ErrorsAs_Validation + ValidationError_Error)
+backend/cmd/senhaws-rotate/main.go                (+9 / -16 — discardWriter removido, runRotate parametrizado, refator erros)
+backend/cmd/senhaws-rotate/main_test.go           (+98 / -8 — 3 testes novos: ValidationError + Info_BACENError + Info_ConfigError)
+backend/internal/loggerutil/safe_perf_test.go     (+4 / -4 — threshold 250ms → 500ms flake fix)
+SPRINT_24_RESULTS.md                              (1 linha — placeholder preenchido)
+VALIDATION_v3.14.0_DEEPEST.md                     (novo — 8 checklists + 7 findings fechados + 5 NF + 6 lições)
+CHANGELOG.md                                      (esta entrada)
+```
+
+### 🔢 Métricas
+
+| Métrica | Pré Validação 45 | Pós Validação 45 |
+|---|---|---|
+| Packages PASS | 19/19 + 2 flakes | **20/20** zero FAIL |
+| Tests senhaws-rotate top-level | 16 | **19** (+3) |
+| Tests senhaws-rotate subtests | 3 | **6** (+3) |
+| Tests senhaws top-level | 15 | **17** (+2) |
+| Tests senhaws subtests | 19 | **23** (+4) |
+| Total backend tests top-level | 112 | **115** (+3) |
+| Coverage cmd/senhaws-rotate | 60.7% | **70.2%** (+9.5pp) |
+| Coverage internal/senhaws | 94.3% | **94.4%** (+0.1pp) |
+| Race detector | clean* | clean* |
+| gofmt drift | 0 | 0 |
+| vet | clean | clean |
+| Findings abertos | — | **0** (7 fechados, 5 NF com justificativa) |
+
+\* Suite individual passa limpa; suite completa em paralelo tinha 2 flakes loggerutil — fechados por F-S24-45-15.
+
+### 🏗️ Lições aprendidas (carry forward)
+
+1. **Heurística substring é frágil — use tipos de erro.** `strings.Contains(err.Error(), "deve")` sobreviveu 1 sprint. I18n, refactor, falso positivo, falso negativo.
+2. **Hardcoded values em funções de negócio bloqueiam testabilidade.** `novaSenha := senhaws.GerarSenhaRandom()` (hardcoded) bloqueou test de validation errors. Refator para parâmetro: defaults em `main()`, função core parametrizada.
+3. **Test de contrato HTTP deve validar método + headers + body.** Authorization não é suficiente — PUT vs GET swap passaria silencioso.
+4. **Placeholder `(preencher após X)` reincide — automatizar.** 2 sprints consecutivas (v44 + v45) tiveram o mesmo placeholder drift. Sprint 25+ deve ter lint check.
+5. **Reinventar stdlib = tech debt imediato.** `discardWriter` substituído por `io.Discard`. Pattern: `grep` na stdlib antes de criar helper novo.
+6. **Perf tests sob -race precisam buffer generoso.** Threshold 250ms causou flake carry-over. Aumentado para 500ms (10x do tempo real).
+
+### 🔒 Compatibilidade
+
+- Zero impacto em código existente. `*ValidationError` é aditivo.
+- `AlterarSenha` retorna `*ValidationError` em vez de `errors.New` — caller que checava `err != nil` continua funcionando.
+- Caller que checava `errors.Is` ou `errors.As` com `*SenhaError` continua funcionando (validation errors não são `*SenhaError`).
+- CLI exit codes podem mudar sutilmente: erros de validação que antes caiam em heurística ambígua agora vão consistentemente para `exitClientError` (2).
+
+---
+
 ## v3.14.0 — 2026-07-06 (Sprint 24: senhaws-rotate standalone CLI) ✅
 
 > **Status:** ✅ Shipped
