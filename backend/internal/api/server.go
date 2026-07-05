@@ -983,8 +983,13 @@ func (s *Server) enforceSameIF(w http.ResponseWriter, r *http.Request, providedI
 	claims, err := auth.ClaimsFromContext(r.Context())
 	if err == nil && claims != nil && claims.IFID != "" {
 		if providedIFID != claims.IFID {
+			// Validação 37 (F-1): não loga if_id values específicas no
+			// erro. Err genérico mantém audit trail (Sprint 13 depura
+			// cross-tenant por timestamps no log estruturado), mas evita
+			// ruído e ambiguidade em agregadores de log. Cliente vê
+			// 403 sem detail; log interno tem crossTenant.mismatch.
 			s.userError(w, http.StatusForbidden, "crossTenant.mismatch",
-				fmt.Errorf("payload.if_id=%q != claims.if_id=%q", providedIFID, claims.IFID))
+				fmt.Errorf("payload.if_id != claims.if_id"))
 			return false
 		}
 		return true

@@ -120,11 +120,10 @@ eu rodar a suite. Indicador forte de valor do pattern.
 
 | File | Tests | Cobre |
 |---|---|---|
-| `ratelimit_test.go` | +4 (validateRedisLimits×3, sliding×3) | S17.4 + S17.3 |
-| `metrics_test.go` (novo) | 7 | S17.5 render + counter + concurrency + endpoint |
+| `ratelimit_test.go` | +11 (validateRedisLimits×4 + sliding×4 + env×3) | S17.4 + S17.3 |
+| `metrics_test.go` (novo) | 8 | S17.5 render + counter + concurrency + endpoint |
 | `smoke_v352_test.go` | +1 (cenário 7c) | S17.5 metrics E2E |
-| `devToken` (existente) | +1 (cross-tenant) | S17.6 fix |
-| **Total novos**: | **13** | |
+| **Total novos**: | **20** | |
 
 ### 📚 Documentação inline
 
@@ -156,7 +155,7 @@ eu rodar a suite. Indicador forte de valor do pattern.
 - 2 arquivos modificados extensivamente (`ratelimit.go`, `ratelimit_redis.go`)
 - 1 bug real fechado (`auth_handlers.go` cross-tenant)
 - 1 arquivo documentado com `false-positive` marker (`sprint8c_handlers.go`)
-- 13 testes novos passam com `-race`
+- 20 testes novos passam com `-race`
 - 0 findings HIGH abertos
 - 100% `-race ./...` verde (17/17 packages)
 - Smoke 11/11 PASS (10 originais + 1 Redis + 1 metrics)

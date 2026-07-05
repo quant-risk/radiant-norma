@@ -9,6 +9,7 @@ package api_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -105,40 +106,9 @@ func TestMetrics_ConcurrentInc(t *testing.T) {
 	out := m.Render()
 	expected := goroutines * incsPerG
 	if !strings.Contains(out, `radiant_rate_limit_dropped_total{bucket="heavy",backend="memory"} `+
-		itoa(expected)) {
+		strconv.Itoa(expected)) {
 		t.Errorf("contador devia ser %d:\n%s", expected, out)
 	}
-}
-
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	return strings.TrimSpace(formatInt(n))
-}
-
-func formatInt(n int) string {
-	// Quick int→string sem importar strconv só pra evitar mais import
-	const digits = "0123456789"
-	if n == 0 {
-		return "0"
-	}
-	neg := n < 0
-	if neg {
-		n = -n
-	}
-	var buf [20]byte
-	i := len(buf)
-	for n > 0 {
-		i--
-		buf[i] = digits[n%10]
-		n /= 10
-	}
-	if neg {
-		i--
-		buf[i] = '-'
-	}
-	return string(buf[i:])
 }
 
 // =============================================================================
