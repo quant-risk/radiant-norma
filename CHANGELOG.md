@@ -8,7 +8,7 @@
 > **Sprint:** Sprint 19 (read side do WSClient — caminho natural da Sprint 18)
 > **Versão:** minor (2 métodos novos em `*WSClient`; **sem breaking changes**)
 > **Trigger:** SPRINT_19_RESEARCH.md — caminho "pesquisa primeiro" replicado
-> **Validação:** 18/18 packages PASS + 14 testes novos Sprint 19 (37 totais STA) + smoke 11/11
+> **Validação:** 18/18 packages PASS + 16 testes novos Sprint 19 (32 totais STA pós Sprint 19) + smoke 11/11
 
 ### 🎯 Resumo
 
@@ -93,8 +93,8 @@ de testes, critérios de done, riscos, referências.
 | `TestWSClient_Download_EmptyProtocolo` | Sanity check defensivo |
 | `TestParse{Ranges,UploadSituacao,XContentHash}_Cases` | Unit tests pure functions (9 + 5 + 8 subtests) |
 
-**Total:** 16 top-level tests Sprint 19 (com 38 subtests table-driven =
-54 RUNs). Tudo PASS.
+**Total:** 16 top-level tests Sprint 19 (com 22 subtests table-driven =
+38 RUNs Sprint 19). Tudo PASS.
 
 ### ⚠️ O que NÃO fecha nesta sprint
 
@@ -123,9 +123,9 @@ de testes, critérios de done, riscos, referências.
 
 ```
 backend/internal/sta/ws.go         (+268 linhas — 2 métodos + STAError + sentinel)
-backend/internal/sta/ws_types.go   (+90 linhas — UploadStatus, Range, UploadSituacao, DownloadResult + 3 helpers)
-backend/internal/sta/ws_test.go    (+489 linhas — 14 testes + 3 subtests table-driven)
-SPRINT_19_RESEARCH.md              (novo, 219 linhas — 10 seções)
+backend/internal/sta/ws_types.go   (+130 linhas — UploadStatus, Range, UploadSituacao, DownloadResult + 3 helpers)
+backend/internal/sta/ws_test.go    (+577 linhas — 13 testes httptest + 3 helpers pure + subtests table-driven)
+SPRINT_19_RESEARCH.md              (novo, 10 seções)
 SPRINT_19_RESULTS.md               (novo)
 CHANGELOG.md                       (esta entrada)
 ```

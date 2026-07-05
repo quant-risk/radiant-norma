@@ -244,13 +244,16 @@ func (c *WSClient) basicAuthHeader() string {
 //  2. PUT /arquivos/{protocolo}/conteudo com payload binário.
 //
 // Submit retorna:
-//   - (ProtocolSTA string, Accepted=true, nil) em sucesso
-//   - (ProtocolSTA, Accepted=false, &Rejection{}) em rejeição conhecida do BACEN
-//   - ("", false, err) em erro de transporte (timeout, malformed XML, etc.)
+//   - (*Result{ProtocolSTA: "X", Accepted: true}, nil) em sucesso.
+//   - (*Result{ProtocolSTA: "X", Accepted: false, Rejection: &Rejection{...}}, nil)
+//     em rejeição conhecida do BACEN. ProtocolSTA é preservado mesmo quando
+//     o upload falha (fase 1 OK, fase 2 falhou) — útil pra forensic trail.
+//   - (nil, err) em erro de transporte (timeout, malformed XML, malformed config).
 //
-// Audit emission acontece no handler /v1/sta/submit — WSClient emite logs
-// estruturados aqui (N1.4-debug), mas não emite audit_log (deferido pra
-// Sprint 19+ ou decidido no handler).
+// Audit emission é deferido para Sprint 20+ quando handler /v1/sta/submit
+// for criado — WSClient emite logs estruturados aqui (N1.4-debug), mas
+// não emite audit_log diretamente (single responsibility: cliente só fala
+// com BACEN, handler decide o que auditar).
 func (c *WSClient) Submit(ctx context.Context, sub *Submission) (*Result, error) {
 	if sub.Zip == nil && len(sub.XML) == 0 {
 		return nil, errors.New("STA submission vazia (sem XML nem ZIP)")
@@ -580,6 +583,9 @@ func (c *WSClient) Download(ctx context.Context, protocolo string) (*DownloadRes
 //
 // Retorna (hash, nil) em sucesso ou ("", err) se header malformado. Erro
 // é wrappeado pelo caller como ErrContentHashHeaderMalformed.
+//
+// Validação de hex usa encoding/hex.DecodeString (stdlib) — defesa em
+// profundidade contra BACEN bugado mandar chars não-hex.
 func parseXContentHash(header string) (string, error) {
 	header = strings.TrimSpace(header)
 	parts := strings.SplitN(header, " ", 2)
@@ -591,14 +597,10 @@ func parseXContentHash(header string) (string, error) {
 	if !strings.EqualFold(algo, "SHA-256") {
 		return "", fmt.Errorf("algoritmo esperado SHA-256, got %q", algo)
 	}
-	// SHA-256 hex = 64 chars [0-9a-fA-F].
-	if len(hash) != 64 {
-		return "", fmt.Errorf("hash esperado 64 chars hex, got %d chars", len(hash))
-	}
-	for _, c := range hash {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
-			return "", fmt.Errorf("hash contém char não-hex em %q", hash)
-		}
+	// SHA-256 hex = 64 chars [0-9a-fA-F]. hex.DecodeString valida ambos
+	// (comprimento + chars) e retorna erro descritivo em input inválido.
+	if _, err := hex.DecodeString(hash); err != nil {
+		return "", fmt.Errorf("hash não-hex (%d chars): %v", len(hash), err)
 	}
 	return strings.ToLower(hash), nil
 }

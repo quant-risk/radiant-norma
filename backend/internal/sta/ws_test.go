@@ -17,6 +17,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/xml"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -743,7 +745,7 @@ func TestWSClient_StatusUpload_403(t *testing.T) {
 		t.Fatal("esperava erro em 403")
 	}
 	var staErr *STAError
-	if !errorsAs(err, &staErr) {
+	if !errors.As(err, &staErr) {
 		t.Fatalf("erro deveria ser *STAError, got %T: %v", err, err)
 	}
 	if staErr.StatusCode != http.StatusForbidden {
@@ -872,7 +874,7 @@ func TestWSClient_Download_HashMismatch(t *testing.T) {
 	if err == nil {
 		t.Fatal("esperava erro de hash mismatch")
 	}
-	if !errorsIs(err, ErrContentHashMismatch) {
+	if !errors.Is(err, ErrContentHashMismatch) {
 		t.Fatalf("erro deveria ser ErrContentHashMismatch, got %v", err)
 	}
 }
@@ -894,7 +896,7 @@ func TestWSClient_Download_404(t *testing.T) {
 		t.Fatal("esperava erro em 404")
 	}
 	var staErr *STAError
-	if !errorsAs(err, &staErr) {
+	if !errors.As(err, &staErr) {
 		t.Fatalf("erro deveria ser *STAError, got %T: %v", err, err)
 	}
 	if staErr.StatusCode != http.StatusNotFound {
@@ -922,7 +924,7 @@ func TestWSClient_Download_410(t *testing.T) {
 		t.Fatal("esperava erro em 410")
 	}
 	var staErr *STAError
-	if !errorsAs(err, &staErr) {
+	if !errors.As(err, &staErr) {
 		t.Fatalf("erro deveria ser *STAError, got %T: %v", err, err)
 	}
 	if staErr.StatusCode != http.StatusGone {
@@ -974,7 +976,7 @@ func TestWSClient_Download_BodyTooLarge(t *testing.T) {
 		t.Fatal("esperava erro de body grande")
 	}
 	var staErr *STAError
-	if !errorsAs(err, &staErr) {
+	if !errors.As(err, &staErr) {
 		t.Fatalf("erro deveria ser *STAError, got %T: %v", err, err)
 	}
 	if staErr.StatusCode != http.StatusRequestEntityTooLarge {
@@ -1003,7 +1005,7 @@ func TestWSClient_Download_HeaderMalformed(t *testing.T) {
 	if err == nil {
 		t.Fatal("esperava erro de header malformado")
 	}
-	if !errorsIs(err, ErrContentHashHeaderMalformed) {
+	if !errors.Is(err, ErrContentHashHeaderMalformed) {
 		t.Fatalf("erro deveria ser ErrContentHashHeaderMalformed, got %v", err)
 	}
 }
@@ -1026,7 +1028,7 @@ func TestWSClient_Download_MissingHeader(t *testing.T) {
 		t.Fatal("esperava erro de header ausente")
 	}
 	var staErr *STAError
-	if !errorsAs(err, &staErr) {
+	if !errors.As(err, &staErr) {
 		t.Fatalf("erro deveria ser *STAError, got %T: %v", err, err)
 	}
 	if staErr.Code != "MISSING_X_CONTENT_HASH" {
@@ -1052,48 +1054,42 @@ func TestWSClient_Download_EmptyProtocolo(t *testing.T) {
 }
 
 // ============================================================
-// Helpers para tests Sprint 19 (errorsAs/errorsIs wrapped)
-// ============================================================
-//
-// Go 1.13+ tem errors.As/Is mas o file usa imports compactos — encapsulamos
-// aqui pra evitar adicionar mais imports e manter diff pequeno.
-
-func errorsAs(err error, target interface{}) bool {
-	for err != nil {
-		if e, ok := err.(*STAError); ok {
-			if t, ok := target.(**STAError); ok {
-				*t = e
-				return true
-			}
-		}
-		type unwrapper interface{ Unwrap() error }
-		u, ok := err.(unwrapper)
-		if !ok {
-			return false
-		}
-		err = u.Unwrap()
-	}
-	return false
-}
-
-func errorsIs(err, target error) bool {
-	for err != nil {
-		if err == target {
-			return true
-		}
-		type unwrapper interface{ Unwrap() error }
-		u, ok := err.(unwrapper)
-		if !ok {
-			return false
-		}
-		err = u.Unwrap()
-	}
-	return false
-}
-
-// ============================================================
 // Unit tests — pure functions (parseRanges, parseUploadSituacao, parseXContentHash)
 // ============================================================
+
+// TestSTAError_Error_ComProtocolo — formato do Error() inclui protocolo eco
+// quando disponível. Caller usa err.Error() em logs/audit.
+func TestSTAError_Error_ComProtocolo(t *testing.T) {
+	e := &STAError{StatusCode: 404, Code: "404", Message: "Protocolo não encontrado", Protocolo: "123"}
+	want := "BACEN STA error 404 (protocolo=123): Protocolo não encontrado"
+	if got := e.Error(); got != want {
+		t.Errorf("Error() = %q, esperado %q", got, want)
+	}
+}
+
+// TestSTAError_Error_SemProtocolo — quando protocolo é vazio, não inclui "(protocolo=)".
+func TestSTAError_Error_SemProtocolo(t *testing.T) {
+	e := &STAError{StatusCode: 500, Code: "HTTP_500", Message: "internal error"}
+	want := "BACEN STA error 500: internal error"
+	if got := e.Error(); got != want {
+		t.Errorf("Error() = %q, esperado %q", got, want)
+	}
+}
+
+// TestSTAError_ErrorsAs_Wrapped — garantia que erros wrappeados com %w são
+// desempacotáveis por errors.As. Caller pattern: errors.As(err, &staErr).
+func TestSTAError_ErrorsAs_Wrapped(t *testing.T) {
+	original := &STAError{StatusCode: 410, Message: "arquivo não disponível"}
+	wrapped := fmt.Errorf("falha ao baixar arquivo: %w", original)
+
+	var target *STAError
+	if !errors.As(wrapped, &target) {
+		t.Fatal("errors.As deveria desempacotar *STAError wrappeado")
+	}
+	if target.StatusCode != 410 {
+		t.Errorf("StatusCode = %d, esperado 410", target.StatusCode)
+	}
+}
 
 func TestParseRanges_Cases(t *testing.T) {
 	tests := []struct {

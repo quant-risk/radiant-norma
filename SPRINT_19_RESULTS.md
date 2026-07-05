@@ -149,8 +149,8 @@ recebe erro de compilação claro, não ambiguidade runtime.
 | Arquivos modificados | 3 (`ws.go`, `ws_types.go`, `ws_test.go`) |
 | Arquivos novos | 3 (`SPRINT_19_RESEARCH.md`, `SPRINT_19_RESULTS.md`, este arquivo) |
 | Linhas adicionadas | ~850 (268 ws.go + 90 ws_types.go + 489 ws_test.go + docs) |
-| Testes Sprint 19 | 16 top-level + 38 subtests = 54 RUNs |
-| Testes STA totais | 37 (Sprint 18: 23 + Sprint 19: 14) |
+| Testes Sprint 19 | 16 top-level + 22 subtests table-driven = 38 RUNs Sprint 19 |
+| Testes STA totais (pós Sprint 19) | 32 (Sprint 18: 16 + Sprint 19: 16) |
 | Packages PASS | 18/18 |
 | Build OK | 5/5 binaries |
 | Smoke E2E | 11/11 PASS |

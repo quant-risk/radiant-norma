@@ -246,33 +246,35 @@ WSClient é o cliente de baixo nível. Handlers HTTP são ortogonais (auth, rate
 
 ## 7. Plano de testes
 
-7 cenários httptest, mais `TestNewWSClient` já existente:
+10 cenários httptest para StatusUpload + Download, mais 5 testes unit para
+helpers pure (`parseRanges`, `parseUploadSituacao`, `parseXContentHash`):
 
 1. `TestWSClient_StatusUpload_HappyPath` — 200 + XML com RangesRecebidos e Situacao, parsing correto + enum.
 2. `TestWSClient_StatusUpload_RangesEmpty` — `RangesRecebidos=""` e `Situacao=Transmissão não iniciada`.
-3. `TestWSClient_StatusUpload_403` — protocolo de outra IF, retorna `*STAError{Code: 403}`.
-4. `TestWSClient_StatusUpload_400_XMLError` — BACEN retorna Listagem 4, parseado como `STAError`.
+3. `TestWSClient_StatusUpload_403` — protocolo de outra IF, retorna `*STAError{StatusCode: 403}`.
+4. `TestWSClient_StatusUpload_BadXMLFallback` — 200 OK mas body não parsea (BACEN bugado mandando lixo).
 5. `TestWSClient_Download_HappyPath` — 200 + ETag + Last-Modified + X-Content-Hash correto + body ZIP, retorna `DownloadResult` populado.
 6. `TestWSClient_Download_HashMismatch` — X-Content-Hash com hash errado → erro fatal `ErrContentHashMismatch`.
 7. `TestWSClient_Download_404` — protocolo inexistente → `*STAError{StatusCode: 404}`.
-8. `TestWSClient_Download_410_ArquivoNaoDisponivel` — arquivo cancelado/não-disponível.
+8. `TestWSClient_Download_410` — arquivo cancelado/não-disponível.
 9. `TestWSClient_Download_BodyTooLarge` — body gigante > 100 MiB → erro `*STAError{StatusCode: 413}`.
-10. `TestWSClient_Download_HeaderParsingMalformed` — `X-Content-Hash: md5 abc` (formato errado) → erro.
+10. `TestWSClient_Download_HeaderMalformed` — `X-Content-Hash: md5 abc` (formato errado) → erro `ErrContentHashHeaderMalformed`.
 
-10 cenários. Foco: conformidade com Seções 5.3.1 + 6.1.1 do manual.
+10 cenários httptest + 3 helpers pure (com subtests table-driven) = 22 cenários
+focados na spec Seções 5.3.1 + 6.1.1 + defesa contra BACEN bugado.
 
 ## 8. Critérios de done
 
-- [ ] `WSClient.StatusUpload(ctx, protocolo) (*UploadStatus, error)` implementado
-- [ ] `WSClient.Download(ctx, protocolo) (*DownloadResult, error)` implementado
-- [ ] Validação X-Content-Hash ativa (sentinel `ErrContentHashMismatch`)
-- [ ] `*STAError` type definido para erros formais
-- [ ] Cap de 100 MiB no body de download
-- [ ] 10 testes httptest cobrindo happy + error paths
-- [ ] Doc-comment em cada método citando Seção do manual
-- [ ] `gofmt -w .` + `go vet ./...` + `go test ./internal/sta/...` + 18 packages
-- [ ] SPRINT_19_RESULTS.md + CHANGELOG v3.9.0
-- [ ] commit + push
+- [x] `WSClient.StatusUpload(ctx, protocolo) (*UploadStatus, error)` implementado
+- [x] `WSClient.Download(ctx, protocolo) (*DownloadResult, error)` implementado
+- [x] Validação X-Content-Hash ativa (sentinels `ErrContentHashMismatch` + `ErrContentHashHeaderMalformed`)
+- [x] `*STAError` type definido para erros formais
+- [x] Cap de 100 MiB no body de download
+- [x] 10 testes httptest cobrindo happy + error paths (12 top-level + 22 subtests table-driven)
+- [x] Doc-comment em cada método citando Seção do manual
+- [x] `gofmt -w .` + `go vet ./...` + `go test ./internal/sta/...` + 18 packages
+- [x] SPRINT_19_RESULTS.md + CHANGELOG v3.9.0
+- [x] commit + push (commit `7b50253` em main, pushed)
 
 ## 9. Riscos identificados
 
