@@ -11,7 +11,6 @@ package api_test
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -311,9 +310,7 @@ func TestHandler_Situacao_ValorInvalido(t *testing.T) {
 
 // TestHandler_StubBackend_503 — interface segregation: StubClient → 503.
 func TestHandler_StubBackend_503(t *testing.T) {
-	srv, d := newTestServer(t)
-	_ = srv
-	_ = d
+	srv, _ := newTestServer(t)
 
 	req := httptest.NewRequest(http.MethodGet,
 		"/v1/sta/disponiveis?dataHoraInicio=2024-11-01T00:00:00.000", nil)
@@ -328,5 +325,21 @@ func TestHandler_StubBackend_503(t *testing.T) {
 	}
 }
 
-// Garante que handler NÃO chama BACEN real (sem rede). Apenas valida fluxo.
-var _ context.Context = context.TODO()
+// TestHandler_Disponiveis_CrossTenant_403 — Validação 41 finding F-S20-41:
+// caller passa dependencia != tenant autenticado → 403 via enforceSameIF.
+// Sem isso, IF_A poderia listar arquivos de IF_B via query param.
+func TestHandler_Disponiveis_CrossTenant_403(t *testing.T) {
+	srv, _, _ := newTestServerWithWS(t, successDisponiveisHandler())
+
+	req := httptest.NewRequest(http.MethodGet,
+		"/v1/sta/disponiveis?dataHoraInicio=2024-11-01T00:00:00.000&dependencia=OTHER_TENANT", nil)
+	req = withDevAuth(req, "demo-bank")
+	rec := httptest.NewRecorder()
+
+	srv.Router().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("status = %d, esperado 403 (cross-tenant bloqueado por enforceSameIF)",
+			rec.Code)
+	}
+}

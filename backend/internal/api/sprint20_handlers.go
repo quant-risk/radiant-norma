@@ -70,6 +70,14 @@ func (s *Server) staDisponiveisHandler(w http.ResponseWriter, r *http.Request) {
 		Sistemas:               q.Get("sistemas"),
 		Dependencia:            q.Get("dependencia"),
 	}
+	// Sprint 13 S13.2 / C-API-3: caller não pode listar arquivos de outra IF
+	// passando dependencia explícita. Default = tenant autenticado (se caller
+	// não informa) é seguro. Override com dependencia != tenant → 403.
+	if opts.Dependencia != "" {
+		if !s.enforceSameIF(w, r, opts.Dependencia) {
+			return
+		}
+	}
 	// Default dependencia = tenant do JWT (se caller não informou).
 	if opts.Dependencia == "" {
 		opts.Dependencia = ifID
@@ -147,7 +155,7 @@ func (s *Server) staSituacaoHandler(w http.ResponseWriter, r *http.Request) {
 
 	alterReq := sta.AlterarSituacaoReq{
 		Protocolos: req.Protocolos,
-		Situacao:   staParseSituacaoTransferencia(req.Situacao),
+		Situacao:   sta.ParseSituacaoTransferencia(req.Situacao),
 	}
 	if err := rc.AlterarSituacao(r.Context(), alterReq); err != nil {
 		s.handleSTAReadError(w, r, ifID, "sta.situacao", "situacao", err)
@@ -210,17 +218,4 @@ func convertArquivosJSON(arquivos []sta.ArquivoDisponivel) []map[string]any {
 		})
 	}
 	return out
-}
-
-// staParseSituacaoTransferencia converte string ("A_REC" | "REC") → enum.
-// Já validado no handler antes de chamar (400 se não for um dos 2).
-func staParseSituacaoTransferencia(s string) sta.SituacaoTransferencia {
-	switch s {
-	case "A_REC":
-		return sta.SituacaoTransferenciaAReceber
-	case "REC":
-		return sta.SituacaoTransferenciaRecebido
-	default:
-		return sta.SituacaoTransferenciaUnknown
-	}
 }

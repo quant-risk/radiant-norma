@@ -374,3 +374,14 @@ func parseSituacaoTransferencia(s string) SituacaoTransferencia {
 		return SituacaoTransferenciaUnknown
 	}
 }
+
+// ParseSituacaoTransferencia é a versão pública de parseSituacaoTransferencia,
+// para uso por handlers REST que precisam converter string JSON → enum tipado
+// antes de chamar WSClient.AlterarSituacao (Seção 7.1).
+//
+// Valores fora de {"A_REC", "REC"} retornam SituacaoTransferenciaUnknown — não
+// retorna erro. Caller deve validar manualmente se quiser fail-fast em input
+// desconhecido.
+func ParseSituacaoTransferencia(s string) SituacaoTransferencia {
+	return parseSituacaoTransferencia(s)
+}
