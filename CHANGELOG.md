@@ -2,6 +2,97 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.13.0 — 2026-07-06 (Validação 44 DEEPEST — senhaws hardening + drift fixes) ✅
+
+> **Status:** ✅ Shipped
+> **Versão:** patch (4 LOW findings + 1 INFO→LOW contract — zero impacto em código existente)
+> **Trigger:** "da mais uma validada profunda" após Validação 43 + Sprint 23
+> **Validação:** 19/19 packages PASS + 2 testes novos (BodyMalformed + TruncateSenha) + coverage senhaws 92.0% → 94.3% + race clean + 5/5 binaries + gofmt/vet clean
+
+### 🎯 Resumo
+
+Validação 44 fecha **5 findings** identificados na leitura completa de
+Sprint 23 + Validação 43 (commit `feb3142` + `03a99a9`):
+- **F-S23-44-1 (LOW):** doc drift em `GerarSenhaRandom` — expandida para deixar
+  explícito que `math/rand` global é mutex-protected (Go 1.0+) + apontar
+  upgrade path para `crypto/rand.Read()` em produção.
+- **F-S23-44-2 (LOW):** placeholder `(preencher após push)` em SPRINT_23_RESULTS.md
+  linha 6 escapou para o repo. Substituído por referência ao commit real.
+- **F-S23-44-3 (LOW):** coverage gap — `parseSenhaError` caminho "body não parsea"
+  estava descoberto. Adicionado `TestSenhawsClient_AlterarSenha_BodyMalformed`
+  (coverage: 80% → 100%).
+- **F-S23-44-4 (LOW):** coverage gap — `truncateSenha` caminho "truncamento real"
+  estava descoberto. Adicionado `TestTruncateSenha` com 4 subtests
+  (coverage: 66.7% → 100%).
+- **F-S23-44-7 (INFO→LOW):** faltava compile-time check `var _ Client = (*RetryingClient)(nil)`
+  em `retry.go`. Adicionado — pattern consistente com Effective Go.
+
+### 🔍 Findings NÃO fechados (5 com justificativa)
+
+- **F-NF-1:** `SenhaError` não implementa `Is`/`Unwrap` — caller usa `errors.As`
+  direto (mesma justificativa que `STAError` Sprint 19).
+- **F-NF-2:** Senha em `cfg.Password` na memória (heap dump = leak potencial) —
+  responsabilidade do caller (secret manager external).
+- **F-NF-3:** `parseSenhaError` retorna body cru truncado em `Message` quando XML
+  não parsea — BACEN não vaza PII (sistema regulador). Mesma justificativa que
+  F-NF-5 validação 43.
+- **F-NF-4:** `SenhawsClient` não implementa interface (sem `Client` segregation) —
+  YAGNI documentado em L-4 SPRINT_23_RESULTS.md (single implementer).
+- **F-NF-5:** YAGNI cluster (sem wire `cmd/api/main.go` / sem handler REST / sem
+  retry wrapper) — todas decisões conscientes, documentadas.
+- **F-NF-6:** `GerarSenhaRandom` usa `math/rand` global, não `crypto/rand` —
+  doc deixa upgrade path explícito (F-S23-44-1 fechou).
+- **F-NF-7:** `isNetworkError` string matching cross-OS frágil — carry-over
+  da validação 43, aceito.
+
+### 📦 Arquivos tocados
+
+```
+backend/internal/senhaws/senhaws.go      (+9 / -2 — doc expandida em GerarSenhaRandom)
+backend/internal/senhaws/senhaws_test.go (+70 — 2 testes novos: BodyMalformed + TruncateSenha)
+backend/internal/sta/retry.go            (+6 — compile-time assert)
+SPRINT_23_RESULTS.md                     (1 linha — placeholder preenchido)
+VALIDATION_v3.13.0_DEEPEST.md            (novo — 8 checklists + 5 findings fechados + 7 NF)
+CHANGELOG.md                            (esta entrada)
+```
+
+### 🔢 Métricas
+
+| Métrica | Pré Validação 44 | Pós Validação 44 |
+|---|---|---|
+| Packages PASS | 19/19 | 19/19 |
+| Tests senhaws top-level | 13 | **15** (+2) |
+| Tests senhaws subtests | 15 | **19** (+4) |
+| Coverage senhaws | 92.0% | **94.3%** (+2.3pp) |
+| Coverage parseSenhaError | 80% | **100%** |
+| Coverage truncateSenha | 66.7% | **100%** |
+| Total backend tests top-level | 94 | **96** (+2) |
+| Race detector | clean | clean |
+| gofmt drift | 0 | 0 |
+| vet | clean | clean |
+| Findings abertos | — | **0** (5 fechados, 7 NF com justificativa) |
+
+### 🏗️ Lições aprendidas (carry forward)
+
+1. **Placeholder em doc é drift inevitável** — usar `(preencher após X)` é risk
+   vector. Pattern: preencher antes de commitar ou usar TODO com data.
+2. **Coverage gaps em error paths são sorrateiros** — 92%看上去 OK mas caminho
+   de fallback (`parseSenhaError` XML não parsea) estava descoberto. Pattern:
+   focar em funções com >2 caminhos ao revisar coverage.
+3. **Compile-time interface checks são quase grátis** — 1 linha
+   (`var _ Interface = (*Type)(nil)`) previne drift silencioso. Spread pattern
+   para `*WSClient` + `*StubClient` em Sprint 24.
+4. **Thread-safety em math/rand é subdocumentado** — math/rand global é
+   mutex-protected desde Go 1.0, mas poucos engenheiros param pra pensar nisso.
+   Doc deve ser explícita: "safe mas com contention" + upgrade path.
+
+### 🔒 Compatibilidade
+
+- Zero impacto em código existente. Todos fixes são additive (test novos,
+  doc expandida, compile-time assert).
+- Senha em memória continua sendo responsabilidade do caller (YAGNI cluster).
+- Sem wire em `cmd/api/main.go` (decisão consciente, documentada).
+
 ## v3.13.0 — 2026-07-06 (Sprint 23: senhaws BACEN — credential rotation) ✅
 
 > **Status:** ✅ Shipped

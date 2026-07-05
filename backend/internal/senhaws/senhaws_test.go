@@ -429,5 +429,59 @@ func TestSenhaError_Error(t *testing.T) {
 	}
 }
 
+// TestSenhawsClient_AlterarSenha_BodyMalformed — 400 + body não-parseável.
+// Cobre caminho de fallback de parseSenhaError (linha 297-301) — XML não parseou,
+// retorna SenhaError com Message = body cru truncado.
+func TestSenhawsClient_AlterarSenha_BodyMalformed(t *testing.T) {
+	mock := &mockSenhaws{
+		handleAlterar: func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = io.WriteString(w, `not valid xml at all <<<>>>`)
+		},
+	}
+	_, sc := newSenhawsClientForTest(t, mock)
+
+	err := sc.AlterarSenha(context.Background(), "new-password-12345")
+	if err == nil {
+		t.Fatal("esperava erro em 400 com body malformado")
+	}
+	var senErr *SenhaError
+	if !errors.As(err, &senErr) {
+		t.Fatalf("erro deveria ser *SenhaError, got %T: %v", err, err)
+	}
+	if senErr.StatusCode != http.StatusBadRequest {
+		t.Errorf("StatusCode = %d, esperado 400", senErr.StatusCode)
+	}
+	if senErr.Code != "HTTP_400" {
+		t.Errorf("Code = %q, esperado HTTP_400 (fallback)", senErr.Code)
+	}
+	if !strings.Contains(senErr.Message, "not valid xml") {
+		t.Errorf("Message deveria conter body cru truncado, got %q", senErr.Message)
+	}
+}
+
+// TestTruncateSenha — helper local.
+func TestTruncateSenha(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		n    int
+		want string
+	}{
+		{"vazio", "", 10, ""},
+		{"curto", "abc", 10, "abc"},
+		{"igual", "abcdef", 6, "abcdef"},
+		{"truncado", "abcdefghij", 5, "abcde..."},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := truncateSenha([]byte(tt.in), tt.n)
+			if got != tt.want {
+				t.Errorf("truncateSenha(%q, %d) = %q, esperado %q", tt.in, tt.n, got, tt.want)
+			}
+		})
+	}
+}
+
 // fmt usado em tests?
 var _ = fmt.Sprintf

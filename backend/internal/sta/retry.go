@@ -301,3 +301,7 @@ func (r *RetryingClient) MaxAttempts() int { return r.cfg.MaxAttempts }
 
 // Inner retorna o client wrappeado (para debug).
 func (r *RetryingClient) Inner() Client { return r.inner }
+
+// Compile-time guarantee: *RetryingClient implementa sta.Client.
+// Permite drop-in replacement sem erro de compilação silencioso.
+var _ Client = (*RetryingClient)(nil)

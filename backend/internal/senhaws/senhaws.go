@@ -237,11 +237,16 @@ func (c *SenhawsClient) ConsultarVencimento(ctx context.Context) (int, error) {
 	return dias, nil
 }
 
-// GerarSenhaRandom gera senha aleatória de 16 chars hex (32 hex chars).
+// GerarSenhaRandom gera senha aleatória de 16 bytes hex (32 chars hex).
 // Helper opcional para callers que querem rotação automática.
 //
-// Não usa crypto/rand (determinismo de testes é importante — caller pode
-// passar senha custom). Para produção, caller deve usar crypto/rand.
+// NÃO usa crypto/rand (determinismo de testes é importante — caller pode
+// passar senha custom). Para produção com requisitos criptográficos ou uso
+// em goroutines paralelas, caller deve usar crypto/rand.Read() diretamente.
+//
+// Nota: math/rand global é mutex-protected desde Go 1.0, então chamadas
+// concorrentes a esta função são safe (mas têm lock contention). Caller que
+// precisa de alta vazão paralela deve instanciar *rand.Rand próprio.
 func GerarSenhaRandom() string {
 	const hexChars = "0123456789abcdef"
 	b := make([]byte, 16)
