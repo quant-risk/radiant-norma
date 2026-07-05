@@ -6,6 +6,10 @@
 // Sprint 19 (v3.9.0): read side — WSClient.StatusUpload (Seção 5.3.1) e
 // WSClient.Download (Seção 6.1.1). Validação X-Content-Hash obrigatória.
 //
+// Sprint 20 (v3.10.0): listagem / disponiveis (Seção 8.1.1) + alteração /situacao
+// (Seção 7.1). ReadClient interface segregation permite handlers checarem
+// capability em runtime (StubClient não implementa read side).
+//
 // Implementa o fluxo de envio em 2 fases (Seções 5.1 + 5.2 do manual oficial):
 //  1. POST /arquivos com XML <Parametros> (IdentificadorDocumento, Hash, Tamanho, etc.)
 //     → 201 Created + <Resultado><Protocolo>{NUM}</Protocolo></Resultado>
@@ -15,6 +19,8 @@
 // E o fluxo de leitura:
 //  3. GET /arquivos/{protocolo}/posicaoupload → status + ranges recebidos
 //  4. GET /arquivos/{protocolo}/conteudo → arquivo binário + X-Content-Hash
+//  5. GET /arquivos/disponiveis?dataHoraInicio=... → listagem de arquivos a receber
+//  6. PUT /arquivos/situacao → alterar A_REC ↔ REC
 //
 // Auth: HTTP Basic preemptivo (RFC 7617). Header:
 //
@@ -37,12 +43,10 @@
 //   - Emite audit emission em failure (S17.6 pattern — mas ainda
 //     sem audit_log wiring aqui; feito no handler do /v1/sta/submit)
 //
-// Limitações V1 (cobertas em Sprint 20+):
+// Limitações V1 (cobertas em Sprint 21+):
 //   - Sem retry exponencial
 //   - Sem range/resume upload (chunked)
 //   - Sem range/conditional download (single-call apenas)
-//   - Sem listagem /arquivos/disponiveis (Sprint 20)
-//   - Sem alteração situacao /arquivos/situacao (Sprint 20)
 //   - Sem cache de senhaws endpoints
 //
 // Referência: _referencias/STA_Manual_WebServices.pdf (BACEN, julho/2022).
@@ -61,6 +65,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strconv"
@@ -679,4 +684,167 @@ func BackendName(c Client) string {
 	default:
 		return fmt.Sprintf("unknown(%T)", c)
 	}
+}
+
+// ============================================================
+// Sprint 20 (v3.10.0) — ReadClient interface segregation
+// ============================================================
+
+// ReadClient é o subset de operações de leitura do BACEN STA WS. Apenas
+// *WSClient implementa (porque StubClient não tem como listar/alterar contra
+// BACEN real — seria hollow stub).
+//
+// Handler pattern: type-assert s.STAClient.(ReadClient). Se ok, usa; senão
+// retorna 503 com mensagem clara (backend=stub não suporta read side).
+//
+// Interface segregation (vs estender Client interface): forçar StubClient
+// a implementar ListDisponiveis/AlterarSituacao com zero-values seria
+// hollow stub piorado — caller acharia que funcionou mas BACEN nunca foi
+// chamado. Falhar explícito é melhor que mentir.
+type ReadClient interface {
+	ListDisponiveis(ctx context.Context, opts ListDisponiveisOpts) (*ListDisponiveisResult, error)
+	AlterarSituacao(ctx context.Context, req AlterarSituacaoReq) error
+}
+
+// ListDisponiveis consulta arquivos que BACEN disponibilizou a partir de uma
+// data-hora (Seção 8.1.1 do manual).
+//
+// Endpoint: GET /arquivos/disponiveis?dataHoraInicio={YYYY-MM-DDTHH:MM:SS.SSS}&...
+// Parâmetros opcionais: dependencia, identificadorDocumento, sistemas.
+//
+// Paginação: até 1000 protocolos por chamada. Se >1000, BACEN retorna
+// <atom:link href="..." rel="disponiveis"/> com URL da próxima página —
+// exposta em ListDisponiveisResult.ProximaPaginaURL.
+//
+// Caller polling pattern: usar DataHoraProximaConsulta no próximo call.
+// Caller pagination pattern: usar ProximaPaginaURL no próximo call.
+//
+// Retorna:
+//   - (*ListDisponiveisResult, nil) em sucesso — mesmo se lista vazia.
+//   - (nil, *STAError) em rejeição formal BACEN (400).
+//   - (nil, err) em erro de transporte (rede, timeout, parse falho).
+func (c *WSClient) ListDisponiveis(ctx context.Context, opts ListDisponiveisOpts) (*ListDisponiveisResult, error) {
+	if opts.DataHoraInicio == "" {
+		return nil, errors.New("DataHoraInicio obrigatório (Tabela 4 do manual §8.1.1)")
+	}
+
+	// Constrói query string com URL encoding manual (manual linha 874).
+	q := url.Values{}
+	q.Set("dataHoraInicio", opts.DataHoraInicio)
+	if opts.IdentificadorDocumento != "" {
+		q.Set("identificadorDocumento", opts.IdentificadorDocumento)
+	}
+	if opts.Sistemas != "" {
+		q.Set("sistemas", opts.Sistemas)
+	}
+	if opts.Dependencia != "" {
+		q.Set("dependencia", opts.Dependencia)
+	}
+	endpoint := c.cfg.BaseURL + "/arquivos/disponiveis?" + q.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", c.basicAuthHeader())
+	// Content-Type intencionalmente omitido — manual §8.1.1 linha 878.
+
+	resp, err := c.cfg.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodyBytes))
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, c.parseSTAErrorTyped(resp.StatusCode, respBody, "")
+	}
+
+	var p arquivosDisponiveisResponse
+	if err := xml.Unmarshal(respBody, &p); err != nil {
+		return nil, fmt.Errorf("parse disponiveis XML: %w (body=%s)", err, truncate(respBody, 200))
+	}
+
+	result := &ListDisponiveisResult{
+		DataHoraProximaConsulta: p.DataHoraProximaConsulta,
+		ProximaPaginaURL:        p.Link.HRef,
+		TemProximaPagina:        p.Link.HRef != "",
+		Arquivos:                make([]ArquivoDisponivel, 0, len(p.Arquivos)),
+	}
+	for _, a := range p.Arquivos {
+		result.Arquivos = append(result.Arquivos, ArquivoDisponivel{
+			Protocolo:                a.Protocolo,
+			TipoArquivo:              a.TipoArquivo,
+			CodigoDocumento:          a.CodigoDocumento,
+			Sistema:                  a.Sistema,
+			TamanhoArquivo:           a.TamanhoArquivo,
+			Hash:                     a.Hash,
+			SituacaoAtual:            parseSituacaoArquivo(a.SituacaoAtual.Codigo),
+			SituacaoAtualRaw:         a.SituacaoAtual.Descricao,
+			DataHoraDisponibilizacao: a.DataHoraDisponibilizacao,
+		})
+	}
+	return result, nil
+}
+
+// AlterarSituacao muda a situação de N protocolos para A_REC (a receber) ou
+// REC (recebido) — Seção 7.1 do manual.
+//
+// Endpoint: PUT /arquivos/situacao com body XML <Parametros>.
+//
+// Content-Type OBRIGATÓRIO "application/xml" (manual linha 792) — único
+// endpoint do manual que exige Content-Type. Diferente dos outros que dizem
+// "não enviar".
+//
+// BACEN responde 204 No Content em sucesso (sem body).
+//
+// Validações client-side:
+//   - Protocolos vazio → erro imediato.
+//   - Situacao fora de {A_REC, REC} → erro imediato.
+//
+// Retorna:
+//   - (nil) em sucesso.
+//   - (*STAError) em rejeição formal BACEN (400 com XML Listagem 4).
+//   - err opaco em erro de transporte.
+func (c *WSClient) AlterarSituacao(ctx context.Context, req AlterarSituacaoReq) error {
+	if len(req.Protocolos) == 0 {
+		return errors.New("Protocolos não pode ser vazio (Seção 7.1)")
+	}
+	situacaoStr := req.Situacao.String()
+	if situacaoStr == "" {
+		return fmt.Errorf("Situacao inválida (esperado A_REC|REC, got %v)", req.Situacao)
+	}
+
+	params := situacaoParams{
+		Protocolos: strings.Join(req.Protocolos, ";"),
+		Situacao:   situacaoStr,
+	}
+	body, err := xml.Marshal(params)
+	if err != nil {
+		return fmt.Errorf("marshal XML request: %w", err)
+	}
+	body = []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` + "\n" + string(body))
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPut,
+		c.cfg.BaseURL+"/arquivos/situacao", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	httpReq.Header.Set("Authorization", c.basicAuthHeader())
+	httpReq.Header.Set("Content-Type", "application/xml")
+	httpReq.Header.Set("Accept", "application/xml")
+
+	resp, err := c.cfg.HTTPClient.Do(httpReq)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodyBytes))
+
+	if resp.StatusCode != http.StatusNoContent {
+		return c.parseSTAErrorTyped(resp.StatusCode, respBody, "")
+	}
+	return nil
 }

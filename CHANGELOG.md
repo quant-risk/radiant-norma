@@ -2,6 +2,128 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.10.0 — 2026-07-06 (Sprint 20: STA WS listagem / disponiveis + alteração / situacao + handlers REST) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 20 (read side completo + handlers REST — caminho natural da Sprint 19)
+> **Versão:** minor (2 métodos novos em `*WSClient` + 2 handlers REST + 1 interface; **sem breaking changes**)
+> **Trigger:** SPRINT_19_RESULTS.md §"Próximos passos" Sprint 20
+> **Validação:** 18/18 packages PASS + 24 testes novos Sprint 20 (16 httptest STA + 8 integration handlers) + smoke 11/11
+
+### 🎯 Resumo
+
+Sprint 20 fecha o **read side completo** do `WSClient` e entrega os **handlers REST**
+correspondentes. IF agora pode (a) **listar arquivos que BACEN disponibilizou**
+via `GET /v1/sta/disponiveis` (polling frontend), (b) **marcar como recebido**
+via `POST /v1/sta/situacao` (UX "limpar inbox"), (c) via interface segregation,
+o **StubClient** continua funcionando mas retorna **503** quando caller tenta read
+side sem ter configurado `RADIANT_STA_BACKEND=ws`.
+
+**Decisão arquitetural chave:** `ReadClient` interface segregation (vs estender
+`Client` interface). Forçar `StubClient` a implementar `ListDisponiveis`/`AlterarSituacao`
+com zero-values seria hollow stub piorado. Segregação permite falha explícita
+quando capability ausente — caller recebe 503 + audit `stub_backend` informativo.
+
+Funcionalidades ainda fora: range/conditional upload+download, retry exponencial,
+senhaws rotation, smoke contra BACEN real. Ficam para Sprint 21+.
+
+### 🚀 O que entrou
+
+- **`WSClient.ListDisponiveis(ctx, opts)`** — GET `/arquivos/disponiveis` (manual §8.1.1).
+  Suporta paginação (até 1000 protocolos, `<atom:link>` para próxima página) +
+  `DataHoraProximaConsulta` para polling incremental. Retorna `[]ArquivoDisponivel`
+  com `SituacaoAtual` como enum tipado (Codigo 1 = Recebido / Codigo 3 = A receber).
+
+- **`WSClient.AlterarSituacao(ctx, req)`** — PUT `/arquivos/situacao` (manual §7.1).
+  Único endpoint que **exige** Content-Type `application/xml` (manual linha 792).
+  BACEN responde 204 No Content. Enum tipado `SituacaoTransferencia` (A_REC/REC).
+
+- **`ReadClient` interface segregation** — nova interface opcional que apenas
+  `*WSClient` implementa. `StubClient` NÃO implementa (provado via test
+  `TestReadClient_InterfaceSegregation`). Handlers fazem type assertion:
+  ```go
+  if rc, ok := s.STAClient.(sta.ReadClient); ok { ... } else { 503 }
+  ```
+
+- **Handler `GET /v1/sta/disponiveis`** — query params `dataHoraInicio` (obrigatório),
+  `identificadorDocumento`/`sistemas`/`dependencia` (opcionais). `dataHoraInicio`
+  default = tenant do JWT quando caller não fornece (defesa cross-tenant).
+
+- **Handler `POST /v1/sta/situacao`** — body JSON `{"protocolos":["1","2"],"situacao":"REC"}`.
+  Retorna 204 No Content em sucesso.
+
+- **Audit emission em 4 classes**: `sta.disponiveis.listed` / `sta.situacao.changed`
+  (sucesso), `sta.{op}.rejected` (BACEN 4xx), `sta.{op}.failed` (transporte),
+  `sta.{op}.stub_backend` (info — caller precisa mudar config).
+
+- **Tipos públicos**: `ListDisponiveisOpts`, `ListDisponiveisResult`, `ArquivoDisponivel`,
+  `SituacaoArquivo` enum, `AlterarSituacaoReq`, `SituacaoTransferencia` enum.
+
+### 🧪 Tests (24 novos — total STA 51)
+
+| Test | Cobre |
+|---|---|
+| `TestWSClient_ListDisponiveis_HappyPath` | §8.1.1 com 2 arquivos + Codigo 1/3 enum mapping |
+| `TestWSClient_ListDisponiveis_Paginated` | §8.1.1 com `atom:link` → `TemProximaPagina=true` |
+| `TestWSClient_ListDisponiveis_Empty` | 200 OK com lista vazia |
+| `TestWSClient_ListDisponiveis_400` | BACEN rejeita → `*STAError{StatusCode: 400}` |
+| `TestWSClient_ListDisponiveis_DataHoraVazia` | Sanity check defensivo |
+| `TestWSClient_ListDisponiveis_BadXMLFallback` | 200 OK mas body não parsea |
+| `TestWSClient_AlterarSituacao_HappyPath` | §7.1 com 2 protocolos A_REC + Content-Type correto |
+| `TestWSClient_AlterarSituacao_REC` | Segundo valor oficial |
+| `TestWSClient_AlterarSituacao_400` | BACEN rejeita |
+| `TestWSClient_AlterarSituacao_ProtocolosVazios` | Sanity check defensivo |
+| `TestWSClient_AlterarSituacao_SituacaoInvalida` | Sanity check defensivo |
+| `TestParseSituacaoArquivo_Cases` | Tabela enum Codigo 1/3/desconhecido (5 subtests) |
+| `TestSituacaoTransferencia_String_Cases` | "A_REC"/"REC"/Unknown (3 subtests) |
+| `TestSituacaoArquivo_String_Cases` | "Recebido"/"A receber"/"Desconhecida" (3 subtests) |
+| `TestParseSituacaoTransferencia_Cases` | string XML → enum (4 subtests) |
+| `TestReadClient_InterfaceSegregation` | Compile-time + runtime check WSClient implementa, StubClient NÃO |
+| `TestHandler_Disponiveis_OK` | GET happy path via chi router |
+| `TestHandler_Disponiveis_DataHoraVazia` | 400 quando obrigatório ausente |
+| `TestHandler_Disponiveis_BACEN400` | 400 do BACEN → 400 do handler |
+| `TestHandler_Situacao_OK` | POST happy path → 204 |
+| `TestHandler_Situacao_BodyInvalido` | 400 quando JSON malformado |
+| `TestHandler_Situacao_ProtocolosVazios` | 400 quando lista vazia |
+| `TestHandler_Situacao_ValorInvalido` | 400 quando situacao != A_REC/REC |
+| `TestHandler_StubBackend_503` | Interface segregation: StubClient → 503 |
+
+### ⚠️ O que NÃO fecha nesta sprint
+
+- **Rate limiting por rota** (60/min disponiveis, 10/min situacao) — middleware global
+  atual é suficiente. Adicionar per-route na Sprint 22+ se virar problema.
+- **Validação de formato `dataHoraInicio`** — cliente não valida (BACEN retorna 400
+  com mensagem útil se formato errado). Caller pode adicionar validação se quiser
+  UX melhor.
+- **Filtro `dataHoraFim`** (Tabela 4 não menciona, mas outras consultas têm) —
+  não aplicável a /disponiveis.
+- **Smoke contra BACEN real** — Sprint 24 (precisa credenciais Sisbacen).
+
+### 🔒 Compatibilidade
+
+- `Client` interface **inalterada** — `Submit(ctx, sub) (*Result, error)`.
+- `*WSClient` ganha 2 métodos novos (`ListDisponiveis`, `AlterarSituacao`) +
+  implementa `ReadClient` interface.
+- `*StubClient` **NÃO** implementa `ReadClient` — handlers retornam 503 com mensagem
+  clara ("read side do STA não disponível neste backend").
+- `cmd/api/main.go` **inalterado** — `sta.NewClientFromEnv()` já decide stub vs ws.
+- `RADIANT_STA_BACKEND=stub` (default) preserva 19 sprints anteriores. Submit
+  continua funcionando. Read side retorna 503.
+
+### 📦 Arquivos tocados
+
+```
+backend/internal/sta/ws.go              (+170 linhas — ListDisponiveis + AlterarSituacao + ReadClient)
+backend/internal/sta/ws_types.go        (+157 linhas — 6 tipos públicos + 3 helpers parse)
+backend/internal/sta/ws_test.go         (+444 linhas — 16 tests httptest + 17 subtests)
+backend/internal/api/sprint20_handlers.go      (novo, 226 linhas — 2 handlers + helpers)
+backend/internal/api/sprint20_handlers_test.go (novo, 332 linhas — 8 integration tests)
+backend/internal/api/server.go          (+5 linhas — wire 2 rotas REST)
+SPRINT_20_RESEARCH.md                   (novo, 10 seções)
+SPRINT_20_RESULTS.md                    (novo)
+CHANGELOG.md                            (esta entrada)
+```
+
 ## v3.9.0 — 2026-07-06 (Sprint 19: STA WS read side — Download + StatusUpload) ✅
 
 > **Status:** ✅ Shipped

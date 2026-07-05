@@ -19,6 +19,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -35,15 +36,19 @@ import (
 //	PUT  /arquivos/{protocolo}/conteudo                  → handlePut
 //	GET  /arquivos/{protocolo}/conteudo                  → handleGetConteudo
 //	GET  /arquivos/{protocolo}/posicaoupload             → handleGetPosicao
+//	GET  /arquivos/disponiveis                           → handleGetDisponiveis
+//	PUT  /arquivos/situacao                              → handlePutSituacao
 //
 // Se requireBasicAuth for true, retorna 401 quando header Authorization
 // ausente (espelha comportamento real do BACEN).
 type mockSTA struct {
-	requireBasicAuth  bool
-	handlePost        func(w http.ResponseWriter, r *http.Request)
-	handlePut         func(w http.ResponseWriter, r *http.Request, protocolo string)
-	handleGetConteudo func(w http.ResponseWriter, r *http.Request, protocolo string)
-	handleGetPosicao  func(w http.ResponseWriter, r *http.Request, protocolo string)
+	requireBasicAuth     bool
+	handlePost           func(w http.ResponseWriter, r *http.Request)
+	handlePut            func(w http.ResponseWriter, r *http.Request, protocolo string)
+	handleGetConteudo    func(w http.ResponseWriter, r *http.Request, protocolo string)
+	handleGetPosicao     func(w http.ResponseWriter, r *http.Request, protocolo string)
+	handleGetDisponiveis func(w http.ResponseWriter, r *http.Request)
+	handlePutSituacao    func(w http.ResponseWriter, r *http.Request)
 }
 
 func (m *mockSTA) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -87,6 +92,16 @@ func (m *mockSTA) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		protocolo = strings.TrimSuffix(protocolo, "/conteudo")
 		if m.handleGetConteudo != nil {
 			m.handleGetConteudo(w, r, protocolo)
+			return
+		}
+	case r.Method == http.MethodGet && r.URL.Path == "/arquivos/disponiveis":
+		if m.handleGetDisponiveis != nil {
+			m.handleGetDisponiveis(w, r)
+			return
+		}
+	case r.Method == http.MethodPut && r.URL.Path == "/arquivos/situacao":
+		if m.handlePutSituacao != nil {
+			m.handlePutSituacao(w, r)
 			return
 		}
 	}
@@ -1054,8 +1069,441 @@ func TestWSClient_Download_EmptyProtocolo(t *testing.T) {
 }
 
 // ============================================================
-// Unit tests — pure functions (parseRanges, parseUploadSituacao, parseXContentHash)
+// Sprint 20 (v3.10.0) — listagem /disponiveis + alteração /situacao
+//
+// Spec: SPRINT_20_RESEARCH.md §2.1 (Seção 8.1.1 manual BACEN) + §2.2
+// (Seção 7.1 manual BACEN). Cada teste abaixo mapeia uma linha da tabela
+// de erros esperada ou um caso happy path.
 // ============================================================
+
+// sucessoListDisponiveisHandler retorna mockSTA configurado para responder
+// 200 OK com XML de listagem (3 arquivos + DataHoraProximaConsulta, sem
+// atom:link).
+func sucessoListDisponiveisHandler() *mockSTA {
+	return &mockSTA{
+		requireBasicAuth: true,
+		handleGetDisponiveis: func(w http.ResponseWriter, r *http.Request) {
+			if r.Header.Get("Content-Type") != "" {
+				http.Error(w, "Content-Type deveria ser omitido (manual §8.1.1)", http.StatusBadRequest)
+				return
+			}
+			if r.URL.Query().Get("dataHoraInicio") == "" {
+				http.Error(w, "dataHoraInicio obrigatório", http.StatusBadRequest)
+				return
+			}
+			w.Header().Set("Content-Type", "application/xml")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Resultado>
+<DataHoraProximaConsulta>2024-12-01T10:00:00.001</DataHoraProximaConsulta>
+<Arquivo>
+<Protocolo>3</Protocolo>
+<TipoArquivo>ACOS011</TipoArquivo>
+<CodigoDocumento>1234</CodigoDocumento>
+<Sistema>CCS</Sistema>
+<TamanhoArquivo>753</TamanhoArquivo>
+<Hash>7437b41b04d9984a8b055418a2d99f33e9313c542f8232051a177dd6bbf5d1b1</Hash>
+<SituacaoAtual><Codigo>3</Codigo><Descricao>A receber</Descricao></SituacaoAtual>
+<DataHoraDisponibilizacao>2024-11-30T10:00:00.000</DataHoraDisponibilizacao>
+</Arquivo>
+<Arquivo>
+<Protocolo>1</Protocolo>
+<TipoArquivo>ACOS011</TipoArquivo>
+<CodigoDocumento>1234</CodigoDocumento>
+<Sistema>CCS</Sistema>
+<TamanhoArquivo>512</TamanhoArquivo>
+<Hash>8017ffabc3768bf725ab246752afe9bfe39c4bb79ace4195b8844cd68cfcc70d</Hash>
+<SituacaoAtual><Codigo>1</Codigo><Descricao>Recebido</Descricao></SituacaoAtual>
+<DataHoraDisponibilizacao>2024-11-28T10:00:00.000</DataHoraDisponibilizacao>
+</Arquivo>
+</Resultado>`))
+		},
+	}
+}
+
+// TestWSClient_ListDisponiveis_HappyPath — Seção 8.1.1.
+func TestWSClient_ListDisponiveis_HappyPath(t *testing.T) {
+	_, client := newMockSTA(t, sucessoListDisponiveisHandler())
+
+	res, err := client.ListDisponiveis(context.Background(), ListDisponiveisOpts{
+		DataHoraInicio: "2024-11-01T00:00:00.000",
+	})
+	if err != nil {
+		t.Fatalf("ListDisponiveis: %v", err)
+	}
+	if res == nil {
+		t.Fatal("res nil")
+	}
+	if len(res.Arquivos) != 2 {
+		t.Errorf("len(Arquivos) = %d, esperado 2", len(res.Arquivos))
+	}
+	if res.DataHoraProximaConsulta != "2024-12-01T10:00:00.001" {
+		t.Errorf("DataHoraProximaConsulta = %q", res.DataHoraProximaConsulta)
+	}
+	if res.TemProximaPagina {
+		t.Error("TemProximaPagina deveria ser false (<1000 resultados)")
+	}
+	if res.ProximaPaginaURL != "" {
+		t.Errorf("ProximaPaginaURL deveria ser vazia, got %q", res.ProximaPaginaURL)
+	}
+	// Verifica enum tipado.
+	if res.Arquivos[0].SituacaoAtual != SituacaoArquivoAReceber {
+		t.Errorf("Arquivos[0].SituacaoAtual = %v, esperado AReceber", res.Arquivos[0].SituacaoAtual)
+	}
+	if res.Arquivos[0].SituacaoAtualRaw != "A receber" {
+		t.Errorf("Arquivos[0].SituacaoAtualRaw = %q", res.Arquivos[0].SituacaoAtualRaw)
+	}
+	if res.Arquivos[1].SituacaoAtual != SituacaoArquivoRecebido {
+		t.Errorf("Arquivos[1].SituacaoAtual = %v, esperado Recebido", res.Arquivos[1].SituacaoAtual)
+	}
+	if res.Arquivos[1].Protocolo != "1" {
+		t.Errorf("Arquivos[1].Protocolo = %q", res.Arquivos[1].Protocolo)
+	}
+}
+
+// TestWSClient_ListDisponiveis_Paginated — Seção 8.1.1: >1000 resultados
+// inclui atom:link para próxima página.
+func TestWSClient_ListDisponiveis_Paginated(t *testing.T) {
+	mock := sucessoListDisponiveisHandler()
+	mock.handleGetDisponiveis = func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/xml")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Resultado xmlns:atom="http://www.w3.org/2005/Atom">
+<DataHoraProximaConsulta>2024-12-01T11:00:00.000</DataHoraProximaConsulta>
+<Arquivo><Protocolo>1</Protocolo><TipoArquivo>X</TipoArquivo><CodigoDocumento>1</CodigoDocumento><Sistema>X</Sistema><TamanhoArquivo>10</TamanhoArquivo><Hash>abc</Hash><SituacaoAtual><Codigo>3</Codigo><Descricao>A receber</Descricao></SituacaoAtual><DataHoraDisponibilizacao>2024-11-01T10:00:00.000</DataHoraDisponibilizacao></Arquivo>
+<atom:link href="https://sta-h.bcb.gov.br/staws/arquivos/disponiveis?dataHoraInicio=2024-12-01T11:00:00.000&amp;sistemas=CCS" rel="disponiveis" type="application/octet-stream"/>
+</Resultado>`))
+	}
+	_, client := newMockSTA(t, mock)
+
+	res, err := client.ListDisponiveis(context.Background(), ListDisponiveisOpts{
+		DataHoraInicio: "2024-11-01T00:00:00.000",
+	})
+	if err != nil {
+		t.Fatalf("ListDisponiveis: %v", err)
+	}
+	if !res.TemProximaPagina {
+		t.Error("TemProximaPagina deveria ser true (atom:link presente)")
+	}
+	if res.ProximaPaginaURL == "" {
+		t.Error("ProximaPaginaURL não deveria ser vazia")
+	}
+	if !strings.Contains(res.ProximaPaginaURL, "dataHoraInicio=") {
+		t.Errorf("ProximaPaginaURL = %q (deveria conter dataHoraInicio)", res.ProximaPaginaURL)
+	}
+}
+
+// TestWSClient_ListDisponiveis_Empty — 200 OK mas lista vazia (consulta sem resultados).
+func TestWSClient_ListDisponiveis_Empty(t *testing.T) {
+	mock := sucessoListDisponiveisHandler()
+	mock.handleGetDisponiveis = func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/xml")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Resultado>
+<DataHoraProximaConsulta>2024-11-01T00:00:00.000</DataHoraProximaConsulta>
+</Resultado>`))
+	}
+	_, client := newMockSTA(t, mock)
+
+	res, err := client.ListDisponiveis(context.Background(), ListDisponiveisOpts{
+		DataHoraInicio: "2024-11-01T00:00:00.000",
+	})
+	if err != nil {
+		t.Fatalf("ListDisponiveis: %v", err)
+	}
+	if len(res.Arquivos) != 0 {
+		t.Errorf("len(Arquivos) = %d, esperado 0", len(res.Arquivos))
+	}
+	if res.TemProximaPagina {
+		t.Error("TemProximaPagina deveria ser false (lista vazia)")
+	}
+}
+
+// TestWSClient_ListDisponiveis_400 — BACEN rejeita (Seção 8.1.1 erros).
+func TestWSClient_ListDisponiveis_400(t *testing.T) {
+	mock := sucessoListDisponiveisHandler()
+	mock.handleGetDisponiveis = func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Resultado><Erro><Codigo>400</Codigo><Descricao>Parâmetro 'dataHoraInicio' em formato inválido</Descricao></Erro></Resultado>`))
+	}
+	_, client := newMockSTA(t, mock)
+
+	_, err := client.ListDisponiveis(context.Background(), ListDisponiveisOpts{
+		DataHoraInicio: "formato-invalido",
+	})
+	if err == nil {
+		t.Fatal("esperava erro em 400")
+	}
+	var staErr *STAError
+	if !errors.As(err, &staErr) {
+		t.Fatalf("erro deveria ser *STAError, got %T: %v", err, err)
+	}
+	if staErr.StatusCode != http.StatusBadRequest {
+		t.Errorf("StatusCode = %d, esperado 400", staErr.StatusCode)
+	}
+}
+
+// TestWSClient_ListDisponiveis_DataHoraVazia — sanity check defensivo.
+func TestWSClient_ListDisponiveis_DataHoraVazia(t *testing.T) {
+	c, _ := NewWSClient(WSConfig{
+		BaseURL:           "http://127.0.0.1:0",
+		User:              "123450001.x",
+		Password:          "p",
+		AllowInsecureHTTP: true,
+	})
+	_, err := c.ListDisponiveis(context.Background(), ListDisponiveisOpts{})
+	if err == nil {
+		t.Fatal("esperava erro em DataHoraInicio vazio")
+	}
+	if !strings.Contains(err.Error(), "DataHoraInicio obrigatório") {
+		t.Errorf("erro deveria mencionar obrigatoriedade, got %v", err)
+	}
+}
+
+// TestWSClient_ListDisponiveis_BadXMLFallback — 200 OK mas body não parseia.
+func TestWSClient_ListDisponiveis_BadXMLFallback(t *testing.T) {
+	mock := sucessoListDisponiveisHandler()
+	mock.handleGetDisponiveis = func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/xml")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`not valid xml at all`))
+	}
+	_, client := newMockSTA(t, mock)
+
+	_, err := client.ListDisponiveis(context.Background(), ListDisponiveisOpts{
+		DataHoraInicio: "2024-11-01T00:00:00.000",
+	})
+	if err == nil {
+		t.Fatal("esperava erro de parse")
+	}
+	if !strings.Contains(err.Error(), "parse disponiveis") {
+		t.Errorf("erro deve mencionar parse disponiveis, got %v", err)
+	}
+}
+
+// sucessoAlterarSituacaoHandler retorna mockSTA configurado para responder
+// 204 No Content em sucesso (Seção 7.1). Captura body XML para testes.
+type alterarSituacaoCaptura struct {
+	bodyXML     string
+	contentType string
+}
+
+func sucessoAlterarSituacaoHandler(cap *alterarSituacaoCaptura) *mockSTA {
+	return &mockSTA{
+		requireBasicAuth: true,
+		handlePutSituacao: func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			if cap != nil {
+				cap.bodyXML = string(body)
+				cap.contentType = r.Header.Get("Content-Type")
+			}
+			w.WriteHeader(http.StatusNoContent)
+		},
+	}
+}
+
+// TestWSClient_AlterarSituacao_HappyPath — Seção 7.1 com 2 protocolos A_REC.
+func TestWSClient_AlterarSituacao_HappyPath(t *testing.T) {
+	cap := &alterarSituacaoCaptura{}
+	_, client := newMockSTA(t, sucessoAlterarSituacaoHandler(cap))
+
+	err := client.AlterarSituacao(context.Background(), AlterarSituacaoReq{
+		Protocolos: []string{"1", "2"},
+		Situacao:   SituacaoTransferenciaAReceber,
+	})
+	if err != nil {
+		t.Fatalf("AlterarSituacao: %v", err)
+	}
+	// Verifica XML enviado.
+	if !strings.Contains(cap.bodyXML, "<Protocolos>1;2</Protocolos>") {
+		t.Errorf("bodyXML não contém Protocolos correto, got %q", cap.bodyXML)
+	}
+	if !strings.Contains(cap.bodyXML, "<Situacao>A_REC</Situacao>") {
+		t.Errorf("bodyXML não contém Situacao correto, got %q", cap.bodyXML)
+	}
+	// Verifica Content-Type (manual linha 792: obrigatório).
+	if cap.contentType != "application/xml" {
+		t.Errorf("Content-Type = %q, esperado application/xml", cap.contentType)
+	}
+}
+
+// TestWSClient_AlterarSituacao_REC — Seção 7.1 alterando para REC (segundo valor oficial).
+func TestWSClient_AlterarSituacao_REC(t *testing.T) {
+	cap := &alterarSituacaoCaptura{}
+	_, client := newMockSTA(t, sucessoAlterarSituacaoHandler(cap))
+
+	err := client.AlterarSituacao(context.Background(), AlterarSituacaoReq{
+		Protocolos: []string{"42"},
+		Situacao:   SituacaoTransferenciaRecebido,
+	})
+	if err != nil {
+		t.Fatalf("AlterarSituacao: %v", err)
+	}
+	if !strings.Contains(cap.bodyXML, "<Situacao>REC</Situacao>") {
+		t.Errorf("bodyXML não contém REC, got %q", cap.bodyXML)
+	}
+}
+
+// TestWSClient_AlterarSituacao_400 — BACEN rejeita.
+func TestWSClient_AlterarSituacao_400(t *testing.T) {
+	mock := sucessoAlterarSituacaoHandler(nil)
+	mock.handlePutSituacao = func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Resultado><Erro><Codigo>400</Codigo><Descricao>Protocolo '999' não encontrado</Descricao></Erro></Resultado>`))
+	}
+	_, client := newMockSTA(t, mock)
+
+	err := client.AlterarSituacao(context.Background(), AlterarSituacaoReq{
+		Protocolos: []string{"999"},
+		Situacao:   SituacaoTransferenciaRecebido,
+	})
+	if err == nil {
+		t.Fatal("esperava erro em 400")
+	}
+	var staErr *STAError
+	if !errors.As(err, &staErr) {
+		t.Fatalf("erro deveria ser *STAError, got %T: %v", err, err)
+	}
+	if staErr.StatusCode != http.StatusBadRequest {
+		t.Errorf("StatusCode = %d, esperado 400", staErr.StatusCode)
+	}
+}
+
+// TestWSClient_AlterarSituacao_ProtocolosVazios — sanity check defensivo.
+func TestWSClient_AlterarSituacao_ProtocolosVazios(t *testing.T) {
+	c, _ := NewWSClient(WSConfig{
+		BaseURL:           "http://127.0.0.1:0",
+		User:              "123450001.x",
+		Password:          "p",
+		AllowInsecureHTTP: true,
+	})
+	err := c.AlterarSituacao(context.Background(), AlterarSituacaoReq{
+		Protocolos: nil,
+		Situacao:   SituacaoTransferenciaAReceber,
+	})
+	if err == nil {
+		t.Fatal("esperava erro em Protocolos vazio")
+	}
+	if !strings.Contains(err.Error(), "Protocolos não pode ser vazio") {
+		t.Errorf("erro deveria mencionar obrigatoriedade, got %v", err)
+	}
+}
+
+// TestWSClient_AlterarSituacao_SituacaoInvalida — sanity check defensivo.
+func TestWSClient_AlterarSituacao_SituacaoInvalida(t *testing.T) {
+	c, _ := NewWSClient(WSConfig{
+		BaseURL:           "http://127.0.0.1:0",
+		User:              "123450001.x",
+		Password:          "p",
+		AllowInsecureHTTP: true,
+	})
+	err := c.AlterarSituacao(context.Background(), AlterarSituacaoReq{
+		Protocolos: []string{"1"},
+		Situacao:   SituacaoTransferenciaUnknown,
+	})
+	if err == nil {
+		t.Fatal("esperava erro em Situacao inválida")
+	}
+	if !strings.Contains(err.Error(), "Situacao inválida") {
+		t.Errorf("erro deveria mencionar Situacao, got %v", err)
+	}
+}
+
+// TestParseSituacaoArquivo_Cases — Tabela enum Codigo 1 / 3 / desconhecido.
+func TestParseSituacaoArquivo_Cases(t *testing.T) {
+	tests := []struct {
+		codigo int
+		want   SituacaoArquivo
+	}{
+		{1, SituacaoArquivoRecebido},
+		{3, SituacaoArquivoAReceber},
+		{0, SituacaoArquivoUnknown},
+		{99, SituacaoArquivoUnknown},
+		{-1, SituacaoArquivoUnknown},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("codigo_%d", tt.codigo), func(t *testing.T) {
+			if got := parseSituacaoArquivo(tt.codigo); got != tt.want {
+				t.Errorf("parseSituacaoArquivo(%d) = %v, esperado %v", tt.codigo, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestSituacaoTransferencia_String_Cases — enum String() para XML.
+func TestSituacaoTransferencia_String_Cases(t *testing.T) {
+	tests := []struct {
+		s    SituacaoTransferencia
+		want string
+	}{
+		{SituacaoTransferenciaAReceber, "A_REC"},
+		{SituacaoTransferenciaRecebido, "REC"},
+		{SituacaoTransferenciaUnknown, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.want, func(t *testing.T) {
+			if got := tt.s.String(); got != tt.want {
+				t.Errorf("String() = %q, esperado %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestSituacaoArquivo_String_Cases — enum String() para logs/JSON.
+func TestSituacaoArquivo_String_Cases(t *testing.T) {
+	tests := []struct {
+		s    SituacaoArquivo
+		want string
+	}{
+		{SituacaoArquivoRecebido, "Recebido"},
+		{SituacaoArquivoAReceber, "A receber"},
+		{SituacaoArquivoUnknown, "Desconhecida"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.want, func(t *testing.T) {
+			if got := tt.s.String(); got != tt.want {
+				t.Errorf("String() = %q, esperado %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestParseSituacaoTransferencia_Cases — string XML → enum.
+func TestParseSituacaoTransferencia_Cases(t *testing.T) {
+	tests := []struct {
+		in   string
+		want SituacaoTransferencia
+	}{
+		{"A_REC", SituacaoTransferenciaAReceber},
+		{"REC", SituacaoTransferenciaRecebido},
+		{"", SituacaoTransferenciaUnknown},
+		{"FOO", SituacaoTransferenciaUnknown},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			if got := parseSituacaoTransferencia(tt.in); got != tt.want {
+				t.Errorf("parseSituacaoTransferencia(%q) = %v, esperado %v", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestReadClient_InterfaceSegregation — *WSClient implementa ReadClient;
+// *StubClient NÃO implementa (segregation evita hollow stub).
+func TestReadClient_InterfaceSegregation(t *testing.T) {
+	// Compile-time check: WSClient implementa ReadClient.
+	var _ ReadClient = (*WSClient)(nil)
+
+	// Runtime check: StubClient NÃO implementa ReadClient.
+	stub := NewStubClient()
+	if _, ok := any(stub).(ReadClient); ok {
+		t.Fatal("StubClient não deveria implementar ReadClient (interface segregation)")
+	}
+}
 
 // TestSTAError_Error_ComProtocolo — formato do Error() inclui protocolo eco
 // quando disponível. Caller usa err.Error() em logs/audit.

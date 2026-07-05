@@ -4,6 +4,12 @@
 // (versão 1.5, julho/2022, BACEN). Cada struct tem doc-comment referenciando
 // a seção do manual.
 //
+// Sprint 19 (v3.9.0): read side — UploadStatus, Range, UploadSituacao, DownloadResult.
+//
+// Sprint 20 (v3.10.0): listagem + alteração de situação — ListDisponiveisOpts,
+// ListDisponiveisResult, ArquivoDisponivel, SituacaoArquivo, AlterarSituacaoReq,
+// SituacaoTransferencia.
+//
 // Formato: UTF-8, XML body, namespace atom só em respostas paginadas.
 //
 // Referência: _referencias/STA_Manual_WebServices.pdf (42 páginas).
@@ -85,14 +91,34 @@ type situacaoParams struct {
 }
 
 // arquivosDisponiveisResponse — resposta do GET /arquivos/disponiveis
-// (Seção 8.1.1). Usada em Sprint 20+ para download de arquivos BACEN→IF.
+// (Seção 8.1.1). Resposta paginada: até 1000 protocolos por chamada.
+// Se >1000, retorna <atom:link href="..." rel="disponiveis"/> com URL da próxima página.
 //
-// Por enquanto apenas tipo vazio para satisfazer a interface — implementação
-// completa fica para Sprint 20 quando a query de arquivos a receber for
-// integrada ao frontend.
+// Onde (linhas 887-932 do manual):
+//   - DataHoraProximaConsulta: data-hora para próxima polling (formato "yyyy-MM-ddTHH:mm:ss.SSS")
+//   - Arquivo[]: lista de arquivos com metadados completos
+//   - atom:link: URL para próxima página (string vazia se <1000 resultados)
 type arquivosDisponiveisResponse struct {
 	XMLName                 struct{} `xml:"Resultado"`
 	DataHoraProximaConsulta string   `xml:"DataHoraProximaConsulta"`
+	Arquivos                []struct {
+		Protocolo       string `xml:"Protocolo"`
+		TipoArquivo     string `xml:"TipoArquivo"`
+		CodigoDocumento string `xml:"CodigoDocumento"`
+		Sistema         string `xml:"Sistema"`
+		TamanhoArquivo  int64  `xml:"TamanhoArquivo"`
+		Hash            string `xml:"Hash"`
+		SituacaoAtual   struct {
+			Codigo    int    `xml:"Codigo"`
+			Descricao string `xml:"Descricao"`
+		} `xml:"SituacaoAtual"`
+		DataHoraDisponibilizacao string `xml:"DataHoraDisponibilizacao"`
+	} `xml:"Arquivo"`
+	Link struct {
+		HRef string `xml:"href,attr"`
+		Rel  string `xml:"rel,attr"`
+		Type string `xml:"type,attr"`
+	} `xml:"link"`
 }
 
 // ============================================================
@@ -216,4 +242,135 @@ type DownloadResult struct {
 	ETag              string
 	LastModified      string
 	ContentHashHeader string // valor cru de X-Content-Hash (debug/audit)
+}
+
+// ============================================================
+// Sprint 20 (v3.10.0) — listagem / disponiveis + alteracao /situacao
+// ============================================================
+
+// ListDisponiveisOpts são os parâmetros de WSClient.ListDisponiveis (Tabela 4).
+//
+// DataHoraInicio é OBRIGATÓRIO (Tabela 4 linha 1472). Formato esperado pelo
+// BACEN: "yyyy-MM-ddTHH:mm:ss.SSS". Cliente não valida formato — BACEN
+// responde 400 Listagem 4 se caller passar string malformada.
+//
+// IdentificadorDocumento, Sistemas, Dependencia são opcionais. Sistemas pode
+// ter até 100 entries separados por ";".
+type ListDisponiveisOpts struct {
+	DataHoraInicio         string
+	IdentificadorDocumento string
+	Sistemas               string
+	Dependencia            string
+}
+
+// ListDisponiveisResult é o retorno de WSClient.ListDisponiveis.
+//
+// DataHoraProximaConsulta é o eco do XML; frontend usa pra polling incremental.
+// ProximaPaginaURL é a URL completa (?dependencia=...&dataHoraInicio=...) que
+// BACEN sugere pra próxima página — presente apenas se >1000 registros.
+// TemProximaPagina é true se atom:link estiver presente no XML.
+type ListDisponiveisResult struct {
+	Arquivos                []ArquivoDisponivel
+	DataHoraProximaConsulta string
+	ProximaPaginaURL        string
+	TemProximaPagina        bool
+}
+
+// ArquivoDisponivel é um arquivo da listagem (Seção 8.1.1 XML resposta).
+type ArquivoDisponivel struct {
+	Protocolo                string
+	TipoArquivo              string
+	CodigoDocumento          string
+	Sistema                  string
+	TamanhoArquivo           int64
+	Hash                     string // SHA-256 hex
+	SituacaoAtual            SituacaoArquivo
+	SituacaoAtualRaw         string // defesa contra BACEN adicionar valor
+	DataHoraDisponibilizacao string // formato cru BACEN (yyyy-MM-ddTHH:mm:ss.SSS)
+}
+
+// SituacaoArquivo é o enum tipado dos valores de SituacaoAtual do XML.
+// Codigo 3 = "A receber" (confirmado em múltiplos exemplos manual linhas
+// 897-925, 1007-1020, 1639-1655). Codigo 1 = "Recebido" (inferido — único
+// outro valor consistente com §7.1 que usa "A_REC"/"REC").
+//
+// Manual não documenta tabela oficial mapeando Codigo ↔ Descricao para
+// SituacaoAtual (Tabela 3 cobre EstadoAtual, que é diferente). Caller tem
+// SituacaoAtualRaw pra audit/debug quando BACEN adicionar valor novo.
+type SituacaoArquivo int
+
+const (
+	SituacaoArquivoUnknown SituacaoArquivo = iota
+	// SituacaoArquivoRecebido — Codigo 1.
+	SituacaoArquivoRecebido
+	// SituacaoArquivoAReceber — Codigo 3 (confirmado manual).
+	SituacaoArquivoAReceber
+)
+
+// String retorna "Recebido" / "A receber" para logs/JSON.
+func (s SituacaoArquivo) String() string {
+	switch s {
+	case SituacaoArquivoRecebido:
+		return "Recebido"
+	case SituacaoArquivoAReceber:
+		return "A receber"
+	default:
+		return "Desconhecida"
+	}
+}
+
+// parseSituacaoArquivo mapeia codigo numérico do XML → enum tipado.
+// Codigos fora de {1, 3} viram Unknown (defesa contra BACEN adicionar).
+func parseSituacaoArquivo(codigo int) SituacaoArquivo {
+	switch codigo {
+	case 1:
+		return SituacaoArquivoRecebido
+	case 3:
+		return SituacaoArquivoAReceber
+	default:
+		return SituacaoArquivoUnknown
+	}
+}
+
+// AlterarSituacaoReq é o request de WSClient.AlterarSituacao (Seção 7.1).
+type AlterarSituacaoReq struct {
+	Protocolos []string
+	Situacao   SituacaoTransferencia // enum tipado
+}
+
+// SituacaoTransferencia é o enum tipado dos valores oficiais de Situacao
+// (Seção 7.1 linha 799-801).
+type SituacaoTransferencia int
+
+const (
+	SituacaoTransferenciaUnknown SituacaoTransferencia = iota
+	// SituacaoTransferenciaAReceber — "A_REC".
+	SituacaoTransferenciaAReceber
+	// SituacaoTransferenciaRecebido — "REC".
+	SituacaoTransferenciaRecebido
+)
+
+// String retorna "A_REC" / "REC" para mandar no XML (manual linha 789).
+func (s SituacaoTransferencia) String() string {
+	switch s {
+	case SituacaoTransferenciaAReceber:
+		return "A_REC"
+	case SituacaoTransferenciaRecebido:
+		return "REC"
+	default:
+		return ""
+	}
+}
+
+// parseSituacaoTransferencia mapeia string do XML → enum. Manual só define
+// "A_REC" e "REC" (linha 799-801). Valores fora viram Unknown.
+func parseSituacaoTransferencia(s string) SituacaoTransferencia {
+	switch s {
+	case "A_REC":
+		return SituacaoTransferenciaAReceber
+	case "REC":
+		return SituacaoTransferenciaRecebido
+	default:
+		return SituacaoTransferenciaUnknown
+	}
 }

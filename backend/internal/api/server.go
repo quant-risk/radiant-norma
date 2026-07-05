@@ -182,6 +182,11 @@ func (s *Server) Router() http.Handler {
 		// STA submission (stub)
 		r.Post("/sta/submit", s.staSubmit)
 
+		// Sprint 20 (v3.10.0): read side REST endpoints. Requer
+		// RADIANT_STA_BACKEND=ws; retorna 503 se backend=stub.
+		r.Get("/sta/disponiveis", s.staDisponiveisHandler)
+		r.Post("/sta/situacao", s.staSituacaoHandler)
+
 		// Radar regulatório (Sprint 4)
 		r.Get("/radar/alerts", s.listRadarAlerts)
 		r.Get("/radar/alerts/{id}", s.getRadarAlert)

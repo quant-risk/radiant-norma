@@ -184,9 +184,11 @@ Stack completa em [`backend/README.md`](backend/README.md).
 | **17** | Observability + Production Hardening + lint automation | ✅ v3.7.0 |
 | **18** | STA WS nativo (substituir Playwright) + cert A1/A3 | ✅ v3.8.0 |
 | **19** | STA WS read side (Download + StatusUpload + X-Content-Hash) | ✅ v3.9.0 |
+| **20** | STA WS listagem / disponiveis + alteração / situacao + handlers REST | ✅ v3.10.0 |
 
-Última release estável: **v3.9.0** (Sprint 19 STA WS read side — Download + StatusUpload
-com validação X-Content-Hash ponta-a-ponta; 18/18 packages PASS, 37 testes STA).
+Última release estável: **v3.10.0** (Sprint 20 STA WS listagem + alteração + handlers
+REST `/v1/sta/disponiveis` + `/v1/sta/situacao` com `ReadClient` interface segregation;
+18/18 packages PASS, 51 testes STA, smoke 11/11).
 
 **Sub-produtos anunciados** (marca Radiant):
 
