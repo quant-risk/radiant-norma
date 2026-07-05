@@ -174,9 +174,18 @@ Stack completa em [`backend/README.md`](backend/README.md).
 | **2** | Norma Audit spike (Go CLI + XSD gerado) | ✅ v1.1.0 |
 | **3** | Backend Go + API REST + Audit hash chain + STA stub | ✅ v1.2.0 |
 | **4** | Honesty Patch + 25 regras 3040 + Radar Regulatório | ✅ v1.3.0 |
-| **5** | Norma Console (Next.js) + Auth JWT + 30+ regras + Cross-doc L3 | 🔜 |
-| **6** | STA real (Playwright) + Postgres RLS + Histórico L4 | ⏳ |
-| **7** | SOC 2 Type II + DPA template + ICP-Brasil A3 | ⏳ |
+| **5** | Norma Console (Next.js) + Auth JWT + Cross-doc L3 | ✅ v1.5.0 |
+| **6** | DOS-via-API hardening + Cadoc list cache | ✅ v1.5.0 |
+| **7** | JWT RS256 + 60 regras 3040 + Frontend Next.js | ✅ v2.0.0 |
+| **8** | JWT bridge real + endpoints complementares + tenant isolation + CI/CD | ✅ v2.1.0 |
+| **9–12** | Frontend redesign + Insights + Drill-down server actions | ✅ v3.5.0 |
+| **13** | CSRF + Cross-Tenant + DB Integrity + Rate Limit | ✅ v3.5.2 |
+| **14–16** | Drill-down insights + Design system + Redis rate limiter | ✅ v3.6.0 |
+| **17** | Observability + Production Hardening + lint automation | ✅ v3.7.0 |
+| **18** | STA WS nativo (substituir Playwright) + cert A1/A3 | 🔜 Roadmap |
+
+Última release estável: **v3.7.1** (5 validações profundas + 70+ findings históricos,
+0 HIGH abertos, 17/17 packages `-race` PASS).
 
 **Sub-produtos anunciados** (marca Radiant):
 

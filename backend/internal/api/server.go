@@ -17,12 +17,12 @@ import (
 
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
-	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
-	"github.com/fortvna/radiant-norma/backend/internal/realtime"
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
+	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 	"github.com/fortvna/radiant-norma/backend/internal/insights"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
+	"github.com/fortvna/radiant-norma/backend/internal/realtime"
 	"github.com/fortvna/radiant-norma/backend/internal/ruleprefs"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
@@ -47,16 +47,16 @@ const Version = version.Version
 
 // Server agrega todos os serviços.
 type Server struct {
-	DB        *sql.DB
-	Schema    *schema.Registry
-	Audit     *audit.Service
-	AuditLog  auditLogAPI
-	STAClient sta.Client
-	Radar     *radar.Service
-	CrossDoc  *crossdoc.Engine // Sprint 6 v1.5.0 — Cross-Doc L3
-	RulePrefs *ruleprefs.Preferences // Sprint 11 v3.4.0 — disable/enable por IF
-	ToggleLimiter *ruleprefs.ToggleLimiter // Sprint 12 v3.5.0 — C32.22 rate limit toggle
-	Insights  *insights.Acknowledgments // Sprint 12 v3.5.0 — recommendation ack
+	DB            *sql.DB
+	Schema        *schema.Registry
+	Audit         *audit.Service
+	AuditLog      auditLogAPI
+	STAClient     sta.Client
+	Radar         *radar.Service
+	CrossDoc      *crossdoc.Engine          // Sprint 6 v1.5.0 — Cross-Doc L3
+	RulePrefs     *ruleprefs.Preferences    // Sprint 11 v3.4.0 — disable/enable por IF
+	ToggleLimiter *ruleprefs.ToggleLimiter  // Sprint 12 v3.5.0 — C32.22 rate limit toggle
+	Insights      *insights.Acknowledgments // Sprint 12 v3.5.0 — recommendation ack
 
 	// Sprint 7a (v1.6.0): JWT verifier. Se nil, X-IF-ID fallback
 	// (dev mode via RADIANT_DEV_AUTH=1) ainda funciona.
@@ -114,13 +114,13 @@ func (s *Server) Router() http.Handler {
 	r := chi.NewRouter()
 
 	// Middleware padrão
-		r.Use(middleware.RequestID)
-		r.Use(middleware.RealIP)
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
 
-		// Sprint 12 (v3.5.0) — C32.21: CSRF protection.
-		// Whitelist: /api/login (dev), /v1/auth/* (dev-token).
-		// Em dev: warning + allow. Em prod (RADIANT_ENV=production): 403.
-		r.Use(CSRF(DefaultCSRFConfig()))
+	// Sprint 12 (v3.5.0) — C32.21: CSRF protection.
+	// Whitelist: /api/login (dev), /v1/auth/* (dev-token).
+	// Em dev: warning + allow. Em prod (RADIANT_ENV=production): 403.
+	r.Use(CSRF(DefaultCSRFConfig()))
 
 	// Sprint 13 — v3.5.2 [S15.1]: rate limit global por (bucket, IFID).
 	// Mitiga DoS-via-API authenticated. Aplicado DEPOIS de CSRF pra

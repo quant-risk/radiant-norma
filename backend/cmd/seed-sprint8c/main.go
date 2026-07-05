@@ -193,8 +193,8 @@ func seedEnvios(d *sql.DB, auditLog *auditlog.Logger, logger *slog.Logger) error
 
 			// Audit log: emite 1 evento "sta.submit" + opcional "sta.approved/rejected"
 			_, _ = auditLog.Log(ifID, "system", "sta.submit", cadoc, []byte(envioID), map[string]any{
-				"envio_id": envioID,
-				"period":   period,
+				"envio_id":     envioID,
+				"period":       period,
 				"rules_passed": pass,
 				"rules_failed": fail,
 				"duration_ms":  durationMs,

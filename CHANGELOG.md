@@ -2,10 +2,6 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
-# Changelog — cadocs (Radiant Norma)
-
-> **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
-
 ## v3.7.0 — 2026-07-05 (Sprint 17: Observability + Production Hardening) ✅
 
 > **Status:** ✅ Shipped

@@ -58,12 +58,12 @@ func (h *HubAwareLogger) Log(
 
 func entryToPayload(e *auditlog.Entry, metadata any) map[string]any {
 	out := map[string]any{
-		"id":        e.ID,
-		"actor":     e.Actor,
-		"action":    e.Action,
-		"target":    e.Target,
-		"entry_id":  e.EntryHash[:16],
-		"created":   e.CreatedAt,
+		"id":       e.ID,
+		"actor":    e.Actor,
+		"action":   e.Action,
+		"target":   e.Target,
+		"entry_id": e.EntryHash[:16],
+		"created":  e.CreatedAt,
 	}
 	if metadata != nil {
 		out["metadata"] = metadata

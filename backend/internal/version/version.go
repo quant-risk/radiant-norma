@@ -31,12 +31,13 @@ package version
 // `/healthz` continua reportando "1.5.0" enquanto CHANGELOG diz v2.0.0.
 //
 // Histórico de bumps:
-//   v1.5.0 (Sprint 6)  → v2.0.0 (Sprint 7c, validação 27 fix)
-//   v2.0.0             → v2.1.0 (Sprint 8a, JWT bridge)
-//   v2.1.0             → v3.0.0 (Sprint 9, frontend redesign)
-//   v3.0.0             → v3.1.0 (Sprint 8c, backend intelligence)
-//   v3.1.0             → v3.2.0 (Sprint 8d, URL filters + CSV/JSON export)
-//   v3.2.0             → v3.3.0 (Sprint 10, real-time SSE)
-//   v3.3.0             → v3.4.0 (Sprint 11, drill-down server actions)
-//   v3.4.0             → v3.5.0 (Sprint 12, production hardening + engine integration)
+//
+//	v1.5.0 (Sprint 6)  → v2.0.0 (Sprint 7c, validação 27 fix)
+//	v2.0.0             → v2.1.0 (Sprint 8a, JWT bridge)
+//	v2.1.0             → v3.0.0 (Sprint 9, frontend redesign)
+//	v3.0.0             → v3.1.0 (Sprint 8c, backend intelligence)
+//	v3.1.0             → v3.2.0 (Sprint 8d, URL filters + CSV/JSON export)
+//	v3.2.0             → v3.3.0 (Sprint 10, real-time SSE)
+//	v3.3.0             → v3.4.0 (Sprint 11, drill-down server actions)
+//	v3.4.0             → v3.5.0 (Sprint 12, production hardening + engine integration)
 const Version = "3.5.0"

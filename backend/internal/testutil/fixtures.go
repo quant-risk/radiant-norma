@@ -18,12 +18,12 @@ import (
 
 // EnvioFixture é um envio mockado pra tests.
 type EnvioFixture struct {
-	ID            string
-	Cadoc         string
-	Status        string // accepted | rejected | pending | error
-	RulesPassed   int
-	RulesFailed   int
-	DaysAgo       int    // 0 = hoje, 5 = 5 dias atrás (envio antigo)
+	ID          string
+	Cadoc       string
+	Status      string // accepted | rejected | pending | error
+	RulesPassed int
+	RulesFailed int
+	DaysAgo     int // 0 = hoje, 5 = 5 dias atrás (envio antigo)
 }
 
 // SeedTestEnvios insere envios no DB de teste.

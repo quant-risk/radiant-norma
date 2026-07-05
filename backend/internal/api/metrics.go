@@ -30,13 +30,14 @@ import (
 // Metrics centraliza contadores Prometheus-friendly.
 //
 // Uso:
-//   m := NewMetrics()
-//   m.IncDropped("heavy", "redis")
-//   m.IncAllowed("heavy", "redis")
-//   m.IncFailOpen("redis")
-//   // ... em /v1/metrics handler:
-//   w.Header().Set("Content-Type", "text/plain; version=0.0.4")
-//   io.WriteString(w, m.Render())
+//
+//	m := NewMetrics()
+//	m.IncDropped("heavy", "redis")
+//	m.IncAllowed("heavy", "redis")
+//	m.IncFailOpen("redis")
+//	// ... em /v1/metrics handler:
+//	w.Header().Set("Content-Type", "text/plain; version=0.0.4")
+//	io.WriteString(w, m.Render())
 type Metrics struct {
 	// Counters: chave = bucket + backend, valor = count
 	// sync.Map para acesso concorrente sem contenção global.
@@ -44,10 +45,10 @@ type Metrics struct {
 	allowed sync.Map
 
 	// Counters sem labels (singleton)
-	failOpen        atomic.Int64
-	allowedTotal    atomic.Int64
-	droppedTotal    atomic.Int64
-	backendUp       atomic.Bool // true se backend está respondendo
+	failOpen     atomic.Int64
+	allowedTotal atomic.Int64
+	droppedTotal atomic.Int64
+	backendUp    atomic.Bool // true se backend está respondendo
 }
 
 // NewMetrics cria instância zerada.

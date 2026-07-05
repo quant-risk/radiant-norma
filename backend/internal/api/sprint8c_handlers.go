@@ -37,18 +37,18 @@ import (
 
 // envioDTO é a resposta JSON de /v1/envios (apenas campos que frontend usa).
 type envioDTO struct {
-	ID            string  `json:"id"`
-	CadocCode     string  `json:"cadoc_code"`
-	Period        string  `json:"period"`
-	Status        string  `json:"status"`             // pending | accepted | rejected | error
-	RulesPassed   int     `json:"rules_passed"`
-	RulesFailed   int     `json:"rules_failed"`
-	DurationMs    int     `json:"duration_ms"`
-	ProtocolSTA   string  `json:"protocol_sta"`
-	ErrorCode     string  `json:"error_code,omitempty"`
-	ErrorMessage  string  `json:"error_message,omitempty"`
-	SentAt        string  `json:"sent_at"`            // RFC3339
-	ConfirmedAt   string  `json:"confirmed_at"`       // RFC3339
+	ID           string `json:"id"`
+	CadocCode    string `json:"cadoc_code"`
+	Period       string `json:"period"`
+	Status       string `json:"status"` // pending | accepted | rejected | error
+	RulesPassed  int    `json:"rules_passed"`
+	RulesFailed  int    `json:"rules_failed"`
+	DurationMs   int    `json:"duration_ms"`
+	ProtocolSTA  string `json:"protocol_sta"`
+	ErrorCode    string `json:"error_code,omitempty"`
+	ErrorMessage string `json:"error_message,omitempty"`
+	SentAt       string `json:"sent_at"`      // RFC3339
+	ConfirmedAt  string `json:"confirmed_at"` // RFC3339
 }
 
 // listEnvios retorna envios da IF logada.
@@ -388,11 +388,11 @@ func (s *Server) insightsKPIs(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"current": map[string]any{
-			"approval_rate":  round2(approvalRate),
-			"failures_total": currFailures,
-			"sent_total":     currSent,
-			"accepted":       currAccepted,
-			"rejected":       currRejected,
+			"approval_rate":   round2(approvalRate),
+			"failures_total":  currFailures,
+			"sent_total":      currSent,
+			"accepted":        currAccepted,
+			"rejected":        currRejected,
 			"avg_duration_ms": int(currentAvgMs),
 		},
 		"previous": map[string]any{
@@ -531,21 +531,21 @@ func (s *Server) insightsHeatmap(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"data":  cells,
-		"rows":  rows2,
-		"cols":  cols,
-		"days":  days,
-		"from":  from.UTC().Format(time.RFC3339),
+		"data": cells,
+		"rows": rows2,
+		"cols": cols,
+		"days": days,
+		"from": from.UTC().Format(time.RFC3339),
 	})
 }
 
 // insightsTopFailingRules retorna top N regras com mais falhas no período.
 type ruleFailureDTO struct {
-	Code      string `json:"code"`
-	Severity  string `json:"severity"`
-	Count     int    `json:"count"`
-	DeltaPct  int    `json:"delta_pct"` // vs período anterior
-	TrendDir  string `json:"trend_direction"` // up | down | flat
+	Code     string `json:"code"`
+	Severity string `json:"severity"`
+	Count    int    `json:"count"`
+	DeltaPct int    `json:"delta_pct"`       // vs período anterior
+	TrendDir string `json:"trend_direction"` // up | down | flat
 }
 
 func (s *Server) insightsTopFailingRules(w http.ResponseWriter, r *http.Request) {
@@ -602,19 +602,19 @@ func (s *Server) insightsTopFailingRules(w http.ResponseWriter, r *http.Request)
 			deltaPct = 100 // +100% (era 0)
 		}
 		out = append(out, ruleFailureDTO{
-			Code:      r.Code,
-			Severity:  r.Severity,
-			Count:     r.Count,
-			DeltaPct:  deltaPct,
-			TrendDir:  trend,
+			Code:     r.Code,
+			Severity: r.Severity,
+			Count:    r.Count,
+			DeltaPct: deltaPct,
+			TrendDir: trend,
 		})
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"rules": out,
 		"period": map[string]any{
-			"current_from":  currentStart.UTC().Format(time.RFC3339),
-			"current_to":    now.UTC().Format(time.RFC3339),
+			"current_from": currentStart.UTC().Format(time.RFC3339),
+			"current_to":   now.UTC().Format(time.RFC3339),
 		},
 	})
 }
@@ -680,11 +680,11 @@ func (s *Server) queryTopFailingRulesMap(r *http.Request, ifID string, from, to 
 // recommendationDTO é a resposta de /v1/insights/recommendations.
 type recommendationDTO struct {
 	ID         string `json:"id"`
-	Kind       string `json:"kind"`        // recommendation | warning | opportunity
+	Kind       string `json:"kind"` // recommendation | warning | opportunity
 	Headline   string `json:"headline"`
 	Narrative  string `json:"narrative"`
-	Impact     string `json:"impact"`      // low | medium | high
-	Confidence int    `json:"confidence"`  // 0-100
+	Impact     string `json:"impact"`     // low | medium | high
+	Confidence int    `json:"confidence"` // 0-100
 	CTA        struct {
 		Label string `json:"label"`
 		Href  string `json:"href"`

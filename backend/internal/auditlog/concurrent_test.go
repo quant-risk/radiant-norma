@@ -7,12 +7,12 @@
 //
 // Bug hipotético:
 //
-//   goroutine A: BEGIN DEFERRED
-//   goroutine B: BEGIN DEFERRED
-//   A: SELECT entry_hash → h1
-//   B: SELECT entry_hash → h1 (mesmo)
-//   A: INSERT(entry_hash=h1) OK
-//   B: INSERT(entry_hash=h1) — MESMO prev_hash, chain quebrada
+//	goroutine A: BEGIN DEFERRED
+//	goroutine B: BEGIN DEFERRED
+//	A: SELECT entry_hash → h1
+//	B: SELECT entry_hash → h1 (mesmo)
+//	A: INSERT(entry_hash=h1) OK
+//	B: INSERT(entry_hash=h1) — MESMO prev_hash, chain quebrada
 //
 // Consequência: Verify() vai falhar em qualquer entry > primeira.
 package auditlog_test

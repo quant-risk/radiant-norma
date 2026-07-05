@@ -37,7 +37,7 @@ func TestListEnvios_HappyPath(t *testing.T) {
 	}
 	var resp struct {
 		Envios []struct {
-			ID, CadocCode, Status string
+			ID, CadocCode, Status    string
 			RulesPassed, RulesFailed int
 		} `json:"envios"`
 		Total int `json:"total"`
@@ -210,7 +210,7 @@ func TestInsightsHeatmap_GroupsByDay(t *testing.T) {
 		} `json:"data"`
 		Rows []string `json:"rows"`
 		Cols []string `json:"cols"`
-		Days int     `json:"days"`
+		Days int      `json:"days"`
 	}
 	_ = json.Unmarshal(w.Body.Bytes(), &resp)
 	if len(resp.Data) != 3 {
@@ -306,7 +306,7 @@ func TestInsightsRecommendations_ConcentrationRule(t *testing.T) {
 	var resp struct {
 		Recommendations []struct {
 			ID, Kind, Headline, Impact string
-			Confidence                  int
+			Confidence                 int
 		} `json:"recommendations"`
 	}
 	_ = json.Unmarshal(w.Body.Bytes(), &resp)

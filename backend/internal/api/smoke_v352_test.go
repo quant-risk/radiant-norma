@@ -10,16 +10,16 @@
 //   - Real handlers (não service-level mocks)
 //
 // Cada subteste corresponde a um cenário do plano de release:
-//   1. Startup fail-closed (RADIANT_ENV=production + dev flag → exit != 0)
-//   2. Auth + CSRF middleware ativo
-//   3. STA submit cross-tenant → 403
-//   4. Crossdoc validate cross-tenant → 403
-//   5. Validate/listRules/getSchema/listVersions happy path
-//   6. Worker processa envio + SafeError não vaza DSN
-//   7. Rate limiter burst → 429 + Retry-After header
-//   8. SSE cap de 10 subscribers/IF
-//   9. FK rejeita IF inválido em tabelas tenant-scoped
-//   10. EXPLAIN nos índices de envios (idx usado)
+//  1. Startup fail-closed (RADIANT_ENV=production + dev flag → exit != 0)
+//  2. Auth + CSRF middleware ativo
+//  3. STA submit cross-tenant → 403
+//  4. Crossdoc validate cross-tenant → 403
+//  5. Validate/listRules/getSchema/listVersions happy path
+//  6. Worker processa envio + SafeError não vaza DSN
+//  7. Rate limiter burst → 429 + Retry-After header
+//  8. SSE cap de 10 subscribers/IF
+//  9. FK rejeita IF inválido em tabelas tenant-scoped
+//  10. EXPLAIN nos índices de envios (idx usado)
 package api_test
 
 import (
@@ -740,6 +740,7 @@ func TestSmoke_Cenario10_EnviosIndexes(t *testing.T) {
 		})
 	}
 }
+
 // newSmokeRedisLimiter constrói RedisRateLimiter apontando para o miniredis
 // passado. Helper pra Cenário 7b.
 func newSmokeRedisLimiter(t *testing.T, mr *miniredis.Miniredis) *api.RedisRateLimiter {

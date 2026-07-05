@@ -23,8 +23,8 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
-	workpkg "github.com/fortvna/radiant-norma/backend/internal/worker"
 	"github.com/fortvna/radiant-norma/backend/internal/testutil"
+	workpkg "github.com/fortvna/radiant-norma/backend/internal/worker"
 )
 
 // ============================================================
@@ -36,14 +36,14 @@ func TestComputeBackoff_Table(t *testing.T) {
 		attempts int
 		want     time.Duration
 	}{
-		{0, 1 * time.Minute},   // 1ª falha → retry em 1min
-		{1, 5 * time.Minute},   // 2ª falha → 5min
-		{2, 30 * time.Minute},  // 3ª falha → 30min
-		{3, 2 * time.Hour},     // 4ª falha → 2h
-		{4, 12 * time.Hour},    // 5ª falha → 12h
-		{5, 0},                 // ≥ MaxAttempts → dead letter (sem retry)
-		{99, 0},                // muito longe → 0
-		{-1, 1 * time.Minute},  // negativo → trata como 0
+		{0, 1 * time.Minute},  // 1ª falha → retry em 1min
+		{1, 5 * time.Minute},  // 2ª falha → 5min
+		{2, 30 * time.Minute}, // 3ª falha → 30min
+		{3, 2 * time.Hour},    // 4ª falha → 2h
+		{4, 12 * time.Hour},   // 5ª falha → 12h
+		{5, 0},                // ≥ MaxAttempts → dead letter (sem retry)
+		{99, 0},               // muito longe → 0
+		{-1, 1 * time.Minute}, // negativo → trata como 0
 	}
 	for _, c := range cases {
 		c := c

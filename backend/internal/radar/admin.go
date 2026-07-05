@@ -7,9 +7,10 @@
 //     protege contra triggerRadarScan ser usado como vetor de DOS
 //
 // Background (VALIDATION_v1.4.2.md R1):
-//   POST /v1/radar/scan chama ScanOnce(ctx, nil) → 3 HTTP requests pra
-//   bc.gov.br. Sem rate limit + sem auth admin = vetor de DOS contra BACEN
-//   + inchaço da tabela radar_alerts + auditlog hash chain attack vector.
+//
+//	POST /v1/radar/scan chama ScanOnce(ctx, nil) → 3 HTTP requests pra
+//	bc.gov.br. Sem rate limit + sem auth admin = vetor de DOS contra BACEN
+//	+ inchaço da tabela radar_alerts + auditlog hash chain attack vector.
 //
 // Security stance: FAIL CLOSED. Se ADMIN_TOKEN não está configurada, o
 // endpoint retorna 503 "admin auth não configurada". Melhor que fail open
@@ -82,10 +83,10 @@ func (l *ScanLimiter) Reset() {
 //
 // Em produção: trocar para Redis (in-memory não escala horizontalmente).
 type ScanCache struct {
-	mu         sync.Mutex
-	alerts     []Alert
-	scannedAt  time.Time
-	ttl        time.Duration
+	mu        sync.Mutex
+	alerts    []Alert
+	scannedAt time.Time
+	ttl       time.Duration
 }
 
 // NewScanCache cria cache com TTL.
@@ -143,8 +144,8 @@ func (c *ScanCache) ScannedAt() time.Time {
 // Em produção, cmd/api/main.go carrega ADMIN_TOKEN de env var.
 //
 // Aceita 2 formas:
-//   1. Header X-Admin: <token>
-//   2. Authorization: Bearer <token>
+//  1. Header X-Admin: <token>
+//  2. Authorization: Bearer <token>
 //
 // Comparação constant-time (segurança contra timing attack).
 type AdminAuth struct {

@@ -44,9 +44,9 @@ func TestRegistry_RegisterRawAndGetRaw(t *testing.T) {
 func TestRegistry_RawIsSeparateFromTyped(t *testing.T) {
 	r := rules.NewRegistry()
 	raw := rules.RawRuleFunc{
-		C:   "BOTH",
-		Sht: "Both",
-		Sev: "E",
+		C:       "BOTH",
+		Sht:     "Both",
+		Sev:     "E",
 		ApplyFn: func(ctx context.Context, xmlContent string) error { return nil },
 	}
 	// Não há Register sem RegisterRaw aqui — só raw.
@@ -157,7 +157,7 @@ func TestB05_ArquivoNaoVazio_Reprovado(t *testing.T) {
 		xml  string
 	}{
 		{"empty", ""},
-		{"tiny", "<a/>"},          // 4 bytes, < 50
+		{"tiny", "<a/>"},            // 4 bytes, < 50
 		{"under_50", "<?xml?><a/>"}, // 10 bytes, < 50
 	}
 	for _, c := range cases {

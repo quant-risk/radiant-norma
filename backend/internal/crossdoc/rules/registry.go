@@ -27,4 +27,3 @@ func RegisterInitialRules(r *crossdoc.Registry) {
 	r.Register(Modalidade0213FlagChequeEspecial{})
 	r.Register(DRSACSubsegmentoClassificacaoRisco{})
 }
-

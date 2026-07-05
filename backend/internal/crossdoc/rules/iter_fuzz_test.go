@@ -24,16 +24,16 @@ import (
 func FuzzIterXMLElements_NoPanic(f *testing.F) {
 	// Seeds: casos clássicos de XML pathology.
 	seeds := []string{
-		"",                                                              // vazio
-		"<>",                                                            // tag inválida
-		"<Agreg><Mod>01</Mod></Agreg>",                                 // happy
-		"<Agreg><![CDATA[<Mod>99</Mod>]]></Agreg>",                     // CDATA
-		"<Agreg>5 &lt; 10 &amp; ok</Agreg>",                             // entities
-		"<Agreg>\x00\x01</Agreg>",                                       // control chars
-		strings.Repeat("<Agreg>x</Agreg>", 100000),                     // 1.5MB spam
-		"<Agreg><Nested><Deep><Mod>01</Mod></Deep></Nested></Agreg>",     // nested
-		"<agreg><Mod>01</Mod></agreg>",                                  // case wrong
-		"<Agreg Mod='01' ExtraAttr='evil'>x</Agreg>",                    // mixed attrs
+		"",                             // vazio
+		"<>",                           // tag inválida
+		"<Agreg><Mod>01</Mod></Agreg>", // happy
+		"<Agreg><![CDATA[<Mod>99</Mod>]]></Agreg>",                   // CDATA
+		"<Agreg>5 &lt; 10 &amp; ok</Agreg>",                          // entities
+		"<Agreg>\x00\x01</Agreg>",                                    // control chars
+		strings.Repeat("<Agreg>x</Agreg>", 100000),                   // 1.5MB spam
+		"<Agreg><Nested><Deep><Mod>01</Mod></Deep></Nested></Agreg>", // nested
+		"<agreg><Mod>01</Mod></agreg>",                               // case wrong
+		"<Agreg Mod='01' ExtraAttr='evil'>x</Agreg>",                 // mixed attrs
 	}
 	for _, s := range seeds {
 		f.Add(s)

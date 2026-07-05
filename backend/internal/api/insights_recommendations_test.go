@@ -117,8 +117,8 @@ func TestRecommendations_IncludesAcknowledgedStatus(t *testing.T) {
 
 	var resp struct {
 		Recommendations []struct {
-			ID           string     `json:"id"`
-			Acknowledged  bool       `json:"acknowledged"`
+			ID             string     `json:"id"`
+			Acknowledged   bool       `json:"acknowledged"`
 			AcknowledgedAt *time.Time `json:"acknowledged_at"`
 		} `json:"recommendations"`
 	}

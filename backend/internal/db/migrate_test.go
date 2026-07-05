@@ -232,6 +232,7 @@ func TestMigrate_FreshSchemaVersionsTable(t *testing.T) {
 
 // helper para testar sql queries genéricas
 func execNoRows(_ *sql.DB) {}
+
 var _ = sort.Strings // garante import não removido por tooling
 
 // ============================================================

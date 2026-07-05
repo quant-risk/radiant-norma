@@ -27,8 +27,8 @@ const MaxKeysToggleLimiter = 10_000
 // Política: máximo `maxPerWindow` toggles por `window` (default 10/min).
 // Max keys: MaxKeysToggleLimiter (10k). Se exceder, drop keys mais antigos.
 type ToggleLimiter struct {
-	mu          sync.Mutex
-	calls       map[string][]time.Time // key=if_id, value=call timestamps
+	mu           sync.Mutex
+	calls        map[string][]time.Time // key=if_id, value=call timestamps
 	maxPerWindow int
 	window       time.Duration
 }

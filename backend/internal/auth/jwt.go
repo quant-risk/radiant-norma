@@ -32,10 +32,10 @@ type Config struct {
 // Concurrency: thread-safe. Keyring atualizado via Rotate sem race
 // (uso de sync.RWMutex).
 type Verifier struct {
-	mu       sync.RWMutex
-	config   Config
-	keyring  *Keyring
-	parser   *jwt.Parser
+	mu      sync.RWMutex
+	config  Config
+	keyring *Keyring
+	parser  *jwt.Parser
 }
 
 // NewVerifier cria verifier com keyring de 1 chave (sem rotação).

@@ -46,10 +46,10 @@ type Event struct {
 // subscriber é 1 cliente SSE conectado. Channel buffered pra absorver
 // picos curtos; se encher, evento é dropado (logged).
 type subscriber struct {
-	id     string
-	ch     chan Event
-	ifID   string
-	ctx    context.Context
+	id   string
+	ch   chan Event
+	ifID string
+	ctx  context.Context
 	atomic.Bool
 }
 
@@ -224,9 +224,9 @@ func (h *Hub) Stats() (subs int, totalEvents, dropped uint64) {
 // ("event: heartbeat\ndata: {}\n\n") pra manter conexão viva em NATs.
 //
 // IFID resolution (em ordem):
-//   1. Header X-IF-ID (dev fallback / direct header)
-//   2. Context value key "if_id" (populado pelo api/sse_handler.go
-//      lendo Claims do JWT middleware — evita import cycle)
+//  1. Header X-IF-ID (dev fallback / direct header)
+//  2. Context value key "if_id" (populado pelo api/sse_handler.go
+//     lendo Claims do JWT middleware — evita import cycle)
 func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ifID := getIfID(r)
 

@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	_ "github.com/jackc/pgx/v5/stdlib" // Postgres driver (database/sql)
-	_ "modernc.org/sqlite"              // SQLite driver (pure Go, no CGo)
+	_ "modernc.org/sqlite"             // SQLite driver (pure Go, no CGo)
 )
 
 // Open abre uma conexão SQLite OU Postgres baseado no DSN.

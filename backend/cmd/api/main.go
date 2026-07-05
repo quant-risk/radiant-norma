@@ -18,11 +18,11 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 	crossrules "github.com/fortvna/radiant-norma/backend/internal/crossdoc/rules"
 	"github.com/fortvna/radiant-norma/backend/internal/db"
+	"github.com/fortvna/radiant-norma/backend/internal/insights"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/realtime"
 	"github.com/fortvna/radiant-norma/backend/internal/ruleprefs"
-	"github.com/fortvna/radiant-norma/backend/internal/insights"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
 )

@@ -15,7 +15,7 @@ import (
 
 // 16KB string — tamanho típico de um error message real.
 const bigBlock = "lorem ipsum dolor sit amet, consectetur adipiscing elit. " // 56 chars
-const bigBlocks = 290                                                      // 290 * 56 ≈ 16.2KB
+const bigBlocks = 290                                                        // 290 * 56 ≈ 16.2KB
 
 func buildBigMsg() string {
 	var b strings.Builder

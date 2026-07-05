@@ -78,8 +78,8 @@ func TestCSRF_AllowsCrossOriginInDev(t *testing.T) {
 
 func TestCSRF_AllowsWhitelistedRoute(t *testing.T) {
 	cfg := CSRFConfig{
-		WhitelistRoutes:    []string{"/api/login"},
-		EnforceProduction:  true,
+		WhitelistRoutes:   []string{"/api/login"},
+		EnforceProduction: true,
 	}
 	mw := CSRF(cfg)
 
@@ -149,7 +149,7 @@ func TestIsSameOrigin(t *testing.T) {
 		{"https://app.example.com", "app.example.com", true},
 		{"http://example.com", "localhost:4180", false},
 		{"http://localhost:4180/path", "localhost:4180", true}, // path ignored
-		{"ftp://localhost:4180", "localhost:4180", false},     // wrong scheme
+		{"ftp://localhost:4180", "localhost:4180", false},      // wrong scheme
 		{"", "localhost:4180", false},
 		{"http://evil.com", "localhost:4180", false},
 	}

@@ -82,18 +82,18 @@ func enviosToRows(envios []envioDTO) []map[string]string {
 	rows := make([]map[string]string, 0, len(envios))
 	for _, e := range envios {
 		rows = append(rows, map[string]string{
-			"id":             e.ID,
-			"cadoc_code":     e.CadocCode,
-			"period":         e.Period,
-			"status":         e.Status,
-			"rules_passed":   strconv.Itoa(e.RulesPassed),
-			"rules_failed":   strconv.Itoa(e.RulesFailed),
-			"duration_ms":    strconv.Itoa(e.DurationMs),
-			"protocol_sta":   e.ProtocolSTA,
-			"error_code":     e.ErrorCode,
-			"error_message":  e.ErrorMessage,
-			"sent_at":        e.SentAt,
-			"confirmed_at":   e.ConfirmedAt,
+			"id":            e.ID,
+			"cadoc_code":    e.CadocCode,
+			"period":        e.Period,
+			"status":        e.Status,
+			"rules_passed":  strconv.Itoa(e.RulesPassed),
+			"rules_failed":  strconv.Itoa(e.RulesFailed),
+			"duration_ms":   strconv.Itoa(e.DurationMs),
+			"protocol_sta":  e.ProtocolSTA,
+			"error_code":    e.ErrorCode,
+			"error_message": e.ErrorMessage,
+			"sent_at":       e.SentAt,
+			"confirmed_at":  e.ConfirmedAt,
 		})
 	}
 	return rows
@@ -137,14 +137,14 @@ func alertasToRows(alerts []radarAlertDTO) []map[string]string {
 	rows := make([]map[string]string, 0, len(alerts))
 	for _, a := range alerts {
 		rows = append(rows, map[string]string{
-			"id":           strconv.Itoa(a.ID),
-			"cadoc_code":   a.CadocCode,
-			"severity":     a.Severity,
-			"title":        a.Title,
-			"description":  a.Description,
-			"source_url":   a.SourceURL,
-			"detected_at":  a.DetectedAt,
-			"resolved":     strconv.FormatBool(a.Resolved),
+			"id":          strconv.Itoa(a.ID),
+			"cadoc_code":  a.CadocCode,
+			"severity":    a.Severity,
+			"title":       a.Title,
+			"description": a.Description,
+			"source_url":  a.SourceURL,
+			"detected_at": a.DetectedAt,
+			"resolved":    strconv.FormatBool(a.Resolved),
 		})
 	}
 	return rows

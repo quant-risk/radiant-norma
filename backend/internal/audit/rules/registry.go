@@ -92,15 +92,15 @@ type RawRule interface {
 
 // RawRuleFunc adapter permite usar func como RawRule.
 type RawRuleFunc struct {
-	C        string
-	Sht      string
-	Sev      string
-	ApplyFn  func(ctx context.Context, xmlContent string) error
+	C       string
+	Sht     string
+	Sev     string
+	ApplyFn func(ctx context.Context, xmlContent string) error
 }
 
-func (r RawRuleFunc) Code() string                       { return r.C }
-func (r RawRuleFunc) Sheet() string                      { return r.Sht }
-func (r RawRuleFunc) Severity() string                   { return r.Sev }
+func (r RawRuleFunc) Code() string     { return r.C }
+func (r RawRuleFunc) Sheet() string    { return r.Sht }
+func (r RawRuleFunc) Severity() string { return r.Sev }
 func (r RawRuleFunc) ApplyRaw(ctx context.Context, s string) error {
 	return r.ApplyFn(ctx, s)
 }

@@ -96,11 +96,11 @@ func newTestRedisLimiter(t *testing.T, limits map[pathBucket]RateLimit) (*RedisR
 	client := redis.NewClient(opts)
 
 	rl := &RedisRateLimiter{
-		Client:    client,
-		Limits:    limits,
-		Script:    redis.NewScript(LuaIncrWithTTL),
-		Logger:    discardSlog(),
-		KeyPrefix: "rl:",
+		Client:        client,
+		Limits:        limits,
+		Script:        redis.NewScript(LuaIncrWithTTL),
+		Logger:        discardSlog(),
+		KeyPrefix:     "rl:",
 		SlidingScript: redis.NewScript(LuaSlidingWindow),
 	}
 	t.Cleanup(func() { _ = rl.Close() })
@@ -272,6 +272,7 @@ func TestNewRateLimiterFromEnv_RedisWithMiniredis(t *testing.T) {
 		t.Fatal("primeira call deveria passar")
 	}
 }
+
 // TestRedisRateLimiter_ConcurrentStress valida que sob carga concorrente
 // intensa (50 goroutines × 100 calls), Redis Lua script é atômico —
 // não double-counting, não race em calls/locks.
@@ -286,11 +287,11 @@ func TestRedisRateLimiter_ConcurrentStress(t *testing.T) {
 	mr := miniredis.RunT(t)
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	rl := &RedisRateLimiter{
-		Client:    client,
-		Limits:    DefaultRateLimits,
-		Script:    redis.NewScript(LuaIncrWithTTL),
-		Logger:    discardSlog(),
-		KeyPrefix: "stress:",
+		Client:        client,
+		Limits:        DefaultRateLimits,
+		Script:        redis.NewScript(LuaIncrWithTTL),
+		Logger:        discardSlog(),
+		KeyPrefix:     "stress:",
 		SlidingScript: redis.NewScript(LuaSlidingWindow),
 	}
 	t.Cleanup(func() { _ = rl.Close() })
@@ -495,7 +496,6 @@ func TestRedisRateLimiter_SlidingWindow_BlocksAtMax(t *testing.T) {
 	}
 }
 
-
 func TestNewRateLimiterFromEnv_RedisSlidingWindow(t *testing.T) {
 	mr := miniredis.RunT(t)
 	t.Setenv("RADIANT_RATE_LIMIT_BACKEND", "redis")
@@ -531,8 +531,8 @@ func TestRedisRateLimiter_SlidingWindow_AllowsAfterExpiry(t *testing.T) {
 	mr := miniredis.RunT(t)
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	rl := &RedisRateLimiter{
-		Client:        client,
-		Limits:        map[pathBucket]RateLimit{
+		Client: client,
+		Limits: map[pathBucket]RateLimit{
 			bucketHeavy: {Max: 2, Window: 1 * time.Second},
 		},
 		Script:        redis.NewScript(LuaIncrWithTTL),

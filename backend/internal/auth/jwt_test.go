@@ -64,13 +64,13 @@ func setupVerifier(t *testing.T, priv *rsa.PrivateKey, issuer string) (*auth.Ver
 func sign(t *testing.T, priv *rsa.PrivateKey, kid string, claims *auth.Claims) string {
 	t.Helper()
 	registered := jwtv5.MapClaims{
-		"sub":    claims.Sub,
-		"if_id":  claims.IFID,
-		"role":   string(claims.Role),
-		"iss":    claims.Iss,
-		"exp":    claims.Exp.Unix(),
-		"iat":    claims.Iat.Unix(),
-		"jti":    claims.Jti,
+		"sub":   claims.Sub,
+		"if_id": claims.IFID,
+		"role":  string(claims.Role),
+		"iss":   claims.Iss,
+		"exp":   claims.Exp.Unix(),
+		"iat":   claims.Iat.Unix(),
+		"jti":   claims.Jti,
 	}
 	token := jwtv5.NewWithClaims(jwtv5.SigningMethodRS256, registered)
 	token.Header["kid"] = kid
