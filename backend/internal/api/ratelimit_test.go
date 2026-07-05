@@ -9,6 +9,8 @@ package api
 import (
 	"io"
 	"log/slog"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -267,4 +269,123 @@ func TestNewRateLimiterFromEnv_RedisWithMiniredis(t *testing.T) {
 	if !allowed {
 		t.Fatal("primeira call deveria passar")
 	}
+}
+// TestRedisRateLimiter_ConcurrentStress valida que sob carga concorrente
+// intensa (50 goroutines × 100 calls), Redis Lua script é atômico —
+// não double-counting, não race em calls/locks.
+//
+// Esperado: bucketHeavy.Max=10 → apenas 10 calls allowed, 4990 denied.
+// Sem race detector flag. Sem double-count (Lua script atomic).
+func TestRedisRateLimiter_ConcurrentStress(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip stress test em -short mode")
+	}
+
+	mr := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	rl := &RedisRateLimiter{
+		Client:    client,
+		Limits:    DefaultRateLimits,
+		Script:    redis.NewScript(LuaIncrWithTTL),
+		Logger:    discardSlog(),
+		KeyPrefix: "stress:",
+	}
+	t.Cleanup(func() { _ = rl.Close() })
+
+	const (
+		goroutines        = 50
+		callsPerGoroutine = 100
+	)
+
+	var (
+		allowed atomic.Int64
+		denied  atomic.Int64
+		wg      sync.WaitGroup
+	)
+
+	for g := 0; g < goroutines; g++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for c := 0; c < callsPerGoroutine; c++ {
+				ok, _ := rl.Allow(bucketHeavy, "stress-demo")
+				if ok {
+					allowed.Add(1)
+				} else {
+					denied.Add(1)
+				}
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	total := allowed.Load() + denied.Load()
+	expectedTotal := int64(goroutines * callsPerGoroutine)
+	if total != expectedTotal {
+		t.Fatalf("total mismatch: got %d, want %d", total, expectedTotal)
+	}
+
+	// bucketHeavy.Max=10. 50×100=5000 calls. Apenas 10 allowed, 4990 denied.
+	if allowed.Load() != 10 {
+		t.Errorf("allowed=%d, want 10 (heavy bucket max)", allowed.Load())
+	}
+	if denied.Load() != expectedTotal-10 {
+		t.Errorf("denied=%d, want %d", denied.Load(), expectedTotal-10)
+	}
+
+	t.Logf("stress test OK: %d allowed, %d denied (de %d total)",
+		allowed.Load(), denied.Load(), total)
+}
+
+// TestMemoryRateLimiter_ConcurrentStress valida que memory backend também
+// é thread-safe sob carga concorrente. Mutex deve serializar correctly.
+func TestMemoryRateLimiter_ConcurrentStress(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skip stress test em -short mode")
+	}
+
+	rl := newMemoryRateLimiter()
+
+	const (
+		goroutines        = 50
+		callsPerGoroutine = 100
+	)
+
+	var (
+		allowed atomic.Int64
+		denied  atomic.Int64
+		wg      sync.WaitGroup
+	)
+
+	for g := 0; g < goroutines; g++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for c := 0; c < callsPerGoroutine; c++ {
+				ok, _ := rl.Allow(bucketHeavy, "stress-mem-demo")
+				if ok {
+					allowed.Add(1)
+				} else {
+					denied.Add(1)
+				}
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	total := allowed.Load() + denied.Load()
+	expectedTotal := int64(goroutines * callsPerGoroutine)
+	if total != expectedTotal {
+		t.Fatalf("total mismatch: got %d, want %d", total, expectedTotal)
+	}
+
+	// Sem Redis TTL, todas as 5000 calls caem na mesma janela → só 10 allowed.
+	if allowed.Load() != 10 {
+		t.Errorf("allowed=%d, want 10 (heavy bucket max, single window)", allowed.Load())
+	}
+
+	t.Logf("memory stress test OK: %d allowed, %d denied",
+		allowed.Load(), denied.Load())
 }
