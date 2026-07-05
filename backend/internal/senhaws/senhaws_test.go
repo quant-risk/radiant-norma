@@ -549,6 +549,44 @@ func TestSenhawsClient_AlterarSenha_BodyMalformed(t *testing.T) {
 	}
 }
 
+// TestSenhawsClient_AlterarSenha_TransportError — Validação 47 (F-S25-47-A):
+// erro de rede (HTTPClient.Do falha) deve ser retornado cru (não *SenhaError
+// nem *ValidationError). Caller classifica como transporte.
+func TestSenhawsClient_AlterarSenha_TransportError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close() // fecha imediatamente → próxima call vai dar connection refused
+
+	sc, err := NewSenhawsClient(SenhawsConfig{
+		BaseURL:           srv.URL,
+		User:              "123450001.fulano",
+		Password:          "old-password",
+		Timeout:           1 * time.Second,
+		AllowInsecureHTTP: true,
+	})
+	if err != nil {
+		t.Fatalf("NewSenhawsClient: %v", err)
+	}
+
+	err = sc.AlterarSenha(context.Background(), "new-password-12345")
+	if err == nil {
+		t.Fatal("esperava erro de transporte")
+	}
+	// Não deve ser *ValidationError (não é erro do caller)
+	var valErr *ValidationError
+	if errors.As(err, &valErr) {
+		t.Errorf("erro de transporte NÃO deveria ser *ValidationError: %v", err)
+	}
+	// Não deve ser *SenhaError (não é rejeição formal BACEN)
+	var senErr *SenhaError
+	if errors.As(err, &senErr) {
+		t.Errorf("erro de transporte NÃO deveria ser *SenhaError: %v", err)
+	}
+	// Deve ser erro cru de transporte (contém "connection refused" ou similar)
+	if !strings.Contains(err.Error(), "connection refused") && !strings.Contains(err.Error(), "EOF") {
+		t.Errorf("erro deveria ser de rede, got %q", err.Error())
+	}
+}
+
 // TestTruncateSenha — helper local.
 func TestTruncateSenha(t *testing.T) {
 	tests := []struct {

@@ -2,6 +2,98 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.18.0 — 2026-07-06 (Validação 47 DEEPEST — error path tests 3-way) ✅
+
+> **Status:** ✅ Shipped
+> **Versão:** patch (1 LOW — zero impacto em código existente)
+> **Trigger:** "da mais uma validada profunda" após Validação 46
+> **Validação:** 20/20 packages PASS + 1 teste novo + coverage senhaws 94.4% → 95.6% + race clean + 6/6 binaries + gofmt/vet clean
+
+### 🎯 Resumo
+
+Validação 47 fecha **1 finding** identificado na leitura completa de
+Validação 46 (commit `ba77d30`):
+
+- **F-S25-47-A (LOW):** `AlterarSenha` retornava erro de transporte cru
+  (HTTPClient.Do falha) mas caminho não tinha test dedicado. Coverage
+  `AlterarSenha` 89.3% → **92.9%** (+3.6pp). Total senhaws 94.4% → **95.6%** (+1.2pp).
+
+### 🔍 Findings NÃO fechados (7 com justificativa)
+
+Todos carry-overs documentados:
+- **F-NF-1:** `ConsultarVencimento` 91.3% gaps remanescentes (unreachable paths).
+- **F-NF-2:** `loadConfig` retorna `errors.New` opaco (carry-over F-NF-2 v46).
+- **F-NF-3:** `ConsultarVencimento` retorna 4 `errors.New`/`fmt.Errorf` opacos (defensiva BACEN bug — carry-over F-NF-1 v46).
+- **F-NF-4:** `cli main()` 0% coverage (YAGNI — carry-over v44+v45+v46).
+- **F-NF-5:** `newLogger` 66.7% coverage (carry-over v45+v46).
+- **F-NF-6:** `*ValidationError` não implementa `Is`/`Unwrap` (mesma justificativa `*SenhaError`).
+- **F-NF-7:** lint script regex `^```` não pega code blocks indentados (edge case improvável).
+
+### 🔒 Test 3-way pattern (NOVO)
+
+`TestSenhawsClient_AlterarSenha_TransportError` valida 3 aspectos do contrato:
+
+```go
+// 1. NÃO deve ser *ValidationError (não é erro do caller)
+var valErr *ValidationError
+if errors.As(err, &valErr) {
+    t.Errorf("erro de transporte NÃO deveria ser *ValidationError")
+}
+
+// 2. NÃO deve ser *SenhaError (não é rejeição formal BACEN)
+var senErr *SenhaError
+if errors.As(err, &senErr) {
+    t.Errorf("erro de transporte NÃO deveria ser *SenhaError")
+}
+
+// 3. DEVE ser erro cru de rede (contém "connection refused" / "EOF")
+if !strings.Contains(err.Error(), "connection refused") && !strings.Contains(err.Error(), "EOF") {
+    t.Errorf("erro deveria ser de rede, got %q", err.Error())
+}
+```
+
+Pattern replicável: **1-way test** (v45+v46 validava tipo positivo) → **3-way test** (v47 valida tipo positivo + 2 tipos negativos).
+
+### 📦 Arquivos tocados
+
+```
+backend/internal/senhaws/senhaws_test.go       (+35 — 1 teste novo: TestSenhawsClient_AlterarSenha_TransportError)
+VALIDATION_v3.17.0_DEEPEST.md                 (novo — 8 checklists + 1 finding fechado + 7 NF + 5 lições)
+CHANGELOG.md                                  (esta entrada)
+```
+
+### 🔢 Métricas
+
+| Métrica | Pré Validação 47 | Pós Validação 47 |
+|---|---|---|
+| Packages PASS | 20/20 | **20/20** (zero regressão) |
+| Tests senhaws top-level | 18 | **19** (+1) |
+| Total backend tests top-level | 116 | **117** (+1) |
+| Coverage internal/senhaws | 94.4% | **95.6%** (+1.2pp) |
+| Coverage AlterarSenha | 89.3% | **92.9%** (+3.6pp) |
+| Coverage NewSenhawsClient | 100% | 100% |
+| Coverage ConsultarVencimento | 91.3% | 91.3% |
+| Race detector | clean | clean |
+| gofmt drift | 0 | 0 |
+| vet | clean | clean |
+| Lint `lint-no-placeholder.sh` | ✅ 26/26 | ✅ 26/26 |
+| Findings abertos | — | **0** (1 fechado, 7 NF com justificativa) |
+
+### 🏗️ Lições aprendidas (carry forward)
+
+1. **Error path tests devem validar 3-way (tipo + não-tipos + indícios).** Pattern emergente v45/v46/v47 — próxima evolução natural é aplicar 3-way em todos os error paths.
+2. **Coverage gap em error path é catchable com test simples.** `httptest.Server.Close()` antes de call → garante connection refused. Pattern replicável em qualquer client HTTP.
+3. **Tests de contrato HTTP devem cobrir falhas de transporte, não só status codes.** Coverage 8% gap em `AlterarSenha` vinha todo de xml.Marshal (impossível), NewRequestWithContext (impossível), HTTPClient.Do (testável, não testado).
+4. **Carry-overs entre validações: nem todo NF é fechamento.** v47 encontrou 7 NF, mas 6 são carry-overs documentados em validações anteriores (F-NF-1 a F-NF-3 da v46, F-NF-4 da v44).
+5. **Validação contínua pós-sprint vale o investimento.** Validação 47 foi pequena (~35 linhas), mas fechou gap real. Pequena e frequente > grande e rara.
+
+### 🔒 Compatibilidade
+
+- Zero impacto em código existente. Adição de 1 teste.
+- Test não altera comportamento de runtime. Apenas verifica contrato.
+
+---
+
 ## v3.17.0 — 2026-07-06 (Validação 46 DEEPEST — Sprint 25 hardening + ValidationError consistency) ✅
 
 > **Status:** ✅ Shipped
