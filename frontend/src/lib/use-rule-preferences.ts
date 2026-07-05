@@ -6,10 +6,15 @@
 //
 // Pattern: source of truth é backend. Local state é cache que reflete backend.
 // Em caso de 409, refetch + mostra toast/aviso.
+//
+// Sprint 12 (v3.5.0) — C32.13: useRef pattern elimina stale closure no
+// toggle(). Closure anterior capturava `disabled` no momento da criação;
+// cliques rápidos (modal+card simultâneo) enviavam expected_state stale
+// e recebiam 409 desnecessário. Ref é atualizado em effect, sempre fresh.
 
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export interface UseRulePreferencesResult {
   /** Set de rule_codes desabilitadas (do backend). */
@@ -25,6 +30,13 @@ export interface UseRulePreferencesResult {
 export function useRulePreferences(): UseRulePreferencesResult {
   const [disabled, setDisabled] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+
+  // C32.13: ref sempre aponta pro state mais recente. Toggle() lê daqui
+  // pra calcular expected_state, evitando stale closure.
+  const disabledRef = useRef(disabled)
+  useEffect(() => {
+    disabledRef.current = disabled
+  }, [disabled])
 
   const refresh = useCallback(async () => {
     try {
@@ -52,10 +64,12 @@ export function useRulePreferences(): UseRulePreferencesResult {
     refresh()
   }, [refresh])
 
+  // toggle() não tem `disabled` na dep array — usa ref pra fresh value.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const toggle = useCallback(
     async (code: string) => {
-      // Compute expected_state antes do POST
-      const expectedState = disabled.has(code) ? 'disabled' : 'enabled'
+      // C32.13: lê do ref (fresh) ao invés de closure (stale).
+      const expectedState = disabledRef.current.has(code) ? 'disabled' : 'enabled'
 
       try {
         const resp = await fetch(`/api/rules/${encodeURIComponent(code)}/toggle`, {
@@ -68,6 +82,11 @@ export function useRulePreferences(): UseRulePreferencesResult {
           // State mismatch — refetch e retorna erro
           await refresh()
           return { error: 'state_changed' }
+        }
+
+        if (resp.status === 429) {
+          // C32.22: rate limit
+          return { error: 'rate_limited' }
         }
 
         if (!resp.ok) {
@@ -90,7 +109,7 @@ export function useRulePreferences(): UseRulePreferencesResult {
         return { error: (e as Error).message }
       }
     },
-    [disabled, refresh],
+    [refresh], // sem `disabled` na dep — usamos ref
   )
 
   return { disabled, loading, toggle, refresh }

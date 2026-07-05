@@ -54,6 +54,7 @@ type Server struct {
 	Radar     *radar.Service
 	CrossDoc  *crossdoc.Engine // Sprint 6 v1.5.0 — Cross-Doc L3
 	RulePrefs *ruleprefs.Preferences // Sprint 11 v3.4.0 — disable/enable por IF
+	ToggleLimiter *ruleprefs.ToggleLimiter // Sprint 12 v3.5.0 — C32.22 rate limit toggle
 
 	// Sprint 7a (v1.6.0): JWT verifier. Se nil, X-IF-ID fallback
 	// (dev mode via RADIANT_DEV_AUTH=1) ainda funciona.
@@ -89,8 +90,8 @@ type auditLogAPI interface {
 }
 
 // NewServer cria um Server.
-func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences) *Server {
-	return &Server{DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient, Radar: rad, RulePrefs: rp, startedAt: time.Now()}
+func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences, tl *ruleprefs.ToggleLimiter) *Server {
+	return &Server{DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient, Radar: rad, RulePrefs: rp, ToggleLimiter: tl, startedAt: time.Now()}
 }
 
 // Router retorna o chi router configurado.
@@ -459,6 +460,11 @@ func (s *Server) validate(w http.ResponseWriter, r *http.Request) {
 	if req.ContentType == "" {
 		req.ContentType = "application/xml"
 	}
+
+	// Sprint 12 (v3.5.0): C32.23 — popula IfID a partir do JWT claims
+	// pra que audit.Service possa filtrar regras desabilitadas por IF
+	// (toggle em /v1/rules/{code}/toggle).
+	req.IfID = ifID
 
 	// Executa validação
 	resp, err := s.Audit.Validate(r.Context(), &req)

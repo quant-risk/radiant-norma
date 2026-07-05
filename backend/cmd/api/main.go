@@ -56,11 +56,15 @@ func main() {
 	// Services
 	schReg := schema.New(d)
 	audSvc := audit.New(d)
+	// Sprint 12 (v3.5.0): C32.23 — wire ruleprefs no audit.Service
+	// pra que regras desabilitadas em /v1/rules/{code}/toggle afetem
+	// validação real (antes era cosmético).
+	audSvc.SetRulePrefs(ruleprefs.NewPreferences(d))
 	audLog := auditlog.New(d)
 	staClient := sta.NewStubClient()
 	radarSvc := radar.New(d, 6*time.Hour)
 
-	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, ruleprefs.NewPreferences(d))
+	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, ruleprefs.NewPreferences(d), ruleprefs.NewToggleLimiter(10, time.Minute))
 
 	// Sprint 10 — Hub SSE + wrap audit logger pra publicar eventos em
 	// real-time. Em produção, hub pode ser substituído por Kafka/Redis

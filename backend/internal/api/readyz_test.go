@@ -32,7 +32,7 @@ func TestReadyz_OK(t *testing.T) {
 // Validação 23 (F23.1): K8s readiness probe deve tirar pod do LB se DB
 // estiver indisponível. Sem este check, pod ficaria no LB com DB quebrado.
 func TestReadyz_NoDB(t *testing.T) {
-	srv := api.NewServer(nil, nil, nil, nil, nil, nil, nil)
+	srv := api.NewServer(nil, nil, nil, nil, nil, nil, nil, nil)
 	handler := srv.Router()
 
 	req := httptest.NewRequest("GET", "/readyz", nil)

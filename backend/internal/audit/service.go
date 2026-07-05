@@ -50,11 +50,16 @@ type ValidationError struct {
 //
 // Aceita tanto `cadoc` (cliente-friendly, documentado no README) quanto
 // `cadoc_code` (nome da coluna no DB) por compatibilidade.
+//
+// Sprint 12 (v3.5.0): IfID é populado pelo handler a partir do JWT claims
+// (não vem do request body). Service usa pra filtrar regras desabilitadas
+// via ruleprefs.Preferences.
 type ValidationRequest struct {
 	CadocCode   string `json:"cadoc_code"`
 	DataBase    string `json:"data_base"`    // YYYY-MM-DD
 	XML         string `json:"xml"`          // pode ser XML ou JSON (3044)
 	ContentType string `json:"content_type"` // "application/xml" ou "application/json"
+	IfID        string `json:"-"`            // populado pelo handler, não serializado
 }
 
 // UnmarshalJSON customizado: aceita "cadoc" OU "cadoc_code" no JSON.
@@ -91,12 +96,27 @@ type ValidationResponse struct {
 	Warnings   []ValidationError `json:"warnings"`
 	ExecutedAt time.Time         `json:"executed_at"`
 	DurationMs int64             `json:"duration_ms"`
+
+	// Sprint 12 (v3.5.0): lista de códigos de regras que foram puladas
+	// porque desabilitadas via ruleprefs (toggle de /v1/rules/{code}/toggle).
+	// Empty se nenhuma ou se service roda sem ruleprefs injetado.
+	DisabledRules []string `json:"disabled_rules,omitempty"`
+}
+
+// RulePrefs é interface mínima que *ruleprefs.Preferences satisfaz.
+// Permite ao Service filtrar regras desabilitadas por IF sem criar
+// import cycle (audit não importa ruleprefs diretamente — usa interface).
+//
+// Sprint 12 (v3.5.0): C32.23 — disabled_rules agora afeta validação real.
+type RulePrefs interface {
+	ListDisabledCodes(ctx context.Context, ifID string) ([]string, error)
 }
 
 // Service é o serviço do Norma Audit.
 type Service struct {
 	db       *sql.DB
 	registry *rules.Registry // registry de regras portadas (Sprint 4+)
+	prefs    RulePrefs       // Sprint 12: filter de regras desabilitadas por IF
 }
 
 // New cria um novo Service.
@@ -107,6 +127,12 @@ func New(db *sql.DB) *Service {
 // SetRegistry permite injetar registry customizado (testes).
 func (s *Service) SetRegistry(r *rules.Registry) {
 	s.registry = r
+}
+
+// SetRulePrefs injeta ruleprefs service (Sprint 12 v3.5.0).
+// Se não setado, validação roda sem filtrar disabled rules.
+func (s *Service) SetRulePrefs(p RulePrefs) {
+	s.prefs = p
 }
 
 // Registry retorna o registry atual.
@@ -231,11 +257,42 @@ func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*Valida
 		var cachedDoc *rules.Doc3040
 		is3040 := req.CadocCode == "3040" && req.ContentType != "application/json"
 
+		// Sprint 12 (v3.5.0): C32.23 — carrega set de regras desabilitadas
+		// por IF (via ruleprefs) e pula elas na validação. Set carregado
+		// UMA vez por Validate() — perf: 1 query independente de N regras.
+		var disabledSet map[string]bool
+		if s.prefs != nil && req.IfID != "" {
+			codes, err := s.prefs.ListDisabledCodes(ctx, req.IfID)
+			if err != nil {
+				// Log mas não falha — preferência é best-effort. Sem
+				// prefs, todas regras rodam (comportamento legacy).
+				logger := slog.Default()
+				logger.Warn("audit ruleprefs ListDisabledCodes failed",
+					"if_id", req.IfID,
+					"err", loggerutil.SafeError(err))
+			} else {
+				disabledSet = make(map[string]bool, len(codes))
+				for _, code := range codes {
+					disabledSet[code] = true
+				}
+				// Inclui na response pra transparency (frontend mostra
+				// quais regras foram puladas).
+				resp.DisabledRules = codes
+			}
+		}
+
 		for _, c := range criticas {
 			// Respeita flag `enabled` do DB (BACEN marca habilitado?=n para
 			// regras que NÃO estão em vigor na data-base corrente).
 			// Sem isso, o XML exemplo oficial (Mod=0213 com v150>0) falha.
 			if !c.Enabled {
+				continue
+			}
+
+			// Sprint 12 (v3.5.0): pula regras desabilitadas pelo IF via
+			// toggle em /v1/rules/{code}/toggle. Feature era cosmética
+			// até Sprint 12 (C32.23) — agora afeta validação real.
+			if disabledSet[c.Codigo] {
 				continue
 			}
 

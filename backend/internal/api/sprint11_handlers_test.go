@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
@@ -77,10 +78,11 @@ func setupRuleToggleTest(t *testing.T) (*Server, *sql.DB, *realtime.Hub, func())
 	_ = logger
 
 	srv := &Server{
-		DB:        d,
-		RulePrefs: ruleprefs.NewPreferences(d),
-		AuditLog:  realtime.WrapAuditLog(al, hub),
-		EventsHub: hub,
+		DB:            d,
+		RulePrefs:     ruleprefs.NewPreferences(d),
+		AuditLog:      realtime.WrapAuditLog(al, hub),
+		EventsHub:     hub,
+		ToggleLimiter: ruleprefs.NewToggleLimiter(100, time.Minute), // generous limit for tests
 	}
 
 	cleanup := func() {

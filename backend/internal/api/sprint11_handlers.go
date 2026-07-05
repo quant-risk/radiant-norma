@@ -5,18 +5,41 @@
 //
 // Ambos autenticados (JWT middleware). Actor no audit event vem do
 // Claims.Sub (user/email/IDP subject).
+//
+// Sprint 12 (v3.5.0) — hardening:
+//   - C32.4 + C32.19: validação de formato de rule_code via regex
+//     (^[A-Z][0-9]{1,3}$). Bloqueia input malicioso/typo antes de
+//     chegar no DB.
+//   - C32.10: ErrRuleNotDisabled agora é mapeado pra 200 idempotente
+//     ao invés de 500 confuso.
 
 package api
 
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log/slog"
 	"net/http"
+	"regexp"
 
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
 	"github.com/fortvna/radiant-norma/backend/internal/ruleprefs"
 	"github.com/go-chi/chi/v5"
 )
+
+// validRuleCodePattern valida formato de código de regra.
+//
+// Códigos BACEN seguem padrão [A-Z][0-9]{1,3} (B12, F23, S05, C001).
+// Bloqueio de input malicioso via regex no handler — defense in depth
+// (backend usa parameterized queries, mas regex protege contra typos
+// extremos e payloads que passam mas não fazem sentido).
+var validRuleCodePattern = regexp.MustCompile(`^[A-Z][0-9]{1,3}$`)
+
+// isValidRuleCode retorna true se code é formato válido.
+func isValidRuleCode(code string) bool {
+	return validRuleCodePattern.MatchString(code)
+}
 
 // listDisabledRules retorna todas as regras desabilitadas por 1 IF.
 func (s *Server) listDisabledRules(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +83,9 @@ func (s *Server) listDisabledRules(w http.ResponseWriter, r *http.Request) {
 // validação otimista, retorna 409 se estado atual difere).
 //
 // Audit event emitido: rule.disabled ou rule.enabled.
+//
+// Sprint 12 (v3.5.0) — C32.22: rate limit por IF (10/min default).
+// 429 com Retry-After header.
 func (s *Server) toggleRule(w http.ResponseWriter, r *http.Request) {
 	claims, err := auth.ClaimsFromContext(r.Context())
 	if err != nil {
@@ -71,9 +97,28 @@ func (s *Server) toggleRule(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "if_id required in claims", http.StatusBadRequest)
 		return
 	}
+
+	// C32.22: rate limit antes de qualquer processamento
+	if s.ToggleLimiter != nil {
+		ok, retryAfter := s.ToggleLimiter.Allow(ifID)
+		if !ok {
+			w.Header().Set("Retry-After", fmt.Sprintf("%d", int(retryAfter.Seconds())+1))
+			writeJSON(w, http.StatusTooManyRequests, map[string]any{
+				"error":       "rate limit exceeded",
+				"retry_after": int(retryAfter.Seconds()) + 1,
+				"limit":       "10 toggles per minute per IF",
+			})
+			return
+		}
+	}
 	ruleCode := chi.URLParam(r, "code")
 	if ruleCode == "" {
 		http.Error(w, "rule code required", http.StatusBadRequest)
+		return
+	}
+	// C32.4 + C32.19: valida formato (defense in depth)
+	if !isValidRuleCode(ruleCode) {
+		http.Error(w, "invalid rule code format (expected [A-Z][0-9]{1,3})", http.StatusBadRequest)
 		return
 	}
 
@@ -112,8 +157,30 @@ func (s *Server) toggleRule(w http.ResponseWriter, r *http.Request) {
 	// Toggle
 	newState, err := s.RulePrefs.Toggle(r.Context(), ifID, ruleCode, claims.Sub)
 	if err != nil {
+		// C32.10: ErrRuleNotDisabled não é erro real — é estado já
+		// mudou por outro request. É idempotente do ponto de vista do
+		// estado final. Logamos + retornamos o estado conhecido.
+		//
+		// Sem esse fix, race conditions entre requests concorrentes
+		// (Sprint 12 multi-pod) resultariam em 500 confuso.
 		if errors.Is(err, ruleprefs.ErrRuleNotDisabled) {
-			http.Error(w, "internal state error", http.StatusInternalServerError)
+			// Estado já é "enabled" (Enable() falhou porque não estava
+			// disabled). Confirm via IsDisabled pra reportar o estado
+			// real.
+			isDisabled, _ := s.RulePrefs.IsDisabled(r.Context(), ifID, ruleCode)
+			actualState := "enabled"
+			if isDisabled {
+				actualState = "disabled"
+			}
+			slog.Default().Info("toggle race resolved idempotently",
+				"if_id", ifID,
+				"rule_code", ruleCode,
+				"reported_state", actualState)
+			writeJSON(w, http.StatusOK, map[string]any{
+				"if_id":     ifID,
+				"rule_code": ruleCode,
+				"new_state": actualState,
+			})
 			return
 		}
 		s.internalServerError(w, err, "toggle")

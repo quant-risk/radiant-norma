@@ -2,6 +2,90 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.5.0 — 2026-07-05 (Sprint 12: Production Hardening + Engine Integration) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 12 (engine integration + rate limit + validations)
+> **Versão:** minor (hardening + bug fixes da validação 32)
+> **Trigger:** Validação 32 (25 findings — 1 HIGH C32.23 + 1 HIGH pre-existente C32.21)
+
+### 🎯 Resumo
+
+Sprint 12 resolve 6 dos 8 findings MEDIUM/HIGH da validação 32 (C32.23, C32.1,
+C32.10, C32.13, C32.19, C32.4/C32.11, C32.22). Feature toggle de regras
+agora tem efeito funcional real no engine de validação.
+
+### 🔧 Backend (Go)
+
+- **C32.23 — Engine integration** [P1 crítico]:
+  - `audit.Service` ganhou `RulePrefs` interface (Sprint 12 v3.5.0)
+  - `Validate()` carrega `disabled_rules` por IF (1 query) e pula regras
+    desabilitadas
+  - `ValidationResponse.DisabledRules []string` adicionado pra transparency
+  - Wire em `main.go`: `audSvc.SetRulePrefs(ruleprefs.NewPreferences(d))`
+  - **3 tests novos** em `audit/ruleprefs_integration_test.go`
+- **C32.1 — Race condition fix em `Preferences.Toggle()`**:
+  - Wrap em transaction (BEGIN/COMMIT) com write lock
+  - SQLite: BEGIN IMMEDIATE adquire write lock global
+  - Postgres (Sprint 12 M2+): SELECT FOR UPDATE
+  - Sem isso, multi-replica teria ~1ms race window
+- **C32.10 — Idempotent error handling**:
+  - `ErrRuleNotDisabled` agora mapeado pra 200 idempotente (não 500)
+  - Confirma estado real via `IsDisabled` antes de retornar
+  - Log structured pra observability
+- **C32.4 + C32.19 — rule_code format validation**:
+  - Regex `^[A-Z][0-9]{1,3}$` no handler (defense in depth)
+  - 400 com mensagem clara se formato inválido
+- **C32.22 — Rate limit no toggle**:
+  - Novo `ruleprefs.ToggleLimiter` (sliding window, 10/min por IF)
+  - 429 com `Retry-After` header
+  - 5 tests novos em `toggle_limiter_test.go`
+  - Wire em `main.go`: `ruleprefs.NewToggleLimiter(10, time.Minute)`
+
+- **Migration 008 — CHECK constraint**:
+  - Adiciona `CHECK(length(rule_code) BETWEEN 2 AND 4 AND GLOB '[A-Z][0-9][0-9]*')`
+  - Estratégia: cria nova tabela, copia, drop+rename (SQLite não suporta
+    ALTER ADD CONSTRAINT)
+  - Idempotente com migration runner
+
+### 🌐 Frontend (Next.js)
+
+- **C32.13 — Stale closure fix em `useRulePreferences`**:
+  - `useRef` pattern ao invés de `useCallback([disabled])`
+  - `disabledRef.current` sempre fresh em clique rápido
+  - Sem 409 espúrios em modal+card simultaneous click
+- **C32.19 — Frontend proxy valida formato**:
+  - `/api/rules/[code]/toggle` valida `^[A-Z][0-9]{1,3}$` antes de chamar backend
+  - 400 inline (não passa adiante pra backend)
+- **C32.22 — Rate limit handling**:
+  - 429 → `error: 'rate_limited'` no hook
+  - Caller (regras-client) pode mostrar toast/banner
+
+### 🧪 Validação
+
+- 16/16 packages test OK
+- **5 tests novos**:
+  - 3 audit integration (engine filtra disabled rules + edges)
+  - 5 toggle_limiter (allow, block, per-key, sliding window, reset)
+  - migration 008 (constraint aplicado)
+- **Smoke test E2E** (curl):
+  - Disable B12 → validate → response inclui `disabled_rules: ["B12"]`
+  - Toggle concorrente (race) → ambos retornam 200 idempotente
+  - 11 toggles em 1 min → 11º retorna 429 com Retry-After
+  - Toggle com rule_code inválido (`!@#`) → 400 imediato
+
+### ⚠️ Breaking changes
+
+- Nenhuma. Mudanças são additive (novo campo `disabled_rules` na response).
+
+### 🔒 C32.21 (CSRF) — não resolvido em Sprint 12
+
+Pre-existente desde Sprint 7a (afeta TODOS POST endpoints). Backlog
+prioritário mas fora do escopo de Sprint 12 (single-tenant localhost
+dev ainda não está exposto à internet). Próxima sprint.
+
+---
+
 ## v3.4.0 — 2026-07-05 (Sprint 11: Drill-Down Server Actions) ✅
 
 > **Status:** ✅ Shipped

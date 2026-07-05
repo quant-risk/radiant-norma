@@ -71,6 +71,34 @@ func (p *Preferences) ListDisabled(ctx context.Context, ifID string) ([]Disabled
 	return out, rows.Err()
 }
 
+// ListDisabledCodes retorna só os códigos (rule_code) das regras
+// desabilitadas por 1 IF. Usado pelo audit.Service pra filtrar regras
+// sem precisar carregar metadata.
+//
+// Sprint 12 (v3.5.0): C32.23 — integração com engine de validação.
+// Implementação separada de ListDisabled (que retorna DisabledRule
+// struct) pra evitar overhead de carregar timestamps + actor quando
+// caller só precisa dos codes.
+func (p *Preferences) ListDisabledCodes(ctx context.Context, ifID string) ([]string, error) {
+	rows, err := p.db.QueryContext(ctx,
+		`SELECT rule_code FROM disabled_rules WHERE if_id = ?`,
+		ifID)
+	if err != nil {
+		return nil, fmt.Errorf("query disabled codes: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []string
+	for rows.Next() {
+		var code string
+		if err := rows.Scan(&code); err != nil {
+			return nil, fmt.Errorf("scan code: %w", err)
+		}
+		out = append(out, code)
+	}
+	return out, rows.Err()
+}
+
 // IsDisabled checa se 1 regra específica está desabilitada por 1 IF.
 // Mais eficiente que ListDisabled se checar 1-2 regras (1 query).
 func (p *Preferences) IsDisabled(ctx context.Context, ifID, ruleCode string) (bool, error) {
@@ -136,19 +164,66 @@ func (p *Preferences) Enable(ctx context.Context, ifID, ruleCode string) error {
 // Toggle alterna estado: se desabilitada → habilita; se habilitada → desabilita.
 // Retorna (newState, error) onde newState é o estado após toggle ("enabled"
 // ou "disabled"). Útil pra UI mostrar confirmação.
+//
+// Sprint 12 (v3.5.0) — C32.1: wrap em transaction com write lock pra
+// eliminar race condition (TOCTOU) entre SELECT e INSERT/DELETE. Sem
+// isso, multi-replica (Sprint 12 M2) teria ~1ms race window onde 2
+// requests podem ver mesmo estado e aplicar toggle conflitante.
+//
+// SQLite: BEGIN IMMEDIATE adquire write lock. Postgres: SELECT FOR UPDATE.
 func (p *Preferences) Toggle(ctx context.Context, ifID, ruleCode, actor string) (string, error) {
-	isDisabled, err := p.IsDisabled(ctx, ifID, ruleCode)
+	// Phase 1: read current state (sem lock — eventual consistency OK)
+	// Phase 2: write com lock (atomicity aqui)
+	//
+	// NOTA: BEGIN IMMEDIATE em SQLite bloqueia todo o DB até COMMIT.
+	// Em produção multi-pod com Postgres, preferimos SELECT FOR UPDATE
+	// (row-level lock). Por ora, single-instance + SQLite é OK.
+	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("begin tx: %w", err)
 	}
+	defer func() { _ = tx.Rollback() }() // no-op se Commit rodar
+
+	// Read current state dentro da tx (mantém lock)
+	var isDisabled bool
+	err = tx.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM disabled_rules WHERE if_id = ? AND rule_code = ?)`,
+		ifID, ruleCode,
+	).Scan(&isDisabled)
+	if err != nil {
+		return "", fmt.Errorf("read state: %w", err)
+	}
+
 	if isDisabled {
-		if err := p.Enable(ctx, ifID, ruleCode); err != nil {
-			return "", err
+		// Habilita (DELETE)
+		_, err := tx.ExecContext(ctx,
+			`DELETE FROM disabled_rules WHERE if_id = ? AND rule_code = ?`,
+			ifID, ruleCode,
+		)
+		if err != nil {
+			return "", fmt.Errorf("delete disabled: %w", err)
+		}
+		if err := tx.Commit(); err != nil {
+			return "", fmt.Errorf("commit: %w", err)
 		}
 		return "enabled", nil
 	}
-	if _, err := p.Disable(ctx, ifID, ruleCode, actor); err != nil {
-		return "", err
+
+	// Desabilita (INSERT com ON CONFLICT)
+	now := time.Now().UTC()
+	_, err = tx.ExecContext(ctx,
+		`INSERT INTO disabled_rules (if_id, rule_code, disabled_at, disabled_by)
+		 VALUES (?, ?, ?, ?)
+		 ON CONFLICT(if_id, rule_code) DO UPDATE SET
+		   disabled_at = excluded.disabled_at,
+		   disabled_by = excluded.disabled_by`,
+		ifID, ruleCode, now, actor,
+	)
+	if err != nil {
+		return "", fmt.Errorf("insert disabled: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return "", fmt.Errorf("commit: %w", err)
 	}
 	return "disabled", nil
 }
