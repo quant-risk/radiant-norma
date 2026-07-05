@@ -262,10 +262,10 @@ func (c *WSClient) basicAuthHeader() string {
 //     o upload falha (fase 1 OK, fase 2 falhou) — útil pra forensic trail.
 //   - (nil, err) em erro de transporte (timeout, malformed XML, malformed config).
 //
-// Audit emission é deferido para Sprint 20+ quando handler /v1/sta/submit
-// for criado — WSClient emite logs estruturados aqui (N1.4-debug), mas
-// não emite audit_log diretamente (single responsibility: cliente só fala
-// com BACEN, handler decide o que auditar).
+// Audit emission é deferido para o handler HTTP (Sprint 8c / Sprint 20+).
+// WSClient emite logs estruturados aqui (N1.4-debug), mas não emite audit_log
+// diretamente (single responsibility: cliente só fala com BACEN, handler
+// decide o que auditar).
 func (c *WSClient) Submit(ctx context.Context, sub *Submission) (*Result, error) {
 	if sub.Zip == nil && len(sub.XML) == 0 {
 		return nil, errors.New("STA submission vazia (sem XML nem ZIP)")

@@ -1942,9 +1942,20 @@ func TestWSClient_DownloadRange_416(t *testing.T) {
 	}
 	_, client := newMockSTA(t, mock)
 
-	_, err := client.DownloadRange(context.Background(), "123", 200, 100, "", "", "")
+	// Range (0, 99) é válido client-side; BACEN rejeita com 416 (ex.: arquivo
+	// tem apenas 50 bytes, BACEN responde 416 range fora dos limites).
+	_, err := client.DownloadRange(context.Background(), "123", 0, 99, "", "", "")
 	if err == nil {
 		t.Fatal("esperava erro em 416")
+	}
+	// Validação 42 finding F-S21-18: tipar o erro para defender contra regressão
+	// silenciosa (ex: handler-wrapper que engolisse STAError).
+	var staErr *STAError
+	if !errors.As(err, &staErr) {
+		t.Fatalf("erro deveria ser *STAError, got %T: %v", err, err)
+	}
+	if staErr.StatusCode != http.StatusRequestedRangeNotSatisfiable {
+		t.Errorf("StatusCode = %d, esperado 416", staErr.StatusCode)
 	}
 }
 
