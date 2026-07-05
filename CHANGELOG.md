@@ -2,6 +2,134 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.19.0 — 2026-07-06 (Sprint 26: cmd/sta-submit CLI) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 26 (novo binário `cmd/sta-submit` — segundo caller real do pacote sta)
+> **Versão:** minor (novo binário + 10 testes; **zero impacto** em código existente)
+> **Trigger:** SPRINT_25_RESULTS.md §"Próximos passos" Sprint 26 (cmd/sta-submit CLI)
+> **Validação:** 21/21 packages PASS + 10 testes novos Sprint 26 + 7/7 binaries + race clean + gofmt/vet clean
+
+### 🎯 Resumo
+
+Sprint 26 fecha o **`cmd/sta-submit`** — CLI standalone para envio de CADOC
+ao BACEN STA WS. Admin IF pode submeter CADOC direto via linha de comando,
+sem deployar API ou UI.
+
+```bash
+sta-submit --xml-file=/path/to/cadoc3040.xml \
+           --cadoc-code=3040 \
+           --data-base=2024-12 \
+           --cnpj=demo-bank
+
+# → protocol_sta=PROTO-OK  status=accepted
+# → exit 0 (sucesso)
+# → exit 1 (rejeitado/transporte)
+# → exit 2 (config inválida)
+# → exit 3 (erro BACEN formal)
+```
+
+**Decisão arquitetural:** CLI single-command (apenas `submit`) — escopo focado
+no caso de uso principal. Reusa `sta.NewClientFromEnv` (mesma fábrica usada
+por `cmd/api`) → consistency entre CLI e servidor.
+
+**Decisões YAGNI conscientes:**
+- Sem handler REST (admin tool direto, não UI).
+- Sem retry wrapper (failure fast — caller decide retry).
+- Sem range upload / chunked (single CADOC <50 MB usa Submit normal).
+- Sem upload de ZIP (apenas XML — cobre 80% do caso de uso).
+- Sem TLS client cert (BACEN não exige).
+- Sem dry-run.
+- Sem subcomandos (info/check) — YAGNI agora.
+
+**Decisões de design não-óbvias:**
+- **Injeção de client via variável de função** (`staNewClientFromEnv`): pattern de test injection sem mockar STA Client inteiro.
+- **Interface `staClient` mínima** (1 método): desacopla CLI de mudanças futuras em `sta.Client`.
+
+### 🚀 O que entrou
+
+- **Binário `cmd/sta-submit`** com 1 subcomando `submit` + flags:
+  - `--xml-file` (env `STA_SUBMIT_XML_FILE`) — caminho do XML
+  - `--cadoc-code` (env `STA_SUBMIT_CADOC_CODE`) — default `3040`
+  - `--data-base` (env `STA_SUBMIT_DATA_BASE`) — formato YYYY-MM
+  - `--cnpj` (env `STA_SUBMIT_CNPJ`) — default `demo-bank`
+  - `--quiet` — silencia logs stderr
+
+- **Env vars STA delegadas** a `sta.NewClientFromEnv` (mesma fábrica do `cmd/api`):
+  - `RADIANT_STA_BACKEND` (stub|ws)
+  - `RADIANT_STA_WS_URL`
+  - `RADIANT_STA_SISBACEN_USER`
+  - `RADIANT_STA_SISBACEN_PASSWORD`
+  - `RADIANT_STA_TIMEOUT_SECONDS`
+
+- **Exit codes** consistentes com `cmd/senhaws-rotate`:
+  - `0` aceito pelo BACEN
+  - `1` rejeitado OU transporte
+  - `2` erro de validação client-side
+  - `3` erro BACEN formal
+
+- **Output format key=value** (mesmo padrão):
+  - Sucesso: `protocol_sta=<PROT>  status=accepted`
+  - Rejeição: `protocol_sta=<PROT>  status=rejected  code=<C>  message=<M>`
+
+- **Interface `staClient` mínima** + **variable de função `staNewClientFromEnv`** para test injection sem framework externo.
+
+### 🧪 Tests (10 novos — total backend 127)
+
+| Test | Cobre |
+|---|---|
+| `TestStaSubmit_Success_StubClient` | Happy path com StubClient (default) |
+| `TestStaSubmit_Rejection_StubClient` | Rejeição StubClient (AlwaysAccept=false) |
+| `TestStaSubmit_MissingXMLFile` | Config inválida → exit 2 |
+| `TestStaSubmit_MissingDataBase` | Config inválida → exit 2 |
+| `TestStaSubmit_EmptyXMLFile` | Arquivo vazio → exit 2 |
+| `TestStaSubmit_BACENError_WSClient` | WSClient mock 400 → exit 3 |
+| `TestStaSubmit_TransportError` | WSClient mock fechado → exit 1 |
+| `TestStaSubmit_Usage_Prints` | usage() imprime help |
+| `TestStaSubmit_LoadConfig` | Env vars override defaults |
+| `TestStaSubmit_LoadConfig_Defaults` | Defaults sensatos |
+
+### 📦 Arquivos tocados
+
+```
+backend/cmd/sta-submit/main.go           (novo, 212 linhas)
+backend/cmd/sta-submit/main_test.go      (novo, 290 linhas — 10 testes)
+SPRINT_26_RESEARCH.md                    (research rápido)
+SPRINT_26_RESULTS.md                     (este doc)
+CHANGELOG.md                             (esta entrada)
+```
+
+### 🔢 Métricas finais
+
+| Métrica | Valor |
+|---|---|
+| Pacotes Go testados | **21/21 PASS** |
+| Tests Sprint 26 | 10 (todos PASS) |
+| Tests totais top-level | **127** (era 117) |
+| Build smoke binaries | **7/7** (era 6, +1 = sta-submit) |
+| gofmt drift | 0 |
+| vet | clean |
+| Race detector | clean |
+| Lint `lint-no-placeholder.sh` | ✅ 26/26 |
+
+### 🏗️ Lições aprendidas (carry forward)
+
+1. **Variable de função = test injection idiomático.** `var f = realFunc` permite tests sobrescreverem sem framework externo.
+2. **Interface mínima desacopla de mudanças futuras.** `staClient` com 1 método Submit. Se Sprint 27+ adicionar métodos em `sta.Client`, CLI continua funcionando.
+3. **YAGNI em subcomandos.** CLI tem 1 comando (`submit`). Adicionar `check`/`cancel`/`info` é trivial quando virar requisito.
+4. **Test injection pattern escala.** 10 testes cobrem 4 fluxos (sucesso, rejeição, config error, BACEN error, transporte) usando apenas 2 helpers (StubClient + WSClient mock).
+5. **Reusa `sta.NewClientFromEnv` = consistency operacional.** Admin IF que usa `sta-submit` + `cmd/api` precisa configurar mesmas env vars.
+
+### 🔒 Compatibilidade
+
+- **Novo binário `cmd/sta-submit`.** Zero impacto em código existente.
+- **`sta.NewClientFromEnv` inalterado.** CLI apenas wrappea.
+- **Não wired em `cmd/api/main.go`** — CLI é independente (decoupling).
+- **Nenhum handler REST adicionado** — admin tool direto.
+- **`internal/sta/*` inalterado** — reuso.
+
+---
+
 ## v3.18.0 — 2026-07-06 (Validação 47 DEEPEST — error path tests 3-way) ✅
 
 > **Status:** ✅ Shipped
