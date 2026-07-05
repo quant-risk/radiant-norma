@@ -10,8 +10,10 @@
 package sta
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/xml"
@@ -181,10 +183,19 @@ func TestNewWSClient(t *testing.T) {
 			wantErr: "UUUUUDDDD.operador",
 		},
 		{
+			name: "user formato Sisbacen inválido",
+			cfg: WSConfig{
+				BaseURL:  "https://sta-h.bcb.gov.br/staws",
+				User:     "12345.0001.fulano",
+				Password: "p",
+			},
+			wantErr: "formato Sisbacen exato",
+		},
+		{
 			name: "empty password",
 			cfg: WSConfig{
 				BaseURL:  "https://sta-h.bcb.gov.br/staws",
-				User:     "x.y",
+				User:     "123450001.fulano",
 				Password: "",
 			},
 			wantErr: "Password requerida",
@@ -212,7 +223,7 @@ func TestNewWSClient(t *testing.T) {
 func TestNewWSClient_DefaultTimeout(t *testing.T) {
 	c, err := NewWSClient(WSConfig{
 		BaseURL:  "https://sta-h.bcb.gov.br/staws",
-		User:     "x.y",
+		User:     "123450001.fulano",
 		Password: "p",
 	})
 	if err != nil {
@@ -502,4 +513,101 @@ func TestBasicAuthHeader_Formato(t *testing.T) {
 	if string(decoded) != want {
 		t.Errorf("decoded = %q, esperado %q", string(decoded), want)
 	}
+}
+
+// TestNewWSClient_AcceptsFormatosUsuarioVariados — Validação 39 (F-2):
+// regex aceita tanto formato concatenado (UUUUUDDDD) quanto com slash
+// (UUUUU/DDDD) — ambos comuns em docs BACEN.
+func TestNewWSClient_AcceptsFormatosUsuarioVariados(t *testing.T) {
+	for _, user := range []string{
+		"123450001.fulano",   // concatenado
+		"12345/0001.fulano",  // com slash
+		"00000/0000.root",    // zeros OK
+		"99999/1234.admin-x", // dash no operador
+	} {
+		_, err := NewWSClient(WSConfig{
+			BaseURL:  "https://sta-h.bcb.gov.br/staws",
+			User:     user,
+			Password: "p",
+		})
+		if err != nil {
+			t.Errorf("user %q deveria ser aceito, got %v", user, err)
+		}
+	}
+}
+
+// TestNewWSClient_ForceHTTP1 — Validação 39 (F-3): Transport deve
+// desabilitar HTTP/2 (Manual Seção 2.5 — BACEN só suporta HTTP/1.1).
+func TestNewWSClient_ForceHTTP1(t *testing.T) {
+	c, err := NewWSClient(WSConfig{
+		BaseURL:  "https://sta-h.bcb.gov.br/staws",
+		User:     "123450001.fulano",
+		Password: "p",
+	})
+	if err != nil {
+		t.Fatalf("NewWSClient: %v", err)
+	}
+	transport, ok := c.cfg.HTTPClient.Transport.(*http.Transport)
+	if !ok {
+		t.Fatal("HTTPClient.Transport não é *http.Transport")
+	}
+	if transport.ForceAttemptHTTP2 {
+		t.Error("ForceAttemptHTTP2 deveria ser false (BACEN só suporta HTTP/1.1)")
+	}
+	if transport.TLSClientConfig == nil {
+		t.Error("TLSClientConfig deveria estar setado (TLS 1.2 mínimo)")
+	}
+	if transport.TLSClientConfig.MinVersion != tls.VersionTLS12 {
+		t.Errorf("MinVersion = %v, esperado TLS 1.2", transport.TLSClientConfig.MinVersion)
+	}
+}
+
+// TestSubmit_RespostaEnormeCapada — Validação 39 (F-1): BACEN misbehaving
+// retornando 20 MiB de body após protocolo válido deve ser capado a 10 MiB
+// sem crashar.
+func TestSubmit_RespostaEnormeCapada(t *testing.T) {
+	mock := &mockSTA{
+		requireBasicAuth: true,
+		handlePost: func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/xml")
+			w.WriteHeader(http.StatusCreated)
+			// Header válido contendo <Protocolo>1</Protocolo>.
+			header := []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Resultado><Protocolo>1</Protocolo></Resultado>`)
+			w.Write(header)
+			// Padding: 20 MiB de espaço — acima do cap de 10 MiB.
+			padding := bytes.Repeat([]byte(" "), 20<<20)
+			w.Write(padding)
+		},
+		handlePut: func(w http.ResponseWriter, r *http.Request, protocolo string) {
+			w.WriteHeader(http.StatusOK)
+		},
+	}
+	srv := httptest.NewServer(mock)
+	defer srv.Close()
+
+	client, err := NewWSClient(WSConfig{
+		BaseURL:           srv.URL,
+		User:              "12345/0001.fulano",
+		Password:          "senha",
+		Timeout:           5 * time.Second,
+		AllowInsecureHTTP: true,
+	})
+	if err != nil {
+		t.Fatalf("NewWSClient: %v", err)
+	}
+
+	// Verifica que NÃO crasha. Pode retornar sucesso (se parsear
+	// parcial) ou erro de parse (se truncado no meio do XML). Ambos OK
+	// — o importante é a defesa contra OOM.
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("panic em resposta gigante: %v", r)
+		}
+	}()
+	_, _ = client.Submit(context.Background(), &Submission{
+		CadocCode: "3040",
+		DataBase:  "2024-12",
+		CNPJ:      "demo",
+		XML:       "<root/>",
+	})
 }

@@ -42,6 +42,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/xml"
@@ -51,10 +52,28 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+// maxResponseBodyBytes limita o tamanho da response BACEN que vamos ler.
+// Defense-in-depth contra BACEN mal-comportado ou proxy transparente que
+// retorne body gigante (DoS via memory). Manual Seção 5.1.1 / 5.2.1 não
+// limita tamanho do body, mas responses esperadas são pequenas (XML de
+// protocolo ~few KB, PUT sucesso vazio, erros <10 KB).
+const maxResponseBodyBytes = 10 << 20 // 10 MiB
+
+// sisbacenUserRegex is the canonical format Sisbacen: 5 dígitos (IF code)
+// + 4 dígitos (dependência) + "." + operador alfanumérico/underscore/dash.
+//
+// Exemplos aceitos: "123450001.fulano" (concatenado) ou
+// "12345/0001.fulano" (com slash, forma comum em scripts BACEN).
+// Rationale: a documentação BACEN é inconsistente entre manuais (alguns
+// dizem UUUUUDDDD sem separador; outros usam UUUUU/0001). Aceitamos
+// ambos para ergonomia — o BACEN rejeita formalmente se inválido.
+var sisbacenUserRegex = regexp.MustCompile(`^(\d{5}\d{4}|\d{5}/\d{4})\.[A-Za-z0-9_-]+$`)
 
 // WSConfig configura o WSClient.
 type WSConfig struct {
@@ -116,6 +135,9 @@ func NewWSClient(cfg WSConfig) (*WSClient, error) {
 	if !strings.Contains(cfg.User, ".") {
 		return nil, fmt.Errorf("WSConfig.User deve estar no formato UUUUUDDDD.operador (got %q)", cfg.User)
 	}
+	if !sisbacenUserRegex.MatchString(cfg.User) {
+		return nil, fmt.Errorf("WSConfig.User deve seguir formato Sisbacen exato (5 dígitos + 4 dígitos + . + operador alfanumérico), got %q", cfg.User)
+	}
 	if cfg.Password == "" {
 		return nil, errors.New("WSConfig.Password requerida")
 	}
@@ -123,7 +145,18 @@ func NewWSClient(cfg WSConfig) (*WSClient, error) {
 		cfg.Timeout = 30 * time.Second
 	}
 	if cfg.HTTPClient == nil {
-		cfg.HTTPClient = &http.Client{Timeout: cfg.Timeout}
+		// Manual BACEN STA WS v1.5 Seção 2.5: "A plataforma de
+		// desenvolvimento do cliente dos Web Services deve ter suporte a
+		// HTTP 1.1". Default http.Transport do Go (Go 1.18+) tenta
+		// HTTP/2 primeiro via ALPN; forçamos HTTP/1.1 aqui pra alinhar
+		// com spec e evitar bugs sutis quando BACEN rejeitar upgrade.
+		cfg.HTTPClient = &http.Client{
+			Timeout: cfg.Timeout,
+			Transport: &http.Transport{
+				TLSClientConfig:   &tls.Config{MinVersion: tls.VersionTLS12},
+				ForceAttemptHTTP2: false,
+			},
+		}
 	}
 
 	logger := cfg.Logger
@@ -242,7 +275,11 @@ func (c *WSClient) requestProtocol(ctx context.Context, sub *Submission, hashHex
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	respBody, _ := io.ReadAll(resp.Body)
+	// Defense-in-depth (Validação 39): cap response body para evitar
+	// DoS via BACEN misbehaving ou proxy transparente inflando body.
+	// Responses esperadas: protocolo ~few KB; PUT sucesso vazio;
+	// erros <10 KB. Cap em 10 MiB é folgado.
+	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodyBytes))
 
 	// 201 Created esperado. Outros códigos viram error.
 	if resp.StatusCode != http.StatusCreated {

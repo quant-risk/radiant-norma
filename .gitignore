@@ -5,6 +5,10 @@
 /backend/worker-*
 /backend/radar
 /backend/radar-*
+/backend/seed
+/backend/seed-*
+/backend/jwt-mint
+/backend/jwt-mint-*
 /backend/_verify
 /_*.exe
 
