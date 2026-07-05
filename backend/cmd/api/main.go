@@ -159,6 +159,21 @@ func main() {
 	// W4 — cadoc list com cache 5min (sempre ativo; sem env var).
 	srv.CadocListCache = schema.NewCadocListCache(5 * time.Minute)
 
+	// Sprint 16 — v3.6.0 [S16.1]: rate limiter plugável.
+	// Default memory (single-replica). Setar RADIANT_RATE_LIMIT_BACKEND=redis
+	// + RADIANT_REDIS_URL=... pra produção multi-replica.
+	rateLimiter, err := api.NewRateLimiterFromEnv()
+	if err != nil {
+		logger.Error("rate limiter init failed", "err", loggerutil.SafeError(err))
+		os.Exit(1)
+	}
+	srv.RateLimiter = rateLimiter
+	logger.Info("rate limiter ativo", "backend", rateLimiter.Backend())
+	if rl, ok := rateLimiter.(*api.RedisRateLimiter); ok {
+		// Close Redis no shutdown
+		defer func() { _ = rl.Close() }()
+	}
+
 	// R1 — DOS-via-API prevention. AdminAuth é FAIL CLOSED: sem token
 	// configurado, /v1/radar/scan retorna 401.
 	adminToken := os.Getenv("RADIANT_NORMA_ADMIN_TOKEN")

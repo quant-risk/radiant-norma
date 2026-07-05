@@ -84,7 +84,7 @@ type Server struct {
 	EventsHub *realtime.Hub
 
 	// Sprint 13 — v3.5.2 [S15.1] rate limiter global.
-	RateLimiter *apiRateLimiter
+	RateLimiter RateLimiter
 }
 
 // auditLogAPI é interface mínima que *auditlog.Logger e *realtime.HubAwareLogger
@@ -100,7 +100,7 @@ func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogA
 		DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient,
 		Radar: rad, RulePrefs: rp, ToggleLimiter: tl, Insights: ack,
 		startedAt:   time.Now(),
-		RateLimiter: newAPIRateLimiter(),
+		RateLimiter: newMemoryRateLimiter(),
 	}
 }
 

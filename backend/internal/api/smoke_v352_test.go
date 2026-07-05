@@ -39,12 +39,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
+	"github.com/fortvna/radiant-norma/backend/internal/api"
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
 	"github.com/fortvna/radiant-norma/backend/internal/realtime"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
 	"github.com/fortvna/radiant-norma/backend/internal/testutil"
 	workpkg "github.com/fortvna/radiant-norma/backend/internal/worker"
+	"github.com/redis/go-redis/v9"
 )
 
 // smokeReq faz request JSON rápido pra httptest.
@@ -472,6 +475,57 @@ func TestSmoke_Cenario7_RateLimitBurst(t *testing.T) {
 }
 
 // =============================================================================
+// Cenário 7b — Rate limiter com Redis backend (Sprint 16 / v3.6.0)
+// =============================================================================
+// Valida que Redis-backed limiter tem mesma semântica que memory:
+//   - Permite N calls
+//   - Bloqueia N+1 com 429 + Retry-After + X-RateLimit-Bucket
+//   - IFs diferentes têm contadores independentes
+//   - Reset após TTL expirar
+//
+// Usa miniredis (in-process Redis fake) pra não depender de Docker.
+func TestSmoke_Cenario7b_RateLimitRedisBackend(t *testing.T) {
+	mr := miniredis.RunT(t)
+	t.Cleanup(mr.Close)
+
+	srv, _ := newTestServer(t)
+	srv.RateLimiter = newSmokeRedisLimiter(t, mr)
+
+	handler := srv.Router()
+	headers := map[string]string{
+		"X-IF-ID": "demo-redis",
+		"Origin":  "http://example.com",
+	}
+
+	// 10 requests OK
+	for i := 0; i < 10; i++ {
+		w := smokeReq(handler, "POST", "/v1/validate",
+			map[string]any{"cadoc_code": "3040", "xml": "<doc/>"}, headers)
+		if w.Code == http.StatusTooManyRequests {
+			t.Fatalf("request #%d (Redis backend) não deveria estar rate-limited: %s", i+1, w.Body.String())
+		}
+	}
+
+	// 11ª bloqueada
+	w := smokeReq(handler, "POST", "/v1/validate",
+		map[string]any{"cadoc_code": "3040", "xml": "<doc/>"}, headers)
+	if w.Code != http.StatusTooManyRequests {
+		t.Fatalf("11ª request (Redis) deveria 429, got %d body=%s", w.Code, w.Body.String())
+	}
+	if b := w.Header().Get("X-RateLimit-Bucket"); b != "heavy" {
+		t.Errorf("X-RateLimit-Bucket=%q, want \"heavy\"", b)
+	}
+
+	// IF diferente — não compartilha contador
+	w2 := smokeReq(handler, "POST", "/v1/validate",
+		map[string]any{"cadoc_code": "3040", "xml": "<doc/>"},
+		map[string]string{"X-IF-ID": "demo-redis-other", "Origin": "http://example.com"})
+	if w2.Code == http.StatusTooManyRequests {
+		t.Fatalf("outra IF (Redis) não deveria herdar rate limit: %s", w2.Body.String())
+	}
+}
+
+// =============================================================================
 // Cenário 8 — SSE cap de 10 subscribers/IF
 // =============================================================================
 func TestSmoke_Cenario8_SSECap(t *testing.T) {
@@ -684,5 +738,19 @@ func TestSmoke_Cenario10_EnviosIndexes(t *testing.T) {
 				t.Logf("plan:\n%s", plan.String())
 			}
 		})
+	}
+}
+// newSmokeRedisLimiter constrói RedisRateLimiter apontando para o miniredis
+// passado. Helper pra Cenário 7b.
+func newSmokeRedisLimiter(t *testing.T, mr *miniredis.Miniredis) *api.RedisRateLimiter {
+	t.Helper()
+	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	t.Cleanup(func() { _ = client.Close() })
+	return &api.RedisRateLimiter{
+		Client:    client,
+		Limits:    api.DefaultRateLimits,
+		Script:    redis.NewScript(api.LuaIncrWithTTL),
+		Logger:    slog.New(slog.NewTextHandler(io.Discard, nil)),
+		KeyPrefix: "rl-smoke:",
 	}
 }

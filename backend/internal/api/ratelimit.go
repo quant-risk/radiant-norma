@@ -9,22 +9,33 @@
 //   * hammer /v1/crossdoc/validate (N CADOCs × regras × goroutines)
 //   * exfiltrar audit_log inteiro via many concurrent CSV exports
 //
-// Estratégia: in-memory token bucket por (method, path-bucket, ifID).
+// Estratégia: token bucket por (method, path-bucket, ifID).
 // Path-bucket = categoria derivada do path (HEAVY/MUTATE/READ/EXPORT).
 // Sem bucket compartilhado entre IFs (1 IF não afeta outra).
 //
-// Em prod com múltiplas réplicas API, in-memory NÃO é suficiente
-// (cada réplica tem contador próprio). Para produção real, integrar
-// Redis com INCR+EXPIRE. Pattern aqui é compatível: substituir
-// `Allow(key)` por Redis EVAL "INCR ... EXPIRE ...".
+// Sprint 16 — v3.6.0 [S16.1]: backend plugável.
+//   - memoryRateLimiter: in-memory, single-replica. Default em dev/test.
+//   - redisRateLimiter: distribuído via Redis INCR+EXPIRE. Default em prod
+//     multi-replica. Ver ratelimit_redis.go.
+//
+// Seleção via env RADIANT_RATE_LIMIT_BACKEND=memory|redis (default memory).
+// Redis URL via RADIANT_REDIS_URL=redis://host:port/db.
 
 package api
 
 import (
+	"errors"
 	"net/http"
+	"os"
 	"strconv"
 	"sync"
 	"time"
+)
+
+// Erros retornados por newRateLimiterFromEnv.
+var (
+	errRedisURLRequired        = errors.New("RADIANT_RATE_LIMIT_BACKEND=redis requer RADIANT_REDIS_URL")
+	errUnknownRateLimitBackend = errors.New("RADIANT_RATE_LIMIT_BACKEND deve ser 'memory' ou 'redis'")
 )
 
 // Path bucket categoriza endpoints para ter limite apropriado.
@@ -37,6 +48,21 @@ const (
 	bucketExport pathBucket = "export" // ?format=csv em envios/audit_log
 	bucketAuth   pathBucket = "auth"   // login, dev-token
 )
+
+// RateLimiter é a interface pública do limiter.
+//
+// Implementações: memoryRateLimiter (in-memory, single-replica) e
+// redisRateLimiter (distribuído, multi-replica). Server.RateLimiter é
+// deste tipo — middleware funciona igual independente do backend.
+//
+// Retorna (allowed, retryAfter):
+//   - allowed=true: request passa
+//   - allowed=false: request bloqueado; retryAfter = tempo até próximo slot
+type RateLimiter interface {
+	Allow(bucket pathBucket, ifID string) (allowed bool, retryAfter time.Duration)
+	// Backend retorna nome do backend ("memory" ou "redis") para logging.
+	Backend() string
+}
 
 // DefaultRateLimits é a política de rate limit por bucket.
 //
@@ -61,9 +87,10 @@ type RateLimit struct {
 // MaxKeysRateLimiter é o limite de keys distintos antes de LRU eviction.
 //
 // Mitiga DoS via fake if_ids infinitos (audit S-B / C34.11).
+// Só aplicável ao backend in-memory — Redis tem seu próprio TTL.
 const MaxKeysRateLimiter = 10_000
 
-// apiRateLimiter é rate limiter in-memory por chave (bucket+ifID).
+// memoryRateLimiter é rate limiter in-memory por chave (bucket+ifID).
 //
 // Política: máximo `limit.max` calls por `limit.window` por ifID dentro
 // de um bucket. Max keys: MaxKeysRateLimiter. LRU eviction simples.
@@ -71,26 +98,28 @@ const MaxKeysRateLimiter = 10_000
 // Thread-safe: sync.Mutex serializa Allow().
 // Performance: O(N) por call onde N = calls na janela (range + count).
 // Para escala Radiant Norma atual (<100 IFs piloto), suficiente.
-type apiRateLimiter struct {
-	mu       sync.Mutex
-	calls    map[string][]time.Time // key=bucket+":"+ifID
-	limits   map[pathBucket]RateLimit
+//
+// Em prod com múltiplas réplicas API, contadores NÃO são compartilhados
+// — cada réplica tem seu próprio map. Para prod multi-replica, use
+// redisRateLimiter (RADIANT_RATE_LIMIT_BACKEND=redis).
+type memoryRateLimiter struct {
+	mu        sync.Mutex
+	calls     map[string][]time.Time // key=bucket+":"+ifID
+	limits    map[pathBucket]RateLimit
 	lastEvict map[string]time.Time // for LRU on overflow
 }
 
-// newAPIRateLimiter cria limiter com policy padrão.
-func newAPIRateLimiter() *apiRateLimiter {
-	r := &apiRateLimiter{
+// newMemoryRateLimiter cria limiter in-memory com policy padrão.
+func newMemoryRateLimiter() *memoryRateLimiter {
+	return &memoryRateLimiter{
 		calls:     make(map[string][]time.Time),
 		limits:    DefaultRateLimits,
 		lastEvict: make(map[string]time.Time),
 	}
-	return r
 }
 
-// Allow checa se uma call pelo bucket+ifID é permitida. Retorna
-// (allowed, retryAfter).
-func (r *apiRateLimiter) Allow(bucket pathBucket, ifID string) (bool, time.Duration) {
+// Allow checa se uma call pelo bucket+ifID é permitida.
+func (r *memoryRateLimiter) Allow(bucket pathBucket, ifID string) (bool, time.Duration) {
 	limit, ok := r.limits[bucket]
 	if !ok {
 		return true, 0 // bucket desconhecido = passa (fail-open só em dev)
@@ -138,7 +167,7 @@ func (r *apiRateLimiter) Allow(bucket pathBucket, ifID string) (bool, time.Durat
 }
 
 // evictOldestLocked remove key com lastEvict mais antigo. Requer lock.
-func (r *apiRateLimiter) evictOldestLocked() {
+func (r *memoryRateLimiter) evictOldestLocked() {
 	var oldestKey string
 	var oldestTime time.Time
 	for k, t := range r.lastEvict {
@@ -152,6 +181,9 @@ func (r *apiRateLimiter) evictOldestLocked() {
 		delete(r.lastEvict, oldestKey)
 	}
 }
+
+// Backend retorna nome do backend para logging.
+func (r *memoryRateLimiter) Backend() string { return "memory" }
 
 // bucketForPath classifica path em bucket para rate limit.
 func bucketForPath(method, path string, isExport bool) pathBucket {
@@ -180,7 +212,7 @@ func bucketForPath(method, path string, isExport bool) pathBucket {
 }
 
 // rateLimitMiddleware é chi middleware que aplica rate limiter por IFID.
-func rateLimitMiddleware(limiter *apiRateLimiter) func(http.Handler) http.Handler {
+func rateLimitMiddleware(limiter RateLimiter) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Ignora health/ready.
@@ -212,4 +244,27 @@ func rateLimitMiddleware(limiter *apiRateLimiter) func(http.Handler) http.Handle
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// NewRateLimiterFromEnv cria limiter baseado em RADIANT_RATE_LIMIT_BACKEND.
+//
+//   - "memory" (default): in-memory, single-replica. Dev/test/CI.
+//   - "redis": distribuído via Redis INCR+EXPIRE. Prod multi-replica.
+//     Requer RADIANT_REDIS_URL=redis://host:port/db.
+//
+// Em prod sem Redis configurado, retorna erro — fail-closed evita
+// deploy silencioso em modo "memory" (contadores não compartilhados).
+func NewRateLimiterFromEnv() (RateLimiter, error) {
+	backend := os.Getenv("RADIANT_RATE_LIMIT_BACKEND")
+	if backend == "" || backend == "memory" {
+		return newMemoryRateLimiter(), nil
+	}
+	if backend == "redis" {
+		redisURL := os.Getenv("RADIANT_REDIS_URL")
+		if redisURL == "" {
+			return nil, errRedisURLRequired
+		}
+		return newRedisRateLimiter(redisURL, DefaultRateLimits)
+	}
+	return nil, errUnknownRateLimitBackend
 }

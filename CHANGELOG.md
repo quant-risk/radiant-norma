@@ -6,6 +6,130 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.6.0 — 2026-07-05 (Sprint 16: Redis Rate Limiter + Interface Refactor) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 16 (Redis-backed rate limiter + interface extraction)
+> **Versão:** minor (production multi-replica readiness)
+> **Trigger:** Gap #1 do CHANGELOG v3.5.2 (rate limiter in-memory não escala multi-replica)
+> **Validação:** smoke test 13.5 + 7b Redis — 17/17 packages PASS com `-race`
+
+### 🎯 Resumo
+
+Sprint 16 fecha o **gap #1** do v3.5.2: rate limiter agora tem backend
+pluggável. Default continua memory (single-replica) para dev/test.
+Produção multi-replica seta `RADIANT_RATE_LIMIT_BACKEND=redis` +
+`RADIANT_REDIS_URL` para usar Redis Lua-script (INCR+EXPIRE atômico).
+Mesma interface `Allow(bucket, ifID) (bool, time.Duration)` para os dois
+backends — middleware do chi não muda.
+
+### 🚦 Rate Limiter plugável (Sprint 16 — S16.1)
+
+- **Interface `RateLimiter`** (`internal/api/ratelimit.go`):
+  - Contrato: `Allow(bucket pathBucket, ifID string) (bool, time.Duration)`
+  - Adiciona `Backend() string` para logging
+  - `Server.RateLimiter` agora é tipo interface (era `*apiRateLimiter`)
+- **Backend `memory`** (default, `RADIANT_RATE_LIMIT_BACKEND=memory`):
+  - In-memory com sync.Mutex + LRU eviction (renomeado de `apiRateLimiter`
+    para `memoryRateLimiter` por clareza)
+  - Single-replica. Mantido para dev/test/CI.
+- **Backend `redis`** (`RADIANT_RATE_LIMIT_BACKEND=redis`):
+  - `internal/api/ratelimit_redis.go` (novo, ~150 LOC)
+  - Lua script `INCR + EXPIRE` atômico (evita race onde key fica sem TTL)
+  - `redisRateLimiter.Allow()` retorna retryAfter = TTL restante do key
+  - **Fail-open** em Redis indisponível (log warning + allow) — API sem
+    rate limit é preferível a API totalmente fora
+  - Cleanup `Close()` no shutdown via `defer` em main.go
+- **Factory `NewRateLimiterFromEnv()`**:
+  - Lê `RADIANT_RATE_LIMIT_BACKEND` + `RADIANT_REDIS_URL`
+  - Default memory; redis requer URL válida
+  - Erros tipados (`errRedisURLRequired`, `errUnknownRateLimitBackend`)
+- **Wiring em `cmd/api/main.go`**:
+  - `srv.RateLimiter = api.NewRateLimiterFromEnv()`
+  - Log: `"rate limiter ativo" backend=<memory|redis>`
+  - `defer rl.Close()` se Redis
+
+### 📚 Dependências adicionadas
+
+- **`github.com/redis/go-redis/v9 v9.21.0`** (runtime)
+- **`github.com/alicebob/miniredis/v2 v2.38.0`** (test-only, in-process Redis)
+- **`go.uber.org/atomic v1.11.0`** (transitiva)
+- **`github.com/cespare/xxhash/v2 v2.3.0`** (transitiva)
+
+### 🧪 Testes adicionados (17 novos em `ratelimit_test.go`)
+
+**Memory backend (5):**
+- `Allows` — N calls dentro do limite passam
+- `BlocksAtMax` — N+1 bloqueia com retryAfter > 0
+- `DifferentIFIDsIndependent` — buckets separados por IF
+- `UnknownBucketPasses` — fail-open em bucket não configurado
+- `Backend()` — retorna "memory"
+
+**Redis backend (5, via miniredis):**
+- `Allows` — semântica equivalente ao memory
+- `BlocksAtMax` — N+1 bloqueia
+- `DifferentIFIDsIndependent` — chaves Redis separadas por IF
+- `TTLExpires` — após `mr.FastForward()`, contador reseta
+- `FailOpenOnRedisDown` — Redis fechado → (true, 0), sem panic
+- `Backend()` — retorna "redis"
+
+**Factory (6):**
+- `MemoryDefault` (sem env) → memory
+- `MemoryExplicit` (`=memory`) → memory
+- `RedisRequiresURL` (`=redis` sem URL) → erro
+- `RedisBadURL` (URL inválida) → erro
+- `UnknownBackend` (`=mongodb`) → erro
+- `RedisWithMiniredis` (URL válida) → conecta + primeira call passa
+
+### 🔬 Smoke test extendido (Cenário 7b)
+
+**`TestSmoke_Cenario7b_RateLimitRedisBackend`** (em `smoke_v352_test.go`):
+- Substitui `srv.RateLimiter` por `RedisRateLimiter` apontando para miniredis
+- 10 requests OK + 11ª 429 (valida paridade com memory)
+- `X-RateLimit-Bucket: heavy` presente
+- IF diferente tem contador independente
+- **Status: PASS**
+
+### 📝 Documentação inline
+
+- Comentários em todos os 3 arquivos do rate limiter documentam:
+  - Por que interface (testes com múltiplos backends, fail-open)
+  - Por que Lua script (atomicidade INCR+EXPIRE)
+  - Por que fail-open em Redis down (preferência: sem rate limit > offline)
+  - Trade-off single-replica (memory) vs ops complexity (Redis)
+
+### ⚠️ Gaps conhecidos (NÃO cobertos por esta release)
+
+Documentado para honestidade — itens para Sprint 17+:
+
+1. **Redis window <1s truncado para 0s** — `int(Window.Seconds())` trunca.
+   Production usa janelas ≥1min, então é seguro. Mas config <1s =
+   EXPIRE 0 = key expira imediatamente. Defensive clamp em
+   `newRedisRateLimiter` é follow-up.
+2. **Sliding window vs fixed window** — implementação atual é fixed window
+   (counter reset no TTL). Bursts na borda do window podem passar 2× do
+   limite. Aceitável para nosso threat model (DoS prevention, não SLA
+   preciso). Lua script + sorted set seria upgrade para sliding window.
+3. **Monitoring dropped requests** — Prometheus metric
+   `radiant_rate_limit_dropped_total{bucket, if_id}` ainda não exposto.
+4. **Postgres CI pipeline** — migration 012 (RLS) ainda precisa de CI
+   dedicada Postgres. Pode ser Sprint 17.
+5. **Lint check `enforceSameIF`** — handler futuro sem wire explícito
+   não é bloqueado em CI.
+
+### 🔢 Métricas
+
+- 2 arquivos novos (`ratelimit_redis.go`, `ratelimit_test.go`)
+- 1 arquivo modificado extensivamente (`ratelimit.go` — interface + factory)
+- 1 arquivo modificado (`server.go` — campo `RateLimiter` virou interface)
+- 1 arquivo modificado (`cmd/api/main.go` — wiring + defer Close)
+- 1 arquivo modificado (`smoke_v352_test.go` — cenário 7b)
+- 17 testes novos passam com `-race`
+- 0 findings HIGH novos
+- 100% `-race ./...` verde (17/17 packages)
+
+---
+
 ## v3.5.2 — 2026-07-05 (Sprint 13: Cross-Tenant + CSRF Hardening + DB Integrity + Rate Limit) ✅
 
 > **Status:** ✅ Shipped
