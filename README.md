@@ -185,10 +185,11 @@ Stack completa em [`backend/README.md`](backend/README.md).
 | **18** | STA WS nativo (substituir Playwright) + cert A1/A3 | ✅ v3.8.0 |
 | **19** | STA WS read side (Download + StatusUpload + X-Content-Hash) | ✅ v3.9.0 |
 | **20** | STA WS listagem / disponiveis + alteração / situacao + handlers REST | ✅ v3.10.0 |
+| **21** | STA WS chunked transfer (range upload §5.6 + range download §6.4) | ✅ v3.11.0 |
 
-Última release estável: **v3.10.0** (Sprint 20 STA WS listagem + alteração + handlers
-REST `/v1/sta/disponiveis` + `/v1/sta/situacao` com `ReadClient` interface segregation;
-18/18 packages PASS, 51 testes STA, smoke 11/11).
+Última release estável: **v3.11.0** (Sprint 21 STA WS chunked transfer — `SubmitRange` §5.6 +
+`DownloadRange` §6.4 com `ChunkedClient` interface segregation; 18/18 packages PASS, 63 testes
+STA, smoke 11/11).
 
 **Sub-produtos anunciados** (marca Radiant):
 

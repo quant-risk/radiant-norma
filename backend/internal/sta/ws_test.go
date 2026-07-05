@@ -1627,3 +1627,373 @@ func TestParseXContentHash_Cases(t *testing.T) {
 		})
 	}
 }
+
+// ============================================================
+// Sprint 21 (v3.11.0) — chunked transfer (range upload + download)
+//
+// Spec: SPRINT_21_RESEARCH.md §2.1 (Seção 5.6 manual BACEN) + §2.2
+// (Seção 6.4 manual BACEN). Cada teste abaixo mapeia uma linha da tabela
+// de erros esperada ou um caso happy path.
+// ============================================================
+
+// sucessoSubmitRangeHandler retorna mockSTA configurado para responder 200 OK
+// em SubmitRange (chunked upload — manual §5.6). Captura Content-Range para
+// validação no test.
+type submitRangeCaptura struct {
+	contentRange  string
+	contentLength int64
+}
+
+func sucessoSubmitRangeHandler(cap *submitRangeCaptura) *mockSTA {
+	return &mockSTA{
+		requireBasicAuth: true,
+		handlePut: func(w http.ResponseWriter, r *http.Request, protocolo string) {
+			if r.Header.Get("Content-Range") == "" {
+				http.Error(w, "Content-Range obrigatório para SubmitRange", http.StatusBadRequest)
+				return
+			}
+			if r.Header.Get("Content-Type") != "" {
+				http.Error(w, "Content-Type deveria ser omitido (manual §5.6)", http.StatusBadRequest)
+				return
+			}
+			if cap != nil {
+				cap.contentRange = r.Header.Get("Content-Range")
+				cap.contentLength = r.ContentLength
+			}
+			w.WriteHeader(http.StatusOK)
+		},
+	}
+}
+
+// TestWSClient_SubmitRange_HappyPath — §5.6: chunk único de 100 bytes de arquivo 1000.
+func TestWSClient_SubmitRange_HappyPath(t *testing.T) {
+	cap := &submitRangeCaptura{}
+	_, client := newMockSTA(t, sucessoSubmitRangeHandler(cap))
+
+	chunk := bytes.Repeat([]byte("X"), 100)
+	err := client.SubmitRange(context.Background(), "123", 0, 99, 1000, chunk)
+	if err != nil {
+		t.Fatalf("SubmitRange: %v", err)
+	}
+	if cap.contentRange != "bytes 0-99/1000" {
+		t.Errorf("Content-Range = %q, esperado 'bytes 0-99/1000'", cap.contentRange)
+	}
+	if cap.contentLength != 100 {
+		t.Errorf("Content-Length = %d, esperado 100", cap.contentLength)
+	}
+}
+
+// TestWSClient_SubmitRange_416_RangeInvalido — BACEN rejeita range (manual §5.6).
+func TestWSClient_SubmitRange_416_RangeInvalido(t *testing.T) {
+	mock := sucessoSubmitRangeHandler(nil)
+	mock.handlePut = func(w http.ResponseWriter, r *http.Request, protocolo string) {
+		w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Resultado><Erro><Codigo>416</Codigo><Descricao>Range informado é inválido</Descricao></Erro></Resultado>`))
+	}
+	_, client := newMockSTA(t, mock)
+
+	chunk := bytes.Repeat([]byte("X"), 100)
+	err := client.SubmitRange(context.Background(), "123", 0, 99, 1000, chunk)
+	if err == nil {
+		t.Fatal("esperava erro em 416")
+	}
+	var staErr *STAError
+	if !errors.As(err, &staErr) {
+		t.Fatalf("erro deveria ser *STAError, got %T: %v", err, err)
+	}
+	if staErr.StatusCode != http.StatusRequestedRangeNotSatisfiable {
+		t.Errorf("StatusCode = %d, esperado 416", staErr.StatusCode)
+	}
+}
+
+// TestWSClient_SubmitRange_404 — protocolo inexistente (manual §5.6).
+func TestWSClient_SubmitRange_404(t *testing.T) {
+	mock := sucessoSubmitRangeHandler(nil)
+	mock.handlePut = func(w http.ResponseWriter, r *http.Request, protocolo string) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Resultado><Erro><Codigo>404</Codigo><Descricao>Protocolo não encontrado</Descricao></Erro></Resultado>`))
+	}
+	_, client := newMockSTA(t, mock)
+
+	chunk := bytes.Repeat([]byte("X"), 10)
+	err := client.SubmitRange(context.Background(), "999", 0, 9, 100, chunk)
+	if err == nil {
+		t.Fatal("esperava erro em 404")
+	}
+	var staErr *STAError
+	if !errors.As(err, &staErr) {
+		t.Fatalf("erro deveria ser *STAError, got %T", err)
+	}
+	if staErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d, esperado 404", staErr.StatusCode)
+	}
+}
+
+// TestWSClient_SubmitRange_410 — protocolo cancelado pelo BACEN.
+func TestWSClient_SubmitRange_410(t *testing.T) {
+	mock := sucessoSubmitRangeHandler(nil)
+	mock.handlePut = func(w http.ResponseWriter, r *http.Request, protocolo string) {
+		w.WriteHeader(http.StatusGone)
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Resultado><Erro><Codigo>410</Codigo><Descricao>Protocolo foi cancelado pelo Banco Central</Descricao></Erro></Resultado>`))
+	}
+	_, client := newMockSTA(t, mock)
+
+	chunk := bytes.Repeat([]byte("X"), 10)
+	err := client.SubmitRange(context.Background(), "888", 0, 9, 100, chunk)
+	if err == nil {
+		t.Fatal("esperava erro em 410")
+	}
+	var staErr *STAError
+	if !errors.As(err, &staErr) {
+		t.Fatalf("erro deveria ser *STAError, got %T", err)
+	}
+	if staErr.StatusCode != http.StatusGone {
+		t.Errorf("StatusCode = %d, esperado 410", staErr.StatusCode)
+	}
+}
+
+// TestWSClient_SubmitRange_Validacoes — sanity checks client-side.
+func TestWSClient_SubmitRange_Validacoes(t *testing.T) {
+	c, _ := NewWSClient(WSConfig{
+		BaseURL:           "http://127.0.0.1:0",
+		User:              "123450001.x",
+		Password:          "p",
+		AllowInsecureHTTP: true,
+	})
+	chunk := bytes.Repeat([]byte("X"), 100)
+
+	tests := []struct {
+		name    string
+		fn      func() error
+		wantErr string
+	}{
+		{"protocolo vazio", func() error {
+			return c.SubmitRange(context.Background(), "", 0, 99, 100, chunk)
+		}, "protocolo requerido"},
+		{"inicio negativo", func() error {
+			return c.SubmitRange(context.Background(), "1", -1, 99, 100, chunk)
+		}, "inicio deve ser >= 0"},
+		{"fim < inicio", func() error {
+			return c.SubmitRange(context.Background(), "1", 50, 30, 100, bytes.Repeat([]byte("X"), 20))
+		}, "fim deve ser >= inicio"},
+		{"total <= 0", func() error {
+			return c.SubmitRange(context.Background(), "1", 0, 99, 0, chunk)
+		}, "total deve ser > 0"},
+		{"total < fim+1", func() error {
+			return c.SubmitRange(context.Background(), "1", 0, 99, 50, chunk)
+		}, "total deve ser > 0"},
+		{"len(chunk) != range", func() error {
+			return c.SubmitRange(context.Background(), "1", 0, 99, 100, []byte("short"))
+		}, "len(chunk) deve ser fim-inicio+1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.fn()
+			if err == nil {
+				t.Fatal("esperava erro")
+			}
+			if !strings.Contains(err.Error(), tt.wantErr) {
+				t.Errorf("erro deveria mencionar %q, got %v", tt.wantErr, err)
+			}
+		})
+	}
+}
+
+// sucessoDownloadRangeHandler retorna mockSTA configurado para responder
+// 206 Partial Content com chunk + X-Content-Hash.
+type downloadRangeCaptura struct {
+	rangeHeader string
+	ifMatch     string
+	ifUnmod     string
+}
+
+func sucessoDownloadRangeHandler(cap *downloadRangeCaptura, content []byte) *mockSTA {
+	sum := sha256.Sum256(content)
+	hash := "SHA-256 " + hex.EncodeToString(sum[:])
+
+	return &mockSTA{
+		requireBasicAuth: true,
+		handleGetConteudo: func(w http.ResponseWriter, r *http.Request, protocolo string) {
+			if r.Header.Get("Range") == "" {
+				http.Error(w, "Range obrigatório para DownloadRange", http.StatusBadRequest)
+				return
+			}
+			if r.Header.Get("Content-Type") != "" {
+				http.Error(w, "Content-Type deveria ser omitido (manual §6.4)", http.StatusBadRequest)
+				return
+			}
+			if cap != nil {
+				cap.rangeHeader = r.Header.Get("Range")
+				cap.ifMatch = r.Header.Get("If-Match")
+				cap.ifUnmod = r.Header.Get("If-Unmodified-Since")
+			}
+			w.Header().Set("ETag", `"etag-v1"`)
+			w.Header().Set("Last-Modified", "Thu, 01 Dec 2022 12:00:00 GMT")
+			w.Header().Set("X-Content-Hash", hash)
+			w.WriteHeader(http.StatusPartialContent)
+			_, _ = w.Write(content)
+		},
+	}
+}
+
+// TestWSClient_DownloadRange_HappyPath — §6.4 com expectedTotalHash vazio (sem validação).
+func TestWSClient_DownloadRange_HappyPath(t *testing.T) {
+	chunkContent := []byte("chunk parcial do arquivo")
+	cap := &downloadRangeCaptura{}
+	_, client := newMockSTA(t, sucessoDownloadRangeHandler(cap, chunkContent))
+
+	res, err := client.DownloadRange(context.Background(), "123", 100, 199, "", "", "")
+	if err != nil {
+		t.Fatalf("DownloadRange: %v", err)
+	}
+	if res == nil {
+		t.Fatal("res nil")
+	}
+	if !bytes.Equal(res.Conteudo, chunkContent) {
+		t.Errorf("Conteúdo = %q, esperado %q", res.Conteudo, chunkContent)
+	}
+	if cap.rangeHeader != "bytes=100-199" {
+		t.Errorf("Range header = %q, esperado 'bytes=100-199'", cap.rangeHeader)
+	}
+}
+
+// TestWSClient_DownloadRange_HashValidado — caller passa expectedTotalHash correto.
+func TestWSClient_DownloadRange_HashValidado(t *testing.T) {
+	fullContent := []byte("arquivo completo de exemplo com 100 bytes mesmo!")
+	// Hash do arquivo COMPLETO (X-Content-Hash do BACEN é sempre do full file,
+	// não do chunk — caller compara expectedTotalHash com o header retornado).
+	sum := sha256.Sum256(fullContent)
+	expectedHash := hex.EncodeToString(sum[:])
+
+	// Chunk retornado pelo BACEN é parte do fullContent.
+	chunkContent := fullContent[10:30]
+
+	// Mock handler com hash pré-calculado do fullContent (não do chunk).
+	mock := &mockSTA{
+		requireBasicAuth: true,
+		handleGetConteudo: func(w http.ResponseWriter, r *http.Request, protocolo string) {
+			w.Header().Set("ETag", `"etag-v1"`)
+			w.Header().Set("Last-Modified", "Thu, 01 Dec 2022 12:00:00 GMT")
+			w.Header().Set("X-Content-Hash", "SHA-256 "+expectedHash)
+			w.WriteHeader(http.StatusPartialContent)
+			_, _ = w.Write(chunkContent)
+		},
+	}
+	_, client := newMockSTA(t, mock)
+
+	res, err := client.DownloadRange(context.Background(), "123", 10, 29, expectedHash, "", "")
+	if err != nil {
+		t.Fatalf("DownloadRange: %v", err)
+	}
+	if res.ContentHash != expectedHash {
+		t.Errorf("ContentHash = %q, esperado %q", res.ContentHash, expectedHash)
+	}
+}
+
+// TestWSClient_DownloadRange_HashMismatch — expectedTotalHash difere de X-Content-Hash.
+func TestWSClient_DownloadRange_HashMismatch(t *testing.T) {
+	chunkContent := []byte("chunk")
+	cap := &downloadRangeCaptura{}
+	_, client := newMockSTA(t, sucessoDownloadRangeHandler(cap, chunkContent))
+
+	wrongHash := strings.Repeat("0", 64)
+	_, err := client.DownloadRange(context.Background(), "123", 0, 4, wrongHash, "", "")
+	if err == nil {
+		t.Fatal("esperava erro de hash mismatch")
+	}
+	if !errors.Is(err, ErrContentHashMismatch) {
+		t.Fatalf("erro deveria ser ErrContentHashMismatch, got %v", err)
+	}
+}
+
+// TestWSClient_DownloadRange_412 — If-Match/If-Unmodified-Since falhou (manual §6.4).
+func TestWSClient_DownloadRange_412(t *testing.T) {
+	mock := sucessoDownloadRangeHandler(nil, []byte("x"))
+	mock.handleGetConteudo = func(w http.ResponseWriter, r *http.Request, protocolo string) {
+		w.WriteHeader(http.StatusPreconditionFailed)
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Resultado><Erro><Codigo>412</Codigo><Descricao>Validação dos cabeçalhos If-Match e If-Unmodified-Since falhou</Descricao></Erro></Resultado>`))
+	}
+	_, client := newMockSTA(t, mock)
+
+	_, err := client.DownloadRange(context.Background(), "123", 0, 99, "", `"old-etag"`, "")
+	if err == nil {
+		t.Fatal("esperava erro em 412")
+	}
+	var staErr *STAError
+	if !errors.As(err, &staErr) {
+		t.Fatalf("erro deveria ser *STAError, got %T", err)
+	}
+	if staErr.StatusCode != http.StatusPreconditionFailed {
+		t.Errorf("StatusCode = %d, esperado 412", staErr.StatusCode)
+	}
+}
+
+// TestWSClient_DownloadRange_416 — Range inválido (manual §6.4).
+func TestWSClient_DownloadRange_416(t *testing.T) {
+	mock := sucessoDownloadRangeHandler(nil, []byte("x"))
+	mock.handleGetConteudo = func(w http.ResponseWriter, r *http.Request, protocolo string) {
+		w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<Resultado><Erro><Codigo>416</Codigo><Descricao>Range informado é inválido</Descricao></Erro></Resultado>`))
+	}
+	_, client := newMockSTA(t, mock)
+
+	_, err := client.DownloadRange(context.Background(), "123", 200, 100, "", "", "")
+	if err == nil {
+		t.Fatal("esperava erro em 416")
+	}
+}
+
+// TestWSClient_DownloadRange_Validacoes — sanity checks client-side.
+func TestWSClient_DownloadRange_Validacoes(t *testing.T) {
+	c, _ := NewWSClient(WSConfig{
+		BaseURL:           "http://127.0.0.1:0",
+		User:              "123450001.x",
+		Password:          "p",
+		AllowInsecureHTTP: true,
+	})
+
+	tests := []struct {
+		name    string
+		fn      func() (*DownloadResult, error)
+		wantErr string
+	}{
+		{"protocolo vazio", func() (*DownloadResult, error) {
+			return c.DownloadRange(context.Background(), "", 0, 99, "", "", "")
+		}, "protocolo requerido"},
+		{"inicio negativo", func() (*DownloadResult, error) {
+			return c.DownloadRange(context.Background(), "1", -1, 99, "", "", "")
+		}, "inicio deve ser >= 0"},
+		{"fim < inicio", func() (*DownloadResult, error) {
+			return c.DownloadRange(context.Background(), "1", 50, 30, "", "", "")
+		}, "fim deve ser >= inicio"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := tt.fn()
+			if err == nil {
+				t.Fatal("esperava erro")
+			}
+			if !strings.Contains(err.Error(), tt.wantErr) {
+				t.Errorf("erro deveria mencionar %q, got %v", tt.wantErr, err)
+			}
+		})
+	}
+}
+
+// TestChunkedClient_InterfaceSegregation — *WSClient implementa ChunkedClient;
+// *StubClient NÃO implementa.
+func TestChunkedClient_InterfaceSegregation(t *testing.T) {
+	// Compile-time check: WSClient implementa ChunkedClient.
+	var _ ChunkedClient = (*WSClient)(nil)
+
+	// Runtime check: StubClient NÃO implementa ChunkedClient.
+	stub := NewStubClient()
+	if _, ok := any(stub).(ChunkedClient); ok {
+		t.Fatal("StubClient não deveria implementar ChunkedClient (interface segregation)")
+	}
+}

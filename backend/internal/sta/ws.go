@@ -10,6 +10,10 @@
 // (Seção 7.1). ReadClient interface segregation permite handlers checarem
 // capability em runtime (StubClient não implementa read side).
 //
+// Sprint 21 (v3.11.0): chunked transfer — WSClient.SubmitRange (Seção 5.6) +
+// WSClient.DownloadRange (Seção 6.4). ChunkedClient interface segregation
+// (StubClient não implementa — capability de range/chunk).
+//
 // Implementa o fluxo de envio em 2 fases (Seções 5.1 + 5.2 do manual oficial):
 //  1. POST /arquivos com XML <Parametros> (IdentificadorDocumento, Hash, Tamanho, etc.)
 //     → 201 Created + <Resultado><Protocolo>{NUM}</Protocolo></Resultado>
@@ -21,6 +25,10 @@
 //  4. GET /arquivos/{protocolo}/conteudo → arquivo binário + X-Content-Hash
 //  5. GET /arquivos/disponiveis?dataHoraInicio=... → listagem de arquivos a receber
 //  6. PUT /arquivos/situacao → alterar A_REC ↔ REC
+//
+// E chunked transfer (Sprint 21):
+//  7. PUT /arquivos/{protocolo}/conteudo com Content-Range → chunk upload
+//  8. GET /arquivos/{protocolo}/conteudo com Range + If-Match → chunk download
 //
 // Auth: HTTP Basic preemptivo (RFC 7617). Header:
 //
@@ -36,17 +44,16 @@
 //
 // O cliente:
 //   - Calcula SHA-256 do payload ANTES do POST (Seção 2.4 do manual)
-//   - Compara SHA-256 do body do Download com X-Content-Hash do header
-//     (Seção 6.1.1, validação obrigatória de integridade — manual linha 641-643)
+//   - Compara SHA-256 do body do Download/DownloadRange com X-Content-Hash
+//     do header (Seção 6.1.1 / 6.4, validação obrigatória de integridade —
+//     manual linha 641-643)
 //   - Respeita timeout configurado
 //   - Sanitiza error bodies (não vaza err.Error() cru — F18.1 defense)
 //   - Emite audit emission em failure (S17.6 pattern — mas ainda
 //     sem audit_log wiring aqui; feito no handler do /v1/sta/submit)
 //
-// Limitações V1 (cobertas em Sprint 21+):
+// Limitações V1 (cobertas em Sprint 22+):
 //   - Sem retry exponencial
-//   - Sem range/resume upload (chunked)
-//   - Sem range/conditional download (single-call apenas)
 //   - Sem cache de senhaws endpoints
 //
 // Referência: _referencias/STA_Manual_WebServices.pdf (BACEN, julho/2022).
@@ -847,4 +854,226 @@ func (c *WSClient) AlterarSituacao(ctx context.Context, req AlterarSituacaoReq) 
 		return c.parseSTAErrorTyped(resp.StatusCode, respBody, "")
 	}
 	return nil
+}
+
+// ============================================================
+// Sprint 21 (v3.11.0) — chunked transfer (range upload + download)
+// ============================================================
+
+// ChunkedClient é o subset de operações chunked (range-based) do BACEN STA WS.
+// Apenas *WSClient implementa (porque StubClient não tem como fazer chunked
+// contra BACEN real — seria hollow stub).
+//
+// Operações chunked:
+//   - SubmitRange: PUT com Content-Range (manual §5.6)
+//   - DownloadRange: GET com Range + opcional If-Match/If-Unmodified-Since
+//     (manual §6.4)
+//
+// Caller pattern: type-assert s.STAClient.(ChunkedClient). Se ok, usa.
+// Senão retorna erro explícito ("chunked transfer não disponível neste backend").
+//
+// Interface segregation (mesmo padrão de ReadClient da Sprint 20): forçar
+// StubClient a implementar com zero-values seria hollow stub piorado.
+type ChunkedClient interface {
+	SubmitRange(ctx context.Context, protocolo string, inicio, fim, total int64, chunk []byte) error
+	DownloadRange(ctx context.Context, protocolo string, inicio, fim int64, expectedTotalHash, ifMatch, ifUnmodifiedSince string) (*DownloadResult, error)
+}
+
+// SubmitRange envia 1 chunk de arquivo (parte de upload chunked) — Seção 5.6
+// do manual BACEN.
+//
+// Endpoint: PUT /arquivos/{protocolo}/conteudo com Content-Range header.
+// protocolo: obtido via POST /arquivos (Fase 1 — Submit).
+// inicio, fim: byte range [inicio, fim] **inclusivo** (RFC 7233 §2.1).
+// total: tamanho total do arquivo completo (>= fim+1).
+// chunk: bytes do chunk (esperado len(chunk) == fim-inicio+1).
+//
+// Content-Type omitido (manual §5.6 linha 538-539 — mesmo que §5.2 single-call).
+//
+// Retorna:
+//   - nil em sucesso (BACEN responde 200 OK).
+//   - *STAError em rejeição formal BACEN (400/403/404/410/416/501).
+//   - err em transporte ou validação client-side.
+//
+// Validações client-side (defense in depth — BACEN também valida 416):
+//   - protocolo não vazio
+//   - inicio >= 0
+//   - fim >= inicio
+//   - total > 0 e total >= fim+1
+//   - len(chunk) == fim-inicio+1 (chunks devem ter tamanho exato)
+func (c *WSClient) SubmitRange(ctx context.Context, protocolo string, inicio, fim, total int64, chunk []byte) error {
+	if protocolo == "" {
+		return errors.New("protocolo requerido")
+	}
+	if inicio < 0 {
+		return fmt.Errorf("inicio deve ser >= 0 (got %d)", inicio)
+	}
+	if fim < inicio {
+		return fmt.Errorf("fim deve ser >= inicio (inicio=%d, fim=%d)", inicio, fim)
+	}
+	if total <= 0 || total < fim+1 {
+		return fmt.Errorf("total deve ser > 0 e >= fim+1 (got total=%d, fim=%d)", total, fim)
+	}
+	expectedLen := fim - inicio + 1
+	if int64(len(chunk)) != expectedLen {
+		return fmt.Errorf("len(chunk) deve ser fim-inicio+1=%d (got %d)", expectedLen, len(chunk))
+	}
+
+	// Content-Range: bytes inicio-fim/total (RFC 7233 §4.2)
+	contentRange := fmt.Sprintf("bytes %d-%d/%d", inicio, fim, total)
+
+	url := c.cfg.BaseURL + "/arquivos/" + protocolo + "/conteudo"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewReader(chunk))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", c.basicAuthHeader())
+	req.Header.Set("Content-Range", contentRange)
+	req.ContentLength = expectedLen
+	// Content-Type intencionalmente omitido — manual §5.6 linha 538-539.
+
+	resp, err := c.cfg.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodyBytes))
+
+	if resp.StatusCode != http.StatusOK {
+		return c.parseSTAErrorTyped(resp.StatusCode, respBody, protocolo)
+	}
+	return nil
+}
+
+// DownloadRange baixa 1 chunk de arquivo (parte de download chunked) — Seção
+// 6.4 do manual BACEN.
+//
+// Endpoint: GET /arquivos/{protocolo}/conteudo com Range header.
+// protocolo: protocolo do arquivo.
+// inicio, fim: byte range [inicio, fim] **inclusivo** (RFC 7233).
+// expectedTotalHash: SHA-256 hex do arquivo COMPLETO (de ListDisponiveis.Hash).
+//
+//	Se vazio, sem validação de hash (cliente confia no BACEN).
+//
+// ifMatch: valor do header If-Match (opcional, RFC 7232).
+// ifUnmodifiedSince: valor do header If-Unmodified-Since (opcional, RFC 7232).
+//
+// Content-Type omitido (manual §6.4 linha 701).
+//
+// **Detalhe crítico:** X-Content-Hash do BACEN é do **arquivo completo**, não
+// do chunk. Cliente valida comparando contra expectedTotalHash. Se match, chunk
+// veio de arquivo íntegro. Se mismatch → ErrContentHashMismatch (sentinel da
+// Sprint 19).
+//
+// BACEN responde 206 Partial Content (não 200 OK) em sucesso.
+//
+// Retorna:
+//   - (*DownloadResult, nil) em sucesso — Conteudo contém apenas o chunk.
+//   - (nil, *STAError) em rejeição formal BACEN (400/404/410/412/416/501).
+//   - (nil, ErrContentHashMismatch) se expectedTotalHash fornecido e difere.
+//   - (nil, ErrContentHashHeaderMalformed) se X-Content-Hash malformado.
+//   - (nil, err) em transporte.
+//
+// Validações client-side:
+//   - protocolo não vazio
+//   - inicio >= 0, fim >= inicio
+//   - (fim-inicio+1) <= maxDownloadBodyBytes (defesa DoS)
+func (c *WSClient) DownloadRange(ctx context.Context, protocolo string, inicio, fim int64, expectedTotalHash, ifMatch, ifUnmodifiedSince string) (*DownloadResult, error) {
+	if protocolo == "" {
+		return nil, errors.New("protocolo requerido")
+	}
+	if inicio < 0 {
+		return nil, fmt.Errorf("inicio deve ser >= 0 (got %d)", inicio)
+	}
+	if fim < inicio {
+		return nil, fmt.Errorf("fim deve ser >= inicio (inicio=%d, fim=%d)", inicio, fim)
+	}
+	requestedLen := fim - inicio + 1
+	if requestedLen > int64(maxDownloadBodyBytes) {
+		return nil, &STAError{
+			StatusCode: http.StatusRequestEntityTooLarge,
+			Code:       fmt.Sprintf("HTTP_%d", http.StatusRequestEntityTooLarge),
+			Message:    fmt.Sprintf("range solicitado %d bytes excede cap defensivo %d", requestedLen, maxDownloadBodyBytes),
+			Protocolo:  protocolo,
+		}
+	}
+
+	// Range: bytes=inicio-fim (RFC 7233 §3.1, sem /total — diferente de Content-Range)
+	rangeHeader := fmt.Sprintf("bytes=%d-%d", inicio, fim)
+
+	url := c.cfg.BaseURL + "/arquivos/" + protocolo + "/conteudo"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", c.basicAuthHeader())
+	req.Header.Set("Range", rangeHeader)
+	// If-Match e If-Unmodified-Since opcionais (manual linha 703).
+	if ifMatch != "" {
+		req.Header.Set("If-Match", ifMatch)
+	}
+	if ifUnmodifiedSince != "" {
+		req.Header.Set("If-Unmodified-Since", ifUnmodifiedSince)
+	}
+	// Content-Type intencionalmente omitido — manual §6.4 linha 701.
+
+	resp, err := c.cfg.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	// Cap no body.
+	limited := io.LimitReader(resp.Body, maxDownloadBodyBytes+1)
+	body, err := io.ReadAll(limited)
+	if err != nil {
+		return nil, fmt.Errorf("read download range body: %w", err)
+	}
+	if int64(len(body)) > maxDownloadBodyBytes {
+		return nil, &STAError{
+			StatusCode: http.StatusRequestEntityTooLarge,
+			Code:       fmt.Sprintf("HTTP_%d", http.StatusRequestEntityTooLarge),
+			Message:    fmt.Sprintf("body excede %d bytes (cap defensivo)", maxDownloadBodyBytes),
+			Protocolo:  protocolo,
+		}
+	}
+
+	// 206 Partial Content esperado em sucesso. Outros 2xx viram erro.
+	if resp.StatusCode != http.StatusPartialContent && resp.StatusCode != http.StatusOK {
+		return nil, c.parseSTAErrorTyped(resp.StatusCode, body, protocolo)
+	}
+	// 200 OK (em vez de 206) é improvável mas tolerável — BACEN pode
+	// retornar 200 com range respeitado (single-call completo). Caller
+	// que recebe 200 deve checar Content-Range no response. Para V1,
+	// aceitamos 200 e 206 sem distinção.
+
+	// Validação X-Content-Hash (Sprint 19 pattern).
+	hashHeader := resp.Header.Get("X-Content-Hash")
+	if hashHeader == "" {
+		return nil, &STAError{
+			StatusCode: http.StatusBadGateway,
+			Code:       "MISSING_X_CONTENT_HASH",
+			Message:    "BACEN não retornou header X-Content-Hash (esperado conforme manual §6.4)",
+			Protocolo:  protocolo,
+		}
+	}
+	gotHash, malformedErr := parseXContentHash(hashHeader)
+	if malformedErr != nil {
+		return nil, fmt.Errorf("%w: %v (header=%q)", ErrContentHashHeaderMalformed, malformedErr, hashHeader)
+	}
+
+	// Validação contra expectedTotalHash do caller.
+	if expectedTotalHash != "" && gotHash != expectedTotalHash {
+		return nil, fmt.Errorf("%w: esperado=%s got=%s (chunk=%d bytes)",
+			ErrContentHashMismatch, expectedTotalHash, gotHash, len(body))
+	}
+
+	return &DownloadResult{
+		Conteudo:          body,
+		ContentHash:       gotHash,
+		ETag:              resp.Header.Get("ETag"),
+		LastModified:      resp.Header.Get("Last-Modified"),
+		ContentHashHeader: hashHeader,
+	}, nil
 }

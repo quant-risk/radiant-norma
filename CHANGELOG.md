@@ -2,6 +2,105 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.11.0 — 2026-07-06 (Sprint 21: STA WS chunked transfer — range upload + range download) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 21 (chunked transfer — range upload/download)
+> **Versão:** minor (2 métodos novos em `*WSClient` + 1 interface; **sem breaking changes**)
+> **Trigger:** SPRINT_20_RESULTS.md §"Próximos passos" Sprint 21
+> **Validação:** 18/18 packages PASS + 13 testes novos Sprint 21 (12 httptest + 1 interface segregation) + smoke 11/11
+
+### 🎯 Resumo
+
+Sprint 21 fecha o **chunked transfer** do BACEN STA WS. IF com CADOC >50 MB agora pode
+(a) **enviar arquivo em chunks paralelos** via `WSClient.SubmitRange` (manual §5.6) e
+(b) **retomar download interrompido** via `WSClient.DownloadRange` (§6.4) — usando o
+resultado de `StatusUpload` (Sprint 19) para saber onde parou.
+
+**Decisão arquitetural:** `ChunkedClient` interface segregation (mesmo padrão da
+`ReadClient` da Sprint 20). Apenas `*WSClient` implementa. `*StubClient` retorna erro
+de compilação claro (interface não implementada). Capability de chunked transfer é
+**opt-in** — caller faz type assertion.
+
+**Decisão YAGNI consciente:** **NÃO** criar handlers REST nesta sprint. Sem consumer
+imediato (range download é caso pra batch worker Sprint 22+). Métodos ficam disponíveis
+no WSClient; handlers entram quando batch worker chamar.
+
+### 🚀 O que entrou
+
+- **`WSClient.SubmitRange(ctx, protocolo, inicio, fim, total, chunk) error`** —
+  PUT `/arquivos/{protocolo}/conteudo` com `Content-Range: bytes inicio-fim/total`
+  (RFC 7233 §4.2). Content-Type omitido (manual §5.6 linha 538-539). 200 OK em sucesso.
+  Validações client-side: protocolo não-vazio, `inicio >= 0`, `fim >= inicio`,
+  `total > 0` e `total >= fim+1`, `len(chunk) == fim-inicio+1`.
+
+- **`WSClient.DownloadRange(ctx, protocolo, inicio, fim, expectedTotalHash, ifMatch, ifUnmodifiedSince)`**
+  — GET `/arquivos/{protocolo}/conteudo` com `Range: bytes=inicio-fim` (RFC 7233 §3.1,
+  sem `/total` — diferente de Content-Range). `If-Match` + `If-Unmodified-Since`
+  opcionais (manual §6.4 linha 703). 206 Partial Content (também tolera 200 OK).
+  X-Content-Hash **do arquivo completo** (não do chunk) — caller valida contra
+  `expectedTotalHash` (vindo de `ListDisponiveis.Hash`).
+
+- **`ChunkedClient` interface segregation** — apenas `*WSClient` implementa.
+  `*StubClient` NÃO implementa (provado via test `TestChunkedClient_InterfaceSegregation`).
+
+- **Cap defensivo** — reusa `maxDownloadBodyBytes = 100 MiB` da Sprint 19. Defesa contra
+  BACEN bugar e enviar chunk gigante.
+
+- **Validação X-Content-Hash ponta-a-ponta** — caller passa `expectedTotalHash`
+  (vindo de `ListDisponiveis.Hash` ou download anterior). Cliente compara com
+  `X-Content-Hash` do header BACEN. Mismatch → `ErrContentHashMismatch` (sentinel
+  da Sprint 19). Header malformado → `ErrContentHashHeaderMalformed`.
+
+- **Reuso de tipos e sentinels** — `Range{Start, End}` (Sprint 19), `*STAError`,
+  `parseXContentHash` (Sprint 19 validação 40).
+
+### 🧪 Tests (13 novos — total STA 63)
+
+| Test | Cobre |
+|---|---|
+| `TestWSClient_SubmitRange_HappyPath` | §5.6 chunk único + Content-Range "bytes 0-99/1000" |
+| `TestWSClient_SubmitRange_416_RangeInvalido` | BACEN rejeita → `*STAError{416}` |
+| `TestWSClient_SubmitRange_404` | Protocolo inexistente |
+| `TestWSClient_SubmitRange_410` | Protocolo cancelado |
+| `TestWSClient_SubmitRange_Validacoes` | 6 subtests: protocolo vazio, inicio negativo, fim < inicio, total <= 0, total < fim+1, len(chunk) != range |
+| `TestWSClient_DownloadRange_HappyPath` | §6.4 com 206 Partial Content |
+| `TestWSClient_DownloadRange_HashValidado` | expectedTotalHash matches X-Content-Hash |
+| `TestWSClient_DownloadRange_HashMismatch` | expectedTotalHash != X-Content-Hash → sentinel |
+| `TestWSClient_DownloadRange_412` | If-Match/If-Unmodified-Since falhou |
+| `TestWSClient_DownloadRange_416` | Range inválido |
+| `TestWSClient_DownloadRange_Validacoes` | 3 subtests: protocolo vazio, inicio negativo, fim < inicio |
+| `TestChunkedClient_InterfaceSegregation` | Compile-time + runtime check WSClient implementa, StubClient NÃO |
+
+### ⚠️ O que NÃO fecha nesta sprint
+
+- **Handlers REST `/v1/sta/range-upload` + `/v1/sta/range-download`** — YAGNI até
+  Sprint 23+ quando batch worker chamar.
+- **Upload paralelo de N chunks simultâneos** — caller (Sprint 22+) decide como
+  paralelizar respeitando limite BACEN §2.6 (10 simultâneos, 120/min).
+- **Retry exponencial** — Sprint 22 (wrapper sobre SubmitRange).
+- **Smoke contra BACEN real** — Sprint 24.
+
+### 🔒 Compatibilidade
+
+- `Client` interface **inalterada** (Submit apenas).
+- `ReadClient` interface **inalterada** (ListDisponiveis + AlterarSituacao).
+- `*WSClient` ganha 2 métodos novos (`SubmitRange`, `DownloadRange`) + implementa
+  nova `ChunkedClient` interface.
+- `*StubClient` **inalterado** — não implementa `ChunkedClient` (compile-time erro).
+- `cmd/api/main.go` **inalterado**.
+- Handlers REST Sprint 20 **inalterados**.
+
+### 📦 Arquivos tocados
+
+```
+backend/internal/sta/ws.go          (+234 linhas — SubmitRange + DownloadRange + ChunkedClient interface)
+backend/internal/sta/ws_test.go     (+370 linhas — 13 tests httptest + 9 subtests validacao)
+SPRINT_21_RESEARCH.md              (novo, 10 seções)
+SPRINT_21_RESULTS.md               (novo)
+CHANGELOG.md                       (esta entrada)
+```
+
 ## v3.10.0 — 2026-07-06 (Sprint 20: STA WS listagem / disponiveis + alteração / situacao + handlers REST) ✅
 
 > **Status:** ✅ Shipped
