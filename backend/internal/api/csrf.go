@@ -13,6 +13,13 @@
 //
 // NOTA: rotas /v1/auth/dev-token (dev mode) são sempre permitidas
 // porque frontend precisa chamar pra mintar JWT.
+//
+// Sprint 13 — v3.5.2 [S13.3 / C-API-1]:
+// Default fail-closed: cross-origin não-allowlisted é SEMPRE 403,
+// independente de RADIANT_ENV. Para dev permissive mode, opt-in via
+// RADIANT_CSRF_PERMISSIVE=1. Whitelist de /v1/auth/dev-token só é
+// aplicada em permissive mode (defense-in-depth: se prod acidentalmente
+// rodar com DEV_TOKEN, dev-token ainda passa por Origin check).
 
 package api
 
@@ -29,27 +36,46 @@ type CSRFConfig struct {
 	// Default dev: localhost:4180 (Next.js).
 	AllowOrigins []string
 	// WhitelistRoutes: paths que bypassam CSRF.
+	// Sprint 13: whitelist só é aplicada em RADIANT_CSRF_PERMISSIVE=1
+	// (dev). Em prod, /v1/auth/dev-token também passa por Origin check.
 	WhitelistRoutes []string
 	// EnforceProduction: se true, bloqueia cross-origin não-allowlisted.
-	// Default: true se RADIANT_ENV=production.
+	// Sprint 13: AGORA SEMPRE true por default. Opt-out via
+	// RADIANT_CSRF_PERMISSIVE=1 (dev mode). Reverse do antigo — era
+	// env-gated e podia ficar fail-open.
 	EnforceProduction bool
+	// StrictNoOrigin: se true, rejeita requests sem Origin header
+	// (Postman/curl) além de cross-origin. Default false (compat).
+	// Sprint 13: opt-in via RADIANT_CSRF_STRICT_NO_ORIGIN=1.
+	StrictNoOrigin bool
 }
 
 // DefaultCSRFConfig retorna config adequada ao ambiente.
 //
-// Dev (RADIANT_ENV != production): allowlist inclui localhost:4180 (Next.js
-// dev). Cross-origin loga warning mas não bloqueia (permite Postman).
-// Prod (RADIANT_ENV=production): só allowlist + same-origin. Outras = 403.
+// Sprint 13 [S13.3] — fail-closed by default. Para dev permissive (allow
+// cross-origin warning + no-origin fallback), set RADIANT_CSRF_PERMISSIVE=1.
+// RADIANT_CSRF_STRICT_NO_ORIGIN=1 rejeita até curl/Postman (max-strict).
 func DefaultCSRFConfig() CSRFConfig {
+	isPermissive := os.Getenv("RADIANT_CSRF_PERMISSIVE") == "1"
+	isStrictNoOrigin := os.Getenv("RADIANT_CSRF_STRICT_NO_ORIGIN") == "1"
+
 	cfg := CSRFConfig{
 		AllowOrigins: []string{
 			"http://localhost:4180", // Next.js dev (port 4180)
 			"http://localhost:3000", // Next.js default
 		},
-		WhitelistRoutes: []string{
+		EnforceProduction: !isPermissive, // FAIL-CLOSED. Invertido vs antes.
+		StrictNoOrigin:    isStrictNoOrigin,
+	}
+
+	// Sprint 13 [S13.3]: whitelist só em permissive mode.
+	// Em prod, /v1/auth/dev-token passa por Origin check normal
+	// (defense-in-depth: se prod ativar dev-token por misconfig,
+	// ainda assim Origin é validado).
+	if isPermissive {
+		cfg.WhitelistRoutes = []string{
 			"/v1/auth/dev-token", // Dev mode: frontend minta JWT
-		},
-		EnforceProduction: os.Getenv("RADIANT_ENV") == "production",
+		}
 	}
 
 	// Em prod, adiciona URL do frontend via env var
@@ -91,9 +117,17 @@ func CSRF(cfg CSRFConfig) func(http.Handler) http.Handler {
 
 			// Sem Origin = browser legacy OU non-browser client (Postman/curl).
 			// Browser moderno SEMPRE envia Origin em POST cross-origin OU same-origin.
-			// Permitir no-origin é fallback defensivo (não é vetor CSRF real
-			// porque browser sem Origin não envia cookie cross-origin).
+			//
+			// Sprint 13 [S13.3] — finetuning:
+			//   * Default (StrictNoOrigin=false): permite no-origin porque
+			//     admin scripts/curl com JWT conseguem chamar API em dev/prod.
+			//   * RADIANT_CSRF_STRICT_NO_ORIGIN=1: rejeita — para deploy
+			//     max-strict onde sabemos que browser é o único client.
 			if origin == "" {
+				if cfg.StrictNoOrigin {
+					http.Error(w, "CSRF: missing Origin header", http.StatusForbidden)
+					return
+				}
 				next.ServeHTTP(w, r)
 				return
 			}

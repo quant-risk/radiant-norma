@@ -82,6 +82,9 @@ type Server struct {
 	// Sprint 10 — SSE hub para real-time push (alertas/audit/envios).
 	// Se nil, /v1/events/stream retorna 503.
 	EventsHub *realtime.Hub
+
+	// Sprint 13 — v3.5.2 [S15.1] rate limiter global.
+	RateLimiter *apiRateLimiter
 }
 
 // auditLogAPI é interface mínima que *auditlog.Logger e *realtime.HubAwareLogger
@@ -93,7 +96,12 @@ type auditLogAPI interface {
 
 // NewServer cria um Server.
 func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences, tl *ruleprefs.ToggleLimiter, ack *insights.Acknowledgments) *Server {
-	return &Server{DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient, Radar: rad, RulePrefs: rp, ToggleLimiter: tl, Insights: ack, startedAt: time.Now()}
+	return &Server{
+		DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient,
+		Radar: rad, RulePrefs: rp, ToggleLimiter: tl, Insights: ack,
+		startedAt:   time.Now(),
+		RateLimiter: newAPIRateLimiter(),
+	}
 }
 
 // Router retorna o chi router configurado.
@@ -108,6 +116,12 @@ func (s *Server) Router() http.Handler {
 		// Whitelist: /api/login (dev), /v1/auth/* (dev-token).
 		// Em dev: warning + allow. Em prod (RADIANT_ENV=production): 403.
 		r.Use(CSRF(DefaultCSRFConfig()))
+
+	// Sprint 13 — v3.5.2 [S15.1]: rate limit global por (bucket, IFID).
+	// Mitiga DoS-via-API authenticated. Aplicado DEPOIS de CSRF pra
+	// que rate limit não conte requests bloqueadas.
+	r.Use(rateLimitMiddleware(s.RateLimiter))
+
 	// Sprint 6 v1.5.0 (F12.8 fix): Recoverer ANTES de Logger para que
 	// panics que viram 500 sejam loggados (não engolidos pelo Logger
 	// que está acima na pilha).
@@ -376,6 +390,11 @@ func (s *Server) getSchema(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) listVersions(w http.ResponseWriter, r *http.Request) {
 	cadoc := chi.URLParam(r, "cadoc")
+	// Sprint 13 — v3.5.2 [S15.3]: format validation.
+	if err := ValidateCadocCode(cadoc); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	versions, err := s.Schema.List(cadoc)
 	if err != nil {
 		s.internalServerError(w, err, "listVersions")
@@ -401,6 +420,11 @@ func (s *Server) listRules(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) listRulesByCadoc(w http.ResponseWriter, r *http.Request) {
 	cadoc := chi.URLParam(r, "cadoc")
+	// Sprint 13 — v3.5.2 [S15.3]: format validation.
+	if err := ValidateCadocCode(cadoc); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	criticas, err := s.Audit.LoadCriticas(r.Context(), cadoc)
 	if err != nil {
 		s.internalServerError(w, err, "listRulesByCadoc")
@@ -461,6 +485,13 @@ func (s *Server) validate(w http.ResponseWriter, r *http.Request) {
 
 	if req.CadocCode == "" {
 		http.Error(w, "cadoc (or cadoc_code) required", http.StatusBadRequest)
+		return
+	}
+	// Sprint 13 — v3.5.2 [S15.3]: cadoc_code format validation.
+	// Sem isso, validate aceitar "DROP TABLE x" e bypass pra vários
+	// paths (audit log, queries, etc). Pattern BACEN: [0-9]{4}.
+	if err := ValidateCadocCode(req.CadocCode); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if len(req.XML) == 0 {
@@ -524,6 +555,14 @@ func (s *Server) staSubmit(w http.ResponseWriter, r *http.Request) {
 	// Fallback do CNPJ é o X-IF-ID (multi-tenant identifier)
 	if sub.CNPJ == "" {
 		sub.CNPJ = ifID
+	}
+
+	// Sprint 13 — v3.5.2 [S13.2 / C-API-4]: enforce tenant match.
+	// Se cliente mandou CNPJ explícito diferente do tenant autenticado,
+	// rejeitar antes de chegar no STA. Sem isso, IF_A poderia submeter
+	// XML com CNPJ de IF_B (audit log cruzado, poluição).
+	if !s.enforceSameIF(w, r, sub.CNPJ) {
+		return
 	}
 
 	if sub.CadocCode == "" {
@@ -666,6 +705,7 @@ func (s *Server) resolveRadarAlert(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "id inválido", http.StatusBadRequest)
 		return
 	}
+
 	if err := s.Radar.ResolveAlert(r.Context(), id); err != nil {
 		// Validação 18 (F18.1): err.Error() de UPDATE pode vazar SQL fragments.
 		s.userError(w, http.StatusNotFound, "resolveRadarAlert", err)
@@ -674,6 +714,11 @@ func (s *Server) resolveRadarAlert(w http.ResponseWriter, r *http.Request) {
 
 	// Audit log (Sprint 5 v1.4.1: era gap — mutações de Radar não emitiam).
 	// Mutações de Radar precisam ser auditadas pra SOC 2 / LGPD.
+	//
+	// NOTA Sprint 13 [S13.2]: radar_alerts é tabela global (regulatory
+	// changes — não há if_id em radar_alerts). Cross-tenant não se aplica —
+	// qualquer IF pode resolver alertas. Audit log usa ifID do claims
+	// para forensic trail.
 	_, _ = s.AuditLog.Log(ifID, r.RemoteAddr, "radar.alert.resolved", "radar",
 		[]byte(idStr), map[string]any{"alert_id": id})
 
@@ -801,6 +846,13 @@ func (s *Server) crossdocValidate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Sprint 13 — v3.5.2 [S13.2 / C-API-3]: cross-tenant guard.
+	// Sem isso, IF_A mandava cadocs de IF_B e audit log poluía. Agora
+	// se req.IfID for fornecido no payload, precisa bater com claims.
+	if req.IfID != "" && !s.enforceSameIF(w, r, req.IfID) {
+		return
+	}
+
 	resp := s.CrossDoc.Validate(r.Context(), &req)
 
 	// Audit (Sprint 6 v1.5.0)
@@ -878,6 +930,45 @@ func getIfID(r *http.Request) string {
 		return claims.IFID
 	}
 	return r.Header.Get("X-IF-ID")
+}
+
+// enforceSameIF valida que providedIFID é consistente com o tenant
+// autenticado via JWT (claims.IFID) ou, em dev mode, com X-IF-ID header.
+//
+// Sprint 13 — v3.5.2 [S13.2 / C-API-3]: previne cross-tenant write/read
+// em handlers que recebem if_id do payload (crossdoc, sta/submit, etc).
+// Handler cross-tenant era gap identificado no audit S-A: payload
+// informava if_id=X, claims.IFID=Y → backend processava e audit log
+// virava fonte de poluição.
+//
+// Comportamento:
+//   - providedIFID == "" → passa (handler assume default = getIfID(r))
+//   - claims.IFID != "" e providedIFID != claims.IFID → 403
+//   - dev mode (claims nil) e providedIFID != headerIFID → 403
+//   - match → passa
+//
+// Retorna true se passou, false se respondeu 403 (handler deve retornar).
+func (s *Server) enforceSameIF(w http.ResponseWriter, r *http.Request, providedIFID string) bool {
+	if providedIFID == "" {
+		return true
+	}
+	claims, err := auth.ClaimsFromContext(r.Context())
+	if err == nil && claims != nil && claims.IFID != "" {
+		if providedIFID != claims.IFID {
+			s.userError(w, http.StatusForbidden, "crossTenant.mismatch",
+				fmt.Errorf("payload.if_id=%q != claims.if_id=%q", providedIFID, claims.IFID))
+			return false
+		}
+		return true
+	}
+	// Dev mode sem claims: alinha com header X-IF-ID (que é o que o
+	// middleware aceitou). Sem isso, atacante poderia definir if_id
+	// arbitrário no payload e bypass.
+	if headerIFID := r.Header.Get("X-IF-ID"); headerIFID != "" && providedIFID != headerIFID {
+		http.Error(w, `{"error":"if_id mismatch with X-IF-ID"}`, http.StatusForbidden)
+		return false
+	}
+	return true
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

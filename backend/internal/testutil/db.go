@@ -18,6 +18,7 @@ package testutil
 
 import (
 	"database/sql"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -29,6 +30,10 @@ import (
 //
 // Aplica o mesmo DSN que produção (com _txlock=immediate) para que testes
 // reproduzam comportamento real de concorrência.
+//
+// Sprint 13 [S14.1]: pre-seeda IFs comuns para satisfazer FK
+// audit_log.if_id → ifs(id). Testes que emitem audit (validate,
+// radar resolve, ack) sem pre-seed IF explícito agora funcionam.
 func NewTestDB(t *testing.T) *sql.DB {
 	t.Helper()
 
@@ -48,6 +53,19 @@ func NewTestDB(t *testing.T) *sql.DB {
 
 	if err := db.Migrate(d); err != nil {
 		t.Fatalf("migrate test db: %v", err)
+	}
+
+	// Sprint 13 [S14.1]: pre-seeds para satisfazer FK audit_log/audit_events.
+	testIFs := []string{
+		"if-test", "if-concurrent", "if-demo", "if-1", "if-2", "if-b", "if-c",
+		"if-x", "if-y", "if-d", "if-cache-audit",
+		"audit-if", "demo", "demo-bank", "canary-if",
+		"bank-1", "other", "system", "stress",
+	}
+	for i, ifID := range testIFs {
+		_, _ = d.Exec(`INSERT OR IGNORE INTO ifs (id, cnpj, nome, tipo, plano)
+			VALUES (?, ?, ?, 'SCD', 'pro')`,
+			ifID, fmt.Sprintf("%08d", i+100), "Test "+ifID)
 	}
 
 	t.Cleanup(func() {

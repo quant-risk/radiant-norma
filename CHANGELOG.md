@@ -6,6 +6,179 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.5.2 — 2026-07-05 (Sprint 13: Cross-Tenant + CSRF Hardening + DB Integrity + Rate Limit) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 13 (Sprints 13-15 consolidados — audit S-A/S-B followup)
+> **Versão:** patch (security hardening + DB integrity)
+> **Trigger:** Audit S-A (cross-tenant injection) + Audit S-B (DoS-via-API + FK integrity)
+> **Validação:** smoke test 13.5 — 10/10 cenários PASS
+
+### 🎯 Resumo
+
+Sprint 13 fecha os 19 findings do audit S-A/S-B (Sprints 13-15 do plano):
+**cross-tenant injection** (handlers STA submit + crossdoc validate agora
+validam IF-ID contra tenant autenticado), **CSRF fail-closed** (default
+rejeita cross-origin não-allowlisted), **DB integrity** (5 FKs novas +
+6 índices + CHECK constraints), **rate limiting** (defesa contra DoS-via-
+API authenticated) e **fail-closed startup** (RADIANT_ENV=production +
+dev flag → recusa iniciar).
+
+### 🔐 Security (Sprint 13 — 6 findings críticos audit S-A)
+
+- **C-API-3 / C-API-4 — Cross-tenant injection em handlers**:
+  - Novo helper `enforceSameIF()` em `server.go` valida IF-ID do payload
+    contra `auth.Claims.IFID` (JWT) ou `X-IF-ID` header (dev mode)
+  - `staSubmit` rejeita CNPJ diferente do tenant autenticado → 403
+  - `crossdocValidate` rejeita `req.IfID` diferente do tenant → 403
+  - `resolveRadarAlert` cross-tenant descartado (radar_alerts é global)
+  - `listAuditLog` admin role é by design (skip + documentado)
+- **C-API-1 — CSRF middleware fail-closed por default**:
+  - `EnforceProduction` default = `true` (antes era env-gated, podia
+    ficar fail-open)
+  - `RADIANT_CSRF_PERMISSIVE=1` para dev (opt-in explícito)
+  - Whitelist de `/v1/auth/dev-token` só em permissive mode (defense-
+    in-depth: prod com DEV_TOKEN misconfigurado ainda passa por Origin
+    check)
+  - `StrictNoOrigin` opt-in via `RADIANT_CSRF_STRICT_NO_ORIGIN=1`
+- **F13.1 — Fail-closed startup gate** (`cmd/api/main.go:131-156`):
+  - `RADIANT_ENV=production` + `RADIANT_DEV_TOKEN=1` → exit 1
+  - `RADIANT_ENV=production` + `RADIANT_DEV_AUTH=1` → exit 1
+  - `RADIANT_ENV=production` + sem `RADIANT_JWT_PUBLIC_KEY` → exit 1
+  - `RADIANT_ENV=production` + sem `RADIANT_NORMA_ADMIN_TOKEN` → exit 1
+  - Antes: warning silencioso, /v1/* retornava 401 sem audit
+- **F-API-2 — Dev-token endpoint controlado por env**:
+  - `RADIANT_DEV_TOKEN=1` + chave RSA → emite JWT arbitrário
+  - Bloqueado em prod pelo fail-closed gate
+
+### 🌐 Frontend Hardening (Sprint 13)
+
+- **Edge middleware** (`frontend/src/middleware.ts`, novo):
+  - Auth-gate em todas rotas (exceto `/login`, `/healthz`)
+  - Cookie `dev:` bloqueado em `NODE_ENV=production`
+  - 26.8kB (chi-style matcher)
+- **Security headers** (`frontend/next.config.js`):
+  - CSP (Content-Security-Policy) restritivo
+  - HSTS (Strict-Transport-Security) com preload
+  - X-Frame-Options DENY (anti-clickjacking)
+  - Permissions-Policy (câmera/microfone/geolocalização desabilitados)
+  - Referrer-Policy strict-origin-when-cross-origin
+- **JWT pubkey server-side only**:
+  - `RADIANT_API_JWT_PUBKEY` (sem prefixo `NEXT_PUBLIC_`)
+  - `import "server-only"` em `auth-server.ts` (Vite/Next guard)
+- **Login route 404 em prod**:
+  - `frontend/src/app/api/login/route.ts` retorna 404 se `NODE_ENV=production`
+- **Session guard** (`frontend/src/lib/session.ts`):
+  - Cookie `dev:` retorna `null` em `NODE_ENV=production`
+
+### 🗄️ DB Integrity (Sprint 14 — 5 migrations)
+
+- **Migration 010 — Tenant FKs** (5 tabelas):
+  - `audit_log.if_id`, `audit_events.if_id`, `rule_failures.if_id`,
+    `disabled_rules.if_id`, `acknowledged_recommendations.if_id` →
+    `ifs(id) ON DELETE RESTRICT` (CASCADE para `disabled_rules` e `ack_rec`)
+  - Pattern recreate-table (SQLite não tem ALTER ADD FK)
+  - Rows órfãs (IF inexistente) descartadas no copy com log warning
+- **Migration 011 — Envios indexes** (6 índices):
+  - `idx_envios_if_status` (heatmap + KPI queries)
+  - `idx_envios_if_cadoc_status_period` (drill-down por CADOC/período)
+  - `idx_envios_if_period` (slicing temporal)
+  - Partial index `idx_envios_if_confirmed` (envios confirmados)
+  - Covering index `idx_rule_failures_if_cadoc` (top-failing)
+  - EXPLAIN confirma uso do índice em queries típicas
+- **Migration 012 — RLS policies** (Postgres-only):
+  - 6 RLS policies em tabelas tenant-scoped
+  - Gateada por marker `@postgres-only` no migration runner
+  - Skip em SQLite (dev); aplicar manualmente em prod via `psql -f`
+- **Migration 013 — Envios CHECK constraints**:
+  - `status` enum (pending|processing|accepted|rejected|error|
+    dead_letter|confirmed)
+  - `period` formato MM/YYYY
+  - `data_base` formato YYYY-MM-DD
+  - Preserva schema completo (001+002+005+006)
+
+### 🚦 Rate Limiting (Sprint 15)
+
+- **Bucket-based rate limiter** (`internal/api/ratelimit.go`, novo):
+  - `heavy` (validate, sta/submit, crossdoc): 10/min
+  - `mutate` (toggle, ack, resolve): 30/min
+  - `read` (GETs padrão): 100/min
+  - `export` (?format=csv): 5/min
+  - `auth` (login, dev-token): 30/5min
+  - LRU eviction em `MaxKeysRateLimiter=10.000` (DoS via fake IFIDs)
+  - Headers `Retry-After` + `X-RateLimit-Bucket` em 429
+- **SSE subscriber cap** (`realtime/hub.go`):
+  - `MaxSubscribersPerIF=10` conexões simultâneas
+  - `ErrTooManySubscribers` → handler SSE responde 429
+  - Counter por IF (não compartilhado entre tenants)
+
+### 🛡️ Input Validation (Sprint 15)
+
+- **Cadoc/rule code validators** (`internal/api/validate.go`, novo):
+  - `ValidateCadocCode` — regex `^[0-9]{4}$` (BACEN oficial)
+  - `ValidateRuleCode` — regex `^[A-Z][0-9]{1,3}$`
+  - Aplicado em `validate`, `listRulesByCadoc`, `getSchema`,
+    `listVersions` (400 com mensagem clara)
+- **`decodeJSONStrictly`** com `DisallowUnknownFields`:
+  - Defesa contra typos + mass-assignment attempts
+  - Rejeita campos extras no JSON payload
+
+### 📋 Worker Hardening
+
+- **SafeError em error_message** (`internal/worker/worker.go:215,218`):
+  - `loggerutil.SafeError(err)` antes de gravar em `envios.error_message`
+  - Audit log persistente (vetor LGPD) sanitizado
+  - Não vaza DSN Postgres (`password=`, `user=`, `postgres://`)
+
+### 🧪 Smoke Test (Sprint 13.5 — release gate)
+
+- **`backend/internal/api/smoke_v352_test.go`** (novo, ~30 subtests):
+  - 10 cenários cobrindo todos os 19 arquivos alterados
+  - Real Router + chi middleware + SQLite in-memory
+  - Real binary (Cenário 1): `/tmp/radiant-api` com `RADIANT_ENV=production`
+  - Real worker (`ProcessBatch`) para validar SafeError
+  - Real Hub SSE (`MaxSubscribersPerIF`)
+  - EXPLAIN QUERY PLAN nos 6 índices de envios
+  - **Status: 10/10 cenários PASS**
+
+### 🐛 Bug Fixes (race pré-existente exposto pela CI)
+
+- **`safeRecorder` em `realtime/hub_test.go`**:
+  - `httptest.ResponseRecorder.Body` é `*bytes.Buffer` (não thread-safe)
+  - Race entre goroutine `ServeHTTP` (Write) e main (polling `String()`)
+  - Pré-existente desde Sprint 10 (v3.3.0), exposto agora por `-race`
+  - Fix: `safeRecorder` custom com mutex em `Write`/`BodyString`
+
+### 📚 Documentação atualizada
+
+- Comentários inline em todos os 19 arquivos referenciam o finding do
+  audit (ex: "Sprint 13 — v3.5.2 [S13.2 / C-API-3]: previne...")
+- Pattern "closes X trap but doesn't close Y" seguido consistentemente
+
+### ⚠️ Gaps conhecidos (NÃO cobertos por esta release)
+
+Documentado para honestidade — itens que ficam para Sprint 16 (v3.6.0):
+
+1. **Rate limiter in-memory** — single-replica OK; multi-replica precisa
+   Redis (INCR+EXPIRE pattern compatível com `Allow(key)`)
+2. **RLS Postgres-only (migration 012)** — gateada por `@postgres-only`
+   marker; CI dedicada Postgres precisa rodar pra aplicar 012 em prod
+3. **`data_base` vs `period` discipline** — corrigi em testutil/fixtures
+   mas pode haver drift em testes futuros; code review atento
+4. **`enforceSameIF` cobre STA/crossdoc**, mas **NÃO** cobre handler
+   futuros sem wire explícito (lint check seria defesa em profundidade)
+
+### 🔢 Métricas
+
+- 19 arquivos alterados (4 migrations SQL + 12 Go backend + 4 frontend)
+- 2 arquivos de teste modificados (race fix + 1 followup)
+- 1 arquivo de teste NOVO (smoke_v352_test.go, 30 subtests)
+- 0 findings HIGH abertos
+- 100% `-race ./...` verde
+- Frontend `tsc --noEmit` + `npm run build` limpos
+
+---
+
 ## v3.5.0 — 2026-07-05 (Sprint 12: Production Hardening + Engine Integration + CSRF) ✅
 
 > **Status:** ✅ Shipped

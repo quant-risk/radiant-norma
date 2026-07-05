@@ -64,7 +64,7 @@ func TestHubAwareLogger_PublishesAfterLog(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	events, unreg := hub.Subscribe(ctx, "demo")
+	events, unreg, _ := hub.Subscribe(ctx, "demo")
 	defer unreg()
 
 	// Log via wrapper

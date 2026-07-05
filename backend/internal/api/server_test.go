@@ -27,6 +27,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -52,6 +53,20 @@ import (
 func newTestServer(t *testing.T) (*api.Server, *sql.DB) {
 	t.Helper()
 	d := testutil.NewTestDB(t)
+
+	// Sprint 13 [S14.1]: FK em audit_log.if_id → ifs(id). Tests que
+	// gravam audit (validate, radar resolve, ack) precisam de IFs pré-seed.
+	// Sem isso, audit emit falha silenciosamente. Seed dos IFs comuns.
+	// CNPJ unique: synthetic conforme id pra evitar colisão em UNIQUE.
+	testIFs := []string{"demo", "demo-bank", "audit-if", "canary-if",
+		"if-1", "if-cache-audit", "bank-1", "if-b", "if-c", "if-x", "if-y", "if-d", "other",
+		"system"}
+	for i, ifID := range testIFs {
+		// CNPJ raiz 8 dígitos sintético único por IF (ex: 00000001, 00000002...).
+		cnpj := fmt.Sprintf("%08d", i+1)
+		_, _ = d.Exec(`INSERT OR IGNORE INTO ifs (id, cnpj, nome, tipo, segmento, plano)
+			VALUES (?, ?, ?, 'SCD', 'S5', 'pro')`, ifID, cnpj, "Test "+ifID)
+	}
 
 	schReg := schema.New(d)
 	audSvc := audit.New(d)

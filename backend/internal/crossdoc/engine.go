@@ -22,6 +22,12 @@ import (
 // ValidationRequest é a entrada do engine.
 type ValidationRequest struct {
 	Cadocs map[string]string `json:"cadocs"` // cadoc_code → XML raw
+	// IfID: tenant identifier do solicitante. Sprint 13 — v3.5.2 [S13.2].
+	// Opcional: quando presente, o handler da API valida que bate com
+	// claims.IFID antes de processar. Engine ignora esse campo (regra
+	// cross-doc é tenant-agnostic). Field aqui só pra carregar o valor
+	// pelo body JSON sem 2 unmarshals.
+	IfID string `json:"if_id,omitempty"`
 }
 
 // ValidationError de uma regra cross-doc.

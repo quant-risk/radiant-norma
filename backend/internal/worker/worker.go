@@ -210,12 +210,18 @@ func processEnvio(
 		// (com 'T' e timezone), CURRENT_TIMESTAMP usa formato SQLite ('YYYY-MM-DD HH:MM:SS').
 		// Comparação textual resultaria em "2026-07-03T21:00:00Z" < "2026-07-03 21:00:00"
 		// (T < espaço em ASCII). Solução: aritmética datetime dentro do próprio SQLite.
+		// Validação 18 (F18.13) — Sprint 13 (v3.5.2) [HIGH C-N8/S13.4]:
+		// sanitizar err.Error() ANTES de gravar em envios.error_message.
+		// Coluna persiste em DB (LGPD/SOC2). Sem SafeError, DSN Postgres,
+		// SQL fragments, tokens BACEN podem vazar para disco, backups,
+		// e data lake de auditoria.
+		safeErr := loggerutil.SafeError(err)
 		var uerr error
 		if deadLetter {
-			uerr = execRetryOrDeadLetter(d, ctx, e.ID, newStatus, newAttempts, "", err.Error())
+			uerr = execRetryOrDeadLetter(d, ctx, e.ID, newStatus, newAttempts, "", safeErr)
 		} else {
 			uerr = execRetryOrDeadLetter(d, ctx, e.ID, newStatus, newAttempts,
-				fmt.Sprintf("+%d seconds", int(backoff.Seconds())), err.Error())
+				fmt.Sprintf("+%d seconds", int(backoff.Seconds())), safeErr)
 		}
 		if uerr != nil {
 			return fmt.Errorf("mark envio retry/dead-letter: %w", uerr)

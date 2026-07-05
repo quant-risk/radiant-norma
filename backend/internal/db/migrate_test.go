@@ -55,8 +55,8 @@ func TestMigrate_AppliesAllMigrations(t *testing.T) {
 		t.Fatalf("query: %v", err)
 	}
 	// 7 migrations: 001-007 (007 added in Sprint 11 for disabled_rules)
-	if count != 9 {
-		t.Errorf("schema_migrations tem %d entries, want 8", count)
+	if count != 13 {
+		t.Errorf("schema_migrations tem %d entries, want 13", count)
 	}
 }
 
@@ -74,8 +74,8 @@ func TestMigrate_Idempotent(t *testing.T) {
 	if err := d.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&count); err != nil {
 		t.Fatal(err)
 	}
-	if count != 9 {
-		t.Errorf("Após 2x migrate: %d entries, want 8 (idempotente)", count)
+	if count != 13 {
+		t.Errorf("Após 2x migrate: %d entries, want 13 (idempotente)", count)
 	}
 }
 
@@ -100,6 +100,13 @@ func TestMigrate_RecreateFromCorrupted(t *testing.T) {
 	}
 	rows.Close()
 
+	// Sprint 13 [S14.1]: com FK em várias tabelas + FK ON, dropping
+	// tabelas com sqlite foreign_keys=ON falha por causa de validação.
+	// Disable FK durante o drop, reabilita após.
+	if _, err := d.Exec(`PRAGMA foreign_keys=OFF`); err != nil {
+		t.Fatalf("pragma: %v", err)
+	}
+
 	for _, table := range tables {
 		// Não dropa sqlite_sequence (tabela interna do SQLite)
 		if table == "sqlite_sequence" {
@@ -108,6 +115,19 @@ func TestMigrate_RecreateFromCorrupted(t *testing.T) {
 		if _, err := d.Exec(`DROP TABLE IF EXISTS ` + table); err != nil {
 			t.Fatalf("drop %s: %v", table, err)
 		}
+	}
+
+	// Sprint 13 [S14.1]: tabelas restantes (que sqlite_master não
+	// retornou mas ainda existem — e.g., _new tabela de uma migration
+	// que falhou no meio). Tenta dropar com nomes comuns.
+	for _, leftover := range []string{"audit_log_new", "audit_events_new",
+		"rule_failures_new", "disabled_rules_new",
+		"acknowledged_recommendations_new", "envios_new"} {
+		_, _ = d.Exec(`DROP TABLE IF EXISTS ` + leftover)
+	}
+
+	if _, err := d.Exec(`PRAGMA foreign_keys=ON`); err != nil {
+		t.Fatalf("pragma: %v", err)
 	}
 
 	// DB "zerado". Re-migrate deve reconstruir tudo.
@@ -205,8 +225,8 @@ func TestMigrate_FreshSchemaVersionsTable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Após migrate: %v", err)
 	}
-	if count != 9 {
-		t.Errorf("schema_migrations tem %d, want 8", count)
+	if count != 13 {
+		t.Errorf("schema_migrations tem %d, want 13", count)
 	}
 }
 

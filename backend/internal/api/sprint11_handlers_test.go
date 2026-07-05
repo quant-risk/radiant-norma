@@ -225,7 +225,7 @@ func TestToggleRule_EmitsAuditEvent(t *testing.T) {
 	// Subscribe ao hub pra capturar evento SSE
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	events, unreg := hub.Subscribe(ctx, "demo")
+	events, unreg, _ := hub.Subscribe(ctx, "demo")
 	defer unreg()
 
 	r := chi.NewRouter()

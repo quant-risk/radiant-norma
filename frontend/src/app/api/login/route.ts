@@ -12,8 +12,17 @@
 //
 // Em produção: tokens emitidos por IdP externo. /v1/auth/dev-token retorna
 // 404. Frontend redireciona para IdP OAuth flow.
+//
+// Sprint 13 — v3.5.2 [S13.7 / C-FE-2]:
+// CRITICAL — em NODE_ENV=production, este endpoint retorna 404 IMEDIATO
+// antes de chamar backend. Defense-in-depth: backend já bloqueia
+// RADIANT_DEV_TOKEN=1 quando RADIANT_ENV=production (fail-closed em
+// cmd/api/main.go). Aqui é mirror: se deploy esquecer de unsetar
+// ambas as flags, ainda assim frontend não emite cookie dev.
 
 import { NextRequest, NextResponse } from 'next/server'
+
+const isProd = process.env.NODE_ENV === 'production'
 
 interface LoginRequest {
   if_id: string
@@ -29,6 +38,18 @@ interface DevTokenResponse {
 }
 
 export async function POST(req: NextRequest) {
+  // Sprint 13 [S13.7 / C-FE-2]: gate de produção.
+  // Em prod, /api/login não existe — IdP externo deve emitir tokens.
+  if (isProd) {
+    return NextResponse.json(
+      {
+        error: 'login endpoint disabled',
+        hint: 'Production deploys devem usar IdP externo (Keycloak/Okta/OIDC).'
+      },
+      { status: 404 },
+    )
+  }
+
   const body: LoginRequest = await req.json()
   if (!body.if_id || body.if_id.length > 64) {
     return NextResponse.json(

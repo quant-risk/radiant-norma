@@ -20,12 +20,20 @@ package realtime
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 )
+
+// ErrTooManySubscribers é retornado por Hub.Subscribe quando o cap por
+// IF é atingido. Handler SSE deve responder 429 Too Many Requests.
+//
+// Sprint 13 — v3.5.2 [S15.2].
+var ErrTooManySubscribers = errors.New("sse: too many subscribers for tenant")
 
 // Event representa 1 evento a ser enviado via SSE.
 type Event struct {
@@ -52,7 +60,18 @@ type Hub struct {
 	totalEvents atomic.Uint64
 	dropped     atomic.Uint64
 	logger      *slog.Logger
+
+	// Sprint 13 — v3.5.2 [S15.2]: contador de subscribers por IF para
+	// aplicar cap. Protege contra DoS-via-SSE (audit S-B/H).
+	subsByIF map[string]int
 }
+
+// MaxSubscribersPerIF limita conexões SSE simultâneas por tenant.
+// Atacante authenticated poderia abrir 1000 conexões paralelas, cada
+// uma segura goroutine + channel + entry no map → DoS trivial.
+// 10 conexões é o suficiente para apps reais (1 main + 9 secundários
+// para multi-device). Configurável via override.
+const MaxSubscribersPerIF = 10
 
 // NewHub cria hub vazio.
 func NewHub(logger *slog.Logger) *Hub {
@@ -60,8 +79,9 @@ func NewHub(logger *slog.Logger) *Hub {
 		logger = slog.Default()
 	}
 	return &Hub{
-		subs:   make(map[*subscriber]struct{}),
-		logger: logger,
+		subs:     make(map[*subscriber]struct{}),
+		subsByIF: make(map[string]int),
+		logger:   logger,
 	}
 }
 
@@ -70,7 +90,24 @@ func NewHub(logger *slog.Logger) *Hub {
 //
 // Channel tem buffer 32 — se subscriber demorar mais que isso pra consumir,
 // eventos são dropados (logged) e contador incrementa.
-func (h *Hub) Subscribe(ctx context.Context, ifID string) (<-chan Event, func()) {
+//
+// Sprint 13 [S15.2]: cap de MaxSubscribersPerIF por IF. Se excedido,
+// retorna ErrTooManySubscribers + helper de cleanup vazio (caller
+// deve fechar request com 429).
+func (h *Hub) Subscribe(ctx context.Context, ifID string) (<-chan Event, func(), error) {
+	h.mu.Lock()
+	if ifID != "" && h.subsByIF[ifID] >= MaxSubscribersPerIF {
+		h.mu.Unlock()
+		h.logger.Warn("sse subscriber cap exceeded",
+			"if_id", ifID,
+			"current", h.subsByIF[ifID],
+			"max", MaxSubscribersPerIF,
+		)
+		// Drain canal zero-buffer — caller deve abortar.
+		ch := make(chan Event)
+		return ch, func() {}, ErrTooManySubscribers
+	}
+
 	sub := &subscriber{
 		id:   randomID(),
 		ch:   make(chan Event, 32),
@@ -78,20 +115,37 @@ func (h *Hub) Subscribe(ctx context.Context, ifID string) (<-chan Event, func())
 		ctx:  ctx,
 	}
 
-	h.mu.Lock()
 	h.subs[sub] = struct{}{}
+	if ifID != "" {
+		h.subsByIF[ifID]++
+	}
+	currentIF := h.subsByIF[ifID]
+	total := len(h.subs)
 	h.mu.Unlock()
 
-	h.logger.Info("sse subscriber added", "sub_id", sub.id, "if_id", ifID, "total", len(h.subs))
+	h.logger.Info("sse subscriber added",
+		"sub_id", sub.id,
+		"if_id", ifID,
+		"if_subs", currentIF,
+		"total", total)
 
 	unregister := func() {
 		h.mu.Lock()
 		if _, ok := h.subs[sub]; ok {
 			delete(h.subs, sub)
 			close(sub.ch)
+			if ifID != "" {
+				h.subsByIF[ifID]--
+				if h.subsByIF[ifID] <= 0 {
+					delete(h.subsByIF, ifID)
+				}
+			}
 		}
 		h.mu.Unlock()
-		h.logger.Info("sse subscriber removed", "sub_id", sub.id, "total", len(h.subs))
+		h.logger.Info("sse subscriber removed",
+			"sub_id", sub.id,
+			"if_id", ifID,
+			"total", len(h.subs))
 	}
 
 	// Auto-unregister quando context cancelar (client disconnect)
@@ -100,7 +154,7 @@ func (h *Hub) Subscribe(ctx context.Context, ifID string) (<-chan Event, func())
 		unregister()
 	}()
 
-	return sub.ch, unregister
+	return sub.ch, unregister, nil
 }
 
 // Publish envia evento pra todos os subscribers relevantes.
@@ -187,7 +241,21 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, unregister := h.Subscribe(r.Context(), ifID)
+	events, unregister, err := h.Subscribe(r.Context(), ifID)
+	if err != nil {
+		if errors.Is(err, ErrTooManySubscribers) {
+			// Sprint 13 [S15.2]: 429 quando cap é atingido por IF.
+			// Retry-After explica que re-connect após close de outra sessão.
+			w.Header().Set("Retry-After", "30")
+			http.Error(w,
+				`{"error":"too many SSE connections","max_per_tenant":`+
+					strconv.Itoa(MaxSubscribersPerIF)+`}`,
+				http.StatusTooManyRequests)
+			return
+		}
+		http.Error(w, "sse subscribe failed", http.StatusInternalServerError)
+		return
+	}
 	defer unregister()
 
 	// Envia evento "connected" inicial pra confirmar stream

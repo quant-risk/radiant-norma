@@ -13,16 +13,37 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"log/slog"
 	"sort"
+	"strings"
 	"time"
 )
 
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
+// isPostgres detecta o driver. Para simplificar, usamos o nome do driver
+// exposto pelo sql.Driver. Migrate() também checa isso — single source
+// of truth em IsPostgresDSN, mas ele só roda no open. Aqui usamos um
+// scanner raso que checa PRAGMA (SQLite-only) — se rodar, é SQLite.
+func isPostgresDB(d *sql.DB) bool {
+	var v string
+	if err := d.QueryRow("SELECT sqlite_version()").Scan(&v); err == nil {
+		return false
+	}
+	return true // provavelmente Postgres
+}
+
+// slogDefault retorna logger default (helper pra evitar import cíclico).
+func slogDefault() *slog.Logger {
+	return slog.Default()
+}
+
 // Migrate aplica migrations pendentes em ordem. Idempotente e safe
 // contra execução concorrente (BEGIN IMMEDIATE).
 func Migrate(d *sql.DB) error {
+	isPostgres := isPostgresDB(d)
+	_ = isPostgres // usado dentro do loop via closure abaixo
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -87,7 +108,29 @@ func Migrate(d *sql.DB) error {
 		if err != nil {
 			return fmt.Errorf("read %s: %w", name, err)
 		}
-		if _, err := tx.ExecContext(ctx, string(content)); err != nil {
+
+		// Sprint 13 [S14.3]: skip Postgres-only migrations em SQLite.
+		// RLS policies (migrations/012) usam `ALTER TABLE ... ENABLE ROW
+		// LEVEL SECURITY` que é syntax Postgres-only. Marcador
+		// `-- @postgres-only` no header do arquivo indica skip em SQLite.
+		sqlStr := string(content)
+		if !isPostgres && strings.Contains(sqlStr, "-- @postgres-only") {
+			slogDefault().Info("skipping postgres-only migration",
+				"name", name,
+				"hint", "apply manually on Postgres: psql -f migrations/"+name)
+			// Marca como aplicada pra não tentar de novo.
+			if _, err := tx.ExecContext(ctx,
+				"INSERT INTO schema_migrations (name) VALUES (?)", name,
+			); err != nil {
+				return fmt.Errorf("mark %s applied (skipped): %w", name, err)
+			}
+			if err := tx.Commit(); err != nil {
+				return fmt.Errorf("commit %s: %w", name, err)
+			}
+			continue
+		}
+
+		if _, err := tx.ExecContext(ctx, sqlStr); err != nil {
 			return fmt.Errorf("apply %s: %w", name, err)
 		}
 

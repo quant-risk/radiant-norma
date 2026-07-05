@@ -64,8 +64,11 @@ func SeedTestEnvios(t *testing.T, d *sql.DB, ifID string, fs []EnvioFixture) {
 		sentAt := now.AddDate(0, 0, -daysAgo)
 		confirmedAt := sentAt.Add(time.Minute)
 
+		// Sprint 13: data_base deve ser YYYY-MM-DD (CHECK constraint).
+		// Antes (gap): fixture usava period (MM/YYYY) aqui. Corrigido.
+		dataBase := sentAt.Format("2006-01-02")
 		_, err := stmt.Exec(
-			f.ID, ifID, f.Cadoc, period,
+			f.ID, ifID, f.Cadoc, dataBase,
 			f.Status, f.RulesPassed, f.RulesFailed, period,
 			sentAt, confirmedAt, sentAt,
 		)
@@ -113,7 +116,7 @@ func SeedTestRuleFailures(t *testing.T, d *sql.DB, ifID string, fs []RuleFailure
 		}
 		_, err = d.Exec(`INSERT OR IGNORE INTO envios (id, if_id, cadoc_code, data_base, remessa,
 			xml_hash, zip_hash, status, period, created_at)
-			VALUES (?, ?, ?, '01/2026', 1, 'h', 'h', 'accepted', '01/2026', ?)`,
+			VALUES (?, ?, ?, '2026-01-01', 1, 'h', 'h', 'accepted', '01/2026', ?)`,
 			envioID, ifID, f.Cadoc, time.Now())
 		if err != nil {
 			t.Fatalf("insert envio: %v", err)
@@ -152,6 +155,17 @@ type AuditEventFixture struct {
 // FK pra audit_log. Antes tava NULL — gerava constraint failure.
 func SeedTestAuditEvents(t *testing.T, d *sql.DB, fs []AuditEventFixture) {
 	t.Helper()
+
+	// Sprint 13 [S14.1]: audit_log.if_id agora tem FK → ifs(id).
+	// Pre-seed IFs únicos que aparecem nos fixtures (id + cnpj unique).
+	for i, f := range fs {
+		if f.IFID == "" {
+			continue
+		}
+		_, _ = d.Exec(`INSERT OR IGNORE INTO ifs (id, cnpj, nome, tipo, plano)
+			VALUES (?, ?, ?, 'SCD', 'pro')`,
+			f.IFID, fmt.Sprintf("aud%07d", i), "Test "+f.IFID)
+	}
 
 	// Cria 1 audit_log entry por evento (FK target). Sem payload real —
 	// só o suficiente pra satisfazer a constraint.
@@ -194,6 +208,10 @@ type AuditLogFixture struct {
 // SeedTestAuditLog insere entradas no audit_log + audit_events pra chain testing.
 func SeedTestAuditLog(t *testing.T, d *sql.DB, fs []AuditLogFixture) {
 	t.Helper()
+
+	// Sprint 13 [S14.1]: audit_log.if_id FK → ifs(id). Pre-seed "demo".
+	_, _ = d.Exec(`INSERT OR IGNORE INTO ifs (id, cnpj, nome, tipo, plano)
+		VALUES (?, '00000010', 'Demo', 'SCD', 'pro')`, "demo")
 
 	log := auditlog.New(d)
 	for _, f := range fs {

@@ -2,10 +2,12 @@
 package realtime
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync"
@@ -22,7 +24,7 @@ func TestHub_PublishReceive(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	events, unregister := hub.Subscribe(ctx, "demo")
+	events, unregister, _ := hub.Subscribe(ctx, "demo")
 	defer unregister()
 
 	hub.Publish(Event{
@@ -54,9 +56,9 @@ func TestHub_FilterByIFID(t *testing.T) {
 	defer cancel()
 
 	// 2 subscribers: um pra "demo", um pra "other"
-	demoEvents, demoUnreg := hub.Subscribe(ctx, "demo")
+	demoEvents, demoUnreg, _ := hub.Subscribe(ctx, "demo")
 	defer demoUnreg()
-	otherEvents, otherUnreg := hub.Subscribe(ctx, "other")
+	otherEvents, otherUnreg, _ := hub.Subscribe(ctx, "other")
 	defer otherUnreg()
 
 	// Publica evento SÓ pra demo
@@ -85,9 +87,9 @@ func TestHub_Broadcast(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	_, demoUnreg := hub.Subscribe(ctx, "demo")
+	_, demoUnreg, _ := hub.Subscribe(ctx, "demo")
 	defer demoUnreg()
-	_, otherUnreg := hub.Subscribe(ctx, "other")
+	_, otherUnreg, _ := hub.Subscribe(ctx, "other")
 	defer otherUnreg()
 
 	// Publica com IFID vazio → broadcast pra todos
@@ -103,7 +105,7 @@ func TestHub_BackpressureDrop(t *testing.T) {
 	defer cancel()
 
 	// Subscriber com channel buffer 32 (default). Não consome.
-	_, unregister := hub.Subscribe(ctx, "demo")
+	_, unregister, _ := hub.Subscribe(ctx, "demo")
 	defer unregister()
 
 	// Publica 50 eventos (mais que buffer de 32)
@@ -123,7 +125,7 @@ func TestHub_UnsubscribeStopsDelivery(t *testing.T) {
 	hub := newTestHub()
 	ctx := context.Background()
 
-	events, unregister := hub.Subscribe(ctx, "demo")
+	events, unregister, _ := hub.Subscribe(ctx, "demo")
 
 	hub.Publish(Event{Kind: "first", IFID: "demo", Timestamp: time.Now()})
 	select {
@@ -157,7 +159,7 @@ func TestHub_ConcurrentPublishers(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	events, unregister := hub.Subscribe(ctx, "demo")
+	events, unregister, _ := hub.Subscribe(ctx, "demo")
 	defer unregister()
 
 	// 10 goroutines publicando 100 eventos cada = 1000 eventos total
@@ -204,12 +206,72 @@ loop:
 
 // --- HTTP handler tests ---
 
+// safeRecorder é um http.ResponseWriter com buffer thread-safe.
+//
+// httptest.ResponseRecorder.Body é *bytes.Buffer, que NÃO é safe para
+// uso concorrente — `Write` em goroutine X e `String()` em goroutine Y
+// são data race. Estes testes rodam hub.ServeHTTP em goroutine enquanto
+// o test main faz poll do body, então precisamos serializar.
+//
+// Implementação: mantemos nosso próprio *bytes.Buffer protegido por
+// mutex, e implementamos http.ResponseWriter delegando ao buffer.
+// Flusher exposto via interface assertion opcional.
+//
+// Sprint 13 — v3.5.2 followup: race pré-existente desde Sprint 10
+// (v3.3.0) só exposto agora porque passamos a rodar `-race` na CI.
+type safeRecorder struct {
+	mu     sync.Mutex
+	buf    bytes.Buffer
+	header http.Header
+	code   int
+}
+
+func newSafeRecorder() *safeRecorder {
+	return &safeRecorder{header: make(http.Header)}
+}
+
+func (s *safeRecorder) Header() http.Header {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.header
+}
+
+func (s *safeRecorder) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.code == 0 {
+		s.code = http.StatusOK
+	}
+	return s.buf.Write(p)
+}
+
+func (s *safeRecorder) WriteHeader(code int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.code = code
+}
+
+// BodyString retorna snapshot thread-safe do body.
+func (s *safeRecorder) BodyString() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.buf.String()
+}
+
+// Flush é parte de http.Flusher. Hub.ServeHTTP chama flusher.Flush()
+// após cada Write; delegamos pra no-op já que httptest.NewRecorder
+// também não faz flush real.
+func (s *safeRecorder) Flush() {}
+
+// Compile-time check: safeRecorder satisfaz http.ResponseWriter.
+var _ http.ResponseWriter = (*safeRecorder)(nil)
+
 func TestHubServeHTTP_SendsConnectedEvent(t *testing.T) {
 	hub := newTestHub()
 
 	req := httptest.NewRequest("GET", "/v1/events/stream", nil)
 	req.Header.Set("X-IF-ID", "demo")
-	w := httptest.NewRecorder()
+	w := newSafeRecorder()
 
 	// Run em goroutine (handler é blocking)
 	done := make(chan struct{})
@@ -227,7 +289,7 @@ pollConnected:
 		case <-deadline:
 			t.Fatal("connected event not received")
 		default:
-			body = w.Body.String()
+			body = w.BodyString()
 			if strings.Contains(body, "event: connected") {
 				break pollConnected
 			}
@@ -245,7 +307,7 @@ func TestHubServeHTTP_PublishesEventsToClient(t *testing.T) {
 
 	req := httptest.NewRequest("GET", "/v1/events/stream", nil)
 	req.Header.Set("X-IF-ID", "demo")
-	w := httptest.NewRecorder()
+	w := newSafeRecorder()
 
 	done := make(chan struct{})
 	go func() {
@@ -261,7 +323,7 @@ pollConnected:
 		case <-deadlineConnected:
 			t.Fatal("connected event not received before publish")
 		default:
-			if strings.Contains(w.Body.String(), "event: connected") {
+			if strings.Contains(w.BodyString(), "event: connected") {
 				break pollConnected
 			}
 			time.Sleep(10 * time.Millisecond)
@@ -285,9 +347,9 @@ pollAudit:
 	for {
 		select {
 		case <-deadline:
-			t.Fatalf("event not received by client, body: %s", w.Body.String())
+			t.Fatalf("event not received by client, body: %s", w.BodyString())
 		default:
-			body = w.Body.String()
+			body = w.BodyString()
 			if strings.Contains(body, "event: audit") {
 				break pollAudit
 			}

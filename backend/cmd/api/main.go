@@ -116,6 +116,41 @@ func main() {
 		// sem auth, então healthcheck ainda funciona.
 	}
 
+	// Sprint 13 — v3.5.2 [S13.1] FAIL-CLOSED env gates.
+	//
+	// Quando RADIANT_ENV=production, recusar a iniciar se alguma flag de
+	// dev-mode estiver ativa. Sem isso, deploy que esquece de unsetar
+	// RADIANT_DEV_TOKEN / RADIANT_DEV_AUTH resulta em endpoint de
+	// emissão de JWT arbitrário (CRITICAL F-API-2 do audit S-A).
+	//
+	// Comportamento:
+	//   RADIANT_ENV=production + RADIANT_DEV_TOKEN=1        → panic
+	//   RADIANT_ENV=production + RADIANT_DEV_AUTH=1         → panic
+	//   RADIANT_ENV=production + RADIANT_JWT_PUBLIC_KEY=""  → panic (até aqui era warning silencioso)
+	//   RADIANT_ENV != production                            → warning apenas (back-compat)
+	if isProduction := os.Getenv("RADIANT_ENV") == "production"; isProduction {
+		var fatal bool
+		if os.Getenv("RADIANT_DEV_TOKEN") == "1" {
+			logger.Error("FATAL: RADIANT_ENV=production mas RADIANT_DEV_TOKEN=1 — dev-token emitiria JWT arbitrário sem auth")
+			fatal = true
+		}
+		if os.Getenv("RADIANT_DEV_AUTH") == "1" {
+			logger.Error("FATAL: RADIANT_ENV=production mas RADIANT_DEV_AUTH=1 — X-IF-ID fallback aceitaria qualquer tenant")
+			fatal = true
+		}
+		if os.Getenv("RADIANT_JWT_PUBLIC_KEY") == "" {
+			logger.Error("FATAL: RADIANT_ENV=production mas RADIANT_JWT_PUBLIC_KEY não configurada — /v1/* retornaria 401 silencioso")
+			fatal = true
+		}
+		if os.Getenv("RADIANT_NORMA_ADMIN_TOKEN") == "" {
+			logger.Error("FATAL: RADIANT_ENV=production mas RADIANT_NORMA_ADMIN_TOKEN não configurada — /v1/radar/scan retornaria 401 silencioso")
+			fatal = true
+		}
+		if fatal {
+			os.Exit(1)
+		}
+	}
+
 	// Sprint 6 v1.5.0 — hardening components wiring.
 	// ANTES (v1.5.0 shipped): esses 4 componentes ficavam nil → endpoints
 	// /v1/crossdoc/validate e /v1/radar/scan retornavam 503/401.
@@ -150,8 +185,9 @@ func main() {
 	// configurada (RADIANT_DEV_JWT_PRIVATE_KEY=path ou
 	// RADIANT_DEV_JWT_PRIVATE_KEY_PEM=conteúdo PEM inline).
 	//
-	// Em produção: dev-token endpoint fica disabled (404). Tokens devem
-	// ser emitidos por IdP externo (Keycloak/Okta/etc) — Sprint 9+.
+	// Em produção: dev-token endpoint fica disabled (404) E bloqueado
+	// pelo fail-closed gate acima. Tokens devem ser emitidos por IdP
+	// externo (Keycloak/Okta/etc) — Sprint 9+.
 	if os.Getenv("RADIANT_DEV_TOKEN") == "1" {
 		var signer *auth.Signer
 		var err error
@@ -176,7 +212,10 @@ func main() {
 		}
 		if signer != nil {
 			srv.DevSigner = signer
-			logger.Warn("RADIANT_DEV_TOKEN=1 — /v1/auth/dev-token ATIVO. NÃO USE EM PRODUÇÃO.")
+			// Sprint 13: warning reforçado se prod-environment-style RADIANT_ENV
+			// já passou (não chegou aqui porque gate acima matou). Mesmo assim,
+			// reforçamos em warn.
+			logger.Warn("RADIANT_DEV_TOKEN=1 — /v1/auth/dev-token ATIVO. NÃO USE EM PRODUÇÃO.", "RADIANT_ENV", os.Getenv("RADIANT_ENV"))
 		}
 	}
 
