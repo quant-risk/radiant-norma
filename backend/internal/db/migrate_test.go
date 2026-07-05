@@ -55,7 +55,7 @@ func TestMigrate_AppliesAllMigrations(t *testing.T) {
 		t.Fatalf("query: %v", err)
 	}
 	// 7 migrations: 001-007 (007 added in Sprint 11 for disabled_rules)
-	if count != 8 {
+	if count != 9 {
 		t.Errorf("schema_migrations tem %d entries, want 8", count)
 	}
 }
@@ -74,7 +74,7 @@ func TestMigrate_Idempotent(t *testing.T) {
 	if err := d.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&count); err != nil {
 		t.Fatal(err)
 	}
-	if count != 8 {
+	if count != 9 {
 		t.Errorf("Após 2x migrate: %d entries, want 8 (idempotente)", count)
 	}
 }
@@ -205,7 +205,7 @@ func TestMigrate_FreshSchemaVersionsTable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Após migrate: %v", err)
 	}
-	if count != 8 {
+	if count != 9 {
 		t.Errorf("schema_migrations tem %d, want 8", count)
 	}
 }

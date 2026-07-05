@@ -20,6 +20,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 	"github.com/fortvna/radiant-norma/backend/internal/realtime"
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
+	"github.com/fortvna/radiant-norma/backend/internal/insights"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/ruleprefs"
@@ -55,6 +56,7 @@ type Server struct {
 	CrossDoc  *crossdoc.Engine // Sprint 6 v1.5.0 — Cross-Doc L3
 	RulePrefs *ruleprefs.Preferences // Sprint 11 v3.4.0 — disable/enable por IF
 	ToggleLimiter *ruleprefs.ToggleLimiter // Sprint 12 v3.5.0 — C32.22 rate limit toggle
+	Insights  *insights.Acknowledgments // Sprint 12 v3.5.0 — recommendation ack
 
 	// Sprint 7a (v1.6.0): JWT verifier. Se nil, X-IF-ID fallback
 	// (dev mode via RADIANT_DEV_AUTH=1) ainda funciona.
@@ -90,8 +92,8 @@ type auditLogAPI interface {
 }
 
 // NewServer cria um Server.
-func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences, tl *ruleprefs.ToggleLimiter) *Server {
-	return &Server{DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient, Radar: rad, RulePrefs: rp, ToggleLimiter: tl, startedAt: time.Now()}
+func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences, tl *ruleprefs.ToggleLimiter, ack *insights.Acknowledgments) *Server {
+	return &Server{DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient, Radar: rad, RulePrefs: rp, ToggleLimiter: tl, Insights: ack, startedAt: time.Now()}
 }
 
 // Router retorna o chi router configurado.
@@ -99,8 +101,13 @@ func (s *Server) Router() http.Handler {
 	r := chi.NewRouter()
 
 	// Middleware padrão
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
+		r.Use(middleware.RequestID)
+		r.Use(middleware.RealIP)
+
+		// Sprint 12 (v3.5.0) — C32.21: CSRF protection.
+		// Whitelist: /api/login (dev), /v1/auth/* (dev-token).
+		// Em dev: warning + allow. Em prod (RADIANT_ENV=production): 403.
+		r.Use(CSRF(DefaultCSRFConfig()))
 	// Sprint 6 v1.5.0 (F12.8 fix): Recoverer ANTES de Logger para que
 	// panics que viram 500 sejam loggados (não engolidos pelo Logger
 	// que está acima na pilha).
@@ -165,6 +172,9 @@ func (s *Server) Router() http.Handler {
 			r.Get("/heatmap", s.insightsHeatmap)
 			r.Get("/rules/top-failing", s.insightsTopFailingRules)
 			r.Get("/recommendations", s.insightsRecommendations)
+			// Sprint 12 (v3.5.0) — drill-down de recommendation.
+			r.Post("/recommendations/{id}/acknowledge", s.acknowledgeRecommendation)
+			r.Delete("/recommendations/{id}/acknowledge", s.unacknowledgeRecommendation)
 		})
 
 		// Sprint 10 — SSE real-time stream.

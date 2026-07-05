@@ -2,12 +2,17 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
-## v3.5.0 — 2026-07-05 (Sprint 12: Production Hardening + Engine Integration) ✅
+# Changelog — cadocs (Radiant Norma)
+
+> **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
+
+## v3.5.0 — 2026-07-05 (Sprint 12: Production Hardening + Engine Integration + CSRF) ✅
 
 > **Status:** ✅ Shipped
-> **Sprint:** Sprint 12 (engine integration + rate limit + validations)
+> **Sprint:** Sprint 12 (engine integration + CSRF + rate limit + validations + insights)
 > **Versão:** minor (hardening + bug fixes da validação 32)
 > **Trigger:** Validação 32 (25 findings — 1 HIGH C32.23 + 1 HIGH pre-existente C32.21)
+> **Validação:** 33 — ACCEPTED (0 HIGH, 0 MEDIUM abertos)
 
 ### 🎯 Resumo
 
