@@ -747,10 +747,58 @@ func newSmokeRedisLimiter(t *testing.T, mr *miniredis.Miniredis) *api.RedisRateL
 	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	t.Cleanup(func() { _ = client.Close() })
 	return &api.RedisRateLimiter{
-		Client:    client,
-		Limits:    api.DefaultRateLimits,
-		Script:    redis.NewScript(api.LuaIncrWithTTL),
-		Logger:    slog.New(slog.NewTextHandler(io.Discard, nil)),
-		KeyPrefix: "rl-smoke:",
+		Client:        client,
+		Limits:        api.DefaultRateLimits,
+		Script:        redis.NewScript(api.LuaIncrWithTTL),
+		SlidingScript: redis.NewScript(api.LuaSlidingWindow),
+		Logger:        slog.New(slog.NewTextHandler(io.Discard, nil)),
+		KeyPrefix:     "rl-smoke:",
 	}
+}
+
+// =============================================================================
+// Cenário 7c — /metrics endpoint (Sprint 17 — S17.5)
+// =============================================================================
+// Valida que após rate limit hits, /metrics reporta contadores certos:
+//   - allowed_total{bucket="heavy"} == N permitido
+//   - dropped_total{bucket="heavy"} == N bloqueado
+//   - backend_up == 1 (memory sempre up)
+func TestSmoke_Cenario7c_MetricsEndpoint(t *testing.T) {
+	srv, _ := newTestServer(t)
+	srv.Metrics = api.NewMetrics()
+	handler := srv.Router()
+
+	// 11 calls a /v1/validate (heavy=10) → 10 allowed, 1 dropped
+	for i := 0; i < 11; i++ {
+		w := smokeReq(handler, "POST", "/v1/validate",
+			map[string]any{"cadoc_code": "3040", "xml": "<doc/>"},
+			map[string]string{
+				"X-IF-ID": "metrics-demo",
+				"Origin":  "http://example.com",
+			})
+		if i < 10 && w.Code == http.StatusTooManyRequests {
+			t.Fatalf("call #%d não deveria estar rate-limited", i+1)
+		}
+		if i == 10 && w.Code != http.StatusTooManyRequests {
+			t.Fatalf("call #11 deveria estar 429")
+		}
+	}
+
+	// Verifica /metrics
+	w := smokeReq(handler, "GET", "/metrics", nil, nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("/metrics status = %d, want 200, body=%s", w.Code, w.Body.String())
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, `radiant_rate_limit_allowed_total{bucket="heavy",backend="memory"} 10`) {
+		t.Errorf("metrics deveria ter allowed_total=10:\n%s", body)
+	}
+	if !strings.Contains(body, `radiant_rate_limit_dropped_total{bucket="heavy",backend="memory"} 1`) {
+		t.Errorf("metrics deveria ter dropped_total=1:\n%s", body)
+	}
+	if !strings.Contains(body, "radiant_rate_limit_backend_up 1") {
+		t.Errorf("metrics deveria ter backend_up=1:\n%s", body)
+	}
+	t.Logf("/metrics output:\n%s", body)
 }

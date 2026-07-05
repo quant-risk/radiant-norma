@@ -6,6 +6,164 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.7.0 — 2026-07-05 (Sprint 17: Observability + Production Hardening) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 17 (4 itens — gaps #1-#5 do v3.6.0 fechados + 1 bug real achado)
+> **Versão:** minor (production hardening observability + lint automation)
+> **Trigger:** Gaps #1-#5 do CHANGELOG v3.6.0 + lint check que detectou cross-tenant em devTokenHandler
+> **Validação:** smoke 11/11 + 17/17 packages `-race` + lint passa
+
+### 🎯 Resumo
+
+Sprint 17 fecha 5 gaps de v3.6.0 + **descobre bug real cross-tenant no
+`devTokenHandler`** (que tinha passado em Sprint 13). Adiciona
+métricas Prometheus (hand-rolled, zero deps), sliding window Redis
+(sorted set Lua), defensive clamp <1s, lint script pra enforceSameIF.
+
+### 🚨 Bug real achado pelo lint (S17.6 fix)
+
+**`internal/api/auth_handlers.go:93` — devTokenHandler cross-tenant.**
+
+O endpoint `/v1/auth/dev-token` aceitava `if_id` no payload e emitia
+JWT pra esse IF **sem chamar `enforceSameIF`**. Em dev mode,
+atacante poderia mandar `if_id="outro-if"` + `X-IF-ID=demo` (header)
+e receber JWT válido pra outro IF.
+
+**Mitigação (defense in depth):**
+1. Fail-closed gate no main.go (Sprint 13) já bloqueia em prod
+   (`RADIANT_ENV=production + RADIANT_DEV_TOKEN=1` → exit 1)
+2. **Este fix adiciona `enforceSameIF` no devTokenHandler** — garante
+   que mesmo em dev multi-tenant, JWT só é emitido pra IF alinhada com
+   `X-IF-ID` header.
+
+**Lição:** lint check automático (`scripts/lint-enforce-same-if.sh`)
+com comentário `lint-enforce-same-if: false-positive — <razão>` pra
+opt-out documentado.
+
+### 🚦 Sliding window Redis (S17.3)
+
+Substitui fixed window por sliding window via sorted set + Lua script.
+
+- **Fixed (default)**: `INCR + EXPIRE` atômico, simples. Burstiness na
+  borda do window — cliente pode fazer 2× Max se distribuir entre
+  final de um window e início do próximo.
+- **Sliding (opt-in via `RADIANT_RATE_LIMIT_WINDOW=sliding`)**: sorted
+  set Lua, preciso, **sem burstiness**. Custo: +memória (sorted set
+  cresce com Max por bucket) + +CPU (`ZREMRANGEBYSCORE + ZCARD + ZADD`).
+- **Seleção**: env var `RADIANT_RATE_LIMIT_WINDOW=fixed|sliding`.
+  Default `fixed` (back-compat).
+- **Retry-after preciso**: sliding window computa retry-after baseado
+  no timestamp do oldest call na window — não no TTL do key.
+
+**Lua script (`LuaSlidingWindow`):**
+```lua
+local now_arr = redis.call('TIME')
+local now_ms = tonumber(now_arr[1]) * 1000 + ...
+local cutoff = now_ms - window_ms
+redis.call('ZREMRANGEBYSCORE', KEYS[1], 0, cutoff)
+local count = redis.call('ZCARD', KEYS[1])
+if count >= max then
+    local oldest = redis.call('ZRANGE', KEYS[1], 0, 0, 'WITHSCORES')
+    return {0, oldest[2]}  -- denied, oldest_ms
+end
+redis.call('ZADD', KEYS[1], now_ms, ARGV[3])
+redis.call('PEXPIRE', KEYS[1], window_ms + 1000)
+return {1, 0}  -- allowed
+```
+
+### 📊 Prometheus Metrics (S17.5)
+
+Endpoint `GET /metrics` (top-level, sem auth) + counters incrementados
+por `rateLimitMiddleware`.
+
+- **`radiant_rate_limit_allowed_total{bucket, backend}`** — counter
+- **`radiant_rate_limit_dropped_total{bucket, backend}`** — counter
+- **`radiant_rate_limit_fail_open_total`** — counter (Redis down + fail-open)
+- **`radiant_rate_limit_backend_up`** — gauge (1=up, 0=fail-open ativo)
+
+**Implementação hand-rolled** (não usa `prometheus/client_golang`):
+zero deps adicional, binary size não cresce, ~150 LOC em
+`internal/api/metrics.go`. Format Prometheus text v0.0.4.
+
+**Métricas** expostas após 11 reqs a `/v1/validate` (10 allowed + 1 dropped):
+```
+radiant_rate_limit_allowed_total{bucket="heavy",backend="memory"} 10
+radiant_rate_limit_dropped_total{bucket="heavy",backend="memory"} 1
+radiant_rate_limit_backend_up 1
+```
+
+### 🛡️ Defensive Clamp Redis Window (S17.4)
+
+`newRedisRateLimiter` rejeita limits com `Window < 1s` ou `Max <= 0`.
+Redis EXPIRE aceita apenas segundos inteiros — `Window <1s` truncado
+para 0 faz key expirar antes de ser usado (counter reset instantâneo).
+Production usa janelas ≥1min, então defesa contra misuse futuro.
+
+### 🔍 Lint Check `enforceSameIF` (S17.6)
+
+`backend/scripts/lint-enforce-same-if.sh` — heurística grep-based:
+flag arquivo SE atender TODOS:
+1. Tem struct field com `json:"if_id"` ou `json:"cnpj"` (input field)
+2. Tem `json.Unmarshal`/`decodeJSONStrictly` no MESMO ARQUIVO
+3. NÃO chama `enforceSameIF`
+
+Output structs (auditEventDTO) **não** disparam o lint porque
+tipicamente têm json tag mas estão em arquivo SEM json.Unmarshal de
+request body. Sprint 8c tem o pattern `// lint-enforce-same-if:
+false-positive — <razão>` pra skipar casos sabidamente OK.
+
+**Bônus**: o lint **achou o bug do devTokenHandler** antes mesmo de
+eu rodar a suite. Indicador forte de valor do pattern.
+
+### 🧪 Testes adicionados
+
+| File | Tests | Cobre |
+|---|---|---|
+| `ratelimit_test.go` | +4 (validateRedisLimits×3, sliding×3) | S17.4 + S17.3 |
+| `metrics_test.go` (novo) | 7 | S17.5 render + counter + concurrency + endpoint |
+| `smoke_v352_test.go` | +1 (cenário 7c) | S17.5 metrics E2E |
+| `devToken` (existente) | +1 (cross-tenant) | S17.6 fix |
+| **Total novos**: | **13** | |
+
+### 📚 Documentação inline
+
+- `metrics.go`: explica trade-off hand-rolled vs `prometheus/client_golang`
+- `ratelimit_redis.go`: distingue fixed vs sliding na doc do `Allow()`
+- `auth_handlers.go`: comentário cross-tenant fix + relação com fail-closed gate
+
+### ⚠️ Gaps restantes (Sprint 18+)
+
+1. **Postgres CI pipeline** (gap #4 v3.6.0) — migration 012 RLS ainda
+   precisa de CI dedicada Postgres. **Diferido por escopo** (precisa
+   GitHub Actions config + service container).
+2. **Histograms Prometheus** (latência de Allow(), distribuição
+   per-bucket) — hand-rolled atual é só counters. Upgrade pra
+   `prometheus/client_golang` se precisar.
+3. **Sliding window memory backend** — só Redis tem sliding window.
+   Memory backend ainda é fixed window. Custo: mais memória (lista
+   circular por chave) + cleanup periódico.
+4. **Sliding window TTL behavior em miniredis** — `mr.FastForward()`
+   não avança `redis.call('TIME')` dentro de Lua scripts (limitação
+   conhecida de miniredis). Test E2E do time-travel behavior requer
+   Redis real.
+
+### 🔢 Métricas
+
+- 1 arquivo novo (`metrics.go`)
+- 1 arquivo novo (`metrics_test.go`)
+- 1 script novo (`scripts/lint-enforce-same-if.sh`)
+- 2 arquivos modificados extensivamente (`ratelimit.go`, `ratelimit_redis.go`)
+- 1 bug real fechado (`auth_handlers.go` cross-tenant)
+- 1 arquivo documentado com `false-positive` marker (`sprint8c_handlers.go`)
+- 13 testes novos passam com `-race`
+- 0 findings HIGH abertos
+- 100% `-race ./...` verde (17/17 packages)
+- Smoke 11/11 PASS (10 originais + 1 Redis + 1 metrics)
+- Lint passa
+
+---
+
 ## v3.6.0 — 2026-07-05 (Sprint 16: Redis Rate Limiter + Interface Refactor) ✅
 
 > **Status:** ✅ Shipped

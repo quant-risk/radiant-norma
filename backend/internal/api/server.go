@@ -85,6 +85,11 @@ type Server struct {
 
 	// Sprint 13 — v3.5.2 [S15.1] rate limiter global.
 	RateLimiter RateLimiter
+
+	// Sprint 17 — v3.7.0 [S17.5]: métricas Prometheus.
+	// Wire via Server.Metrics = api.NewMetrics() antes de Router().
+	// Endpoint /metrics (top-level, sem auth) consome via Render().
+	Metrics *Metrics
 }
 
 // auditLogAPI é interface mínima que *auditlog.Logger e *realtime.HubAwareLogger
@@ -120,7 +125,10 @@ func (s *Server) Router() http.Handler {
 	// Sprint 13 — v3.5.2 [S15.1]: rate limit global por (bucket, IFID).
 	// Mitiga DoS-via-API authenticated. Aplicado DEPOIS de CSRF pra
 	// que rate limit não conte requests bloqueadas.
-	r.Use(rateLimitMiddleware(s.RateLimiter))
+	//
+	// Sprint 17 — v3.7.0 [S17.5]: passa Metrics para middleware incrementar
+	// counters allowed/dropped por bucket+backend.
+	r.Use(rateLimitMiddleware(s.RateLimiter, s.Metrics))
 
 	// Sprint 6 v1.5.0 (F12.8 fix): Recoverer ANTES de Logger para que
 	// panics que viram 500 sejam loggados (não engolidos pelo Logger
@@ -130,6 +138,14 @@ func (s *Server) Router() http.Handler {
 
 	// Health
 	r.Get("/healthz", s.healthz)
+
+	// Sprint 17 — v3.7.0 [S17.5]: Prometheus /metrics endpoint.
+	// Top-level (não /v1/metrics) pra seguir convenção k8s/Prometheus.
+	// Sem auth: scraper tipicamente roda na mesma rede privada.
+	// Bypass rate limit + CSRF (whitelist via middleware skip acima).
+	if s.Metrics != nil {
+		r.Get("/metrics", s.metricsHandler)
+	}
 	r.Get("/readyz", s.readyz) // Validação 23 (F23.1): separado de /healthz
 
 	// API v1
@@ -323,6 +339,18 @@ func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 		"version":        Version,
 		"uptime_seconds": int(time.Since(s.startedAt).Seconds()),
 	})
+}
+
+// metricsHandler — Sprint 17 — v3.7.0 [S17.5]: Prometheus exposition format.
+//
+// Content-Type: text/plain; version=0.0.4 (formato oficial Prometheus).
+// Scraper (Prometheus server, Grafana Agent, etc) parseia esse endpoint
+// a cada scrape_interval (default 15s).
+//
+// Bypass auth + rate limit via whitelist em rateLimitMiddleware.
+func (s *Server) metricsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+	_, _ = s.Metrics.WriteTo(w)
 }
 
 // readyz — Validação 23 (F23.1): separado de healthz.

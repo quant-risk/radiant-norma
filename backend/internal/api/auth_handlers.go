@@ -101,6 +101,19 @@ func (s *Server) devTokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Sprint 17 — v3.7.0 [S17.6 fix]: cross-tenant guard via lint.
+	// Em dev mode sem JWT (não há claims no request), alinha req.IFID
+	// com X-IF-ID header. Se header presente e diferente, 403 — impede
+	// emitir JWT pra IF arbitrária.
+	//
+	// NOTA: endpoint é dev-only (404 em prod via RADIANT_DEV_TOKEN!=1).
+	// Fail-closed gate no main.go já bloqueia em RADIANT_ENV=production.
+	// Defense in depth: este guard garante que mesmo em dev multi-tenant,
+	// um client não minta JWT pra outro IF via header X-IF-ID spoofing.
+	if !s.enforceSameIF(w, r, req.IFID) {
+		return
+	}
+
 	// Default role.
 	if req.Role == "" {
 		req.Role = string(auth.RoleIF)

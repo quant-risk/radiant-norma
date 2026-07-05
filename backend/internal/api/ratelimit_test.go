@@ -9,6 +9,7 @@ package api
 import (
 	"io"
 	"log/slog"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -100,6 +101,7 @@ func newTestRedisLimiter(t *testing.T, limits map[pathBucket]RateLimit) (*RedisR
 		Script:    redis.NewScript(LuaIncrWithTTL),
 		Logger:    discardSlog(),
 		KeyPrefix: "rl:",
+		SlidingScript: redis.NewScript(LuaSlidingWindow),
 	}
 	t.Cleanup(func() { _ = rl.Close() })
 	return rl, mr
@@ -289,6 +291,7 @@ func TestRedisRateLimiter_ConcurrentStress(t *testing.T) {
 		Script:    redis.NewScript(LuaIncrWithTTL),
 		Logger:    discardSlog(),
 		KeyPrefix: "stress:",
+		SlidingScript: redis.NewScript(LuaSlidingWindow),
 	}
 	t.Cleanup(func() { _ = rl.Close() })
 
@@ -388,4 +391,176 @@ func TestMemoryRateLimiter_ConcurrentStress(t *testing.T) {
 
 	t.Logf("memory stress test OK: %d allowed, %d denied",
 		allowed.Load(), denied.Load())
+}
+
+// =============================================================================
+// Sprint 17 — validação de limits (S17.4 defensive clamp)
+// =============================================================================
+
+func TestValidateRedisLimits_OK(t *testing.T) {
+	if err := validateRedisLimits(DefaultRateLimits); err != nil {
+		t.Errorf("DefaultRateLimits deveria passar: %v", err)
+	}
+}
+
+func TestValidateRedisLimits_RejectsSubSecondWindow(t *testing.T) {
+	bad := map[pathBucket]RateLimit{
+		bucketHeavy: {Max: 10, Window: 100 * time.Millisecond},
+	}
+	err := validateRedisLimits(bad)
+	if err == nil {
+		t.Fatal("Window <1s deveria retornar erro")
+	}
+	if !strings.Contains(err.Error(), "1s mínimo") {
+		t.Errorf("erro deveria mencionar '1s mínimo', got: %v", err)
+	}
+}
+
+func TestValidateRedisLimits_RejectsZeroMax(t *testing.T) {
+	bad := map[pathBucket]RateLimit{
+		bucketHeavy: {Max: 0, Window: time.Minute},
+	}
+	err := validateRedisLimits(bad)
+	if err == nil {
+		t.Fatal("Max=0 deveria retornar erro")
+	}
+}
+
+func TestNewRedisRateLimiter_RejectsSubSecondWindow(t *testing.T) {
+	bad := map[pathBucket]RateLimit{
+		bucketHeavy: {Max: 10, Window: 500 * time.Millisecond},
+	}
+	_, err := newRedisRateLimiter("redis://localhost:6379/0", bad)
+	if err == nil {
+		t.Fatal("newRedisRateLimiter deveria rejeitar window <1s")
+	}
+}
+
+// =============================================================================
+// Sprint 17 — Sliding window (S17.3)
+// =============================================================================
+
+func TestRedisRateLimiter_SlidingWindow_Allows(t *testing.T) {
+	mr := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	rl := &RedisRateLimiter{
+		Client:        client,
+		Limits:        DefaultRateLimits,
+		Script:        redis.NewScript(LuaIncrWithTTL),
+		SlidingScript: redis.NewScript(LuaSlidingWindow),
+		Logger:        discardSlog(),
+		KeyPrefix:     "sliding:",
+		WindowType:    WindowTypeSliding,
+	}
+	t.Cleanup(func() { _ = rl.Close() })
+
+	max := DefaultRateLimits[bucketHeavy].Max
+	for i := 0; i < max; i++ {
+		allowed, _ := rl.Allow(bucketHeavy, "demo")
+		if !allowed {
+			t.Fatalf("call #%d deveria passar", i+1)
+		}
+	}
+}
+
+func TestRedisRateLimiter_SlidingWindow_BlocksAtMax(t *testing.T) {
+	mr := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	rl := &RedisRateLimiter{
+		Client:        client,
+		Limits:        DefaultRateLimits,
+		Script:        redis.NewScript(LuaIncrWithTTL),
+		SlidingScript: redis.NewScript(LuaSlidingWindow),
+		Logger:        discardSlog(),
+		KeyPrefix:     "sliding:",
+		WindowType:    WindowTypeSliding,
+	}
+	t.Cleanup(func() { _ = rl.Close() })
+
+	max := DefaultRateLimits[bucketHeavy].Max
+	for i := 0; i < max; i++ {
+		_, _ = rl.Allow(bucketHeavy, "demo")
+	}
+	allowed, retryAfter := rl.Allow(bucketHeavy, "demo")
+	if allowed {
+		t.Fatal("call após max deveria ser bloqueada (sliding)")
+	}
+	if retryAfter <= 0 {
+		t.Errorf("retryAfter deveria ser > 0, got %v", retryAfter)
+	}
+	// Sliding: retry-after = tempo até oldest call sair da window.
+	// Window = 1 min, max=10. Logo retry-after ≤ 60s.
+	if retryAfter > DefaultRateLimits[bucketHeavy].Window {
+		t.Errorf("retryAfter %v > window %v", retryAfter, DefaultRateLimits[bucketHeavy].Window)
+	}
+}
+
+
+func TestNewRateLimiterFromEnv_RedisSlidingWindow(t *testing.T) {
+	mr := miniredis.RunT(t)
+	t.Setenv("RADIANT_RATE_LIMIT_BACKEND", "redis")
+	t.Setenv("RADIANT_REDIS_URL", "redis://"+mr.Addr())
+	t.Setenv("RADIANT_RATE_LIMIT_WINDOW", "sliding")
+
+	rl, err := NewRateLimiterFromEnv()
+	if err != nil {
+		t.Fatalf("NewRateLimiterFromEnv: %v", err)
+	}
+	t.Cleanup(func() {
+		if rrl, ok := rl.(*RedisRateLimiter); ok {
+			_ = rrl.Close()
+		}
+	})
+
+	redisRL := rl.(*RedisRateLimiter)
+	if redisRL.WindowType != WindowTypeSliding {
+		t.Errorf("WindowType=%q, want \"sliding\"", redisRL.WindowType)
+	}
+}
+
+func TestNewRateLimiterFromEnv_RedisUnknownWindow(t *testing.T) {
+	t.Setenv("RADIANT_RATE_LIMIT_BACKEND", "redis")
+	t.Setenv("RADIANT_REDIS_URL", "redis://localhost:6379")
+	t.Setenv("RADIANT_RATE_LIMIT_WINDOW", "monthly")
+	_, err := NewRateLimiterFromEnv()
+	if err == nil {
+		t.Fatal("window type desconhecido deveria retornar erro")
+	}
+}
+func TestRedisRateLimiter_SlidingWindow_AllowsAfterExpiry(t *testing.T) {
+	mr := miniredis.RunT(t)
+	client := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	rl := &RedisRateLimiter{
+		Client:        client,
+		Limits:        map[pathBucket]RateLimit{
+			bucketHeavy: {Max: 2, Window: 1 * time.Second},
+		},
+		Script:        redis.NewScript(LuaIncrWithTTL),
+		SlidingScript: redis.NewScript(LuaSlidingWindow),
+		Logger:        discardSlog(),
+		KeyPrefix:     "sliding:",
+		WindowType:    WindowTypeSliding,
+	}
+	t.Cleanup(func() { _ = rl.Close() })
+
+	// 2 calls OK
+	_, _ = rl.Allow(bucketHeavy, "demo")
+	_, _ = rl.Allow(bucketHeavy, "demo")
+
+	// 3ª bloqueada
+	allowed, _ := rl.Allow(bucketHeavy, "demo")
+	if allowed {
+		t.Fatal("3ª call deveria estar bloqueada")
+	}
+
+	// Simula "tempo passou" deletando todos entries do sorted set.
+	// (Não podemos avançar Lua TIME via FastForward em miniredis.
+	// Em prod, esse scenario é o que sliding window naturalmente faria.)
+	client.Del(t.Context(), "sliding:heavy:demo")
+
+	// Nova call deve passar
+	allowed, _ = rl.Allow(bucketHeavy, "demo")
+	if !allowed {
+		t.Fatal("após set cleanup, nova call deveria passar (sliding)")
+	}
 }

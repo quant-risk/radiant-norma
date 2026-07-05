@@ -25,6 +25,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -212,11 +213,15 @@ func bucketForPath(method, path string, isExport bool) pathBucket {
 }
 
 // rateLimitMiddleware é chi middleware que aplica rate limiter por IFID.
-func rateLimitMiddleware(limiter RateLimiter) func(http.Handler) http.Handler {
+//
+// Sprint 17 — v3.7.0 [S17.5]: métricas opcionais via Metrics param.
+// Se metrics == nil, middleware funciona normalmente (sem incrementar).
+// Caller (NewServer) decide se quer métricas.
+func rateLimitMiddleware(limiter RateLimiter, metrics *Metrics) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Ignora health/ready.
-			if r.URL.Path == "/healthz" || r.URL.Path == "/readyz" {
+			// Ignora health/ready + metrics endpoint (evita ruído).
+			if r.URL.Path == "/healthz" || r.URL.Path == "/readyz" || r.URL.Path == "/metrics" {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -230,7 +235,15 @@ func rateLimitMiddleware(limiter RateLimiter) func(http.Handler) http.Handler {
 
 			isExport := r.URL.Query().Get("format") != ""
 			bucket := bucketForPath(r.Method, r.URL.Path, isExport)
+			backend := limiter.Backend()
 			allowed, retryAfter := limiter.Allow(bucket, ifID)
+			if metrics != nil {
+				if allowed {
+					metrics.IncAllowed(string(bucket), backend)
+				} else {
+					metrics.IncDropped(string(bucket), backend)
+				}
+			}
 			if !allowed {
 				w.Header().Set("Retry-After", strconv.Itoa(int(retryAfter.Seconds())+1))
 				w.Header().Set("X-RateLimit-Bucket", string(bucket))
@@ -249,8 +262,12 @@ func rateLimitMiddleware(limiter RateLimiter) func(http.Handler) http.Handler {
 // NewRateLimiterFromEnv cria limiter baseado em RADIANT_RATE_LIMIT_BACKEND.
 //
 //   - "memory" (default): in-memory, single-replica. Dev/test/CI.
-//   - "redis": distribuído via Redis INCR+EXPIRE. Prod multi-replica.
+//   - "redis": distribuído via Redis. Prod multi-replica.
 //     Requer RADIANT_REDIS_URL=redis://host:port/db.
+//
+// Para backend redis, opcionalmente RADIANT_RATE_LIMIT_WINDOW=fixed|sliding:
+//   - "fixed" (default): INCR+EXPIRE. Simples, burstiness na borda.
+//   - "sliding": sorted set Lua. Preciso, sem burstiness. +CPU/+mem.
 //
 // Em prod sem Redis configurado, retorna erro — fail-closed evita
 // deploy silencioso em modo "memory" (contadores não compartilhados).
@@ -264,7 +281,20 @@ func NewRateLimiterFromEnv() (RateLimiter, error) {
 		if redisURL == "" {
 			return nil, errRedisURLRequired
 		}
-		return newRedisRateLimiter(redisURL, DefaultRateLimits)
+		rl, err := newRedisRateLimiter(redisURL, DefaultRateLimits)
+		if err != nil {
+			return nil, err
+		}
+		// Window type (Sprint 17 — v3.7.0 — S17.3)
+		switch os.Getenv("RADIANT_RATE_LIMIT_WINDOW") {
+		case "", "fixed":
+			rl.WindowType = WindowTypeFixed
+		case "sliding":
+			rl.WindowType = WindowTypeSliding
+		default:
+			return nil, fmt.Errorf("RADIANT_RATE_LIMIT_WINDOW deve ser 'fixed' ou 'sliding'")
+		}
+		return rl, nil
 	}
 	return nil, errUnknownRateLimitBackend
 }

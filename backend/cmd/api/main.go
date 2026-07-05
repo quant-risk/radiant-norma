@@ -159,6 +159,9 @@ func main() {
 	// W4 — cadoc list com cache 5min (sempre ativo; sem env var).
 	srv.CadocListCache = schema.NewCadocListCache(5 * time.Minute)
 
+	// Sprint 17 — v3.7.0 [S17.5]: métricas Prometheus.
+	srv.Metrics = api.NewMetrics()
+
 	// Sprint 16 — v3.6.0 [S16.1]: rate limiter plugável.
 	// Default memory (single-replica). Setar RADIANT_RATE_LIMIT_BACKEND=redis
 	// + RADIANT_REDIS_URL=... pra produção multi-replica.
@@ -170,6 +173,8 @@ func main() {
 	srv.RateLimiter = rateLimiter
 	logger.Info("rate limiter ativo", "backend", rateLimiter.Backend())
 	if rl, ok := rateLimiter.(*api.RedisRateLimiter); ok {
+		// Sprint 17 [S17.5]: wire metrics no Redis limiter (IncFailOpen + SetBackendUp)
+		rl.Metrics = srv.Metrics
 		// Close Redis no shutdown
 		defer func() { _ = rl.Close() }()
 	}

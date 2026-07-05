@@ -193,6 +193,11 @@ func (s *Server) enviosStats(w http.ResponseWriter, r *http.Request) {
 // --- Audit log ---
 
 // auditEventDTO é a resposta JSON de /v1/audit_log (apenas campos legíveis).
+//
+// lint-enforce-same-if: false-positive — output struct (handler escreve
+// via writeJSON, não aceita do payload). json.Unmarshal na linha 282
+// parseia audit_events.payload do DB, não request body. Access control
+// de /v1/audit_log é por admin role (F27.13), não por tenant match.
 type auditEventDTO struct {
 	ID          int64                  `json:"id"`
 	IFID        string                 `json:"if_id"`
