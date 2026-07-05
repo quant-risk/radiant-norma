@@ -21,6 +21,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/realtime"
+	"github.com/fortvna/radiant-norma/backend/internal/ruleprefs"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
 )
@@ -59,7 +60,7 @@ func main() {
 	staClient := sta.NewStubClient()
 	radarSvc := radar.New(d, 6*time.Hour)
 
-	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc)
+	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, ruleprefs.NewPreferences(d))
 
 	// Sprint 10 — Hub SSE + wrap audit logger pra publicar eventos em
 	// real-time. Em produção, hub pode ser substituído por Kafka/Redis

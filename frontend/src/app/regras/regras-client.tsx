@@ -4,13 +4,18 @@
  * /regras — catálogo interativo de regras (60 regras 3040).
  *
  * Client component: filtros (categoria, severidade, status), busca
- * fuzzy, drill-down em modal. Toggle enable/disable persistido em
- * localStorage (Sprint 8c vai mover pro backend).
+ * fuzzy, drill-down em modal. Toggle enable/disable persistido no
+ * backend (Sprint 11) — antes era localStorage.
  *
  * Validação 29:
  *   - C8 fix: outer é <div role="button"> (não <button>) pra permitir
  *     toggle button interno sem HTML inválido.
  *   - H4 fix: modal tem ESC handler + click outside.
+ *
+ * Sprint 11 (v3.4.0):
+ *   - Substituído localStorage por useRulePreferences hook (backend API).
+ *   - Optimistic concurrency via expected_state (409 → refetch + aviso).
+ *   - Audit events rule.disabled/enabled emitidos pelo backend.
  */
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
@@ -22,12 +27,14 @@ import {
   CheckCircle2,
   Circle,
   Hash,
+  Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Separator } from '@/components/ui/separator'
+import { useRulePreferences } from '@/lib/use-rule-preferences'
 
 type Severity = 'E' | 'A' | 'I'
 type Category = 'B' | 'F' | 'C' | 'S'
@@ -67,26 +74,10 @@ export function RegrasClient({ rules }: RegrasClientProps) {
   const [severityFilter, setSeverityFilter] = useState<Severity | 'ALL'>('ALL')
   const [enabledOnly, setEnabledOnly] = useState(false)
   const [focused, setFocused] = useState<Rule | null>(null)
-  const [disabled, setDisabled] = useState<Set<string>>(new Set())
 
-  // Persist disabled state em localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem('rn_disabled_rules')
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as unknown
-        if (Array.isArray(parsed)) {
-          setDisabled(new Set(parsed.filter((x): x is string => typeof x === 'string')))
-        }
-      } catch {
-        // ignore malformed localStorage
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem('rn_disabled_rules', JSON.stringify([...disabled]))
-  }, [disabled])
+  // Sprint 11: source of truth é backend (audit + per-IF persistence).
+  const { disabled, loading: prefsLoading, toggle: toggleRuleBackend } = useRulePreferences()
+  const [togglePending, setTogglePending] = useState<Set<string>>(new Set())
 
   // Deep-link via ?focus=CODE
   useEffect(() => {
@@ -127,14 +118,26 @@ export function RegrasClient({ rules }: RegrasClientProps) {
     [rules, disabled],
   )
 
-  const toggleRule = useCallback((code: string) => {
-    setDisabled((d) => {
-      const next = new Set(d)
-      if (next.has(code)) next.delete(code)
-      else next.add(code)
-      return next
-    })
-  }, [])
+  const toggleRule = useCallback(
+    async (code: string) => {
+      if (togglePending.has(code)) return
+      setTogglePending((p) => new Set(p).add(code))
+      try {
+        const result = await toggleRuleBackend(code)
+        if ('error' in result) {
+          // 409 ou erro de rede — useRulePreferences já fez refetch
+          console.warn(`[regras] toggle ${code}: ${result.error}`)
+        }
+      } finally {
+        setTogglePending((p) => {
+          const next = new Set(p)
+          next.delete(code)
+          return next
+        })
+      }
+    },
+    [togglePending, toggleRuleBackend],
+  )
 
   // H4 fix: ESC handler para fechar modal
   useEffect(() => {
@@ -296,14 +299,19 @@ export function RegrasClient({ rules }: RegrasClientProps) {
                     <Badge tone={sev.tone} variant="soft" dot>
                       {sev.label}
                     </Badge>
+                    {togglePending.has(r.code) && (
+                      <Loader2 className="size-3 animate-spin text-ink-subtle" />
+                    )}
                   </div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
                       toggleRule(r.code)
                     }}
+                    disabled={togglePending.has(r.code)}
                     className={cn(
                       'shrink-0 p-1 rounded transition-colors',
+                      'disabled:opacity-50 disabled:cursor-wait',
                       isDisabled
                         ? 'text-ink-subtle hover:text-ink'
                         : 'text-success-600 dark:text-success-400 hover:bg-success-50 dark:hover:bg-success-950',
@@ -343,6 +351,7 @@ export function RegrasClient({ rules }: RegrasClientProps) {
           isDisabled={disabled.has(focused.code)}
           onClose={() => setFocused(null)}
           onToggle={() => toggleRule(focused.code)}
+          prefsLoading={prefsLoading}
         />
       )}
     </>
@@ -382,11 +391,13 @@ function RuleDetailModal({
   isDisabled,
   onClose,
   onToggle,
+  prefsLoading,
 }: {
   rule: Rule
   isDisabled: boolean
   onClose: () => void
   onToggle: () => void
+  prefsLoading: boolean
 }) {
   const sev = severityMeta[rule.severity]
   const cat = categoryMeta[rule.category]
@@ -461,6 +472,9 @@ function RuleDetailModal({
           <div className="text-xs text-ink-muted">
             {isDisabled ? 'Regra desabilitada' : 'Regra habilitada'} — afeta{' '}
             <span className="font-mono font-medium">todos os CADOCs 3040</span>
+            {prefsLoading && (
+              <span className="ml-2 text-ink-subtle">· sincronizando…</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={onClose}>

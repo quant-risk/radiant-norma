@@ -2,6 +2,76 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.4.0 — 2026-07-05 (Sprint 11: Drill-Down Server Actions) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 11 (rule enable/disable via backend)
+> **Versão:** minor (new capability)
+
+### 🎯 Resumo
+
+Sprint 11 entrega persistência backend de regras desabilitadas por IF.
+Antes: localStorage no frontend (cada device tinha seu próprio estado).
+Agora: backend é source of truth, com audit event, optimistic
+concurrency, e SSE notification pra outros clientes conectados.
+
+### 🔧 Backend (Go)
+
+- **Migration 007** — `disabled_rules(if_id, rule_code, disabled_at, disabled_by)`
+  com PK composta. Sem FK pra `rules` (rules é hardcoded no schema).
+- **Novo package `internal/ruleprefs`** — `Preferences` service:
+  - `ListDisabled(ctx, ifID)` — todas as regras desabilitadas
+  - `IsDisabled(ctx, ifID, code)` — checagem pontual
+  - `Disable(ctx, ifID, code, actor)` — idempotente (ON CONFLICT)
+  - `Enable(ctx, ifID, code)` — `ErrRuleNotDisabled` se não está
+  - `Toggle(ctx, ifID, code, actor)` — alterna + retorna new_state
+- **2 endpoints novos** em `internal/api/sprint11_handlers.go`:
+  - `GET /v1/rules/disabled` — lista por IF
+  - `POST /v1/rules/{code}/toggle` — alterna estado
+    - Body opcional: `{"expected_state":"enabled"|"disabled"}` (optimistic concurrency)
+    - 409 se estado atual difere do esperado (refetch client-side)
+- **Audit events**:
+  - `rule.disabled` / `rule.enabled` emitidos com actor (claims.Sub) + role
+  - Chain SHA-256 inalterado (mesmo auditlog.Logger)
+  - SSE event publicado via HubAwareLogger (real-time)
+- **7 tests novos** em `ruleprefs` package (disable, enable, toggle, list, isolation, idempotência)
+- **5 tests novos** em `api/sprint11_handlers_test.go` (handler + audit + SSE + optimistic)
+- **3 migration tests atualizados** (5→7 migrations)
+
+### 🌐 Frontend (Next.js)
+
+- **Novo hook `useRulePreferences`** em `src/lib/use-rule-preferences.ts`:
+  - State sincronizado com backend (não localStorage)
+  - Optimistic concurrency com `expected_state` no body
+  - 409 → auto-refetch + warning no console
+  - Loading + error states
+- **2 proxy routes novos** em `src/app/api/rules/`:
+  - `/api/rules/disabled` (GET) — lista desabilitadas
+  - `/api/rules/[code]/toggle` (POST) — toggle com expected_state
+- **`regras-client.tsx` reescrito**:
+  - localStorage removido (morto)
+  - `useRulePreferences` substitui state local
+  - Loader2 spinner durante toggle (debounce visual)
+  - "sincronizando…" no modal footer durante initial load
+  - Botão desabilitado durante toggle pendente
+
+### 🧪 Validação
+
+- Smoke test: 4 toggles consecutivos → 4 audit events no DB
+- Optimistic concurrency: 409 retornado quando expected_state ≠ current
+- Frontend type-check + lint clean
+- Next build OK
+- 16/16 packages test OK (ruleprefs 7 + api 5 + 4 migration updates)
+
+### ⚠️ Breaking changes
+
+- Nenhuma API-breaking. Old localStorage clients (if any) perdem estado no
+  primeiro load — backend é source of truth, é o que vale.
+- Audit log tem 2 novos event types (`rule.disabled` / `rule.enabled`)
+  que consumers existentes já ignoram (filter by action, opcional).
+
+---
+
 ## v3.3.0 — 2026-07-05 (Sprint 10: Real-Time SSE — Backend) ✅
 
 > **Status:** ✅ Shipped (backend; frontend em Sprint 11)

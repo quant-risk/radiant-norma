@@ -22,6 +22,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
+	"github.com/fortvna/radiant-norma/backend/internal/ruleprefs"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
 	"github.com/fortvna/radiant-norma/backend/internal/version"
@@ -52,6 +53,7 @@ type Server struct {
 	STAClient sta.Client
 	Radar     *radar.Service
 	CrossDoc  *crossdoc.Engine // Sprint 6 v1.5.0 — Cross-Doc L3
+	RulePrefs *ruleprefs.Preferences // Sprint 11 v3.4.0 — disable/enable por IF
 
 	// Sprint 7a (v1.6.0): JWT verifier. Se nil, X-IF-ID fallback
 	// (dev mode via RADIANT_DEV_AUTH=1) ainda funciona.
@@ -87,8 +89,8 @@ type auditLogAPI interface {
 }
 
 // NewServer cria um Server.
-func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service) *Server {
-	return &Server{DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient, Radar: rad, startedAt: time.Now()}
+func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences) *Server {
+	return &Server{DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient, Radar: rad, RulePrefs: rp, startedAt: time.Now()}
 }
 
 // Router retorna o chi router configurado.
@@ -130,6 +132,11 @@ func (s *Server) Router() http.Handler {
 		// Rules (críticas)
 		r.Get("/rules", s.listRules)
 		r.Get("/rules/{cadoc}", s.listRulesByCadoc)
+
+		// Sprint 11 (v3.4.0) — drill-down: enable/disable regras por IF.
+		// Persistência no backend (era localStorage no frontend).
+		r.Get("/rules/disabled", s.listDisabledRules)
+		r.Post("/rules/{code}/toggle", s.toggleRule)
 
 		// Validation
 		r.Post("/validate", s.validate)

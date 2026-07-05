@@ -37,4 +37,5 @@ package version
 //   v3.0.0             → v3.1.0 (Sprint 8c, backend intelligence)
 //   v3.1.0             → v3.2.0 (Sprint 8d, URL filters + CSV/JSON export)
 //   v3.2.0             → v3.3.0 (Sprint 10, real-time SSE)
-const Version = "3.3.0"
+//   v3.3.0             → v3.4.0 (Sprint 11, drill-down server actions)
+const Version = "3.4.0"
