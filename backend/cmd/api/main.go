@@ -62,7 +62,14 @@ func main() {
 	// validação real (antes era cosmético).
 	audSvc.SetRulePrefs(ruleprefs.NewPreferences(d))
 	audLog := auditlog.New(d)
-	staClient := sta.NewStubClient()
+	// Sprint 18 (v3.8.0): STA client factory. Default stub preserva
+	// compatibilidade; WSClient ativa quando RADIANT_STA_BACKEND=ws.
+	staClient, err := sta.NewClientFromEnv(logger)
+	if err != nil {
+		logger.Error("STA client init failed", "err", loggerutil.SafeError(err))
+		os.Exit(1)
+	}
+	logger.Info("STA client inicializado", "backend", sta.BackendName(staClient))
 	radarSvc := radar.New(d, 6*time.Hour)
 
 	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, ruleprefs.NewPreferences(d), ruleprefs.NewToggleLimiter(10, time.Minute), insights.NewAcknowledgments(d))

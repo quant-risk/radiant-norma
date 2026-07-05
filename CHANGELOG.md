@@ -2,6 +2,178 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.8.0 — 2026-07-05 (Sprint 18: STA WS nativo — V1 skeleton) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 18 (foco em fundação — caminho 1 da validação 38 DEEPEST)
+> **Versão:** minor (novo client + factory; **sem breaking changes**)
+> **Trigger:** Validação 38 DEEPEST — caminho 1 escolhido (pesquisa primeiro)
+> **Validação:** 18/18 packages PASS (16 novos testes STA) + smoke 11/11 + fail-closed env
+
+### 🎯 Resumo
+
+Sprint 18 entrega o **esqueleto end-to-end** do cliente nativo para o BACEN
+STA Web Services v1.5 (oficial desde julho/2022), substituindo a rota
+Playwright do roadmap Fase 1 pelo caminho REST documentado. É **V1** —
+fluxo 2-fase (POST protocolo + PUT conteúdo) — suficiente para envios
+pequenos. Funcionalidades adicionais (download, range upload, retry,
+senha rotation) ficam para Sprint 19+. **Default permanece `stub`**
+para preservar comportamento de todas as 17 sprints anteriores; ative
+com `RADIANT_STA_BACKEND=ws`.
+
+Sem credenciais Sisbacen reais em dev, **não smoke-tested contra BACEN
+oficial** — testes cobrem conformidade com spec via `httptest.Server`
+mock. Sprint 19+ com credenciais reais fechará o loop.
+
+### 📚 Pesquisa + spec documentada (SPRINT_18_RESEARCH.md)
+
+Antes de codar, 4 fontes oficiais cruzadas:
+- Manual BACEN oficial v1.5 (julho/2022, 42 páginas — `_referencias/STA_Manual_WebServices.pdf`)
+- FAQ oficial (`_referencias/STA_FAQ.pdf`) — Content-Type rules
+- Manual online (bcb.gov.br/content/acessoinformacao/sisbacen_docs/)
+- Reference implementation Elixir (`https://github.com/aleDsz/bacen_sta`)
+
+**Achados-chave (descobertos via pesquisa, não via tentativa):**
+- STA WS é **REST puro com XML bodies**, não SOAP/WSDL moderno
+- **HTTP Basic Auth** preemptivo (RFC 7617) — formato `UUUUUDDDD.operador`
+- **SHA-256 sobre conteúdo compactado** (não XML cru)
+- **Cert A1/A3 não é necessário** — só TLS server-side do BACEN
+- **Limite operacional**: 10 uploads simultâneos, 120 consultas/min/IF
+- Protocolo expira em **48 horas** se transmissão não for iniciada
+
+### 🚦 WSClient skeleton (`backend/internal/sta/ws.go`)
+
+Ponto importante: o cliente implementa **apenas o fluxo 2-fase** (POST +
+PUT). Decisão consciente — `Submit()` cobre o caso comum. V2
+(Range upload, paralelismo, download) é extensão mecânica.
+
+**Defesas (defense in depth):**
+- `NewWSClient` valida config antes de qualquer call de rede (BaseURL
+  HTTPS obrigatório, User formato Sisbacen, Password não-vazio)
+- `AllowInsecureHTTP` flag explícita (default `false`) — usada só por
+  testes com `httptest.NewServer`
+- Erros do BACEN parseados via `<Resultado><Erro>` (Listagem 4 manual)
+  — mensagens propagadas
+- Hash SHA-256 cross-check entre POST e PUT (Seção 2.4 manual)
+- Submissão com protocolo bem gerado + upload falho **preserva
+  `ProtocolSTA` no Result** — forensic trail para audit log
+- Timeout configurable (default 30s) — defesa contra BACEN down
+
+### 🔧 Env factory (`NewClientFromEnv` + `BackendName`)
+
+| Env | Default | Função |
+|---|---|---|
+| `RADIANT_STA_BACKEND` | `stub` | `stub` (mantido) \| `ws` (novo) |
+| `RADIANT_STA_WS_URL` | (vazio) | `https://sta-h.bcb.gov.br/staws` |
+| `RADIANT_STA_SISBACEN_USER` | (vazio) | `UUUUUDDDD.operador` |
+| `RADIANT_STA_SISBACEN_PASSWORD` | (vazio) | senha Sisbacen |
+| `RADIANT_STA_TIMEOUT_SECONDS` | `30` | timeout HTTP |
+
+**Default preserva comportamento** — zero breaking change. `ws`
+opt-in via env.
+
+### 📦 XML structs (`backend/internal/sta/ws_types.go`)
+
+Tipos extraídos do manual oficial, cada um com doc-comment referenciando
+a seção/tabela:
+
+| Tipo | Uso | Manual seção |
+|---|---|---|
+| `requestProtocolParams` | POST /arquivos body | 5.1.1 |
+| `responseProtocol` | 201 Created response | 5.1.1 |
+| `xmlError` | 4xx/5xx (Listagem 4) | universal |
+| `posicaoUploadResponse` | posicaoupload (V2 carry) | 5.3.1 |
+| `situacaoParams` | alterar situação (V2 carry) | 7.1 |
+| `arquivosDisponiveisResponse` | disponíveis (V2 carry) | 8.1.1 |
+
+Tipos `posicaoUploadResponse`, `situacaoParams`, `arquivosDisponiveisResponse`
+são forward-compat — não usados no V1 mas disponíveis para Sprint 19+
+não precisar re-parsear manual.
+
+### 🧪 Tests novos — 16 testes
+
+| Test | Cobre | Manual seção |
+|---|---|---|
+| `TestNewWSClient/valid` + 5 sub-tests | config validation | inicialização |
+| `TestNewWSClient_DefaultTimeout` | 30s default | config |
+| `TestSubmit_HappyPath` | fluxo 2-fase OK | 5.1 + 5.2 |
+| `TestSubmit_EmptySubmission` | defensiva payload vazio | (defense) |
+| `TestSubmit_UsesZipWhenProvided` | ZIP prioritário | 2.4 hash |
+| `TestSubmit_400_IdentificadorInvalido` | Tabela 7 | 5.1.1 |
+| `TestSubmit_403_UsuarioNaoAutorizado` | Tabela 7 | 5.1.1 |
+| `TestSubmit_ProtocolThenUpload403` | protocolo + upload 403 | 5.2 + forensic |
+| `TestSubmit_HashMismatch` | cross-check | 2.4 + 5.2.1 |
+| `TestSubmit_ContextCanceled` | ctx.Done() propagado | (defense) |
+| `TestSubmit_EmptyProtocolInResponse` | 201 sem protocolo | (defense) |
+| `TestSubmit_MalformedErrorBody` | garbage XML body | (defense) |
+| `TestBasicAuthHeader_Formato` | base64(user:pass) | 2.2 |
+
+**16 novos, 0 falhando**.
+
+### 🧮 Estatísticas
+
+```
+Backend:
+  backend/internal/sta/ws.go          ~245 LOC (novo)
+  backend/internal/sta/ws_types.go    ~80 LOC  (novo)
+  backend/internal/sta/ws_test.go     ~480 LOC (novo)
+  cmd/api/main.go                     ~5 LOC   (modificado)
+
+Total:                                  ~810 LOC V1 (incluindo testes)
+        16 testes novos
+        0 regressão nos 17 outros packages
+
+Docs:
+  SPRINT_18_RESEARCH.md                ~250 linhas (research + design)
+  SPRINT_18_RESULTS.md                 ~270 linhas (deliverable + lessons)
+```
+
+### ⚠️ Gaps remanescentes (Sprint 19+)
+
+1. **Playwright client** (path 1.0 antigo) — migrar callers e remover
+   stub alternativo
+2. **Range upload (chunked)** — suporte arquivos > 50MB
+3. **Range download / parallel** — Seções 5.5/5.6/6.3/6.4 do manual
+4. **Status upload (`/posicaoupload`)** — proxy de progresso para UX
+5. **Senha rotation (`PUT senhaws/senha`)** — operacional
+6. **Consulta disponibilidade (`/disponiveis`)** — frontend radar
+7. **Retry exponencial + circuit-breaker** — resilience
+8. **Vault/KMS integration** — secret management
+9. **Smoke test contra BACEN homolog** — requer credenciais Sisbacen
+
+`SPRINT_18_RESEARCH.md` documenta cada item com rastreamento a seção
+do manual e mapeamento pra sprint.
+
+### 🔢 Métricas finais
+
+| Métrica | Valor |
+|---|---|
+| Pacotes Go testados | **18/18 PASS** |
+| Tests totais (soma) | ~390 (16 novos) |
+| LOC novos (V1) | ~810 |
+| Smoke E2E contra binário real | 11/11 PASS (sem regressão) |
+| Frontend (sem mudança) | 10 routes + middleware clean |
+| Lint Sprint 17 (`enforce-same-if`) | PASS |
+| Fail-closed gate (Sprint 13) | intacto |
+
+### 🏗️ Lições aprendidas (memory candidates)
+
+1. **Bridge primeiro, código depois** está validado empiricamente —
+   ler o manual oficial antes de escrever 1 linha salvou tempo. TS
+   detectou issues de implementação (e.g., Content-Type omitido no
+   upload conforme Seção 5.2.1) antes de eu descobrir via testes.
+2. **`httptest.NewServer` retorna `http://`** — qualquer validação
+   strict-HTTPS em cliente precisa de flag `AllowInsecureHTTP`
+   explícita para destravar tests.
+3. **Context cancelation em testes = servidor não bloqueia**.
+   `httptest.Server.Close()` espera conexões ativas terminarem;
+   handler que fica em `<-r.Context().Done()` deadlocks.
+4. **Err vs Rejection — semântica dupla**: falhas de BACEN que são
+   **rejeições formais** retornam `(Result, nil)` com `Rejection`
+   populado; falhas de **transporte/rede** retornam `(nil, err)`.
+
+---
+
 ## v3.7.0 — 2026-07-05 (Sprint 17: Observability + Production Hardening) ✅
 
 > **Status:** ✅ Shipped
