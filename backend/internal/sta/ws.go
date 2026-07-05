@@ -402,20 +402,38 @@ func (c *WSClient) uploadContent(ctx context.Context, protocolo string, payload 
 	return nil
 }
 
-// parseSTAError mapeia resposta de erro XML do BACEN para erro Go.
+// parseSTAError mapeia resposta de erro XML do BACEN para *STAError tipado.
 //
 // O BACEN sempre responde 4xx/5xx com body XML no formato:
 //
 //	<Resultado><Erro><Codigo>{STATUS}</Codigo><Descricao>{MSG}</Descricao></Erro></Resultado>
 //
 // (Listagem 4 do manual)
+//
+// Validação 42 (Sprint 22) finding F-S22-1: RetryingClient precisa fazer
+// errors.As(err, &staErr) para classificar 5xx vs 4xx. parseSTAError
+// anterior retornava fmt.Errorf opaco — quebrava o wrapping. Agora retorna
+// *STAError direto, wrappeado pelo caller (Submit) com %w para preservar
+// a cadeia de erros original.
+//
+// Caller-side use:
+//   - errors.As(err, &staErr) para inspecionar status code tipado
+//   - err.Error() para mensagem legível (formato preservado)
 func (c *WSClient) parseSTAError(status int, body []byte) error {
 	var xe xmlError
 	if err := xml.Unmarshal(body, &xe); err == nil && xe.Erro.Codigo != 0 {
-		return fmt.Errorf("BACEN STA error %d: %s", xe.Erro.Codigo, xe.Erro.Descricao)
+		return &STAError{
+			StatusCode: status,
+			Code:       strconv.Itoa(xe.Erro.Codigo),
+			Message:    xe.Erro.Descricao,
+		}
 	}
-	// Body não parseou — retorna status + truncated body.
-	return fmt.Errorf("BACEN STA HTTP %d: %s", status, truncate(body, 200))
+	// Body não parseou — retorna STAError com body cru truncado.
+	return &STAError{
+		StatusCode: status,
+		Code:       fmt.Sprintf("HTTP_%d", status),
+		Message:    truncate(body, 200),
+	}
 }
 
 // parseSTAErrorTyped é a versão tipada de parseSTAError — retorna *STAError

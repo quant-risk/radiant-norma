@@ -186,10 +186,10 @@ Stack completa em [`backend/README.md`](backend/README.md).
 | **19** | STA WS read side (Download + StatusUpload + X-Content-Hash) | ✅ v3.9.0 |
 | **20** | STA WS listagem / disponiveis + alteração / situacao + handlers REST | ✅ v3.10.0 |
 | **21** | STA WS chunked transfer (range upload §5.6 + range download §6.4) | ✅ v3.11.0 |
+| **22** | STA WS retry exponencial wrapper (5xx + network transiente) | ✅ v3.12.0 |
 
-Última release estável: **v3.11.0** (Sprint 21 STA WS chunked transfer — `SubmitRange` §5.6 +
-`DownloadRange` §6.4 com `ChunkedClient` interface segregation; 18/18 packages PASS, 63 testes
-STA, smoke 11/11).
+Última release estável: **v3.12.0** (Sprint 22 STA WS retry exponencial wrapper — `RetryingClient`
+com backoff 1s/2s/4s + jitter ±50% em 5xx/network; 18/18 packages PASS, 81 testes STA, smoke 11/11).
 
 **Sub-produtos anunciados** (marca Radiant):
 

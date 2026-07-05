@@ -2,6 +2,113 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.12.0 — 2026-07-06 (Sprint 22: STA WS retry exponencial wrapper) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 22 (retry exponencial — defense contra falhas transientes BACEN)
+> **Versão:** minor (1 novo wrapper + bug fix em parseSTAError; **sem breaking changes**)
+> **Trigger:** SPRINT_21_RESULTS.md §"Próximos passos" Sprint 22
+> **Validação:** 18/18 packages PASS + 17 testes novos Sprint 22 (12 httptest + 5 unit) + smoke 11/11
+
+### 🎯 Resumo
+
+Sprint 22 fecha o **retry exponencial wrapper** para o cliente STA WS. Falhas transientes
+do BACEN (503/502/timeout/connection refused) agora são absorvidas automaticamente
+com backoff 1s/2s/4s + jitter ±50%. Erros permanentes (4xx, X-Content-Hash mismatch)
+**não fazem retry** — caller bug ou corrupção de integridade.
+
+**Decisão arquitetural:** `RetryingClient` wrappea qualquer `sta.Client` (drop-in
+replacement). Mesma interface `Submit(ctx, sub) (*Result, error)` — caller substitui
+inner direto. Zero mudanças em callers existentes.
+
+**Decisão YAGNI consciente:** **NÃO** criar `RetryingReadClient` / `RetryingChunkedClient`.
+Submit é 80% do tráfego. Read/list são raros (frontend poll tolerante). 3 wrappers
+adiciona complexidade sem caller imediato. Se virar problema operacional, Sprint 24+.
+
+**Bug fix descoberto durante implementação (validação 42):** `parseSTAError` (Sprint 18)
+retornava `fmt.Errorf` opaco. RetryingClient precisa `errors.As(err, &staErr)` para
+classificar 5xx vs 4xx — quebrava o wrapping. Mudança mínima: `parseSTAError` agora
+retorna `*STAError` direto. **Tests Sprint 18 continuam passando** (todos usam
+`strings.Contains`, robustos a mudança de tipo de erro).
+
+### 🚀 O que entrou
+
+- **`RetryConfig`** — configurável: MaxAttempts (1-10), BackoffBase, BackoffFactor,
+  Jitter (0-1), Logger, OnRetry callback opcional. Validação client-side em
+  NewRetryingClient.
+
+- **`RetryingClient`** — wrappea `sta.Client`. Implementa interface `Client`.
+  Drop-in replacement. Submit() faz retry exponencial em erros 5xx + network errors.
+  4xx + hash mismatch + ctx.Canceled → retorna imediato (sem retry).
+
+- **Classificação `shouldRetry`** — 5xx (500/502/503/504) retryable; 4xx não retry;
+  X-Content-Hash mismatch/header malformed não retry (corrupção); context.Canceled
+  não retry (caller cancelou); net.Error timeout/url.Error connection errors retry.
+
+- **Backoff exponencial com jitter** — `BackoffBase × BackoffFactor^(attempt-1) ×
+  (1 ± Jitter)`. Default 1s/2s/4s com ±50%. Defense contra thundering herd
+  (múltiplos workers sincronizando).
+
+- **`sleepWithContext`** — respeita `ctx.Done()`. Caller pode wrappear com
+  `context.WithTimeout` para cap de tempo total. Cancelamento → ctx.Err() wrappeado.
+
+- **`OnRetry` callback** — opcional, invocado antes de cada sleep. Caller usa para
+  audit_log emission ou métrica Prometheus. Default: logger estruturado.
+
+- **Bug fix `parseSTAError`** — agora retorna `*STAError` direto (era `fmt.Errorf`
+  opaco). Permite `errors.As(err, &staErr)` no RetryingClient. Tests Sprint 18
+  usam `strings.Contains` — robustos.
+
+### 🧪 Tests (17 novos — total STA 81)
+
+| Test | Cobre |
+|---|---|
+| `TestNewRetryingClient_Validacao` | 5 subtests: inner nil, MaxAttempts 0/-1/11, Jitter 1.5 |
+| `TestRetryingClient_SuccessFirstTry` | 1 call, sem retry |
+| `TestRetryingClient_503RetryThenSuccess` | 503 2x + sucesso 3ª |
+| `TestRetryingClient_400NoRetry` | 4xx → sem retry |
+| `TestRetryingClient_403NoRetry` | 403 → sem retry |
+| `TestRetryingClient_404NoRetry` | 404 → sem retry |
+| `TestRetryingClient_416NoRetry` | 416 (Sprint 21) → sem retry |
+| `TestRetryingClient_5xxRetries` | 500/502/503/504 → todos retry |
+| `TestRetryingClient_MaxAttemptsExhausted` | 503 sempre → 3 tentativas + erro final |
+| `TestRetryingClient_NetworkErrorRetry` | net.OpError timeout → retry |
+| `TestRetryingClient_ContextCancel` | ctx cancela durante sleep → ctx.Err() |
+| `TestRetryingClient_OnRetryCallback` | callback invocado 2x com params corretos |
+| `TestShouldRetry_HashMismatch` | ErrContentHashMismatch → no retry |
+| `TestShouldRetry_HeaderMalformed` | ErrContentHashHeaderMalformed → no retry |
+| `TestRetryingClient_BackoffTiming` | 100ms/200ms/400ms/800ms exponencial |
+| `TestSleepWithContext_Cancel` | sleep interrompido por ctx.Done() |
+| `TestSleepWithContext_Done` | sleep completa sem cancel |
+| `TestIsNetworkError` | 5 subtests: DeadlineExceeded, Canceled, net timeout, connection refused, regular |
+
+### ⚠️ O que NÃO fecha nesta sprint
+
+- **`RetryingReadClient` / `RetryingChunkedClient`** — YAGNI. Submit é o caso comum.
+- **Wire no `cmd/api/main.go`** — caller opta-in. Se virar requisito, Sprint 27+.
+- **Métricas Prometheus** (`sta_retry_attempts_total`) — Sprint 24+ se virar problema.
+- **Circuit breaker** — overkill pra V1.
+
+### 🔒 Compatibilidade
+
+- `Client` interface **inalterada**.
+- `RetryingClient` implementa `Client` (drop-in replacement).
+- `parseSTAError` mudou retorno de `error` opaco para `*STAError` tipado — callers
+  que faziam `errors.As(err, &staErr)` agora funcionam (antes quebrava). Callers
+  que usavam `err.Error()` direto **inalterados**.
+- `cmd/api/main.go` inalterado nesta sprint.
+
+### 📦 Arquivos tocados
+
+```
+backend/internal/sta/retry.go            (novo, ~280 linhas — RetryConfig + RetryingClient + helpers)
+backend/internal/sta/retry_test.go       (novo, ~500 linhas — 17 testes + subtests)
+backend/internal/sta/ws.go              (modificado — parseSTAError agora retorna *STAError)
+SPRINT_22_RESEARCH.md                    (novo, 9 seções)
+SPRINT_22_RESULTS.md                     (novo)
+CHANGELOG.md                            (esta entrada)
+```
+
 ## v3.11.0 — 2026-07-06 (Sprint 21: STA WS chunked transfer — range upload + range download) ✅
 
 > **Status:** ✅ Shipped
