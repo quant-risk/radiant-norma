@@ -71,7 +71,13 @@ func (a *Acknowledgments) Unacknowledge(ctx context.Context, ifID, recID string)
 	if err != nil {
 		return fmt.Errorf("unacknowledge: %w", err)
 	}
-	rows, _ := res.RowsAffected()
+	rows, err := res.RowsAffected()
+	if err != nil {
+		// C34.14: propaga RowsAffected error ao invés de swallow.
+		// Sem isso, driver bug ou DB issue resultaria em
+		// ErrRecommendationNotAcknowledged incorreto.
+		return fmt.Errorf("rows affected: %w", err)
+	}
 	if rows == 0 {
 		return ErrRecommendationNotAcknowledged
 	}

@@ -7,18 +7,25 @@
 // Pattern reusado de radar.ScanLimiter — in-memory map, sync.Mutex.
 // Em produção com muitas IFs (> 1000), considerar Redis. Para escala
 // atual do Radiant Norma (< 100 IFs piloto), in-memory é OK.
+//
+// Sprint 12 v3.5.1 — C34.11: max keys (10k) + log warning quando excede
+// + LRU eviction simples. DoS protection contra fake if_ids infinitos.
 
 package ruleprefs
 
 import (
+	"log/slog"
 	"sync"
 	"time"
 )
 
+// MaxKeysToggleLimiter é o limite de keys distintos antes de LRU eviction.
+const MaxKeysToggleLimiter = 10_000
+
 // ToggleLimiter é rate limiter in-memory por chave (IF).
 //
 // Política: máximo `maxPerWindow` toggles por `window` (default 10/min).
-// Map é unbounded — em produção com muitas IFs, considerar eviction LRU.
+// Max keys: MaxKeysToggleLimiter (10k). Se exceder, drop keys mais antigos.
 type ToggleLimiter struct {
 	mu          sync.Mutex
 	calls       map[string][]time.Time // key=if_id, value=call timestamps
@@ -37,13 +44,8 @@ func NewToggleLimiter(maxPerWindow int, window time.Duration) *ToggleLimiter {
 
 // Allow checa se a chave pode fazer toggle agora.
 //
-// Retorna (true, 0) se permitido e registra o call.
-// Retorna (false, retryAfter) se rate-limited, com tempo até poder tentar.
-//
-// Algoritmo: sliding window. Mantém lista de timestamps de calls na
-// janela. Se len < max, permite e append. Se len == max, verifica se
-// o mais antigo está fora da janela — se sim, drop e append; senão
-// bloqueia.
+// C34.11: ao inserir nova key quando map > MaxKeysToggleLimiter, faz
+// LRU eviction (drop keys mais antigos com calls mais antigos).
 func (l *ToggleLimiter) Allow(key string) (bool, time.Duration) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -74,7 +76,49 @@ func (l *ToggleLimiter) Allow(key string) (bool, time.Duration) {
 
 	calls = append(calls, now)
 	l.calls[key] = calls
+
+	// C34.11: se atingiu max keys E é primeira vez desta key, faz LRU eviction.
+	if len(l.calls) > MaxKeysToggleLimiter {
+		l.evictOldest()
+	}
+
 	return true, 0
+}
+
+// evictOldest remove as keys mais antigas (call mais antigo) até ficar
+// dentro do limite. Roda sob lock.
+func (l *ToggleLimiter) evictOldest() {
+	for len(l.calls) > MaxKeysToggleLimiter {
+		var oldestKey string
+		var oldestTime time.Time
+		first := true
+		for k, calls := range l.calls {
+			if len(calls) == 0 {
+				// Empty entry — pode remover direto
+				delete(l.calls, k)
+				continue
+			}
+			if first || calls[0].Before(oldestTime) {
+				oldestKey = k
+				oldestTime = calls[0]
+				first = false
+			}
+		}
+		if oldestKey == "" {
+			break // all empty, deleted some
+		}
+		delete(l.calls, oldestKey)
+	}
+	slog.Default().Warn("ToggleLimiter exceeded max keys — LRU eviction triggered",
+		"current_size", len(l.calls),
+		"max_keys", MaxKeysToggleLimiter)
+}
+
+// Stats retorna métricas pra observability.
+func (l *ToggleLimiter) Stats() (size int) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return len(l.calls)
 }
 
 // Reset limpa estado (usado em testes).

@@ -23,12 +23,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
+	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 )
 
 // --- Envios ---
@@ -682,6 +684,10 @@ type recommendationDTO struct {
 		Label string `json:"label"`
 		Href  string `json:"href"`
 	} `json:"cta"`
+
+	// Sprint 12 v3.5.1 (C34.16): marca se user já ackou.
+	Acknowledged   bool       `json:"acknowledged"`
+	AcknowledgedAt *time.Time `json:"acknowledged_at,omitempty"`
 }
 
 // insightsRecommendations retorna heurística simples baseada em dados reais.
@@ -689,6 +695,10 @@ type recommendationDTO struct {
 // Sprint 8c: regras determinísticas (não-ML) que geram insights úteis.
 // Cada uma olha uma métrica específica e gera 1 insight se o threshold
 // for atingido.
+//
+// Sprint 12 v3.5.1 — C34.16: marca cada recommendation com `acknowledged`
+// consultando o service de Acknowledgments. User que acka uma rec não
+// mais a vê como "nova" na próxima listagem.
 func (s *Server) insightsRecommendations(w http.ResponseWriter, r *http.Request) {
 	ifID := getIfID(r)
 	if ifID == "" {
@@ -696,7 +706,26 @@ func (s *Server) insightsRecommendations(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// C34.16: carrega map de acknowledged (se service injetado).
+	ackMap := make(map[string]time.Time)
+	if s.Insights != nil {
+		m, err := s.Insights.ListAcknowledged(r.Context(), ifID)
+		if err != nil {
+			// Best-effort: log mas não falha (recomendations ainda retorna).
+			slog.Default().Warn("insights ListAcknowledged failed",
+				"if_id", ifID, "err", loggerutil.SafeError(err))
+		} else {
+			ackMap = m
+		}
+	}
+
 	out := []recommendationDTO{}
+	markAck := func(rec *recommendationDTO) {
+		if t, ok := ackMap[rec.ID]; ok {
+			rec.Acknowledged = true
+			rec.AcknowledgedAt = &t
+		}
+	}
 
 	// Regra 1: top regra falhando é responsável por >40% das falhas
 	type topRow struct {
@@ -730,6 +759,7 @@ func (s *Server) insightsRecommendations(w http.ResponseWriter, r *http.Request)
 			}
 			r.CTA.Label = "Revisar regra " + top.Code
 			r.CTA.Href = "/regras?focus=" + top.Code
+			markAck(&r)
 			out = append(out, r)
 		}
 	}
@@ -769,6 +799,7 @@ func (s *Server) insightsRecommendations(w http.ResponseWriter, r *http.Request)
 			}
 			r.CTA.Label = "Ver envios recentes"
 			r.CTA.Href = "/envios"
+			markAck(&r)
 			out = append(out, r)
 		} else if currRate-prevRate >= 5 {
 			delta := roundStr(currRate-prevRate, 1)
@@ -781,6 +812,7 @@ func (s *Server) insightsRecommendations(w http.ResponseWriter, r *http.Request)
 				Impact:     "low",
 				Confidence: 88,
 			}
+			markAck(&r)
 			out = append(out, r)
 		}
 	}
@@ -804,6 +836,7 @@ func (s *Server) insightsRecommendations(w http.ResponseWriter, r *http.Request)
 		}
 		r.CTA.Label = "Investigar worker"
 		r.CTA.Href = "/envios?status=pending"
+		markAck(&r)
 		out = append(out, r)
 	}
 

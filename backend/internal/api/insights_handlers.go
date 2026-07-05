@@ -10,6 +10,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
@@ -68,8 +69,6 @@ func (s *Server) unacknowledgeRecommendation(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	ifID := claims.IFID
-	ifIDParam := ifID
-	_ = ifIDParam
 	recID := chi.URLParam(r, "id")
 	if recID == "" {
 		http.Error(w, "recommendation id required", http.StatusBadRequest)
@@ -78,7 +77,8 @@ func (s *Server) unacknowledgeRecommendation(w http.ResponseWriter, r *http.Requ
 
 	err = s.Insights.Unacknowledge(r.Context(), ifID, recID)
 	if err != nil {
-		if err == insights.ErrRecommendationNotAcknowledged {
+		// C34.9: errors.Is ao invés de == pra forward compat.
+		if errors.Is(err, insights.ErrRecommendationNotAcknowledged) {
 			http.Error(w, "recommendation not acknowledged", http.StatusNotFound)
 			return
 		}
