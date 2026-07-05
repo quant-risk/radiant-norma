@@ -99,7 +99,7 @@ func TestNewSenhawsClient_Validacao(t *testing.T) {
 		cfg     SenhawsConfig
 		wantErr string
 	}{
-		{"BaseURL vazio", SenhawsConfig{User: "123450001.x", Password: "p"}, "BaseURL requerida"},
+		{"BaseURL vazio", SenhawsConfig{User: "123450001.x", Password: "p"}, "requerida"},
 		{"BaseURL http (sem TLS)", SenhawsConfig{
 			BaseURL: "http://example.com/senhaws", User: "123450001.x", Password: "p",
 		}, "deve usar HTTPS"},
@@ -108,13 +108,13 @@ func TestNewSenhawsClient_Validacao(t *testing.T) {
 		}, "não deve terminar com /"},
 		{"User vazio", SenhawsConfig{
 			BaseURL: "https://example.com/senhaws", Password: "p",
-		}, "User requerida"},
+		}, "User"},
 		{"User formato Sisbacen inválido", SenhawsConfig{
 			BaseURL: "https://example.com/senhaws", User: "fulano", Password: "p",
 		}, "formato Sisbacen inválido"},
 		{"Password vazio", SenhawsConfig{
 			BaseURL: "https://example.com/senhaws", User: "123450001.x",
-		}, "Password requerida"},
+		}, "Password"},
 		{"válido", SenhawsConfig{
 			BaseURL: "https://example.com/senhaws", User: "123450001.x", Password: "p",
 		}, ""},
@@ -136,6 +136,39 @@ func TestNewSenhawsClient_Validacao(t *testing.T) {
 			}
 			if !strings.Contains(err.Error(), tt.wantErr) {
 				t.Errorf("erro deveria mencionar %q, got %v", tt.wantErr, err)
+			}
+		})
+	}
+}
+
+// TestNewSenhawsClient_ErrorsAs_Validation — Validação 46 (F-S25-46-7):
+// erros de config também devem ser detectáveis via errors.As(&valErr).
+// Caller (CLI) usa errors.As para classificar entre client/server/transport.
+func TestNewSenhawsClient_ErrorsAs_Validation(t *testing.T) {
+	cases := []struct {
+		name      string
+		cfg       SenhawsConfig
+		wantField string
+	}{
+		{"BaseURL vazio", SenhawsConfig{User: "123450001.x", Password: "p"}, "BaseURL"},
+		{"BaseURL http", SenhawsConfig{BaseURL: "http://example.com/senhaws", User: "123450001.x", Password: "p"}, "BaseURL"},
+		{"BaseURL trailing slash", SenhawsConfig{BaseURL: "https://example.com/senhaws/", User: "123450001.x", Password: "p"}, "BaseURL"},
+		{"User vazio", SenhawsConfig{BaseURL: "https://example.com/senhaws", Password: "p"}, "User"},
+		{"User formato inválido", SenhawsConfig{BaseURL: "https://example.com/senhaws", User: "fulano", Password: "p"}, "User"},
+		{"Password vazio", SenhawsConfig{BaseURL: "https://example.com/senhaws", User: "123450001.x"}, "Password"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := NewSenhawsClient(tc.cfg)
+			if err == nil {
+				t.Fatalf("esperava erro, got nil")
+			}
+			var valErr *ValidationError
+			if !errors.As(err, &valErr) {
+				t.Fatalf("erro deveria ser *ValidationError, got %T: %v", err, err)
+			}
+			if valErr.Field != tc.wantField {
+				t.Errorf("Field = %q, esperado %q", valErr.Field, tc.wantField)
 			}
 		})
 	}

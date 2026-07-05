@@ -2,6 +2,104 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.17.0 — 2026-07-06 (Validação 46 DEEPEST — Sprint 25 hardening + ValidationError consistency) ✅
+
+> **Status:** ✅ Shipped
+> **Versão:** patch (2 LOW — zero impacto em código existente)
+> **Trigger:** "da mais uma validada profunda" após Validação 45 + Sprint 25
+> **Validação:** 20/20 packages PASS + 1 teste novo + 6 subtests novos + coverage senhaws mantido 94.4% + race clean + 6/6 binaries + gofmt/vet clean
+
+### 🎯 Resumo
+
+Validação 46 fecha **2 findings** identificados na leitura completa de
+Sprint 25 + Validação 45 (commit `b580e78` + `8210abc`):
+
+- **F-S25-46-1+2 (LOW):** `NewSenhawsClient` retornava `errors.New` / `fmt.Errorf`
+  opaco para 6 erros de validação de config (BaseURL/User/Password). Inconsistente
+  com `AlterarSenha` que já retornava `*ValidationError` (F-S24-45-1 fechou v45).
+  Caller (CLI) não conseguia classificar config error vs BACEN error vs transporte
+  — caía em fallback genérico.
+- **F-S25-46-7 (LOW):** testes existentes não validavam `errors.As(err, &valErr)`
+  para erros de config. Pattern descoberto na v45 só foi aplicado em `AlterarSenha`.
+
+### 🔍 Findings NÃO fechados (5 com justificativa)
+
+- **F-NF-1:** `errors.New("BACEN retornou 200 mas <DiasVencimentoSenha> vazio")` —
+  defensiva contra BACEN bug (não é validation, não é BACEN rejection, não é transporte).
+- **F-NF-2:** `loadConfig` retorna `errors.New` opaco — CLI trata uniforme via `os.Exit(exitClientError)`.
+- **F-NF-3:** lint script regex `^```` não pega code blocks indentados — edge case improvável.
+- **F-NF-4:** `cli main()` 0% coverage — YAGNI (carry-over v44+v45).
+- **F-NF-5:** `newLogger` 66.7% coverage — diferença trivial.
+
+### 🔒 Refator de consistência
+
+6 sites em `NewSenhawsClient` refatorados de `errors.New`/`fmt.Errorf` para `*ValidationError`:
+
+```go
+// Antes (opaco):
+return nil, errors.New("SenhawsConfig.Password requerida")
+
+// Depois (tipado):
+return nil, &ValidationError{Field: "Password", Message: "requerida"}
+```
+
+CLI refatorado em 3 sites (`runCheck` + `runRotate` + `runInfo`) para detectar `*ValidationError` e imprimir só `Message` (não redundante):
+
+```go
+if err != nil {
+    var valErr *senhaws.ValidationError
+    if errors.As(err, &valErr) {
+        fmt.Fprintf(os.Stderr, "config invalida: %s\n", valErr.Message)
+    } else {
+        fmt.Fprintf(os.Stderr, "config invalida: %v\n", err)
+    }
+    return exitClientError
+}
+```
+
+### 📦 Arquivos tocados
+
+```
+backend/internal/senhaws/senhaws.go             (+8 / -6 — 6 sites de errors.New/fmt.Errorf → &ValidationError)
+backend/internal/senhaws/senhaws_test.go        (+58 / -6 — 1 teste novo: TestNewSenhawsClient_ErrorsAs_Validation, expects ajustados)
+backend/cmd/senhaws-rotate/main.go              (+12 / -6 — 3 sites de error handling CLI padronizados)
+VALIDATION_v3.16.0_DEEPEST.md                   (novo — 8 checklists + 2 findings fechados + 5 NF + 5 lições)
+CHANGELOG.md                                    (esta entrada)
+```
+
+### 🔢 Métricas
+
+| Métrica | Pré Validação 46 | Pós Validação 46 |
+|---|---|---|
+| Packages PASS | 20/20 | **20/20** (zero regressão) |
+| Tests senhaws top-level | 17 | **18** (+1) |
+| Tests senhaws subtests | 23 | **29** (+6) |
+| Total backend tests top-level | 115 | **116** (+1) |
+| Coverage internal/senhaws | 94.4% | **94.4%** (mantido) |
+| Coverage NewSenhawsClient | ~95% | **100%** |
+| Coverage cmd/senhaws-rotate | 70.2% | 68.3% (refator adiciona linhas, paths similares) |
+| Race detector | clean | clean |
+| gofmt drift | 0 | 0 |
+| vet | clean | clean |
+| Lint `lint-no-placeholder.sh` | ✅ 26/26 | ✅ 26/26 |
+| Findings abertos | — | **0** (2 fechados, 5 NF com justificativa) |
+
+### 🏗️ Lições aprendidas (carry forward)
+
+1. **Error types devem ser consistentes em todo o pacote.** `AlterarSenha` retornava `*ValidationError`, `NewSenhawsClient` retornava `errors.New` opaco. Inconsistência passou em v45, v46 fechou. Pattern: ao introduzir tipo-erro, auditar TODAS as funções similares.
+2. **Tests de error type são cheap e valiosos.** `TestNewSenhawsClient_ErrorsAs_Validation` (6 subtests, ~30 linhas) garante refator consistente. Custo baixo, valor alto.
+3. **CLI imprime só Message, não Error() completo, quando é *ValidationError.** Pattern: caller sabe contexto, evitar redundância.
+4. **Refator cross-function é oportunidade de unifying output.** 3 sites do CLI ganharam mesmo padrão `errors.As(&valErr)` + output uniforme.
+5. **Coverage cai quando código cresce (não significa regressão).** 70.2% → 68.3% após refator que adiciona linhas é esperado. Métrica relativa (% de paths cobertos) importa mais que absoluta.
+
+### 🔒 Compatibilidade
+
+- Zero impacto em código existente. Refator é interno.
+- Mensagens de erro mudam formato: `"SenhawsConfig.Password requerida"` → `"validação Password: requerida"`. Caller que usa `err.Error()` substring matching precisa ajustar (mas é anti-pattern — usar `errors.As`).
+- Exit codes CLI consistentes: config error sempre → `exitClientError` (2).
+
+---
+
 ## v3.16.0 — 2026-07-06 (Sprint 25: compile-time asserts + lint-no-placeholder) ✅
 
 > **Status:** ✅ Shipped

@@ -145,7 +145,13 @@ func runCheck(ctx context.Context, cfg *config, logger *slog.Logger) int {
 		AllowInsecureHTTP: cfg.allowInsecureHTTP,
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "config invalida: %v\n", err)
+		// Validação 46 (F-S25-46-7): erros de config são *ValidationError agora.
+		var valErr *senhaws.ValidationError
+		if errors.As(err, &valErr) {
+			fmt.Fprintf(os.Stderr, "config invalida: %s\n", valErr.Message)
+		} else {
+			fmt.Fprintf(os.Stderr, "config invalida: %v\n", err)
+		}
 		return exitClientError
 	}
 
@@ -186,7 +192,13 @@ func runRotate(ctx context.Context, cfg *config, logger *slog.Logger, novaSenha 
 		AllowInsecureHTTP: cfg.allowInsecureHTTP,
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "config invalida: %v\n", err)
+		// Validação 46 (F-S25-46-7): erros de config são *ValidationError agora.
+		var valErr *senhaws.ValidationError
+		if errors.As(err, &valErr) {
+			fmt.Fprintf(os.Stderr, "config invalida: %s\n", valErr.Message)
+		} else {
+			fmt.Fprintf(os.Stderr, "config invalida: %v\n", err)
+		}
 		return exitClientError
 	}
 
@@ -232,7 +244,13 @@ func runInfo(ctx context.Context, cfg *config, logger *slog.Logger) int {
 	})
 	if err != nil {
 		fmt.Printf("bacen_status=config_error\n")
-		fmt.Fprintf(os.Stderr, "config invalida: %v\n", err)
+		// Validação 46 (F-S25-46-7): erros de config são *ValidationError agora.
+		var valErr *senhaws.ValidationError
+		if errors.As(err, &valErr) {
+			fmt.Fprintf(os.Stderr, "config invalida: %s\n", valErr.Message)
+		} else {
+			fmt.Fprintf(os.Stderr, "config invalida: %v\n", err)
+		}
 		return exitClientError
 	}
 

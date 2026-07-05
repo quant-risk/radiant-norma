@@ -85,22 +85,28 @@ var sisbacenUserRegex = regexp.MustCompile(`^(\d{5}\d{4}|\d{5}/\d{4})\.[A-Za-z0-
 // se cfg inválida (sem fazer call de rede).
 func NewSenhawsClient(cfg SenhawsConfig) (*SenhawsClient, error) {
 	if cfg.BaseURL == "" {
-		return nil, errors.New("SenhawsConfig.BaseURL requerida (ex.: https://www9.bcb.gov.br/senhaws)")
+		return nil, &ValidationError{Field: "BaseURL", Message: "requerida (ex.: https://www9.bcb.gov.br/senhaws)"}
 	}
 	if !cfg.AllowInsecureHTTP && !strings.HasPrefix(cfg.BaseURL, "https://") {
-		return nil, fmt.Errorf("SenhawsConfig.BaseURL deve usar HTTPS (got %q; use AllowInsecureHTTP=true para testes dev)", cfg.BaseURL)
+		return nil, &ValidationError{
+			Field:   "BaseURL",
+			Message: fmt.Sprintf("deve usar HTTPS (got %q; use AllowInsecureHTTP=true para testes dev)", cfg.BaseURL),
+		}
 	}
 	if strings.HasSuffix(cfg.BaseURL, "/") {
-		return nil, errors.New("SenhawsConfig.BaseURL não deve terminar com /")
+		return nil, &ValidationError{Field: "BaseURL", Message: "não deve terminar com /"}
 	}
 	if cfg.User == "" {
-		return nil, errors.New("SenhawsConfig.User requerida (formato UUUUUDDDD.operador)")
+		return nil, &ValidationError{Field: "User", Message: "requerida (formato UUUUUDDDD.operador)"}
 	}
 	if !sisbacenUserRegex.MatchString(cfg.User) {
-		return nil, fmt.Errorf("SenhawsConfig.User formato Sisbacen inválido (got %q)", cfg.User)
+		return nil, &ValidationError{
+			Field:   "User",
+			Message: fmt.Sprintf("formato Sisbacen inválido (got %q)", cfg.User),
+		}
 	}
 	if cfg.Password == "" {
-		return nil, errors.New("SenhawsConfig.Password requerida")
+		return nil, &ValidationError{Field: "Password", Message: "requerida"}
 	}
 	if cfg.Timeout == 0 {
 		cfg.Timeout = 30 * time.Second
