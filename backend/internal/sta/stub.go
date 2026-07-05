@@ -48,6 +48,13 @@ type StubClient struct {
 	AlwaysAccept bool
 }
 
+// Compile-time guarantee: *StubClient implementa sta.Client (drop-in
+// replacement em testes). Catching imediato se Client.Submit signature mudar.
+//
+// Validação 44 (Sprint 25 follow-up): pattern introduzido na v44 para
+// RetryingClient, espalhado para WSClient + StubClient agora.
+var _ Client = (*StubClient)(nil)
+
 // NewStubClient cria um cliente mock.
 func NewStubClient() *StubClient {
 	return &StubClient{AlwaysAccept: true}

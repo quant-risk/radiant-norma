@@ -1095,3 +1095,16 @@ func (c *WSClient) DownloadRange(ctx context.Context, protocolo string, inicio, 
 		ContentHashHeader: hashHeader,
 	}, nil
 }
+
+// Compile-time guarantees: *WSClient implementa as interfaces sta.Client,
+// ReadClient e ChunkedClient. Permite interface segregation sem erro de
+// compilação silencioso se assinatura de qualquer interface mudar.
+//
+// Validação 44 (Sprint 25 follow-up): assertions movidas de ws_test.go
+// para cá (production source) — idiomático e catching imediato se método
+// mudar.
+var (
+	_ Client        = (*WSClient)(nil)
+	_ ReadClient    = (*WSClient)(nil)
+	_ ChunkedClient = (*WSClient)(nil)
+)

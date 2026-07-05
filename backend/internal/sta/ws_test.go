@@ -1495,8 +1495,7 @@ func TestParseSituacaoTransferencia_Cases(t *testing.T) {
 // TestReadClient_InterfaceSegregation — *WSClient implementa ReadClient;
 // *StubClient NÃO implementa (segregation evita hollow stub).
 func TestReadClient_InterfaceSegregation(t *testing.T) {
-	// Compile-time check: WSClient implementa ReadClient.
-	var _ ReadClient = (*WSClient)(nil)
+	// Compile-time check: WSClient implementa ReadClient está em ws.go (production source).
 
 	// Runtime check: StubClient NÃO implementa ReadClient.
 	stub := NewStubClient()
@@ -1999,8 +1998,7 @@ func TestWSClient_DownloadRange_Validacoes(t *testing.T) {
 // TestChunkedClient_InterfaceSegregation — *WSClient implementa ChunkedClient;
 // *StubClient NÃO implementa.
 func TestChunkedClient_InterfaceSegregation(t *testing.T) {
-	// Compile-time check: WSClient implementa ChunkedClient.
-	var _ ChunkedClient = (*WSClient)(nil)
+	// Compile-time check: WSClient implementa ChunkedClient está em ws.go (production source).
 
 	// Runtime check: StubClient NÃO implementa ChunkedClient.
 	stub := NewStubClient()

@@ -3,7 +3,7 @@
 > **Sprint:** 21 (v3.11.0)
 > **Quando:** 2026-07-06
 > **Status:** ✅ Shipped
-> **Commit:** (preencher após push)
+> **Commit:** `41981e9` (Sprint 21 — ver VALIDAÇÃO 42+ para commits subsequentes)
 
 ## TL;DR
 

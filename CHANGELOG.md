@@ -2,6 +2,129 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.16.0 — 2026-07-06 (Sprint 25: compile-time asserts + lint-no-placeholder) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 25 (carry-overs de validações anteriores — automatiza padrões reincidentes)
+> **Versão:** patch (compile-time asserts + lint script + 4 placeholders preenchidos — zero impacto em código existente)
+> **Trigger:** VALIDAÇÃO 44 + 45 §"Próximos passos" (espalhar pattern compile-time + lint check placeholder)
+> **Validação:** 20/20 packages PASS + lint-no-placeholder 25/25 limpo + smoke 11/11 + race clean
+
+### 🎯 Resumo
+
+Sprint 25 fecha **2 carry-overs de validações anteriores**:
+
+1. **Compile-time interface asserts** espalhados para todos os tipos que implementam interfaces Go (`*WSClient` para 3 interfaces, `*StubClient` para 1).
+2. **Lint script `lint-no-placeholder.sh`** que detecta placeholders `(preencher após X)` em SPRINT_*.md antes de commitar.
+
+**Bônus:** o lint encontrou **4 placeholders reais** que escaparam para o repo nas Sprints 19-22 — preenchidos agora (25/25 SPRINT_*.md limpos).
+
+**Decisão arquitetural:** compile-time asserts movidos de test files (linhas 1499, 2003 de ws_test.go) para **production source** (`ws.go` linha 1097+, `stub.go` linha 50+). Padrão idiomático Go (Effective Go + Uber style guide).
+
+**Decisões YAGNI conscientes:**
+- Lint focado em placeholder (não Linter completo tipo golangci-lint).
+- Lint roda manual (não em CI ainda — Sprint 26+ se virar requisito).
+- Sem pre-commit hook (`.git/hooks/pre-commit`) — YAGNI até virar problema operacional.
+- Sem integração com outras ferramentas (markdownlint, vale.sh, etc).
+
+### 🚀 O que entrou
+
+**Compile-time asserts** (3 sites novos, zero runtime cost):
+
+```go
+// backend/internal/sta/ws.go (final do arquivo)
+var (
+    _ Client        = (*WSClient)(nil)
+    _ ReadClient    = (*WSClient)(nil)
+    _ ChunkedClient = (*WSClient)(nil)
+)
+
+// backend/internal/sta/stub.go (após declaração de StubClient)
+var _ Client = (*StubClient)(nil)
+```
+
+**Lint script** (`scripts/lint-no-placeholder.sh`, 60 linhas bash):
+
+Detecta 3 padrões em SPRINT_*.md:
+- `(preencher após X)` — pattern pt-BR reincidente (v44 + v45)
+- `(fill in X)` — versão inglês
+- `(TODO: X)` — versão genérica
+
+Exit codes: `0` OK / `1` FAIL (com linhas específicas listadas).
+
+**4 placeholders reais preenchidos** (bônus):
+- `SPRINT_19_RESULTS.md:6` → `7b50253`
+- `SPRINT_20_RESULTS.md:6` → `fa4dc13`
+- `SPRINT_21_RESULTS.md:6` → `41981e9`
+- `SPRINT_22_RESULTS.md:6` → `4321a0d`
+
+### 📚 Decisões
+
+| Decisão | Razão |
+|---|---|
+| Compile-time asserts em production source | Effective Go idiom — catching imediato mesmo se teste falhar |
+| Lint simples em bash (não ferramenta externa) | Sprint 25 escopo é pequeno (~50 linhas bash); vale.sh seria overkill |
+| Lint roda manual, não em CI/pre-commit | CI/pre-commit adiciona fricção. Padrão: V1 manual, V2 pre-commit, V3 CI |
+| 3 patterns detectados (não 1) | Pequeno overhead, melhor cobertura contra variantes futuras |
+
+### 🔢 Métricas
+
+| Métrica | Valor |
+|---|---|
+| Arquivos novos | 1 (`scripts/lint-no-placeholder.sh`) |
+| Arquivos modificados | 4 (ws.go +6, stub.go +6, ws_test.go -4, 4 SPRINT_*.md) |
+| Tests Sprint 25 | 0 (lint script + compile-time asserts não requerem runtime tests) |
+| Total backend tests top-level | 115 (mesmo) |
+| Packages PASS | **20/20** |
+| Build OK | 6/6 binaries |
+| Smoke E2E | 11/11 PASS (sem regressão) |
+| Lint `lint-no-placeholder.sh` | **✅ 25/25 SPRINT_*.md limpos** |
+| Placeholders preenchidos | **4** (Sprints 19-22) |
+| gofmt drift | 0 |
+| vet | clean |
+| Race detector | clean |
+
+### 🔒 Compatibilidade
+
+- Zero impacto em código de produção. Compile-time asserts são zero-cost em runtime.
+- Zero impacto em tests existentes. Compile-time asserts movidos de test → production source é reorganização.
+- Lint script é aditivo. Não afeta build/test/vet. Sprint 26+ pode adicionar a CI.
+
+### 🏗️ Lições aprendidas (carry forward)
+
+1. **Lint scripts são melhores quando simples e focados.** Pattern: 1 lint por classe de problema, não Linter monolítico.
+2. **Compile-time asserts em production source > test files.** Effective Go recomenda; production source garante catching mesmo se teste não rodar.
+3. **Lint roda manual é OK pra V1.** CI/pre-commit adiciona fricção operacional.
+4. **Patterns reincidentes merecem automação.** Placeholder reincidiu 2 sprints (v44 + v45) → lint criado.
+5. **Script bash > script python pra linters simples.** Sem dependência, roda em qualquer Unix, fácil de auditar.
+
+### 📦 Arquivos tocados
+
+```
+scripts/lint-no-placeholder.sh                    (novo, 60 linhas)
+backend/internal/sta/ws.go                        (+8 — compile-time asserts para Client/ReadClient/ChunkedClient)
+backend/internal/sta/ws_test.go                   (-4 — removidos asserts duplicados em TestReadClient_InterfaceSegregation + TestChunkedClient_InterfaceSegregation)
+backend/internal/sta/stub.go                      (+5 — compile-time assert para Client)
+SPRINT_19_RESULTS.md                              (1 linha — placeholder preenchido)
+SPRINT_20_RESULTS.md                              (1 linha — placeholder preenchido)
+SPRINT_21_RESULTS.md                              (1 linha — placeholder preenchido)
+SPRINT_22_RESULTS.md                              (1 linha — placeholder preenchido)
+SPRINT_25_RESULTS.md                              (novo — estatísticas + decisões + quickstart)
+CHANGELOG.md                                      (esta entrada)
+```
+
+### ⚠️ Próximos passos (Sprint 26+)
+
+| Sprint | Escopo | Justificativa |
+|---|---|---|
+| 26 | `cmd/sta-submit` CLI paralelo a `senhaws-rotate` | Mesmo pattern pra CADOC submission |
+| 26 | Pre-commit hook: `./scripts/lint-no-placeholder.sh` + gofmt + go vet | Automação catching antes de push |
+| 27 | Vault integration (AWS Secrets Manager / Vault) | Auto-update secret manager |
+| 28 | Smoke contra BACEN homolog real | Requer credenciais Sisbacen |
+| 29 | Handler REST `/v1/sta/range-*` (Sprint 21 YAGNI) | Frontend/batch trigger UI |
+
+---
+
 ## v3.15.0 — 2026-07-06 (Validação 45 DEEPEST — Sprint 24 hardening + ValidationError) ✅
 
 > **Status:** ✅ Shipped
