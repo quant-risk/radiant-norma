@@ -7,9 +7,11 @@
 
 ## TL;DR
 
-Auditoria profunda da entrega anterior (Validação 56 / v3.33.2) encontrou **drift entre documentação e código**: doc dizia "fix X aplicado", código tinha `X` ainda lá. Foram **5 findings, 4 fechados nesta validação, 1 já endereçado via F-57-C**.
+Auditoria profunda da entrega anterior (Validação 56 / v3.33.2) encontrou **drift entre documentação e código**: doc dizia "fix X aplicado", código tinha `X` ainda lá. Foi uma rodada de **9 findings (A-I), 6 fechados (A, B, C, D, E, I) + 3 aceitos (F, G, H), 5 carry-over próprio**.
 
-**Bug real detectado (F-57-C MED):** O fix F-56-G documentado como "linha `_ = isPostgres` removida em `migrate.go:64`" no commit bafe5b4 NÃO foi aplicado. O `migrate.go:64` real ainda tinha `_ = isPostgres`. **Diff `git show bafe5b4:migrate.go` vs HEAD mostrou zero modifications** — o fix foi só na minha cabeça, não no disco.
+**Bug real detectado (F-57-C MED):** O fix F-56-G documentado como "linha `_ = isPostgres` removida em `migrate.go` (linha onde estava o dead assign pré-fix V57)" no commit bafe5b4 NÃO foi aplicado. O arquivo real ainda tinha `_ = isPostgres`. **Diff `git show bafe5b4:migrate.go` vs HEAD mostrou zero modifications** — o fix foi só na minha cabeça, não no disco.
+
+**Nota V58 (Validação 58 corrigiu):** a headline original deste doc dizia "5 findings, 4 fechados" — estava imprecisa. Real foi 9 findings, 6 fechados + 3 aceitos. Errata V58 abaixo.
 
 Esse é um achado LIÇÃO IMPORTANTE: **doc/code drift é setup pra refactor quebrar silent**. Validação 57 fechou.
 
@@ -48,20 +50,20 @@ VALIDATION e CHANGELOG diziam "8 findings, 7 fechados". A tabela CHANGELOG tinha
 
 **Severidade:** MED (drift entre doc e código = setup pra refactor quebrar silent)
 **Categoria:** Drift docs ↔ código
-**Arquivo:** `backend/internal/db/migrate.go:63-64`
+**Arquivo:** `backend/internal/db/migrate.go` (linhas do dummy assign pré-fix V57)
 
 **Bug:**
 O commit bafe5b4 (v3.33.2) tinha na mensagem:
-> "F-56-G (LOW): `_ = isPostgres` dead assign em `migrate.go:64` | Linha removida"
+> "F-56-G (LOW): `_ = isPostgres` dead assign em `migrate.go` (linha do dead assign pré-fix V57) | Linha removida"
 
-Mas `git show bafe5b4 -- backend/internal/db/migrate.go` retornou **zero diff**. O arquivo não foi tocado. O `migrate.go:64` real ainda tinha:
+Mas `git show bafe5b4 -- backend/internal/db/migrate.go` retornou **zero diff**. O arquivo não foi tocado. O `migrate.go` (linha do dead assign pré-fix V57) real ainda tinha:
 
 ```go
 isPostgres := isPostgresDB(d)
 _ = isPostgres // usado dentro do loop via closure abaixo
 ```
 
-`go vet` não reclamava porque a variável é usada na linha 134 (`if !isPostgres && ...`). Mas o `_ = isPostgres` é dummy assign para silenciar linter — desnecessário desde Sprint 30.
+`go vet` não reclamava porque a variável é usada mais à frente (`if !isPostgres && strings.Contains(...)` no loop). Mas o `_ = isPostgres` é dummy assign para silenciar linter — desnecessário desde Sprint 30.
 
 **Diagnóstico:** Possível causa: escrevi mentalmente "deveria remover" mas nunca executei o `Edit` tool real. Memória fragmentada entre "tenho que fazer" e "feito". Lição de **self-deception**: confio na minha memória sem verificar.
 
@@ -72,8 +74,9 @@ func Migrate(d *sql.DB) error {
     // Validação 57 (v3.33.3) [F-57-C]: re-aplicado fix F-56-G. Linha
     // `_ = isPostgres` documentada como removida na v3.33.2 mas não
     // foi aplicada no commit bafe5b4 — drift entre doc e código.
-    // A variável é usada na linha 135 (loop), então não precisa do
-    // dummy assign. Validação 57 fechou o drift.
+    // A variável é usada mais à frente (no `if !isPostgres &&` que detecta
+    // migrations Postgres-only), então não precisa do dummy assign.
+    // Validação 57 fechou o drift.
     ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 ```
 
@@ -99,12 +102,12 @@ func Migrate(d *sql.DB) error {
 **Arquivos:** `CHANGELOG.md:20-21` vs `backend/VALIDATION_v3.33.1.md:187,205`
 
 **Bug:** Numeração invertida:
-- DOC (linhas 187, 205): F-56-F = dead assign migrate.go:64, F-56-G = typo tenant.go:60.
-- CHANGELOG (linhas 20, 21 v3.33.2 original): F-56-F = typo tenant.go:60, F-56-G = dead assign migrate.go:64.
+- DOC (linhas 187, 205): F-56-F = dead assign migrate.go (linha do dead assign pré-fix V57), F-56-G = typo tenant.go:60.
+- CHANGELOG (linhas 20, 21 v3.33.2 original): F-56-F = typo tenant.go:60, F-56-G = dead assign migrate.go (linha do dead assign pré-fix V57).
 
 **Fix:** CHANGELOG realinhado à numeração do DOC (que é o source of truth da investigação). Tabela nova:
 ```
-| F-56-F | LOW | `_ = isPostgres` dead assign em `migrate.go:64` | Linha removida |
+| F-56-F | LOW | `_ = isPostgres` dead assign em `migrate.go` (linha do dead assign pré-fix V57) | Linha removida |
 | F-56-G | LOW | Typo aspas curvas `tenant.go:60` (carry-over F-55-F) | Comment reescrito sem aspas literais (gofmt 1.26 normaliza) |
 ```
 
@@ -185,7 +188,7 @@ func TestClearDriverCache_NonNil(t *testing.T) {
 |---|---|---|
 | F-57-A/D | CHANGELOG entry drift numérico | -2/+4 |
 | F-57-B | Errata section no doc VALIDAÇÃO (sem mexer na narrativa V56) | +18 |
-| F-57-C | `_ = isPostgres` removido de `migrate.go:64` | +5 / -1 |
+| F-57-C | `_ = isPostgres` removido de `migrate.go` (linha do dead assign pré-fix V57) | +5 / -1 |
 | F-57-E | Numeração F/G realinhada no CHANGELOG | -2/+2 |
 | F-57-I | `TestClearDriverCache_NonNil` adicionado | +14 |
 | **Total** | | **+37 / +2** |
@@ -202,14 +205,14 @@ func TestClearDriverCache_NonNil(t *testing.T) {
 | `TestClearDriverCache_NonNil` | ✅ |
 | `TestAuditLog_NoChainBreaks_Concurrent` (50 goroutines) | ✅ 50/50 em 0.13s |
 | `TestAuditLog_NoChainBreaks_HighContention` (200 goroutines) | ✅ 200/200 em 0.13s |
-| `migrate.go:64` tem `_ = isPostgres`? | **NÃO (F-57-C fechou)** |
+| `migrate.go` (linha do dead assign pré-fix V57) tem `_ = isPostgres`? | **NÃO (F-57-C fechou)** |
 | Drift entre doc e código? | **NÃO (F-57-A/B/D/E fechado)** |
 
 ## Lições aprendidas
 
 ### 1. **Self-deception em fix de "tarefa simples"**: doc/code drift tem custo alto
 
-Eu APOSTEI que tinha editado `migrate.go:64` no V56. Escrevi a mensagem do commit, o doc VALIDAÇÃO, o CHANGELOG — tudo "linha removida". Mas não editei. **Confiei na memória sem verificar.** A lição é direta: **se doc diz "fix aplicado", `git diff HEAD~1 -- file` antes de commitar**. Custo: 2 segundos. Benefício: cero risk de drift.
+Eu APOSTEI que tinha editado `migrate.go` (linha do dead assign pré-fix V57) no V56. Escrevi a mensagem do commit, o doc VALIDAÇÃO, o CHANGELOG — tudo "linha removida". Mas não editei. **Confiei na memória sem verificar.** A lição é direta: **se doc diz "fix aplicado", `git diff HEAD~1 -- file` antes de commitar**. Custo: 2 segundos. Benefício: cero risk de drift.
 
 ### 2. **Audit-after-success > audit-only-when-feared**
 
@@ -248,3 +251,39 @@ Quando achei que o doc V56 dizia "7 fechados" mas tinha só 6, cogitei reescreve
 | F-54-K (cmd/ 0% coverage) | LOW | Polish + cmd/*_test patterns |
 
 Próxima sprint: **Sprint 33 (Audit3050) — TXB_V11, 170 regras catálogo** (Plano Ouro §1.1 Q2).
+
+---
+
+## Errata — Validação 58 (v3.33.4) fechou 4 achados de drift residual pós-V57
+
+### F-58-A — Headline + tabela inconsistentes (LOW → FECHADO)
+**Severidade:** LOW
+**Bug:** Headline da TL;DR e tabela "Findings fechados" deste doc estavam imprecisas:
+- TL;DR original (linha 10): "5 findings, 4 fechados"
+- Tabela original: 6 fechados (A, B, C, D, E, I)
+- CHANGELOG v3.33.3 header: "9 findings, 4 fechados"
+
+Real:
+- 9 findings (A-I), **6 fechados + 3 aceitos**, 5 carry-over próprio
+**Fix:** Headline TL;DR corrigida para "9 findings (A-I), 6 fechados (A, B, C, D, E, I) + 3 aceitos (F, G, H), 5 carry-over próprio". CHANGELOG também atualizado em paralelo.
+
+### F-58-B — 6 refs a "migrate.go (linha do dead assign pré-fix V57)" obsoletas pós-fix V57 (LOW → FECHADO)
+**Severidade:** LOW
+**Bug:** Este doc (V57) tinha 6 ocorrências de `migrate.go (linha do dead assign pré-fix V57)` referindo-se ao **estado pré-fix V57** (linha onde estava `_ = isPostgres`). Pós-fix V57, linha 64 é o **próprio comentário** explicativo.
+**Fix:** Substituído por `migrate.go` (linha do dead assign pré-fix V57) em todas as 6 ocorrências via `sed`. Conceitual, sobrevive a edits.
+
+### F-58-C — Comentário V57 em `migrate.go:67` cita "linha 135" (LOW → FECHADO)
+**Severidade:** LOW
+**Bug:** Comentário que adicionei em V57 (linha 67 do migrate.go) dizia "linha 135 (loop)". Real era linha 139 (4 linhas abaixo do próprio comentário).
+**Fix:** Removida referência numérica, substituída por descritiva ("`if !isPostgres &&` no loop de migrations Postgres-only").
+
+### F-58-D — `db.go` comentário "30s dá margem 6×" baseline irreal (LOW → FECHADO)
+**Severidade:** LOW
+**Bug:** V56 comentou "30s dá margem 6× (cenários típicos <= 500ms/lock)". 500ms era estimado pessimista; V58 mediu: ~1.5-3ms/lock real → margem ~10,000×.
+**Fix:** "30s dá margem de milhares de vezes para workloads típicos (Validação 58 mediu ~1.5-3ms/lock em stress test)".
+
+### 4 carry-over próprio histórico
+- F-57-G (db.go desatualizado) **resolvido por F-58-D**
+- F-57-H (500ms/lock baseline) **resolvido por F-58-D**
+
+Próxima sprint: **Sprint 33 (Audit3050) — TXB_V11, 170 regras catálogo.**

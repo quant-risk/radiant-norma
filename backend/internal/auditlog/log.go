@@ -61,12 +61,15 @@ func New(db *sql.DB) *Logger {
 // falharia sempre.
 func (l *Logger) Log(ifID, actor, action, target string, payload []byte, metadata any) (*Entry, error) {
 	// Validação 56 (v3.33.2): 5s → 15s. Em SQLite + alta concorrência
-	// (audit burst: 50-200 goroutines disputando write lock via
-	// _txlock=immediate + busy_timeout=30s em db.go), 5s era marginal
-	// — testes empíricos mostraram context.DeadlineExceeded em cadeia.
-	// Postgres não tem este problema (FOR UPDATE row-level) — usar 15s
-	// só lá é ok; SQLite prefere margem 3× pra evitar log drop em pico.
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	// (audit burst: 30+ goroutines disputando write lock via
+	// _txlock=immediate + busy_timeout=30s em db.go), 5s era marginal.
+	// Validação 58 (F-58-H): 15s → 30s. Residual flake (~25% em
+	// shared CI runs com CPU saturation) detectado em stress test 30+
+	// goroutines. 30s dá margem 2× sobre busy_timeout SQLite
+	// (begin-context <= busy_timeout regra de ouro). Postgres não tem
+	// este problema (FOR UPDATE row-level) — usar 30s só lá é ok;
+	// SQLite prefere margem 2× pra absorver jitter de shared CI.
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	payloadHash := sha256.Sum256(payload)

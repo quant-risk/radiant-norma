@@ -2,20 +2,87 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.33.4 — 2026-07-06 (Validação 58 — Drift cleanup + flake mitigation pós-v3.33.3) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (drift cleanup + flake mitigation + lock-in self-verify)
+> **Trigger:** Solicitação Henrique — "validação profunda em tudo que você acabou de fazer"
+> **Validação:** VALIDATION_v3.33.3.md — 8 findings (A-H), **5 fechados + 3 aceita/info/meta**, 1 carry-over (F-58-H residual)
+
+### 🐛 Findings fechados (5)
+
+| # | Sev | Finding | Fix |
+|---|---|---|---|
+| **F-58-H** | **MED** | Flake residual em `TestAuditLog_NoChainBreaks_Concurrent` (~25% em shared CI, BeginTx timeout 15s < busy_timeout 30s) | Log ctx timeout **15s → 30s**. Estabilidade: 4/5 (80%) → 9/10 (90%) |
+| F-58-A | LOW | Drift numérico entre doc V57 e CHANGELOG entry v3.33.3 — "5 findings, 4 fechados" vs "9 findings, 6 fechados" real | Headline TL;DR + CHANGELOG corrigidos; tabela V57 mantida intacta |
+| F-58-B | LOW | 6 refs a `migrate.go:64` no doc V57 obsoletas pós-fix V57 (linha 64 agora é o comentário do fix) | Substituído por "linha do dead assign pré-fix V57" via sed (2 passes) |
+| F-58-C | LOW | Comentário V57 em `migrate.go:67` cita "linha 135" mas real é 139 (4 linhas abaixo do próprio comentário) | Ref numérica removida, descritiva no lugar |
+| F-58-D | LOW | `db.go` "30s dá margem 6× (cenários típicos <= 500ms/lock)" — 500ms era estimado, não medido | "30s dá margem de milhares de vezes (~1.5-3ms/lock medidos em stress test V58)" |
+
+### 📋 Meta / Aceito (3)
+
+| # | Tipo | Finding |
+|---|---|---|
+| F-58-E | INFO | `Migrate` coverage flat entre V57 e V58 (não-impactante) |
+| F-58-F | INFO | Hipótese não-verificada: flag `--with-radiant-memory` (carry para polish) |
+| F-58-G | META | Self-deception rule do V57 ficou só em `MEMORY.md`; V58 replicou no doc de validação |
+
+### 📊 Métricas v3.33.3 → v3.33.4
+
+| Métrica | v3.33.3 | v3.33.4 |
+|---|---|---|
+| Self-verify V57 fixes aplicados (all 4) | (implícito) | **confirmed via `git diff` + `grep`** |
+| Drift numérico V57 doc vs CHANGELOG | YES | **NO** |
+| Refs a `migrate.go:64` obsoletas | 6 ocorrências | **0 (substituídas em 2 passes)** |
+| Refs a "linha 135/139" obsoleta em comentario | 1 (migrate.go:67) | **0 (descritiva)** |
+| Baseline empírico em db.go:65-67 | NO (estimado) | **YES (~1.5-3ms medido)** |
+| Stress 50 goroutines flake rate | **~20% (4/5)** | **~10% (9/10)** |
+| Log ctx timeout | 15s | **30s (>= busy_timeout SQLite)** |
+| TestClearDriverCache coverage | 100% | **100%** |
+| Coverage `internal/db` | 62.7% | **62.7% (mantida)** |
+| vet + gofmt | clean | **clean** |
+
+### 🎓 Lições aprendidas (V58)
+
+- **Self-verify checklist funcionou.** Pattern "se doc diz 'fix X', grep -c antes de commitar" aplicado em V58 → zero drift residual nos 4 fixes V57. Self-verify empírica (rodar N×) revelou F-58-H.
+- **`BeginTx timeout >= busy_timeout`** (regra de design). Bug latente: BeginTx 15s < busy_timeout 30s. Regra de ouro: timeout de transação sempre >= busy_timeout SQLite (margem 2×). Aplicável a qualquer helper que envolva BeginTx em driver com busy_timeout.
+- **Refs a números de linha são anti-pattern.** Pós-fix V57, "linha 64" apontava para o próprio comentário explicativo. Conceitual ("linha do dead assign pré-fix V57") sobrevive a edits.
+- **Drift cleanup é valor.** Mesmo sem bug funcional, vale fechar — prepara terreno pra V59 não herdar bugs.
+
+### 📁 Arquivos tocados
+
+```
+backend/VALIDATION_v3.33.3.md               (NOVO — Validação 58)
+backend/VALIDATION_v3.33.2.md               (Errata V58 section)
+backend/internal/db/migrate.go              (F-58-C linha 135→descritiva)
+backend/internal/db/db.go                   (F-58-D baseline empírico)
+backend/internal/auditlog/log.go            (F-58-H Log timeout 15s→30s)
+backend/internal/auditlog/concurrent_test.go (F-58-H comment, mantém N=50)
+CHANGELOG.md                                 (F-58-A drift numérico + nova entry v3.33.4)
+```
+
+---
+
+## v3.33.3 — 2026-07-06 (Validação 57 — Doc/Code drift pós-v3.33.2) ✅
+
+---
+
 ## v3.33.3 — 2026-07-06 (Validação 57 — Doc/Code drift pós-v3.33.2) ✅
 
 > **Status:** ✅ Shipped
 > **Tipo:** patch (MED bug fix não-aplicado na V56 + drift numérico + test hygiene)
 > **Trigger:** Solicitação Henrique — "validação profunda em tudo que você acabou de fazer"
-> **Validação:** VALIDATION_v3.33.2.md — 9 findings, 4 fechados, 5 carry-over próprio
+> **Validação:** VALIDATION_v3.33.2.md — **9 findings (A-I), 6 fechados + 3 aceitos (INFO), 5 carry-over próprio**
 
-### 🐛 Findings fechados (4)
+### 🐛 Findings fechados (6)
 
 | # | Sev | Finding | Fix |
 |---|---|---|---|
-| **F-57-C** | **MED** | F-56-G documentado como "linha removida" mas commit bafe5b4 NÃO tocou `migrate.go` — `_ = isPostgres` linha 64 ainda existia (drift entre doc e código) | Linha removida, comentário explicativo adicionado |
-| F-57-A/D | LOW | Drift numérico: doc + CHANGELOG diziam "8 findings, 7 fechados" mas real era 6 fechados + 2 aceitos (INFO) | CHANGELOG entry atualizada para refletir real |
-| F-57-E | LOW | Ordem F-56-F vs F-56-G inconsistente entre DOC e CHANGELOG | CHANGELOG realinhado à numeração do DOC |
+| **F-57-C** | **MED** | F-56-G documentado como "linha removida" mas commit bafe5b4 NÃO tocou `migrate.go` — `_ = isPostgres` ainda existia (drift entre doc e código) | Linha removida, comentário explicativo adicionado |
+| F-57-A | LOW | Drift numérico CHANGELOG v3.33.2: "8 findings, 7 fechados" mas tabela tinha 6 — real era 6 fechados + 2 aceitos (INFO) | CHANGELOG entry atualizada para refletir real |
+| F-57-B | LOW | Doc VALIDAÇÃO_v3.33.1.md mantinha headline "7 fechados" inconsistente | Errata section adicionada ao final do doc V56 (preserva narrativa) |
+| F-57-D | LOW | Mesmo F-57-A mas no CHANGELOG header "0 carry-over próprio" impreciso | Header corrigido |
+| F-57-E | LOW | Ordem F-56-F vs F-56-G invertida entre DOC e CHANGELOG | CHANGELOG realinhado à numeração do DOC |
 | F-57-I | LOW | `TestClearDriverCache_NilDB` só cobria nil path — caminho real (cmd/api + cmd/worker shutdown com d não-nil) sem teste | Adicionado `TestClearDriverCache_NonNil` com verificação de idempotência |
 
 ### 📋 Carry-over próprio (5)

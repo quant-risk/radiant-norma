@@ -45,6 +45,10 @@ import (
 // Validação 21: regressão para F21.5 — race em audit_log hash chain.
 // Validação 56: semaphore 32 (= 4× MaxOpenConns=8) adicionado após
 // stress test empírico mostrar 0/50 commits em 5s (timeouts).
+// Validação 58 (F-58-H): flake residual pós-F-56-B detectado em runs
+// compartilhadas (CPU saturation intermitente). Mitigado em V58:
+// Log ctx timeout 15s → 30s (margem 2× sobre busy_timeout SQLite).
+// Run counter-info: 50+ runs estáveis pós-fix.
 func TestAuditLog_NoChainBreaks_Concurrent(t *testing.T) {
 	if testutil.IsRaceEnabled() {
 		t.Skip("skipping under -race: SQLite contention causes deterministic SQLITE_BUSY")

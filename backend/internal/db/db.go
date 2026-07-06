@@ -64,9 +64,9 @@ func openSQLite(path string) (*sql.DB, error) {
 	// Validação 56 (v3.33.2): busy_timeout 5s → 30s. Stress tests de
 	// auditlog (50-200 goroutines disputando write lock) com 5s sofriam
 	// context deadline exceeded quando o pool (MaxOpenConns=8) serializa.
-	// 30s dá margem 6× para produção (cenários típicos <= 500ms/lock).
-	// _txlock=immediate é OBRIGATÓRIO (F21.5 — ver concurrent_test.go
-	// e auditlog/log.go).
+	// 30s dá margem de milhares de vezes para workloads típicos
+	// (Validação 58 mediu ~1.5-3ms/lock em stress test). _txlock=immediate
+	// é OBRIGATÓRIO (F21.5 — ver concurrent_test.go e auditlog/log.go).
 	dsn := fmt.Sprintf("file:%s?_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)&_pragma=busy_timeout(30000)&_txlock=immediate", path)
 	d, err := sql.Open("sqlite", dsn)
 	if err != nil {
