@@ -90,6 +90,33 @@
 
 ---
 
+## Backlog Tooling — "DEV EXPERIENCE" (sprints opcionais entre features)
+
+**Nota:** estas sprints são **nice-to-have** de tooling/dev-experience. Não bloqueiam milestones. Rodar quando sobrar ciclo entre features.
+
+| Sprint | Codinome | Entregas | Status |
+|---|---|---|---|
+| **34-T** | **AuditForge POC** ([Autodata](https://arxiv.org/abs/2606.25996) sintético) | Gerador de envios CADOC 3040/3050 sintéticos via loop iterativo. **Challenger LLM** (gera XML) + **rule engine atual como Weak Solver** + **rule engine + ground truth humano como Strong Solver** + **Judge LLM** (avalia realismo/dificuldade). Output: dataset de envios edge-case que separam happy path vs regras-falhando. Custos: ~10 dias efetivo + LLM API ($50-100/dia POC). **Pré-requisito:** XSD BACEN 3040/3050 como grounding context. Quando todas as regras Audit3040/Audit3050 estão portadas, gera dataset sintético que cobre combinações ClassOp × Vencimento × Provisão × Montante inviáveis de anotar manualmente. Beneficia Q3 (Sprint 33/34) + Q4 (Sprints 38-41). | backlog |
+
+### Por que Autodata-style para radiant-norma?
+
+[Paper FAIR/Meta jun 2026](https://arxiv.org/abs/2606.25996) demonstra que loop iterativo (Challenger + Weak + Strong + Judge) gera dados sintéticos que **separam modelos fracos/fortes** — transferindo para modelo treinado outperform baseline 397B em PRBench-Legal. Análogo aqui:
+- **Grounding:** XSD BACEN + tabelas ClassOp × Vencimento × Provisão (grounding context).
+- **Weak solver:** `audit.Service` determinístico (regra Go).
+- **Strong solver:** `audit.Service` + audit_log entry (chain-verify).
+- **Challenger:** LLM gera XML de envio variando features (valor, ClassOp, vencimento, etc.).
+- **Judge:** LLM avalia realismo + cobertura de edge cases.
+
+Output: `cmd/synth-gen` CLI que produz envios sintéticos para `cmd/seed` e testes de regressão de regras.
+
+### Quando rodar?
+
+- **Sprint 33+ (Audit3050):** Regras 3050 (170 TXB_V11) precisam de **milhares de envios sintéticos** para validar combinações edge. POC faz isso.
+- **Q4 2026 (Sprints 38-41):** AuditDLO/DDR/DRL/DLP — regras críticas, dataset sintético vira ativo de validação contínua.
+- **Não bloqueia:** se ficar backlog, regras podem ser testadas manualmente com seed fixo (POC de tooling vira nice-to-have).
+
+---
+
 ## Milestones
 
 | Marco | Data | Métrica de sucesso | Kill switch |
@@ -110,4 +137,4 @@
 
 ---
 
-**Última atualização:** 2026-07-05 · Plano Ouro aprovado por Henrique.
+**Última atualização:** 2026-07-06 (V60 + Sprint 34-T backlog tooling adicionado) · Plano Ouro aprovado por Henrique.

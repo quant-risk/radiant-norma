@@ -2,6 +2,58 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.33.7 — 2026-07-06 (Validação 61 — Drift check pós-atualização ROADMAP) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (drift data ROADMAP + adiciona backlog tooling 34-T)
+> **Trigger:** Solicitação Henrique — "validação profunda em tudo que você acabou de fazer"
+> **Validação:** VALIDATION_v3.33.6.md — 3 findings (A-C), **1 fechado (LOW, drift data) + 2 aceitos (INFO, intencional)**, 0 carry-over próprio
+
+### 🐛 Findings fechados (1)
+
+| # | Sev | Finding | Fix |
+|---|---|---|---|
+| F-61-A | LOW | ROADMAP "Última atualização" 2026-07-05 (stale 1 dia após update material — §Backlog Tooling Sprint 34-T) | Data atualizada para 2026-07-06 + nota de contexto "(V60 + Sprint 34-T backlog tooling adicionado)" |
+
+### 📋 Aceitos / não-fix (2)
+
+| # | Tipo | Finding | Justificativa |
+|---|---|---|---|
+| F-61-B | INFO | Sprint 34-T (AuditForge POC) em ROADMAP §Backlog mas NÃO em MASTER_PLAN §1.1 | Intencional — ROADMAP = planejadas + backlog tooling; MASTER_PLAN §1.X = apenas planejadas. Separar evita poluição |
+| F-61-C | INFO | Sufixo `-T` em numeração de sprint backlog (convenção não-documentada) | Aceitável — não conflita com 28-37 sequenciais, torna categoria (tooling vs feature) clara. Documentar se proliferar (3+ sprints backlog) |
+
+### 📊 Métricas v3.33.6 → v3.33.7
+
+| Métrica | v3.33.6 | v3.33.7 |
+|---|---|---|
+| Drift data ROADMAP | YES (`2026-07-05`) | **NO (`2026-07-06` + nota contexto)** |
+| Stress 50 goroutines | 11/15 (73%) histórico | **5/5 PASS (100%)** |
+| Stress 200 goroutines | PASS | **PASS** |
+| Tests PASS -race | 23/23 | **23/23** |
+| vet + gofmt | clean | **clean** |
+| Sprint 34-T (AuditForge POC) em ROADMAP | NO | **YES (backlog tooling)** |
+
+### 🎓 Lições aprendidas (V61)
+
+- **Macro-planejamento precisa de timestamp ativo.** Toda edição em ROADMAP/MASTER_PLAN/ADR deve atualizar linha "Última atualização" no mesmo commit. Drift de 1 dia já é suficiente pra induzir erro de priorização.
+- **Self-verify checklist estendido a docs macro.** V57/V58/V59/V60 aplicaram self-verify a código + CHANGELOG. V61 estende para `Última atualização` em ROADMAP (regra HOT memory cross-project).
+- **Separação ROADMAP/MASTER_PLAN é funcional.** ROADMAP = sprints planejadas + backlog tooling. MASTER_PLAN §1.X = apenas planejadas. Sprint backlog só em ROADMAP é correto.
+- **Sprint backlog tooling não duplica em MASTER_PLAN.** Poluição visual > benefício de completeness.
+
+### 📁 Arquivos tocados
+
+```
+backend/VALIDATION_v3.33.6.md       (NOVO — Validação 61)
+ROADMAP.md                          (F-61-A: data + nota contexto; Sprint 34-T backlog tooling adicionado)
+CHANGELOG.md                         (esta entry)
+```
+
+### ⏭️ Próxima sprint
+
+**Sprint 33 (Audit3050 / TXB_V11)** — Portar 170 regras 3050 conforme catálogo BACEN. XSD já tem. **Fase 1 proposta** (parser XML 3050 + struct `Doc3050` + 14 Agregadas A01-A14 + 14 stubs honestos, alvo 0→28). Quando você quiser que eu siga, me diz.
+
+---
+
 ## v3.33.6 — 2026-07-06 (Validação 60 — Drift cleanup pós-V59) ✅
 
 > **Status:** ✅ Shipped
