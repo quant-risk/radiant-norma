@@ -45,6 +45,9 @@ func main() {
 		os.Exit(1)
 	}
 	defer d.Close()
+	// Validação 56 (v3.33.2) [F-56-C]: limpa driverCache no shutdown
+	// para não deixar entries orfãs (DSN já cached, conn fechada).
+	defer db.ClearDriverCache(d)
 	logger.Info("db connected", "backend", db.Backend(dbPath))
 
 	// Migrations

@@ -60,7 +60,13 @@ func New(db *sql.DB) *Logger {
 // (CURRENT_TIMESTAMP) seria diferente do time.Now() do Go, e o Verify
 // falharia sempre.
 func (l *Logger) Log(ifID, actor, action, target string, payload []byte, metadata any) (*Entry, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// Validação 56 (v3.33.2): 5s → 15s. Em SQLite + alta concorrência
+	// (audit burst: 50-200 goroutines disputando write lock via
+	// _txlock=immediate + busy_timeout=30s em db.go), 5s era marginal
+	// — testes empíricos mostraram context.DeadlineExceeded em cadeia.
+	// Postgres não tem este problema (FOR UPDATE row-level) — usar 15s
+	// só lá é ok; SQLite prefere margem 3× pra evitar log drop em pico.
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	payloadHash := sha256.Sum256(payload)
@@ -86,8 +92,13 @@ func (l *Logger) Log(ifID, actor, action, target string, payload []byte, metadat
 	// 014), sem SET LOCAL o INSERT falha silenciosamente (policy USING
 	// retorna 0 rows visíveis para SET). Em SQLite, helper é no-op.
 	//
-	// BEGIN IMMEDIATE no SQLite via BeginTx continua valendo — driver
-	// SQLite faz lock write no BEGIN (não precisamos de SELECT FOR UPDATE).
+	// Validação 56 (v3.33.2): BEGIN IMMEDIATE em SQLite vem do DSN pragma
+	// `_txlock=immediate` em db.Open → openSQLite (backend/internal/db/db.go:64).
+	// Sem o pragma, modernc.org/sqlite usa BEGIN DEFERRED default — duas
+	// goroutines pegariam o mesmo prev_hash no SELECT antes do INSERT e
+	// gerariam entradas com PrevHash duplicado (chain quebrada). NÃO remover
+	// `_txlock=immediate` do DSN sem revisar F21.5 (regressão validação 21).
+	// Test que valida invariant: TestAuditLog_NoChainBreaks_Concurrent.
 	err := db.WithTenantTx(ctx, l.db, ifID, func(tx *sql.Tx) error {
 		// Pega hash anterior (lock ativo aqui)
 		var queryErr error
@@ -150,6 +161,19 @@ func (l *Logger) Log(ifID, actor, action, target string, payload []byte, metadat
 //
 // Se alguém modificar qualquer campo de uma entry (actor, target, metadata),
 // o entry hash não vai bater — Verify detecta.
+//
+// Validação 56 (v3.33.2): ADMIN ESCAPE — Verify É INTENCIONALMENTE cross-tenant
+// (não usa WithTenantTx). Razão: precisa ver TODAS as entries para validar a
+// chain completa — uma entry com if_id NULL (admin/system, política 012
+// permite) seria invisível para um call com tenant scope.
+// Implicações:
+//   - Em Postgres com FORCE RLS (migration 014), a sessão precisa
+//     fazer SET LOCAL app.if_id com string vazia ANTES do SELECT (ou ter
+//     role de table owner + policy permissiva). Validar wiring em produção:
+//     auditlog.Verify só deve ser invocável por endpoints admin.
+//   - Em SQLite (dev/test), Verify é trivial — sem FORCE RLS.
+//   - Não expor Verify a clientes externos sem audit trail (caller deve
+//     Log uma entry "verify_invoked" antes/depois).
 func (l *Logger) Verify() (bool, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

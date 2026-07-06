@@ -137,3 +137,14 @@ func TestWithTenantTx_ContextCancel(t *testing.T) {
 		t.Error("expected error com ctx cancelado")
 	}
 }
+
+// TestClearDriverCache_NilDB valida que ClearDriverCache(nil) é no-op
+// (não panic). Validação 56 [F-56-C].
+func TestClearDriverCache_NilDB(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("ClearDriverCache(nil) não deve panic, got: %v", r)
+		}
+	}()
+	db.ClearDriverCache(nil)
+}

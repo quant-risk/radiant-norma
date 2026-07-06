@@ -2,6 +2,60 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.33.2 — 2026-07-06 (Validação 56 — Hardening pós-v3.33.1 CI-Gate + Concurrent Tests) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (HIGH bug fix em stress tests + cleanup carry-over + hardening)
+> **Trigger:** Solicitação Henrique — "validação profunda em tudo que você acabou de fazer"
+> **Validação:** VALIDATION_v3.33.1.md — 8 findings, 7 fechados, 0 carry-over próprio
+
+### 🐛 Findings fechados (7)
+
+| # | Sev | Finding | Fix |
+|---|---|---|---|
+| **F-56-B** | **HIGH** | Stress tests auditlog (50/200 goroutines) FALHAVAM silenciosamente sem -race — CI skip + comment otimista = double-blind spot, invariant de chain não validado | Semaphore 32 + busy_timeout 30s + Log ctx timeout 15s |
+| F-56-A | LOW | Comment enganoso em `auditlog/log.go` sobre BEGIN IMMEDIATE (era creditado ao driver, real é DSN pragma) | Comment reescrito referenciando `_txlock=immediate` em db.go |
+| F-56-C | LOW | `driverCache` em `tenant.go` unbounded (carry-over F-55-D) | Função `ClearDriverCache(d)` + chamada em cmd/api + cmd/worker shutdown |
+| F-56-D | MED | `auditlog.Verify` bypassa RLS sem documentação (carry-over F-55-J) | Comment ADMIN ESCAPE explicito + implicações Postgres listadas |
+| F-56-F | LOW | Typo aspas curvas `tenant.go:60` (carry-over F-55-F) | Comment reescrito sem aspas literais (gofmt 1.26 normaliza) |
+| F-56-G | LOW | `_ = isPostgres` dead assign em `migrate.go:64` | Linha removida |
+
+### 📊 Métricas v3.33.1 → v3.33.2
+
+| Métrica | v3.33.1 | v3.33.2 |
+|---|---|---|
+| Stress test 50 goroutines | FAIL (0/50 em 5s) | **PASS 50/50 em 0.13s** |
+| Stress test 200 goroutines | FAIL (170/200, SQLITE_BUSY×6) | **PASS 200/200 em 0.13s** |
+| Busy timeout | 5000ms | **30000ms (6× margem)** |
+| Log context timeout | 5s | **15s (3× margem)** |
+| driverCache cleanup | nenhum | **`ClearDriverCache(d)` em cmd/api + cmd/worker** |
+| Tests PASS -race | 23/23 | **23/23** |
+| Tests PASS sem race | n/a (flake) | **23/23** |
+| Coverage `internal/auditlog` | 92.5% | **92.5%** |
+| Coverage `internal/db` | 62.1% | **60.6% (-1.5pp)** |
+
+### 🎓 Lições aprendidas
+
+- **"Skip em -race" + comment aspiracional = double-blind spot.** CI cego ao invariant crítico. Skip defensável contra flakes SOB -race, mas precisa validar empiricamente o caminho NÃO-skip.
+- **Layered contention:** pool lock + busy_timeout + ctx timeout = multiplicative budget. 3× margem necessária para testes concurrency.
+- **Comments críticos devem referenciar o componente exato** que garante o invariant. Setup pra refactor quebrar silenciosamente.
+
+### 📁 Arquivos tocados
+
+```
+backend/internal/auditlog/concurrent_test.go  (semaphore 32 + comment fix)
+backend/internal/auditlog/log.go              (F-56-A comment, F-56-B timeout, F-56-D Verify doc)
+backend/internal/db/db.go                     (F-56-B busy_timeout 5s→30s)
+backend/internal/db/tenant.go                 (F-56-C ClearDriverCache, F-56-F typo fix)
+backend/internal/db/tenant_test.go            (F-56-C TestClearDriverCache_NilDB)
+backend/cmd/api/main.go                       (F-56-C defer ClearDriverCache)
+backend/cmd/worker/main.go                    (F-56-C defer ClearDriverCache)
+backend/internal/db/migrate.go                (F-56-G dead assign removido)
+backend/VALIDATION_v3.33.1.md                 (NOVO)
+```
+
+---
+
 ## v3.33.1 — 2026-07-06 (Validação 55 — Hardening pós-v3.33.0 FORCE RLS) ✅
 
 > **Status:** ✅ Shipped

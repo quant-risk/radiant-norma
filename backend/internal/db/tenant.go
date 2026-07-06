@@ -49,6 +49,26 @@ func isPostgresCached(d *sql.DB) bool {
 	return isPG
 }
 
+// ClearDriverCache remove uma entrada específica do driverCache. Útil
+// quando o caller sabe que um *sql.DB será fechado definitivamente
+// (shutdown, test cleanup dinâmico). Não afeta entries de outros DBs.
+//
+// Validação 56 (v3.33.2) [F-56-C]: anteriormente driverCache era
+// unbounded — entries de DBs fechados permaneciam para sempre. Em
+// prática, leak é negligenciável (app tem 1 *sql.DB por processo), mas
+// adicionado cleanup explícito para higiene e para suportar testes que
+// criam/fecham múltiplos DBs.
+//
+// Uso recomendado: chamar após `d.Close()` se o caller criar/fechar
+// DBs dinamicamente. Em produção (cmd/api, cmd/worker), chamar no
+// shutdown handler. No-op se *sql.DB nunca foi registrado.
+func ClearDriverCache(d *sql.DB) {
+	if d == nil {
+		return
+	}
+	driverCache.Delete(d)
+}
+
 // WithTenantTx executa fn dentro de uma transação com `SET LOCAL app.if_id`
 // aplicado no início. Garante que toda query a tabela com FORCE RLS veja
 // apenas rows do tenant correto.
@@ -57,8 +77,13 @@ func isPostgresCached(d *sql.DB) bool {
 //   - ctx: contexto (cancelamento propaga para tx).
 //   - d: conexão do pool. Helper pega uma do pool internamente.
 //   - ifID: identificador da Instituição Financeira. Vazio ("") = sem
-//     contexto de tenant. Em Postgres, faz app.if_id = ” — policy falha
-//     porque if_id (string vazia) != if_id da row (valor real).
+//     contexto de tenant. Em Postgres, faz o setting ficar com string
+//     vazia para app.if_id — política audit_log/audit_events (migration
+//     012) usa `if_id IS NULL OR if_id = current_setting('app.if_id', true)`,
+//     então string vazia no setting só vê rows com if_id NULL
+//     (admin/system escape valve).
+//     Validação 55 (v3.33.1) F-55-C: empty string AGORA aceita (era
+//     divergência SQLite vs Postgres pré-fix).
 //   - fn: função callback que recebe *sql.Tx. Erros retornados são
 //     preservados.
 //

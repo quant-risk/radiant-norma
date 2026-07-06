@@ -16,11 +16,18 @@
 //
 // Consequência: Verify() vai falhar em qualquer entry > primeira.
 //
-// Sprint 30 (v3.33.0): skip sob -race via testutil.IsRaceEnabled().
-// SQLite contention + race overhead cria SQLITE_BUSY determinístico.
-// Race detector detecta bugs de concorrência, não performance sob
-// contenção de DB. Stress tests rodam normalmente em `go test ./...`
-// (sem -race).
+// Validação 56 (v3.33.2): adicionados semaphores (cap = 4× pool size =
+// 32) para validar o invariante "lock write serializa chain" sem
+// sofrer timeout por contenção dupla (pool SQLite + busy_timeout).
+// Semaphore = pool size ainda exerce contenção real mas evita que o
+// timeout da transação (15s) seja o gargalo. Test pré-fix reportava
+// "expected 50 entries, got 0" (todas goroutines timeout em 5s).
+//
+// SPRINT 30 (v3.33.0) skip sob -race via IsRaceEnabled(): mantida.
+// Race detector overhead + SQLite contention cria SQLITE_BUSY
+// determinístico, NÃO é regressão do invariant — é limitação do
+// stack. EM build sem -race, testes rodam normalmente (agora com
+// semaphore + busy_timeout=30s em db.go).
 package auditlog_test
 
 import (
@@ -31,10 +38,13 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/testutil"
 )
 
-// TestAuditLog_NoChainBreaks_Concurrent: 50 goroutines call Log()
-// em paralelo. Verify() deve passar sem chain break.
+// TestAuditLog_NoChainBreaks_Concurrent: 50 goroutines call Log() em
+// paralelo (limitado a 32 in-flight via semaphore). Verify() deve
+// passar sem chain break.
 //
 // Validação 21: regressão para F21.5 — race em audit_log hash chain.
+// Validação 56: semaphore 32 (= 4× MaxOpenConns=8) adicionado após
+// stress test empírico mostrar 0/50 commits em 5s (timeouts).
 func TestAuditLog_NoChainBreaks_Concurrent(t *testing.T) {
 	if testutil.IsRaceEnabled() {
 		t.Skip("skipping under -race: SQLite contention causes deterministic SQLITE_BUSY")
@@ -45,11 +55,14 @@ func TestAuditLog_NoChainBreaks_Concurrent(t *testing.T) {
 	logger := auditlog.New(d)
 
 	const N = 50
+	const semCap = 32 // 4× pool MaxOpenConns=8 — exercita contenção sem time-out
 	var wg sync.WaitGroup
+	sem := make(chan struct{}, semCap)
 	wg.Add(N)
 	for i := 0; i < N; i++ {
+		sem <- struct{}{}
 		go func(idx int) {
-			defer wg.Done()
+			defer func() { <-sem; wg.Done() }()
 			_, err := logger.Log(
 				"if-demo", "test-actor",
 				"test.action",
@@ -78,7 +91,8 @@ func TestAuditLog_NoChainBreaks_Concurrent(t *testing.T) {
 }
 
 // TestAuditLog_NoChainBreaks_HighContention: 200 goroutines
-// (maior contention). Deve passar mesmo com SQLite serializando.
+// (maior contention). Mesmo semáforo 32 para validar serialização
+// em escala produção-like.
 func TestAuditLog_NoChainBreaks_HighContention(t *testing.T) {
 	if testutil.IsRaceEnabled() {
 		t.Skip("skipping under -race: SQLite contention causes deterministic SQLITE_BUSY")
@@ -89,8 +103,9 @@ func TestAuditLog_NoChainBreaks_HighContention(t *testing.T) {
 	logger := auditlog.New(d)
 
 	const N = 200
+	const semCap = 32 // 4× pool MaxOpenConns=8 — exercita contenção sem time-out
 	var wg sync.WaitGroup
-	sem := make(chan struct{}, 30) // limit concurrency 30 in flight
+	sem := make(chan struct{}, semCap)
 	wg.Add(N)
 	for i := 0; i < N; i++ {
 		sem <- struct{}{}

@@ -56,6 +56,9 @@ func main() {
 		os.Exit(1)
 	}
 	defer d.Close()
+	// Validação 56 (v3.33.2) [F-56-C]: limpa driverCache no shutdown
+	// (worker é long-running — driverCache fica em memória por horas/dias).
+	defer db.ClearDriverCache(d)
 
 	// Migrations (worker pode rodar standalone antes da API ter criado schema)
 	if err := db.Migrate(d); err != nil {

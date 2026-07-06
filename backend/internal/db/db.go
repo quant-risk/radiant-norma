@@ -61,7 +61,13 @@ func IsPostgresDSN(dsn string) bool {
 //
 // Trade-off: contenção extra em leituras. Em produção, usar Postgres.
 func openSQLite(path string) (*sql.DB, error) {
-	dsn := fmt.Sprintf("file:%s?_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)&_pragma=busy_timeout(5000)&_txlock=immediate", path)
+	// Validação 56 (v3.33.2): busy_timeout 5s → 30s. Stress tests de
+	// auditlog (50-200 goroutines disputando write lock) com 5s sofriam
+	// context deadline exceeded quando o pool (MaxOpenConns=8) serializa.
+	// 30s dá margem 6× para produção (cenários típicos <= 500ms/lock).
+	// _txlock=immediate é OBRIGATÓRIO (F21.5 — ver concurrent_test.go
+	// e auditlog/log.go).
+	dsn := fmt.Sprintf("file:%s?_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)&_pragma=busy_timeout(30000)&_txlock=immediate", path)
 	d, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("sql.Open sqlite: %w", err)
