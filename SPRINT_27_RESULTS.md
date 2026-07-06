@@ -9,7 +9,7 @@
 Sprint 27 fecha o **gap operacional do Sprint 25** — `lint-no-placeholder.sh` rodava manual. Agora roda **automaticamente** antes de cada `git commit` via pre-commit hook.
 
 **Decisão arquitetural:** symlink de `scripts/pre-commit.sh` em `.git/hooks/pre-commit`. Hook roda 3 checks:
-1. `lint-no-placeholder.sh` — detecta `(preencher X)` em SPRINT_*.md
+1. `lint-no-placeholder.sh` — detecta "preencher X" em SPRINT_*.md
 2. `gofmt -l backend/` — detecta drift de formatação Go
 3. `go vet ./...` — detecta constructs suspeitos
 
