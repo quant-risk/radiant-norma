@@ -487,3 +487,128 @@ func TestSenhawsRotate_Rotate_ValidatesAuthHeader(t *testing.T) {
 
 // Garantir que io.Discard é usado em silentLogger (compilação).
 var _ = io.Discard
+
+// =============================================================================
+// Sprint 28 — subcomando apply
+// =============================================================================
+
+// TestSenhawsRotate_Apply_Success — Sprint 28 (v3.23.0) subcomando apply.
+// Verifica que apply:
+//   1. Chama BACEN AlterarSenha
+//   2. Atualiza secret manager (memory backend em test)
+//   3. Exit 0 + stdout contém secret_updated=true
+func TestSenhawsRotate_Apply_Success(t *testing.T) {
+	// Use memory backend (definido em NewManagerFromEnv)
+	t.Setenv("RADIANT_SECRETS_BACKEND", "memory")
+
+	srv := mockSenhawsServer(t,
+		func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		},
+		nil,
+	)
+	cfg := baseCfg(srv.URL)
+
+	stdout := captureStdout(t, func() {
+		code := runApply(context.Background(), cfg, silentLogger())
+		if code != exitOK {
+			t.Errorf("exit code = %d, esperado %d", code, exitOK)
+		}
+	})
+
+	if !strings.Contains(stdout, "senha_alterada=true") {
+		t.Errorf("stdout deveria conter senha_alterada=true, got %q", stdout)
+	}
+	if !strings.Contains(stdout, "secret_updated=true") {
+		t.Errorf("stdout deveria conter secret_updated=true, got %q", stdout)
+	}
+	if !strings.Contains(stdout, "backend=memory") {
+		t.Errorf("stdout deveria conter backend=memory, got %q", stdout)
+	}
+	if !strings.Contains(stdout, `name="bacen/senha/123450001.fulano"`) {
+		t.Errorf("stdout deveria conter name=\"bacen/senha/123450001.fulano\", got %q", stdout)
+	}
+}
+
+// TestSenhawsRotate_Apply_BACENReject — BACEN rejeita antes de tocar manager.
+// Exit 3 esperado. Manager NÃO deve ser consultado.
+func TestSenhawsRotate_Apply_BACENReject(t *testing.T) {
+	t.Setenv("RADIANT_SECRETS_BACKEND", "memory")
+
+	srv := mockSenhawsServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = io.WriteString(w, `<?xml version="1.0"?>
+<Resultado><Erro><Codigo>400</Codigo><Descricao>senha atual invalida</Descricao></Erro></Resultado>`)
+	}, nil)
+	cfg := baseCfg(srv.URL)
+
+	stderr := captureStderr(t, func() {
+		code := runApply(context.Background(), cfg, silentLogger())
+		if code != exitBACENError {
+			t.Errorf("exit code = %d, esperado %d (BACEN error)", code, exitBACENError)
+		}
+	})
+
+	if !strings.Contains(stderr, "erro BACEN senhaws 400") {
+		t.Errorf("stderr deveria conter erro BACEN, got %q", stderr)
+	}
+	if !strings.Contains(stderr, "senha atual invalida") {
+		t.Errorf("stderr deveria conter mensagem BACEN, got %q", stderr)
+	}
+}
+
+// TestSenhawsRotate_Apply_ConfigInvalid — exit 2.
+func TestSenhawsRotate_Apply_ConfigInvalid(t *testing.T) {
+	t.Setenv("RADIANT_SECRETS_BACKEND", "memory")
+
+	tests := []struct {
+		name string
+		cfg  *config
+	}{
+		{"empty baseURL", &config{user: "x", password: "y"}},
+		{"empty user", &config{baseURL: "http://x", password: "y"}},
+		{"empty password", &config{baseURL: "http://x", user: "y"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stderr := captureStderr(t, func() {
+				code := runApply(context.Background(), tt.cfg, silentLogger())
+				if code != exitClientError {
+					t.Errorf("exit code = %d, esperado %d", code, exitClientError)
+				}
+			})
+			if !strings.Contains(stderr, "config invalida") {
+				t.Errorf("stderr deveria conter 'config invalida', got %q", stderr)
+			}
+		})
+	}
+}
+
+// TestSenhawsRotate_Apply_SecretNameFormat — verifica naming convention.
+// User "123450001.fulano" → secret name "bacen/senha/123450001.fulano"
+// (mantém "." para readability; EnvManager normaliza internamente)
+func TestSenhawsRotate_Apply_SecretNameFormat(t *testing.T) {
+	t.Setenv("RADIANT_SECRETS_BACKEND", "memory")
+
+	var capturedURL string
+	srv := mockSenhawsServer(t,
+		func(w http.ResponseWriter, r *http.Request) {
+			capturedURL = r.URL.Path
+			w.WriteHeader(http.StatusNoContent)
+		},
+		nil,
+	)
+	cfg := baseCfg(srv.URL)
+
+	captureStdout(t, func() {
+		code := runApply(context.Background(), cfg, silentLogger())
+		if code != exitOK {
+			t.Errorf("exit code = %d, esperado %d", code, exitOK)
+		}
+	})
+
+	if capturedURL != "/senha" {
+		t.Errorf("BACEN path = %q, esperado /senha", capturedURL)
+	}
+}

@@ -2,6 +2,165 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.23.0 — 2026-07-06 (Sprint 28: VaultIntegration — AWS Secrets Manager para Sisbacen) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** 28 (Plano Ouro §3.2 Épico B — Norma Connect)
+> **Versão:** minor (1 novo pacote + 1 novo binário CLI + integração)
+> **Trigger:** Plano Ouro §3.2 — fecha gap de secret management do Sprint 23-27.
+> **Validação:** VALIDAÇÃO_v3.23.0.md — 23/23 packages PASS, 3 findings LOW fechados, +28 testes, race clean, 9/9 build smoke
+
+### 🎯 Resumo
+
+Antes (Sprint 23-27): senha Sisbacen ficava em env var. Vetores de secret disclosure: ps aux leak, log aggregator leak, rotação manual. **Depois:** interface `secrets.Manager` abstrai 3 backends (AWS Secrets Manager / env / memory), CLI `cmd/secret-migrate` permite migração one-shot com safety prompts, e `cmd/senhaws-rotate apply` faz **rotação atômica-ish** (BACEN + manager) em uma operação.
+
+**Decisão arquitetural:** interface segregation (3 backends via mesma interface). Default prod = AWS via IAM role (zero credenciais hardcoded). Default dev = env (back-compat com Sprint 23-27).
+
+### 🚀 O que entrou
+
+#### Novo pacote `internal/secrets/` (6 arquivos, ~700 LoC)
+
+```
+internal/secrets/
+├── manager.go        interface Manager + factory NewManagerFromEnv
+├── memory.go         MemoryManager — tests + dev local
+├── env.go            EnvManager — fallback dev/test (normaliza nomes)
+├── aws.go            AWSManager — AWS SDK v2 + IAM role auth
+├── errors.go         NotFoundError, AccessDeniedError, ValidationError + Is helpers
+└── manager_test.go   15 testes
+```
+
+**Interface:**
+
+```go
+type Manager interface {
+    Get(ctx context.Context, name string) (*Secret, error)
+    Put(ctx context.Context, name, value string) (*Secret, error)
+    Delete(ctx context.Context, name string) error
+    Backend() string  // "aws" | "env" | "memory"
+}
+```
+
+**3 implementações:**
+
+| Backend | Quando usar | Auth |
+|---|---|---|
+| `aws` | **Default prod** | IAM role (zero creds) |
+| `env` | Dev/test fallback | process env vars |
+| `memory` | Tests + dev local | in-process map |
+
+#### Novo CLI `cmd/secret-migrate` (250 LoC + 9 testes)
+
+3 subcomandos:
+- `migrate --from-env=X --to=Y [--delete-env] [--dry-run]` — migra 1 secret
+- `migrate-batch --file=secrets.json` — migra lista
+- `list --prefix=...` — placeholder (TODO Sprint 29+)
+- `version` — versão
+
+Safety features: `--dry-run`, confirmation prompt `YES` se value parece secret real, exit codes consistentes (0/1/2/3).
+
+#### `cmd/senhaws-rotate` ganha subcomando `apply`
+
+```bash
+# Antes (manual, propenso a erro)
+senhaws-rotate rotate > /tmp/newpass.txt
+aws secretsmanager update-secret --secret-id bacen/senha --secret-string file:///tmp/newpass.txt
+rm /tmp/newpass.txt
+
+# Agora (atômico-ish, zero arquivos temp)
+RADIANT_SECRETS_BACKEND=aws senhaws-rotate apply
+# → senha_alterada=true secret_updated=true backend=aws name="bacen/senha/123450001.fulano" version_id=abc123
+```
+
+Fluxo: BACEN AlterarSenha → Manager.Put → audit emission. Falha em qualquer etapa retorna exit code discriminável.
+
+### 🔧 Como usar
+
+```bash
+# 1. Setup AWS (uma vez)
+export RADIANT_SECRETS_BACKEND=aws
+export AWS_REGION=sa-east-1
+# IAM role configurado em ECS task
+
+# 2. Migrar 1 secret (one-shot)
+secret-migrate migrate \
+    --from-env=SENHAWS_PASSWORD \
+    --to=bacen/senha/123450001.fulano \
+    --delete-env
+
+# 3. Cron de rotação automática
+RADIANT_SECRETS_BACKEND=aws senhaws-rotate apply \
+    --base-url=https://www9.bcb.gov.br/senhaws \
+    --user=123450001.fulano
+```
+
+### 📊 Estatísticas
+
+| Métrica | Valor |
+|---|---|
+| Arquivos novos | 8 (6 internal/secrets + 2 cmd/secret-migrate) |
+| LoC novos | ~1.200 |
+| Arquivos modificados | 2 (senhaws-rotate main + test) |
+| Testes Sprint 28 | **28** (15 secrets + 9 secret-migrate + 4 senhaws-rotate apply) |
+| Total backend tests | **544** (era 516, **+28**) |
+| Packages PASS | **23/23** (era 21, +2) |
+| Build smoke | **9/9 binaries** (era 8, +1 = secret-migrate) |
+| Coverage internal/secrets | **64.5%** (era 0%) |
+| Coverage cmd/secret-migrate | **48.7%** (era 0%) |
+| Coverage cmd/senhaws-rotate | **66.2%** (era 60.7%, **+5.5pp**) |
+| Race detector | clean |
+| gofmt + vet | clean |
+| Findings Validação 49 | 3 LOW fechados, 3 NF com justificativa |
+
+### 🔒 Segurança
+
+- **Zero credenciais em código** — AWS auth via IAM role.
+- **Zero values em logs** — `looksLikeSecret` heuristic, mas NUNCA loga value real.
+- **Naming convention consistente** — `bacen/senha/{user}` com `.` mantido, normalização em envName().
+- **Erros tipados** — `secrets.IsNotFound(err)`, `secrets.IsAccessDenied(err)`, `secrets.IsValidation(err)`.
+- **Confirmation prompts** em migração destrutiva (F-S28-49-C fix).
+
+### 🏗️ Lições aprendidas
+
+1. **Interface + factory pattern** para multi-backend secret managers (replicável).
+2. **EnvManager como fallback oficial**, não substituto.
+3. **AWS error classification via reflection** > type assertion (SDK muda struct).
+4. **Confirmation prompts em ferramentas de migração** (defesa contra mass-migrate).
+5. **Naming convention normalize na função**, não no caller.
+6. **Idempotência via Put** (PutSecretValue cria nova versão).
+
+### 📦 Arquivos tocados
+
+```
+backend/internal/secrets/manager.go            (novo)
+backend/internal/secrets/memory.go            (novo)
+backend/internal/secrets/env.go               (novo)
+backend/internal/secrets/aws.go               (novo)
+backend/internal/secrets/errors.go            (novo)
+backend/internal/secrets/manager_test.go     (novo, 15 testes)
+backend/cmd/secret-migrate/main.go            (novo, 250 LoC)
+backend/cmd/secret-migrate/main_test.go       (novo, 9 testes)
+backend/cmd/senhaws-rotate/main.go            (modificado, +subcomando apply)
+backend/cmd/senhaws-rotate/main_test.go       (modificado, +4 testes)
+backend/go.mod                                (modificado, +AWS SDK v2)
+backend/go.sum                                (modificado)
+backend/SPRINT_28_RESEARCH.md                 (novo)
+backend/SPRINT_28_RESULTS.md                  (novo)
+backend/VALIDATION_v3.23.0.md                 (novo)
+CHANGELOG.md                                   (esta entrada)
+```
+
+### ⚠️ Próximos passos (Sprint 29+)
+
+| Sprint | Escopo | Justificativa |
+|---|---|---|
+| **29** | BacenHomologSmoke | Smoke real contra sta-h.bcb.gov.br/staws |
+| **30** | PostgresRLS | Ativar migration 014_rls_enforce.sql |
+| **35** | VaultIntegration (HashiCorp) | Se multi-cloud virar requisito |
+| **Sprint 50+** | secret-migrate List | Listar secrets AWS via ListSecrets API |
+
+---
+
 ## v3.22.0 — 2026-07-05 (Plano Ouro aprovado — 12 meses · 39 sprints · 8 épicos) ✅
 
 > **Status:** ✅ Aprovado por Henrique · 2026-07-05
