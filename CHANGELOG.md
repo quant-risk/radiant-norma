@@ -2,6 +2,77 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.28.0 — 2026-07-06 (Validação 52 — Deep audit pós-v3.26.0 + v3.27.0) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (S20 fix + drift docs)
+> **Trigger:** Solicitação Henrique — "validação profunda em tudo que você acabou de fazer"
+> **Validação:** VALIDAÇÃO_v3.28.0.md — 4 findings, 1 fechado, 3 aceitos
+
+### 🎯 Resumo
+
+Auditoria profunda de v3.26.0 (hardening) + v3.27.0 (Sprint 32 Fase 2) encontrou **4 findings**. 1 fechado, 3 aceitos (YAGNI/cosmético):
+
+- **MEDIUM** (F-S32-52-A): S20 (Vencimentos HH) era **no-op silencioso** — `Severity() = "A"` declarado mas `Apply()` sempre retornava nil. Admin não recebia warning. Fix: heurística agora emite erro A (vai para `resp.Warnings` no audit/service.go).
+- **LOW** (F-S32-52-C/D): Drift entre MASTER_PLAN §A.4/§A.5 e realidade — acceptance criteria diziam "80+ regras / 88.6%" mas Fase 1+2 entregaram 19 / 21.9%. Fix: planos atualizados com faseamento real.
+- **LOW** (F-S32-52-B/E): Aceitos YAGNI (test sem checagem de sufixo + helper duplicado em test code).
+
+### 🔧 Fix principal (MEDIUM)
+
+**F-S32-52-A — S20 no-op silencioso**
+
+```diff
+ func (S20VencimentosHH) Apply(_ context.Context, doc *Doc3040) error {
+     for i, a := range doc.Agregados {
+         if a.NatuOp == "34" {
+             continue
+         }
+         maior := maxVencimento(a)
+         if maior > 200 && a.ClassOp != "HH" && a.ClassOp != "H" {
+-            // Heurística warning — não bloqueia
+-            _ = i
++            return fmt.Errorf("agregado %d (NatuOp=%s, ClassOp=%s): vencimento %.0f dias > 200 sugere ClassOp=HH (warning heurístico)",
++                i, a.NatuOp, a.ClassOp, maior)
+         }
+     }
+     return nil
+ }
+```
+
+Pattern: **severity declarada + Apply sempre nil = theater**. Universal: toda Rule deve ter pelo menos 1 caminho de erro.
+
+### 📚 Drift docs (LOW)
+
+MASTER_PLAN §A.4/§A.5 atualizados pra refletir:
+- Sprint 32 dividido em 4 fases incrementais
+- Fases 1+2 entregues (79 regras, 21.9%)
+- Carry-over Fase 3: 45 regras (C11-C30 + S11/S13/S14/S16/S18 + I01-I15 + H01-H09)
+
+### 📊 Métricas
+
+| Métrica | Pré v3.28.0 | Pós v3.28.0 |
+|---|---|---|
+| Regras no-op silenciosas | 1 (S20) | **0** |
+| Drift docs Sprint 32 | 2 | **0** |
+| Packages PASS | 23/23 | **23/23** |
+| Coverage audit/rules | 68.1% | **68.1%** (sem mudança) |
+| Race detector | clean | clean |
+
+### 📁 Arquivos tocados
+
+```
+backend/internal/audit/rules/3040_sistematicas.go         (F-S32-52-A: S20 emite warning)
+backend/internal/audit/rules/3040_sistematicas_test.go  (F-S32-52-A: 8 cases com boundary)
+MASTER_PLAN.md                                          (F-S32-52-C/D: §A.4 + §A.5)
+backend/VALIDATION_v3.28.0.md                           (audit completo)
+```
+
+### ⏭️ Próxima sprint
+
+**Sprint 32 Fase 3** — expandir `Doc3040` com `[]Operacao` struct + portar 45 regras → 124 (34.4%).
+
+---
+
 ## v3.27.0 — 2026-07-06 (Sprint 32 Fase 2 — Audit3040_v2: 5 regras Sistemáticas S12-S20) ✅
 
 > **Status:** ✅ Shipped (Fase 2 de 4)

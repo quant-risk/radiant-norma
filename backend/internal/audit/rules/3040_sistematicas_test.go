@@ -149,12 +149,16 @@ func TestS20_VencimentosHH(t *testing.T) {
 		natuOp   string
 		classOp  string
 		venc     string
-		querErro bool // S20 é warning (severity A), não bloqueia → nunca retorna erro
+		querErro bool // S20 emite warning (severity A) quando heurística bate
 	}{
-		{"NatuOp=01 ClassOp=AA venc=100 OK", "01", "AA", "100", false},
-		{"NatuOp=01 ClassOp=HH venc=400 OK (warning, mas passa)", "01", "HH", "400", false},
-		{"NatuOp=34 ClassOp=AA venc=400 OK (exceção)", "34", "AA", "400", false},
-		{"NatuOp=01 ClassOp=A venc=400 OK (warning não bloqueia)", "01", "A", "400", false},
+		{"NatuOp=01 ClassOp=AA venc=100 OK (heurística não bate)", "01", "AA", "100", false},
+		{"NatuOp=01 ClassOp=HH venc=400 OK (ClassOp já é HH)", "01", "HH", "400", false},
+		{"NatuOp=34 ClassOp=AA venc=400 OK (exceção NatuOp=34)", "34", "AA", "400", false},
+		{"NatuOp=01 ClassOp=A venc=400 warning heurístico", "01", "A", "400", true},
+		{"NatuOp=01 ClassOp=B venc=300 warning heurístico", "01", "B", "300", true},
+		{"NatuOp=01 ClassOp=G venc=201 warning (boundary >200)", "01", "G", "201", true},
+		{"NatuOp=01 ClassOp=A venc=200 OK (boundary não bate)", "01", "A", "200", false},
+		{"NatuOp=01 ClassOp=H venc=400 OK (H é irrecuperável, não HH)", "01", "H", "400", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.nome, func(t *testing.T) {
@@ -164,10 +168,14 @@ func TestS20_VencimentosHH(t *testing.T) {
 			doc.Agregados[0].Vencimentos.V110 = tt.venc
 			err := S20VencimentosHH{}.Apply(context.Background(), doc)
 			if tt.querErro && err == nil {
-				t.Errorf("esperava erro, получил nil")
+				t.Errorf("esperava warning, получил nil")
 			}
 			if !tt.querErro && err != nil {
-				t.Errorf("S20 não deveria bloquear (severity A): %v", err)
+				t.Errorf("não esperava warning: %v", err)
+			}
+			// Sanity: se há erro, mensagem deve mencionar HH (admin precisa saber)
+			if err != nil && !strings.Contains(err.Error(), "HH") {
+				t.Errorf("warning deveria mencionar HH: %v", err)
 			}
 		})
 	}

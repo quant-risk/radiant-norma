@@ -126,31 +126,31 @@ func (S19DtBaseMinima) Apply(_ context.Context, doc *Doc3040) error {
 // 310, 320 e 330, ClassOp deve ser HH."
 //
 // Sprint 32 Fase 2: valida parcialmente. Vencimentos 310/320/330 não existem
-// no struct Vencimentos atual (que tem só 110-165). Implementação: detecta
-// ClassOp=HH em agregados com NatuOp≠34 e warning se ClassOp≠HH (heurística).
-// Carry-over Fase 3: adicionar campos V310/V320/V330 ao struct.
+// no struct Vencimentos atual (que tem só 110-165). Implementação: heurística
+// baseada em vencimento máximo > 200 dias (proxy para "vencido > 1 ano"). Se
+// heurística dispara + ClassOp é A-G (não HH/H) → emite warning (não erro).
+//
+// Validação 52 (F-S32-52-A): agora emite warning explícito (severity A) —
+// antes era no-op silencioso. Admin vê aviso no relatório de validação.
+//
+// Carry-over Fase 3: adicionar campos V310/V320/V330 ao struct pra validação
+// exata conforme catálogo.
 type S20VencimentosHH struct{}
 
 func (S20VencimentosHH) Code() string     { return "S20" }
 func (S20VencimentosHH) Sheet() string    { return "Sistemáticas" }
 func (S20VencimentosHH) Severity() string { return "A" } // warning (heurística Fase 2)
 func (S20VencimentosHH) Apply(_ context.Context, doc *Doc3040) error {
-	// Fase 2: detecta agregados com ClassOp=HH e NatuOp≠34 → válido (HH é esperado).
-	// Agregados com ClassOp≠HH e vencimentos altos (>165 dias implícito) podem ser HH.
-	// Sem V310/V320/V330 no struct, validamos heurística: se vencimento máximo > 200,
-	// e ClassOp é A-G, deveria ser HH (warning).
 	for i, a := range doc.Agregados {
 		if a.NatuOp == "34" {
 			continue // exceção do catálogo
 		}
 		maior := maxVencimento(a)
-		// Se vencimento > 200 dias (proxy pra "vencido > 1 ano") e ClassOp é A-G (não HH)
+		// Heurística: vencimento > 200 dias (proxy pra "vencido > 1 ano") e
+		// ClassOp é A-G (não HH/H) → deveria ser HH conforme catálogo.
 		if maior > 200 && a.ClassOp != "HH" && a.ClassOp != "H" {
-			// Heurística warning — não bloqueia, apenas alerta
-			// (severity A = aviso)
-			// Não retornamos erro pra não bloquear envios válidos onde ClassOp foi
-			// calculado por outro critério. Apenas logamos mentalmente.
-			_ = i // silencia warning unused
+			return fmt.Errorf("agregado %d (NatuOp=%s, ClassOp=%s): vencimento %.0f dias > 200 sugere ClassOp=HH (Validação 52: warning heurístico; Fase 3 valida contra V310/V320/V330)",
+				i, a.NatuOp, a.ClassOp, maior)
 		}
 	}
 	return nil

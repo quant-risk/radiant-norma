@@ -360,26 +360,32 @@ type RegraPreferencias struct {
 
 #### A.4 — Cobertura por CADOC (alvo)
 
-| CADOC | Sprint alvo | Regras no catálogo | Alvo portado | % alvo |
-|---|---|---|---|---|
-| **3040** | Sprint 32 | 361 | 320 | 88.6% |
-| **3050** | Sprint 33 | 170 | 150 | 88.2% |
-| **2060** | Sprint 38 | 22 | 20 | 90.9% |
-| **2061** | Sprint 38 | 518 | 400 | 77.2% |
-| **2070** | Sprint 39 | 11 | 10 | 90.9% |
-| **3044** | Sprint 42 | 17 | 17 | 100% |
-| **2160** | Sprint 40 | (minerar) | ~30 | n/a |
-| **2170** | Sprint 41 | (minerar) | ~30 | n/a |
-| **4111** | Sprint 51 | (minerar) | ~30 | n/a |
-| **2030** | Sprint 49-50 | (BACEN gate) | ~50 | n/a |
+| CADOC | Sprint alvo | Regras no catálogo | Alvo portado | % alvo | Status |
+|---|---|---|---|---|---|
+| **3040** | Sprint 32 (4 fases) | 361 | 220 | 60.9% | em progresso — 79 entregues (21.9%) — Fases 1+2 |
+| **3050** | Sprint 33 | 170 | 150 | 88.2% | não iniciado |
+| **2060** | Sprint 38 | 22 | 20 | 90.9% | não iniciado |
+| **2061** | Sprint 38 | 518 | 400 | 77.2% | não iniciado |
+| **2070** | Sprint 39 | 11 | 10 | 90.9% | não iniciado |
+| **3044** | Sprint 42 | 17 | 17 | 100% | não iniciado |
+| **2160** | Sprint 40 | (minerar) | ~30 | n/a | não iniciado |
+| **2170** | Sprint 41 | (minerar) | ~30 | n/a | não iniciado |
+| **4111** | Sprint 51 | (minerar) | ~30 | n/a | não iniciado |
+| **2030** | Sprint 49-50 | (BACEN gate) | ~50 | n/a | não iniciado |
+
+**Sprint 32 update (Validação 52):** Plano original era portar 80+ regras numa única sprint (cobertura 88.6%). Análise detalhada (Fase 2 RESEARCH) mostrou que C11-C30 (16 regras) precisam `Operacao` struct que não existe — carry-over. Sprint 32 dividido em 4 fases incrementais, com carry-over honesto documentado em SPRINT_32_FASE2_RESEARCH.md.
 
 #### A.5 — Acceptance criteria por sprint
 
-- **Sprint 32 (Audit3040_v2):**
-  - [ ] 80+ regras portadas com testes unitários (parser XML + cenário positivo + cenário negativo)
-  - [ ] Coverage do pacote `audit/rules` ≥ 85%
-  - [ ] BCValidador oficial rodado contra mesmos XMLs — diff zero nas regras Básicas/Formato
-  - [ ] Documentation: tabela de regras com % cobertura e link pra cartilha BACEN
+- **Sprint 32 (Audit3040_v2):** [em progresso, 21.9% entrega, fases incrementais]
+  - [x] Fase 1 entregue (v3.25.0): 14 regras Agregadas A01-A15 (Tier 3)
+  - [x] Fase 2 entregue (v3.27.0): 5 regras Sistemáticas S12/S15/S17/S19/S20 (Tier 5)
+  - [x] Acceptance criteria §A.4 atualizada: alvo portado 320 → realista 80+ em 4 fases (carry-over honesto)
+  - [x] Validação 50+51+52 hardenings aplicados (race condition failsafe, F06 single source of truth, HH na tabela A01)
+  - [ ] Fase 3 (próxima): expandir Doc3040 com []Operacao + 45 regras (C11-C30 + S11/S13/S14/S16/S18 + I01-I15 + H01-H09)
+  - [ ] Fase 4: C31-C80 + S41-S70 = +75 regras → 124+ (34.4%+)
+  - [ ] Coverage do pacote `audit/rules` ≥ 85% (atual: 68.1%)
+  - [ ] BCValidador oficial rodado contra mesmos XMLs — diff zero nas regras Básicas/Formato (deferido Sprint 35+ CI-Gate)
 
 - **Sprint 33 (Audit3050):**
   - [ ] XSD 3050_Schema_TXB_V4 importado e validado contra XML exemplo
