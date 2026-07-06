@@ -61,7 +61,11 @@ func slogDefault() *slog.Logger {
 // contra execução concorrente (BEGIN IMMEDIATE).
 func Migrate(d *sql.DB) error {
 	isPostgres := isPostgresDB(d)
-	_ = isPostgres // usado dentro do loop via closure abaixo
+	// Validação 57 (v3.33.3) [F-57-C]: re-aplicado fix F-56-G. Linha
+	// `_ = isPostgres` documentada como removida na v3.33.2 mas não
+	// foi aplicada no commit bafe5b4 — drift entre doc e código.
+	// A variável é usada na linha 135 (loop), então não precisa do
+	// dummy assign. Validação 57 fechou o drift.
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 

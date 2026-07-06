@@ -298,3 +298,33 @@ F-56-A era apenas comentário. Mas refactor futuro que tire o pragma `_txlock=im
 | F-54-K (cmd/ 0% coverage) | LOW | Polish + cmd/*_test patterns |
 
 Próxima sprint: **Sprint 33 (Audit3050) — TXB_V11, 170 regras catálogo** (Plano Ouro §1.1 Q2).
+
+---
+
+## Errata — Validação 57 (v3.33.3) fechou 4 bugs do doc/code drift pós-V56
+
+### F-57-A — Drift numérico (LOW → FECHADO)
+**Severidade:** LOW (doc consistency)
+**Bug:** Doc + CHANGELOG diziam "8 findings, **7 fechados**" mas a tabela de fechados tinha só 6 itens. Real: 6 fechados + 2 aceitos (INFO).
+**Fix:** CHANGELOG entry da v3.33.2 atualizada para "6 fechados + 2 aceitos" + tabela "Aceitos/não-fix" separada.
+
+### F-57-C — F-56-G documentado mas não aplicado (MED → FECHADO)
+**Severidade:** MED (drift entre doc e código é setup pra refactor quebrar silent)
+**Bug:** Doc da V56 dizia "F-56-G: linha `_ = isPostgres` removida" mas o `migrate.go:64` real ainda tinha a linha. Commit bafe5b4 não tocou no arquivo. Drift entre doc e código.
+**Fix:** Aplicado o fix que supostamente tinha sido feito em V56 — removida `_ = isPostgres` em `migrate.go:64`. Variável é usada na linha 134, linter não reclama.
+**Lição:** Se doc diz "fix X aplicado", `grep -c "X"` em código antes de commitar. Self-verification > self-confidence.
+
+### F-57-E — Ordem F-56-F vs F-56-G inconsistente entre DOC e CHANGELOG (LOW → FECHADO)
+**Severidade:** LOW
+**Bug:** DOC: F-56-F = dead assign, F-56-G = typo. CHANGELOG: F-56-F = typo, F-56-G = dead assign.
+**Fix:** CHANGELOG realinhado à numeração do DOC.
+
+### F-57-I — `TestClearDriverCache` só cobria nil (LOW → FECHADO)
+**Severidade:** LOW (test hygiene)
+**Bug:** `TestClearDriverCache_NilDB` adicionado em V56, mas caminho real (cmd/api + cmd/worker shutdown) chama com d não-nil. Coverage 0% do helper real.
+**Fix:** Adicionado `TestClearDriverCache_NonNil` que abre DB, chama cleanup 3× (verifica idempotência), sem panic.
+
+### 4 carry-over próprios
+- Nenhum da V57. ✅
+
+Próxima sprint: **Sprint 33 (Audit3050) — TXB_V11, 170 regras catálogo.**

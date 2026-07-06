@@ -148,3 +148,26 @@ func TestClearDriverCache_NilDB(t *testing.T) {
 	}()
 	db.ClearDriverCache(nil)
 }
+
+// TestClearDriverCache_NonNil valida que ClearDriverCache(d) executa
+// sem panic quando recebe *sql.DB válido (não-registrado na cache).
+// Validação 57 [F-57-I]: cobre caminho real do helper (cmd/api + cmd/worker
+// shutdown) onde d é não-nil. Cobre o caminho happy-path que TestClearDriverCache_NilDB
+// deixava orfan.
+func TestClearDriverCache_NonNil(t *testing.T) {
+	d := testutil.NewTestDB(t)
+	defer func() { _ = d.Close() }()
+
+	// d pode ou não estar em driverCache. ClearDriverCache deve ser
+	// no-op nos dois casos (registrado ou não-registrado).
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("ClearDriverCache(d) não deve panic, got: %v", r)
+		}
+	}()
+	db.ClearDriverCache(d)
+
+	// Idempotente: chamar 2× deve ser OK.
+	db.ClearDriverCache(d)
+	db.ClearDriverCache(d)
+}

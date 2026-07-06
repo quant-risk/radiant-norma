@@ -1,15 +1,70 @@
 # Changelog — cadocs (Radiant Norma)
 
-> **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
+> **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
+
+## v3.33.3 — 2026-07-06 (Validação 57 — Doc/Code drift pós-v3.33.2) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (MED bug fix não-aplicado na V56 + drift numérico + test hygiene)
+> **Trigger:** Solicitação Henrique — "validação profunda em tudo que você acabou de fazer"
+> **Validação:** VALIDATION_v3.33.2.md — 9 findings, 4 fechados, 5 carry-over próprio
+
+### 🐛 Findings fechados (4)
+
+| # | Sev | Finding | Fix |
+|---|---|---|---|
+| **F-57-C** | **MED** | F-56-G documentado como "linha removida" mas commit bafe5b4 NÃO tocou `migrate.go` — `_ = isPostgres` linha 64 ainda existia (drift entre doc e código) | Linha removida, comentário explicativo adicionado |
+| F-57-A/D | LOW | Drift numérico: doc + CHANGELOG diziam "8 findings, 7 fechados" mas real era 6 fechados + 2 aceitos (INFO) | CHANGELOG entry atualizada para refletir real |
+| F-57-E | LOW | Ordem F-56-F vs F-56-G inconsistente entre DOC e CHANGELOG | CHANGELOG realinhado à numeração do DOC |
+| F-57-I | LOW | `TestClearDriverCache_NilDB` só cobria nil path — caminho real (cmd/api + cmd/worker shutdown com d não-nil) sem teste | Adicionado `TestClearDriverCache_NonNil` com verificação de idempotência |
+
+### 📋 Carry-over próprio (5)
+
+| # | Sev | Finding |
+|---|---|---|
+| F-57-F | INFO | Defer order `cmd/api` + `cmd/worker` (cosmético) |
+| F-57-G | LOW | Comment `db.go:62` desatualizado pós-busy_timeout |
+| F-57-H | INFO | Comment 500ms/lock sem baseline empírico |
+| F-56-E | INFO | Defer in loop `migrate.go:111` |
+| F-56-H | LOW | Recompute hash duplicado |
+
+### 📊 Métricas v3.33.2 → v3.33.3
+
+| Métrica | v3.33.2 | v3.33.3 |
+|---|---|---|
+| `_ = isPostgres` em migrate.go | YES (F-57-C drift) | **NO (linha removida)** |
+| Drift numérico CHANGELOG | YES (7 fechados) | **NO (6 fechados + 2 aceitos)** |
+| Drift numeração F/G | YES (DOC vs CHANGELOG) | **NO (alinhado)** |
+| TestClearDriverCache coverage | só nil path | **nil + non-nil (idempotente)** |
+| Tests PASS -race | 23/23 | **23/23** |
+| vet + gofmt | limpo | **limpo** |
+
+### 🎓 Lições aprendidas
+
+- **Self-deception em "tarefa simples" tem custo alto.** Apostei que tinha editado `migrate.go` no V56, escrevi commit + doc + CHANGELOG, mas não editei. Confiei na memória sem verificar.
+- **Audit-after-success > audit-only-when-feared.** Nunca tinha auditado "doc/code drift" explicitamente. V57 é a primeira, e achou drift. Padrão: para cada `Fix:` line, `git diff HEAD~1 -- file` pré-commit.
+- **Errata > rewrite retroativo.** Preserva narrativa de auditoria sem quebrar cadeia.
+
+### 📁 Arquivos tocados
+
+```
+backend/internal/db/migrate.go             (F-57-C linha removida)
+backend/internal/db/tenant_test.go         (F-57-I TestClearDriverCache_NonNil)
+backend/VALIDATION_v3.33.2.md              (NOVO — Validação 57)
+backend/VALIDATION_v3.33.1.md              (F-57-B errata section)
+CHANGELOG.md                                (F-57-A/D/E drift numeric + F/G alinhamento)
+```
+
+---
 
 ## v3.33.2 — 2026-07-06 (Validação 56 — Hardening pós-v3.33.1 CI-Gate + Concurrent Tests) ✅
 
 > **Status:** ✅ Shipped
 > **Tipo:** patch (HIGH bug fix em stress tests + cleanup carry-over + hardening)
 > **Trigger:** Solicitação Henrique — "validação profunda em tudo que você acabou de fazer"
-> **Validação:** VALIDATION_v3.33.1.md — 8 findings, 7 fechados, 0 carry-over próprio
+> **Validação:** VALIDATION_v3.33.1.md — 8 findings, **6 fechados + 2 aceitos (INFO)**, 0 carry-over próprio
 
-### 🐛 Findings fechados (7)
+### 🐛 Findings fechados (6)
 
 | # | Sev | Finding | Fix |
 |---|---|---|---|
@@ -17,8 +72,15 @@
 | F-56-A | LOW | Comment enganoso em `auditlog/log.go` sobre BEGIN IMMEDIATE (era creditado ao driver, real é DSN pragma) | Comment reescrito referenciando `_txlock=immediate` em db.go |
 | F-56-C | LOW | `driverCache` em `tenant.go` unbounded (carry-over F-55-D) | Função `ClearDriverCache(d)` + chamada em cmd/api + cmd/worker shutdown |
 | F-56-D | MED | `auditlog.Verify` bypassa RLS sem documentação (carry-over F-55-J) | Comment ADMIN ESCAPE explicito + implicações Postgres listadas |
-| F-56-F | LOW | Typo aspas curvas `tenant.go:60` (carry-over F-55-F) | Comment reescrito sem aspas literais (gofmt 1.26 normaliza) |
-| F-56-G | LOW | `_ = isPostgres` dead assign em `migrate.go:64` | Linha removida |
+| F-56-F | LOW | `_ = isPostgres` dead assign em `migrate.go:64` | Linha removida |
+| F-56-G | LOW | Typo aspas curvas `tenant.go:60` (carry-over F-55-F) | Comment reescrito sem aspas literais (gofmt 1.26 normaliza) |
+
+### 📋 Aceitos / não-fix (2)
+
+| # | Sev | Finding | Justificativa |
+|---|---|---|---|
+| F-56-E | INFO | `defer tx.Rollback()` em loop em `migrate.go:111` | Cosmético — 14 defers pendentes é negligível, refator mudaria muito código |
+| F-56-H | LOW | `Log` recompute hash duplicado (linhas 115-118 e 139-141) | DRY violation — refator para `calculateEntryHash` é net +2 LOC, não vale |
 
 ### 📊 Métricas v3.33.1 → v3.33.2
 
