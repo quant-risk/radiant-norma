@@ -2,6 +2,65 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.29.0 — 2026-07-06 (Sprint 32 Fase 3 — Audit3040_v2: 19 regras Individuais/Campos/Header + Doc3040 expandido) ✅
+
+> **Status:** ✅ Shipped (Fase 3 de 4)
+> **Sprint:** 32 (Plano Ouro §3.4 Épico D — Norma Engine)
+> **Versão:** minor (+19 regras, +3 structs, +1 arquivo de regras)
+> **Trigger:** Carry-over Fase 2 — destrava 23 regras com expansão de Doc3040
+> **Escopo honesto:** Catálogo tinha 42 candidatas (16 C + 5 S + 15 I + 9 H — 3 gaps). 19 implementáveis nesta sprint, 23 carry-over Fase 4.
+
+### 🎯 Resumo
+
+Port de **19 regras Individuais/Campos Op/Header** + expansão do struct `Doc3040` com `Operacao`, `Cli`, `Parcela`. Total 3040: **79 → 98** (21.9% → **27.1%**).
+
+**Decisões arquiteturais:**
+- **D-10:** `Doc3040` ganha `Operacoes []Operacao` + `Operacao.Cli *Cli` + `Operacao.Parcelas []Parcela`. Zero regressão (nil-safe range).
+- **D-11:** Parser XML não popula Operacoes ainda — backward compat mantida. Sprint 33+ atualiza.
+- **D-12:** Carry-over 23 regras (C21/C23-C29 + I06-I10/I12-I15 + H04-H09) → Fase 4.
+
+**Regras implementadas:**
+
+| Categoria | Códigos |
+|---|---|
+| C11-C20 (Campos Op) | C11, C13, C14, C16, C17, C18, C19, C20 |
+| S13/S14 (Sistemáticas) | S13, S14 |
+| I01-I05/I11 (Individualizadas) | I01, I02, I03, I04, I05, I11 (stub) |
+| H01-H03 (Header) | H01, H02, H03 |
+
+### 📊 Métricas
+
+| Métrica | Pré v3.29.0 | Pós v3.29.0 |
+|---|---|---|
+| Regras 3040 | 79 | **98** (+19) |
+| Cobertura catálogo | 21.9% | **27.1%** |
+| Coverage internal/audit/rules | 68.1% | **70.1%** (+2.0pp — target atingido) |
+| Struct fields novos | 0 | **3** (Operacao, Cli, Parcela) |
+| Test functions | ~830 | **~870** (+40) |
+| Packages PASS | 23/23 | **23/23** |
+| Race detector | clean | clean |
+
+### 🔧 Compatibilidade
+
+- **Struct expansion:** `Doc3040` ganhou `Operacoes []Operacao`. Parser XML não popula hoje → regras individuais não rodam (nil slice = 0 iterations). Zero regressão.
+- **Carry-over Fase 4:** 23 regras documentadas em SPRINT_32_FASE3_RESEARCH.md. Razões: Garantidores/Parcelas completos, histórico envios, somatórios complexos.
+
+### 📁 Arquivos
+
+```
+backend/internal/audit/rules/3040_individuais.go         (NOVO — 470 LoC, 19 regras)
+backend/internal/audit/rules/3040_individuais_test.go   (NOVO — 463 LoC, 12 testes)
+backend/internal/audit/rules/registry.go                 (Doc3040 + Operacao/Cli/Parcela structs + +19 Register)
+backend/SPRINT_32_FASE3_RESEARCH.md                      (NOVO)
+backend/SPRINT_32_FASE3_RESULTS.md                       (NOVO)
+```
+
+### ⏭️ Próxima sprint
+
+**Fase 4 (última Sprint 32)** — C31-C80 + S21-S70 = +75 regras → 173 (47.9%). Carry-over: 23 das 42 candidatas originais.
+
+---
+
 ## v3.28.0 — 2026-07-06 (Validação 52 — Deep audit pós-v3.26.0 + v3.27.0) ✅
 
 > **Status:** ✅ Shipped

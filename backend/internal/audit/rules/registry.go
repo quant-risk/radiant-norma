@@ -26,6 +26,7 @@ import (
 type Doc3040 struct {
 	Root      Doc3040Root
 	Agregados []Agregado
+	Operacoes []Operacao // Sprint 32 Fase 3 — operações individuais
 }
 
 // Doc3040Root é a tag <Doc3040>.
@@ -67,6 +68,51 @@ type Vencimentos struct {
 	V150 string // 31-60
 	V160 string // 61-90
 	V165 string // > 90
+}
+
+// Operacao representa uma operação individual dentro do documento 3040.
+// Sprint 32 Fase 3 — adicionado para suportar C11-C30, S13/S14, I01-I15.
+//
+// Nem todas as regras operam em Operacao. Regras de Agregado continuam
+// usando Agregado. Regras individuais (I-*) usam Operacao + Cli.
+type Operacao struct {
+	Inf         string // código da informação adicional (0303, 0304, 0701, etc)
+	Contrt      string // código do contrato
+	IPOC        string // código IPOC (I14 — unicidade na remessa)
+	Valor       string // valor contratado/negociado/recomprado
+	Perc        string // percentual de coobrigação
+	DtContr     string // data contratação (YYYY-MM-DD)
+	DtVencOp    string // data vencimento operação
+	ClassOp     string // classificação individual
+	ProvConsttd string // provisão individual
+
+	Vencimentos Vencimentos // V110-V165 individuais
+
+	// Lista de identificadores de garantidores fidejussórios
+	// (S13 — "garantidor fidejussório ≠ próprio cliente")
+	Garantidores []string
+
+	// Lista de parcelas (S12 — DtVencOp compatível com fluxo de parcelas)
+	Parcelas []Parcela
+
+	// Cliente individual (I-rules). Nil se operação sem cliente explícito.
+	Cli *Cli
+}
+
+// Cli representa cliente individual em uma operação.
+// Sprint 32 Fase 3 — I-rules precisam Cd (CPF/CNPJ) + TpCli + IPOC.
+type Cli struct {
+	Cd    string // 11 dígitos PF / 8 dígitos PJ
+	TpCli string // 1=PF, 2=PJ
+	IPOC  string // código IPOC
+}
+
+// Parcela representa uma parcela individual de uma operação.
+// Sprint 32 Fase 3 — S12 valida DtVencOp >= max(DtVenc das parcelas).
+type Parcela struct {
+	Num    int
+	DtVenc string
+	Valor  string
 }
 
 // Rule é a interface de uma regra de validação.
@@ -175,8 +221,9 @@ func (r *Registry) All() []Rule {
 // Total pré-Sprint 32: 60 regras (Sprint 7b v1.7.0).
 // Sprint 32 Fase 1: +14 regras Agregadas (A01-A07, A09-A15) → 74 regras.
 // Sprint 32 Fase 2: +5 regras Sistemáticas (S12 stub, S15, S17, S19, S20) → 79 regras.
+// Sprint 32 Fase 3: +19 regras Individuais/Campos Op/Header (C11-C20, S13, S14, I01-I05, I11, H01-H03) → 98 regras.
 //
-// Cobertura catálogo: 79/361 = 21.9%.
+// Cobertura catálogo: 98/361 = 27.1%.
 func Builtin3040() *Registry {
 	r := NewRegistry()
 
@@ -283,6 +330,32 @@ func Builtin3040() *Registry {
 	r.Register(S17CdTamanhoPorTpCli{})
 	r.Register(S19DtBaseMinima{})
 	r.Register(S20VencimentosHH{})
+
+	// Sprint 32 / v3.29.0 Fase 3 — Individuais + Campos Op + Header (19 regras)
+	// Adicionou Doc3040.Operacoes []Operacao + Operacao.Cli *Cli + Operacao.Parcelas []Parcela
+	// C11-C20 (8 regras subset — carry-over C21/C23-C29)
+	r.Register(C11DtVencObrigatoria{})
+	r.Register(C13Inf0303Cessao{})
+	r.Register(C14Inf0305Renegociacao{})
+	r.Register(C16Inf0307{})
+	r.Register(C17Inf04XX{})
+	r.Register(C18Inf05XX{})
+	r.Register(C19Inf0701{})
+	r.Register(C20Inf0702{})
+	// S13, S14 (Sistemáticas individuais)
+	r.Register(S13GarantidorNaoCliente{})
+	r.Register(S14DtVencMaiorDtContr{})
+	// I01, I02, I03, I04, I05, I11 (Individualizadas subset)
+	r.Register(I01ClassOpProvisaoIndividual{})
+	r.Register(I02ClassOpVencIndividual{})
+	r.Register(I03CliTpCliUnico{})
+	r.Register(I04ContratoModalidadeUnico{})
+	r.Register(I05VencimentosUnicos{})
+	r.Register(I11CliNaoNatuOp32{}) // stub — carry-over Fase 4 (precisa NatuOp em Operacao)
+	// H01, H02, H03 (Header)
+	r.Register(H01TpArqValido{})
+	r.Register(H02CNPJRaiz{})
+	r.Register(H03TotalCliPositivo{})
 
 	return r
 }

@@ -357,6 +357,7 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 	// Sprint 7b / v1.7.0: 60 regras — 5 raw + 55 tipadas.
 	// Sprint 32 Fase 1: +14 Agregadas → 74 regras.
 	// Sprint 32 Fase 2: +5 Sistemáticas → 79 regras.
+	// Sprint 32 Fase 3: +19 Individuais/Campos/Header → 98 regras.
 	expectedCodigos := []string{
 		// Básicas raw (Sprint 6 v1.5.0 / W3)
 		"B01", "B02", "B03", "B04", "B05",
@@ -384,8 +385,16 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 		"A01", "A02", "A03", "A04", "A05", "A06", "A07",
 		"A09", "A10", "A11", "A12", "A13", "A14", "A15",
 		// Sistemáticas (Sprint 32 Fase 2)
-		// S11, S13, S14, S16, S18 não implementadas (carry-over Fase 3)
+		// S11, S16, S18 não implementadas (gaps no catálogo)
 		"S12", "S15", "S17", "S19", "S20",
+		// Sprint 32 Fase 3 — Individuais/Campos/Header (19 regras)
+		// C21, C23-C29 carry-over (precisam Garantidores/Parcelas completos)
+		// I06-I10, I12-I15 carry-over (precisam Cli.IPOC, somatórios)
+		// H04-H09 carry-over (histórico de envios)
+		"C11", "C13", "C14", "C16", "C17", "C18", "C19", "C20",
+		"S13", "S14",
+		"I01", "I02", "I03", "I04", "I05", "I11",
+		"H01", "H02", "H03",
 	}
 
 	if len(codes) != len(expectedCodigos) {
