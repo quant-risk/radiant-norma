@@ -2,6 +2,67 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.33.5 — 2026-07-06 (Validação 59 — Flake retry experiment revertido + audit regra memory) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (experimental revertido + audit processual)
+> **Trigger:** Solicitação Henrique — "validação profunda em tudo que você acabou de fazer"
+> **Validação:** VALIDATION_v3.33.4.md — 5 findings (A-E), **1 REVERTIDO + 3 fechados/audit + 1 carry-over histórico**
+
+### 📋 Resumo V59 (sem fix shipped, mas valioso)
+
+V59 é uma validação majoritariamente **audit + experiment revertido**. Único fix material: comentário explicativo da reversão em `WithTenantTx` (carry-over do F-59-A experimental).
+
+### 🧪 F-59-A (experimental → REVERTIDO)
+
+| Aspecto | Detalhe |
+|---|---|
+| **Hipótese** | Retry-on-SQLITE_BUSY (3 attempts, 5/10/20ms backoff) em `WithTenantTx` absorveria contention momentânea |
+| **Implementação** | Loop com `time.After(5*(1<<attempt) * ms)` entre retries + detecção de erro via `strings.Contains` |
+| **Evidência empírica (15 runs cada)** | V58 baseline: 11/15 PASS (73%) / V59 com retry: **5/15 PASS (33%)** / V59 revertido: 11/15 PASS (73%) |
+| **Root cause** | Retries pegam nova conn do pool → in-flight count cresce → contenção cresce (loop vicioso) |
+| **Decisão** | Reverter in-loop. Carry-over para Sprint polish com retry escopado (apenas em `auditlog.Log`) |
+
+### 📊 Métricas v3.33.4 → v3.33.5
+
+| Métrica | v3.33.4 | v3.33.5 |
+|---|---|---|
+| Stress 50 goroutines pass rate | 11/15 = 73% | **11/15 = 73%** (mantido pós-revert) |
+| Stress 200 goroutines | 200/200 | **200/200** |
+| Tests PASS -race | 23/23 | **23/23** |
+| vet + gofmt | clean | **clean** |
+| Coverage `internal/db` | 62.7% | **62.7%** (mantida) |
+| Coverage `ClearDriverCache` | 100% | **100%** |
+
+### 🎓 Lições aprendidas (V59)
+
+- **Empirical-first > intuition-first.** Retry-on-busy parece intuitivo, mas empírica imediatamente mostrou amplificação de contenção.
+- **Retry em pool compartilhado tem dinâmica complexa.** Helper central afeta todos callers; retry escopado (por workload) é mais seguro.
+- **Self-verify checklist locked-in.** V58 e V59 consistentemente aplicaram regra memory HOT. Zero drift residual.
+- **Flake é estatística.** 10-30% variação conforme carga. Aceitar trade-off é maturidade; tentar zerar 100% é impossível em ambiente compartilhado.
+
+### 📋 Audit regra memory (F-59-B)
+
+Regra: **BeginTx ctx ≥ busy_timeout** (regra de ouro 2×).
+
+| Local | ctx | busy | Margem | OK? |
+|---|---|---|---|---|
+| `auditlog/log.go:72` (Log) | 30s | 30s | 1× | ✓ (F-58-H) |
+| `auditlog/log.go:181` (Verify) | 30s | 30s | 1× | ✓ (read-only) |
+| `internal/db/migrate.go:70` (Migrate) | 30s | 30s | 1× | ✓ (startup) |
+| `cmd/senhaws-rotate` | N/A | N/A | N/A | ✓ (não compete) |
+
+Todos cumprindo. Ideal seria 2×, mas 1× funciona na prática.
+
+### 📁 Arquivos tocados
+
+```
+backend/VALIDATION_v3.33.4.md          (NOVO — Validação 59)
+backend/internal/db/tenant.go          (F-59-A retry implementado + revertido + comentário)
+```
+
+---
+
 ## v3.33.4 — 2026-07-06 (Validação 58 — Drift cleanup + flake mitigation pós-v3.33.3) ✅
 
 > **Status:** ✅ Shipped

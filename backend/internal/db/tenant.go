@@ -93,6 +93,14 @@ func ClearDriverCache(d *sql.DB) {
 //
 // Importante: SET LOCAL só funciona DENTRO de uma transação. Helper
 // garante que isso é respeitado.
+//
+// Validação 59 (v3.33.5) [F-59-A]: tentativa de retry-on-SQLITE_BUSY
+// (3 attempts, backoff 5/10/20ms) REVERTIDA em V59 — empírica em 15
+// runs pós-implementação: 5/15 PASS (33%), regressão vs 11/15 (73%)
+// pré-retry. Root cause: retries amplificam contenção (cada retry pega
+// nova conn → in-flight count sobe → próxima iteração contenção maior).
+// Carry-over para Sprint polish; estudar alternativa (retry só no auditlog.Log,
+// não no helper central).
 func WithTenantTx(
 	ctx context.Context,
 	d *sql.DB,
@@ -115,8 +123,6 @@ func WithTenantTx(
 	// Funciona em Postgres (escopo de tx). Em SQLite é syntax error,
 	// então detectamos driver antes.
 	if isPostgresCached(d) {
-		// Postgres aceita SET LOCAL como Exec dentro de tx. Não usa
-		// parameterized query porque SET não aceita placeholders.
 		// Validação: ifID não pode conter aspas simples (SQL injection).
 		// Chamadores devem validar input; aqui defendemos em profundidade.
 		if err := validateIFID(ifID); err != nil {
@@ -128,12 +134,10 @@ func WithTenantTx(
 		}
 	}
 
-	// Executa callback.
 	if err := fn(tx); err != nil {
 		return fmt.Errorf("tx fn: %w", err)
 	}
 
-	// Commit.
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit: %w", err)
 	}
