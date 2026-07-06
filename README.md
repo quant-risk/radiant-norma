@@ -11,11 +11,11 @@ auditoria tamper-evident e camadas que o BCValidador não tem.
 
 <br>
 
-![Status](https://img.shields.io/badge/status-v1.3.0_✅-10b981?style=for-the-badge)
-![Sprint](https://img.shields.io/badge/sprint-4%2F4-6366f1?style=for-the-badge)
-![Stack](https://img.shields.io/badge/stack-Go_1.22+-00ADD8?style=for-the-badge&logo=go&logoColor=white)
+![Status](https://img.shields.io/badge/status-v3.21.1_✅-10b981?style=for-the-badge)
+![Sprint](https://img.shields.io/badge/sprint-27%2F66_(Plano_Ouro)-6366f1?style=for-the-badge)
+![Stack](https://img.shields.io/badge/stack-Go_1.25%2B_+_Next.js_15_+_Postgres_16-00ADD8?style=for-the-badge&logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/license-proprietary-1e293b?style=for-the-badge)
-![Coverage](https://img.shields.io/badge/cadocs-10_cobertos-8b5cf6?style=for-the-badge)
+![Roadmap](https://img.shields.io/badge/roadmap-Plano_Ouro_(12_meses)-f59e0b?style=for-the-badge)
 
 <br>
 
@@ -23,7 +23,7 @@ auditoria tamper-evident e camadas que o BCValidador não tem.
 
 <br>
 
-[**Quickstart ↓**](#-quickstart) · [**Arquitetura**](#-arquitetura) · [**Roadmap**](#-roadmap) · [**Sprints**](#-sprints)
+[**Quickstart ↓**](#-quickstart) · [**Arquitetura**](#-arquitetura) · [**Roadmap ↓**](../blob/main/ROADMAP.md) · [**Plano Mestre ↓**](../blob/main/MASTER_PLAN.md) · [**ADRs ↓**](../tree/main/docs/adr)
 
 </div>
 
@@ -168,54 +168,65 @@ Stack completa em [`backend/README.md`](backend/README.md).
 
 ## ✦ Roadmap
 
+> **Plano detalhado:** ver [`MASTER_PLAN.md`](MASTER_PLAN.md) (Plano Ouro, 11 seções + 5 ADRs).
+> **Visão macro executiva:** [`ROADMAP.md`](ROADMAP.md).
+> **Decisões arquiteturais:** [`docs/adr/`](docs/adr/).
+
+### Histórico shipped (v1.0 → v3.21.1)
+
 | Sprint | Tema | Status |
 |---|---|---|
-| **1** | Base documental + catálogo JSON estruturado | ✅ v1.0.0 |
-| **2** | Norma Audit spike (Go CLI + XSD gerado) | ✅ v1.1.0 |
-| **3** | Backend Go + API REST + Audit hash chain + STA stub | ✅ v1.2.0 |
-| **4** | Honesty Patch + 25 regras 3040 + Radar Regulatório | ✅ v1.3.0 |
-| **5** | Norma Console (Next.js) + Auth JWT + Cross-doc L3 | ✅ v1.5.0 |
-| **6** | DOS-via-API hardening + Cadoc list cache | ✅ v1.5.0 |
-| **7** | JWT RS256 + 60 regras 3040 + Frontend Next.js | ✅ v2.0.0 |
-| **8** | JWT bridge real + endpoints complementares + tenant isolation + CI/CD | ✅ v2.1.0 |
-| **9–12** | Frontend redesign + Insights + Drill-down server actions | ✅ v3.5.0 |
-| **13** | CSRF + Cross-Tenant + DB Integrity + Rate Limit | ✅ v3.5.2 |
-| **14–16** | Drill-down insights + Design system + Redis rate limiter | ✅ v3.6.0 |
-| **17** | Observability + Production Hardening + lint automation | ✅ v3.7.0 |
-| **18** | STA WS nativo (substituir Playwright) + cert A1/A3 | ✅ v3.8.0 |
-| **19** | STA WS read side (Download + StatusUpload + X-Content-Hash) | ✅ v3.9.0 |
-| **20** | STA WS listagem / disponiveis + alteração / situacao + handlers REST | ✅ v3.10.0 |
-| **21** | STA WS chunked transfer (range upload §5.6 + range download §6.4) | ✅ v3.11.0 |
-| **22** | STA WS retry exponencial wrapper (5xx + network transiente) | ✅ v3.12.0 |
-| **23** | senhaws BACEN — credential rotation programática (§9.1 + §9.2) | ✅ v3.13.0 |
+| **1–4** | Base documental + Norma Audit spike + Backend Go + Honesty Patch | ✅ v1.0–1.3 |
+| **5–8** | Norma Console + JWT + Cross-doc L3 + tenant isolation | ✅ v1.5–2.1 |
+| **9–13** | Frontend redesign + Insights + Drill-down + CSRF + Rate Limit | ✅ v3.5.2 |
+| **14–17** | Redis rate limiter + Observability + Production Hardening | ✅ v3.7.0 |
+| **18–22** | STA WS nativo + read side + chunked transfer + retry exponencial | ✅ v3.12.0 |
+| **23–27** | senhaws BACEN rotation + senhaws-rotate CLI + sta-submit CLI + pre-commit hook | ✅ v3.21.1 |
 
-Última release estável: **v3.13.0** (Sprint 23 senhaws BACEN — `SenhawsClient.AlterarSenha` §9.1 +
-`ConsultarVencimento` §9.2 com validações client-side + `*SenhaError` tipado; 19/19 packages PASS,
-94 testes backend, smoke 11/11, race clean).
+**Total:** 27 sprints em ~2 meses · 105 arquivos Go · 29.481 LoC · 516 testes · 48 validações profundas documentadas.
+
+### Roadmap 12 meses — Plano Ouro (Q3 2026 → Q2 2027)
+
+| Quarter | Foco | Saída |
+|---|---|---|
+| **Q3 2026** (Sprints 28-37) | Vault + smoke BACEN + Postgres RLS + fechar 3040/3050 + CI + Observability + **piloto pagante** | Lite vendável |
+| **Q4 2026** (Sprints 38-48) | DLO + DDR + DRL + DLP + 3044 + cross-doc v2 + radar v2 + Stripe + white-label | Pro vendável |
+| **Q1 2027** (Sprints 49-56) | **DRSAC ESG first-mover** + 4111 + cross-doc DRSAC + AI Insights + **SOC 2 Type I** | ESG competitivo |
+| **Q2 2027** (Sprints 57-66) | DRM + DLI + SDK Go/Python + Webhooks + Marketplace + Multi-region + **SOC 2 Type II** | Enterprise |
+
+**Milestones:** M1 (set/2026) piloto pagante · M2 (dez/2026) 10 clientes · M3 (mar/2027) ESG vendido · M4 (jun/2027) Series A ready.
 
 **Sub-produtos anunciados** (marca Radiant):
 
-- 🟢 **Norma ESG** — first-mover DRSAC 2030 (janela IN BCB 694/2025, ninguém cobre)
-- 🟡 **Norma Radar** — worker que detecta mudanças de leiaute em tempo real ✅ Sprint 4
-- 🔵 **Norma Connect** — STA client Web/WS com retry + protocolo tracking
-- 🟣 **Norma Audit** — o que está nesse repo (o produto raiz)
+- 🟢 **Norma ESG** — first-mover DRSAC 2030 (janela IN BCB 694/2025, ninguém cobre) → Sprint 49-50
+- 🟡 **Norma Radar** — worker que detecta mudanças de leiaute em tempo real → Sprint 4 ✅, Sprint 44 v2
+- 🔵 **Norma Connect** — STA client Web/WS com retry + protocolo tracking → Sprints 18-22 ✅
+- 🟣 **Norma Audit** — o que está nesse repo (o produto raiz) → continua evolving
 
 ---
 
 ## ✦ Métricas atuais
 
 ```
-Backend Go          14 arquivos · ~2.908 linhas
-Catálogo crítico    1.099 regras · 6 CADOCs com críticas executáveis
-Catálogo leiaute    4.244 linhas · 8 CADOCs
-Regras portadas Go  25 (Básicas B06-B15 + Formato F01-F05 + Campos C01-C05 + Semantica S01-S05)
-Audit log entries   N (chain validado · tamper-evident)
-Endpoints REST      13 funcionais · curl-testados (validate, rules, schemas, sta, radar)
+Backend Go          105 arquivos · 29.481 LoC · 14.937 LoC testes (razão 2:1)
+Testes Go           516 top-level · 21/21 packages PASS · race clean
+Cobertura           auditlog 90.8% · senhaws 95.6% · loggerutil 96.2% · sta 80% · api 71.6%
+Binários CLI        9 (api · worker · radar · seed · seed-sprint8c · jwt-mint · senhaws-rotate · sta-submit · _verify)
+Catálogo crítico    1.099 regras extraídas · 6 CADOCs (3040, 3044, 3050, 2060, 2061, 2070)
+Catálogo leiaute    8 CADOCs cadastrados · 24 campos parseados · XSD só 3040 (560 linhas)
+Regras portadas Go  60 de 3040 (B01-B25 + F01-F15 + C01-C10 + S01-S10) = 16.6% do catálogo
+Cross-doc           1 regra (3040 ↔ 4111) · meta: 12 regras (Sprint 43)
+Migrations          13 SQL files (001 → 013) via embed.FS
+Frontend            56 arquivos TS/TSX · 7.108 LoC · Next.js 14 (App Router) + TanStack Query + Zustand
+Audit log entries   hash chain SHA-256 validado · tamper-evident · trigger Postgres imutável
+Endpoints REST      20+ funcionais · JWT + CSRF + RateLimit + CORS
 Material BACEN      137 arquivos · 50 MB capturados
 Concorrentes mapeados 12 (Mitra/Matera/cadoc.ai/LUZ/Dattos/BIBlue/…)
-PDFs profissionais  3 (README · ENG_REVERSA · PRODUTO_TESE_ROADMAP)
-Workers CLI         3 (api · worker · radar)
+PDFs profissionais  4 (README · ENG_REVERSA · PRODUTO_TESE_ROADMAP · em breve MASTER_PLAN)
+Validações profundas 48 ciclos documentados (média 1.7/sprint)
 ```
+
+> ⚠️ **Status real de cobertura 3040:** 60/361 regras (16.6%). Diferencial vs BCValidador oficial ainda parcial — Sprint 32 fecha até 60%.
 
 ---
 
@@ -256,10 +267,14 @@ radiant-norma/
 ├── _concorrentes/               engenharia reversa de 12 players
 │
 ├── README.md                    ★ este arquivo
+├── MASTER_PLAN.md               ★★ Plano Ouro (12 meses, 8 épicos, 39 sprints, 5 ADRs)
+├── ROADMAP.md                   ★ visão macro executiva por quarter
+├── docs/
+│   └── adr/                     ★ 6 ADRs (stack, multi-tenant RLS, audit chain, schema registry, STA segregation, cross-doc)
 ├── ENG_REVERSA.md               ★ análise profunda de Mitra/Matera/cadoc.ai
 ├── PRODUTO_TESE_ROADMAP.md      ★ tese, personas, GTM, planos R$1,5k-12k
-├── CHANGELOG.md                 histórico de sprints (v1.0 → v1.3)
-├── SPRINT_2.md  SPRINT_3.md  SPRINT_4.md  retrospectivas
+├── CHANGELOG.md                 histórico de sprints (v1.0 → v3.21.1)
+├── SPRINT_*.md  VALIDATION_*.md retrospectivas + validações profundas (48 ciclos)
 └── _gen_pdfs.py                 ★ pipeline Pandoc + Chromium → PDF
 ```
 

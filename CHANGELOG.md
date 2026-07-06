@@ -2,6 +2,87 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.22.0 — 2026-07-05 (Plano Ouro aprovado — 12 meses · 39 sprints · 8 épicos) ✅
+
+> **Status:** ✅ Aprovado por Henrique · 2026-07-05
+> **Trigger:** revisão macro de produto pós Sprint 27 (v3.21.1)
+> **Tipo:** docs + planning (zero código de produção alterado)
+
+### 🎯 Resumo
+
+Marco estratégico do projeto. Documenta o caminho dos **próximos 12 meses** (Q3 2026 → Q2 2027), com **39 sprints** numeradas, **8 épicos** com acceptance criteria, **6 ADRs** (Architectural Decision Records), e **contracts completos** (REST API, domain, DB, events, services).
+
+**Decisão macro:** SaaS regulatório multi-tenant production-grade, com stack definitiva Go 1.25+ + Postgres 16 + Redis 7 + Next.js 15, hospedado em AWS São Paulo, com SOC 2 Type II como meta Q2 2027.
+
+**Movimento de mercado (4 quarters):**
+- **Q3 2026:** "Lite vendável" — fechar 3040 + 3050 + smoke BACEN real.
+- **Q4 2026:** "Pro vendável" — DLO + DDR + DRL + DLP + 3044 + cross-doc v2.
+- **Q1 2027:** "ESG first-mover" — DRSAC 2030 (janela IN BCB 694/2025, vigência dez/2026).
+- **Q2 2027:** "Enterprise" — SOC 2 Type II + SDK + Marketplace + multi-region.
+
+### 📦 Arquivos novos
+
+```
+MASTER_PLAN.md                               (~85 KB · 11 seções + 5 ADRs)
+ROADMAP.md                                   (visão macro executiva por quarter)
+docs/adr/0001-stack-definitiva.md            (Go + Postgres + Redis + Next.js + AWS SP)
+docs/adr/0002-multi-tenancy-rls.md           (Postgres RLS, não schema-per-tenant)
+docs/adr/0003-audit-log-hash-chain.md        (SHA-256 + trigger imutável + WORM S3)
+docs/adr/0004-schema-registry-versionado.md  (GitHub source-of-truth + auto-PR)
+docs/adr/0005-sta-client-interface-segregation.md (Client / ReadClient / ChunkedClient)
+docs/adr/0006-cross-doc-engine.md            (12 regras inter-CADOC, L3 proprietário)
+README.md                                    (atualizado — badges + links + métricas)
+CHANGELOG.md                                (esta entrada)
+```
+
+### 🎯 Os 10 moats competitivos definidos
+
+1. **Cross-Doc Engine (L3)** — valida ecossistema 3040 ↔ 4111 ↔ DRSAC.
+2. **Schema Registry versionado** — IF não mexe em código quando BACEN muda.
+3. **Audit hash chain** — LGPD/SOC 2 ready, trigger Postgres imutável.
+4. **DRSAC ESG first-mover** — janela dez/2026.
+5. **Onboarding 15min** — Matera leva 12 semanas.
+6. **Open schemas (GitHub)** — community contributions.
+7. **Modern stack** — hiring mais fácil.
+8. **Compliance officer UX** — feito pro usuário primário.
+9. **AI Insights** — LLM interpreta audit_log (opt-in).
+10. **Multi-CADOC ecosystem** — 10 CADOCs, 1 plataforma.
+
+### 🔢 Quality gates publicados
+
+| Gate | Target | Atual |
+|---|---|---|
+| Coverage por pacote | 70-95% | varia (auditlog 90.8%, api 71.6%, etc) |
+| Latência API P95 | < 500ms (validate), < 5s (submit) | TBD |
+| Uptime | 99.9% | n/a (ainda não em produção) |
+| Audit chain integrity | 100% | ✅ validado |
+| Security (CVEs) | 0 high/critical | TBD govulncheck |
+
+### ⚠️ Próximos passos (Sprint 28+)
+
+- **Sprint 28:** VaultIntegration — AWS Secrets Manager para rotação Sisbacen.
+- **Sprint 29:** BacenHomologSmoke — smoke real contra sta-h.bcb.gov.br.
+- **Sprint 30:** PostgresRLS — ativar migration 014_rls_enforce.sql.
+- **Sprint 32:** Audit3040_v2 — fechar 3040 de 16% → 60% cobertura.
+
+### 🏗️ Decisões macro registradas
+
+| Decisão | Razão |
+|---|---|
+| **Postgres RLS, não schema-per-tenant** | Defense-in-depth; migrations O(1); LGPD delete = single query |
+| **Audit hash chain com trigger DB** | Tamper-evident verificável por auditor externo sem privilégios |
+| **Schema Registry no GitHub público** | Schema-first; zero deploy de código; community contributions |
+| **Interface segregation STA (3 interfaces)** | Hollow stub evitado; capability check explícito |
+| **Cross-Doc engine com panic recovery** | Falha de 1 regra não derruba servidor todo |
+| **Stack chata, exciting product** | Postgres + chi + slog + Next.js — boring infra, foco no domínio |
+
+---
+
+## v3.21.1 — 2026-07-06 (Sprint 27 followup — readlink -f symlink + escape de placeholder) ✅
+
+> **Status:** ✅ Shipped
+> **Trigger:** Validação 49 (Sprint 27 followup) — fix de bug menor
+
 ## v3.21.0 — 2026-07-06 (Sprint 27: pre-commit hook — lint + gofmt + vet automatizado) ✅
 
 > **Status:** ✅ Shipped
