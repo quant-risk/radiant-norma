@@ -13,7 +13,9 @@
 |---|---|---|---|
 | **28** | VaultIntegration | AWS Secrets Manager / Vault para rotação Sisbacen | ✅ |
 | **29** | BacenHomologSmoke | Smoke real contra sta-h.bcb.gov.br/staws + www9.bcb.gov.br/senhaws | pendente (credenciais) |
-| **30** | PostgresRLS | Ativar migration 014_rls_enforce.sql. Defense-in-depth multi-tenant | pendente |
+| **30** | PostgresRLS | Ativar migration `012_rls_policies.sql` (em `internal/db/migrations/`) +
+                    criar migration `014_rls_enforce.sql` com FORCE ROW LEVEL SECURITY.
+                    Defense-in-depth multi-tenant. Auditoria SOC 2. | ✅ |
 | **31** | RangeUploadAPI | Handlers REST `/v1/sta/range-*` — fechar YAGNI da Sprint 21 | pendente |
 | **32** | Audit3040_v2 | Portar 80+ regras restantes 3040. Coverage 16% → 60% | ✅ (35% — 4 fases incrementais) |
 | **33** | Audit3050 | Portar 170 regras 3050 TXB_V11. XSD já tem no BACEN, parser XML + 170 regras | pendente |

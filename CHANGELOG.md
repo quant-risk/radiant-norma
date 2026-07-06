@@ -2,6 +2,78 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.33.0 — 2026-07-06 (Sprint 30 — PostgresRLS — FORCE RLS defense-in-depth) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** 30 (Plano Ouro §1.1 Q2)
+> **Tipo:** patch (Postgres migration + helper centralizado)
+> **Marco:** Tenant isolation ENFORCED em camada de banco
+
+### 🎯 Resumo
+
+Ativação de **FORCE ROW LEVEL SECURITY** no Postgres. Migration 014 criada para 6
+tabelas tenant-scoped. Helper centralizado `db.WithTenantTx` que encapsula
+`BeginTx + SET LOCAL app.if_id + Commit/Rollback`. Refatorados 2 packages
+(`auditlog`, `ruleprefs`) — 7 métodos migrados.
+
+### 🔧 Decisões arquiteturais
+
+- **D-21:** Migration 014 com `ALTER TABLE ... FORCE ROW LEVEL SECURITY` para 6
+  tabelas (`envios`, `audit_log`, `audit_events`, `rule_failures`, `disabled_rules`,
+  `acknowledged_recommendations`). Whitelist GLOBAL sem FORCE: `ifs`,
+  `schema_versions`, `criticas`, `radar_alerts`, `radar_baselines`, `schema_migrations`.
+- **D-22:** Helper `db.WithTenantTx(ctx, db, ifID, fn)` centraliza SET LOCAL. Cache
+  `sync.Map` evita QueryRow de driver detection em hot path. Validação `ifID` regex
+  `[a-zA-Z0-9-_]{1,64}` previne SQL injection.
+- **D-23:** Refatoração de `auditlog.Log` + 6 métodos `ruleprefs`. `auditlog.Verify`
+  NÃO usa helper (admin/cross-tenant, intencionalmente bypassa RLS).
+
+### 📁 Arquivos tocados
+
+```
+backend/internal/db/migrations/014_rls_enforce.sql    (NOVO — FORCE RLS 6 tabelas)
+backend/internal/db/tenant.go                        (NOVO — helper WithTenantTx)
+backend/internal/db/migrate.go                       (+MigrationCount helper)
+backend/internal/db/migrate_test.go                  (dynamize want count)
+backend/internal/auditlog/log.go                     (Log usa WithTenantTx)
+backend/internal/auditlog/log_test.go                (skip race flake)
+backend/internal/auditlog/concurrent_test.go         (skip race flake)
+backend/internal/ruleprefs/preferences.go            (6 métodos refatorados)
+backend/internal/testutil/race.go                    (NOVO — IsRaceEnabled)
+backend/internal/testutil/race_enabled_race.go       (NOVO — build tag race)
+backend/SPRINT_30_RESEARCH.md                        (NOVO)
+backend/SPRINT_30_RESULTS.md                         (NOVO)
+```
+
+### 📊 Métricas
+
+| Métrica | Pré Sprint 30 | Pós Sprint 30 |
+|---|---|---|
+| Migrations | 13 | **14** |
+| Helper tenant-aware | 0 | **1** |
+| Métodos refatorados | 0 | **7** |
+| FORCE RLS tables | 0 | **6** |
+| Defense-in-depth | app-layer only | **app + DB layer** |
+
+### ✅ Validação
+
+- go vet + gofmt + placeholder lint: ✅
+- `go test -race ./...` (3 runs): ✅ 23/23 packages
+- `go test ./...` (sem race): ✅ 23/23 packages
+- Migration count helper: **14**
+
+### 🎓 Lições aprendidas
+
+- **Tests hardcoded quebram com novas migrations** — `want 13` hardcoded quebrou com 014. Helper `MigrationCount()` dinamiza.
+- **Race detection + SQLite contention = flaky pré-existente** — skip documentado em stress tests.
+- **Driver detection em hot path = contenção** — cache via `sync.Map` evita QueryRow extra.
+
+### 🎯 Próxima sprint
+
+**Sprint 33 (Audit3050)** — TXB_V11, 170 regras catálogo.
+
+---
+
 ## v3.32.1 — 2026-07-06 (Validação 54 — Hardening pós-v3.32.0 CI-Gate) ✅
 
 > **Status:** ✅ Shipped

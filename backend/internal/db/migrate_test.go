@@ -54,9 +54,11 @@ func TestMigrate_AppliesAllMigrations(t *testing.T) {
 	if err := d.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&count); err != nil {
 		t.Fatalf("query: %v", err)
 	}
-	// 7 migrations: 001-007 (007 added in Sprint 11 for disabled_rules)
-	if count != 13 {
-		t.Errorf("schema_migrations tem %d entries, want 13", count)
+	// Sprint 30: usa helper MigrationCount() (fonte de verdade) em vez de
+	// hardcodar — adicionar nova migration não precisa editar test.
+	wantCount := db.MigrationCount()
+	if count != wantCount {
+		t.Errorf("schema_migrations tem %d entries, want %d (migrations/*.sql count)", count, wantCount)
 	}
 }
 
@@ -69,13 +71,14 @@ func TestMigrate_Idempotent(t *testing.T) {
 		t.Fatalf("2ª migrate: %v", err)
 	}
 
-	// Schema_migrations ainda tem 7 entries (não duplica)
+	// Schema_migrations ainda tem N entries (não duplica). N = migrations/*.sql count.
+	wantCount := db.MigrationCount()
 	var count int
 	if err := d.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&count); err != nil {
 		t.Fatal(err)
 	}
-	if count != 13 {
-		t.Errorf("Após 2x migrate: %d entries, want 13 (idempotente)", count)
+	if count != wantCount {
+		t.Errorf("Após 2x migrate: %d entries, want %d (idempotente)", count, wantCount)
 	}
 }
 
@@ -225,8 +228,9 @@ func TestMigrate_FreshSchemaVersionsTable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Após migrate: %v", err)
 	}
-	if count != 13 {
-		t.Errorf("schema_migrations tem %d, want 13", count)
+	wantCount := db.MigrationCount()
+	if count != wantCount {
+		t.Errorf("schema_migrations tem %d, want %d", count, wantCount)
 	}
 }
 

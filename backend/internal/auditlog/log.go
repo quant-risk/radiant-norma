@@ -5,6 +5,10 @@
 //
 // Concorrência: usa BEGIN IMMEDIATE (lock write no SQLite) pra evitar
 // race entre múltiplos goroutines/workers que tentam Log ao mesmo tempo.
+//
+// Sprint 30 (v3.33.0): Log usa WithTenantTx para setar `app.if_id`
+// em Postgres (FORCE RLS). Em SQLite, helper é no-op (compat).
+// Verify é admin-level (cross-tenant) e NÃO usa helper.
 package auditlog
 
 import (
@@ -17,6 +21,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/fortvna/radiant-norma/backend/internal/db"
 )
 
 // Entry representa uma entrada do audit log.
@@ -66,50 +72,62 @@ func (l *Logger) Log(ifID, actor, action, target string, payload []byte, metadat
 		metaJSON, _ = json.Marshal(metadata)
 	}
 
-	// Tx com lock (BEGIN IMMEDIATE no SQLite via driver Exec)
-	tx, err := l.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("begin tx: %w", err)
-	}
-	defer func() { _ = tx.Rollback() }() // no-op se Commit rodar
-
-	// Pega hash anterior (lock ativo aqui)
-	var prevHash string
-	err = tx.QueryRowContext(ctx,
-		`SELECT entry_hash FROM audit_log ORDER BY id DESC LIMIT 1`,
-	).Scan(&prevHash)
-	if errors.Is(err, sql.ErrNoRows) {
-		prevHash = strings.Repeat("0", 64) // Genesis
-	} else if err != nil {
-		return nil, fmt.Errorf("query prev: %w", err)
-	}
-
 	// Timestamp explícito (formato ISO 8601 RFC3339Nano).
 	// Será gravado no DB e usado no entry_hash — garante que Verify recomputa igual.
 	timestamp := time.Now().UTC()
 	timestampStr := timestamp.Format(time.RFC3339Nano)
 
-	// Calcula entry hash = sha256(prev + payload + metadata + actor + action + target + ifID + timestamp)
+	// Container para ID retornado pelo INSERT (precisa sobreviver até depois do commit).
+	var id int64
+	var prevHash string
+
+	// Sprint 30 (v3.33.0): WithTenantTx encapsula BeginTx + SET LOCAL
+	// app.if_id + Commit/Rollback. Em Postgres com FORCE RLS (migration
+	// 014), sem SET LOCAL o INSERT falha silenciosamente (policy USING
+	// retorna 0 rows visíveis para SET). Em SQLite, helper é no-op.
+	//
+	// BEGIN IMMEDIATE no SQLite via BeginTx continua valendo — driver
+	// SQLite faz lock write no BEGIN (não precisamos de SELECT FOR UPDATE).
+	err := db.WithTenantTx(ctx, l.db, ifID, func(tx *sql.Tx) error {
+		// Pega hash anterior (lock ativo aqui)
+		var queryErr error
+		queryErr = tx.QueryRowContext(ctx,
+			`SELECT entry_hash FROM audit_log ORDER BY id DESC LIMIT 1`,
+		).Scan(&prevHash)
+		if queryErr != nil && !errors.Is(queryErr, sql.ErrNoRows) {
+			return fmt.Errorf("query prev: %w", queryErr)
+		}
+		if errors.Is(queryErr, sql.ErrNoRows) {
+			prevHash = strings.Repeat("0", 64) // Genesis
+		}
+
+		// Calcula entry hash = sha256(prev + payload + metadata + actor + action + target + ifID + timestamp)
+		concat := prevHash + payloadHashHex + string(metaJSON) + actor + action + target + ifID + timestampStr
+		entrySum := sha256.Sum256([]byte(concat))
+		entryHash := hex.EncodeToString(entrySum[:])
+
+		res, execErr := tx.ExecContext(ctx, `
+			INSERT INTO audit_log (if_id, actor, action, target, payload_hash, prev_hash, entry_hash, metadata, created_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		`,
+			nullable(ifID), actor, action, nullable(target),
+			payloadHashHex, prevHash, entryHash, string(metaJSON),
+			timestampStr,
+		)
+		if execErr != nil {
+			return fmt.Errorf("insert: %w", execErr)
+		}
+		id, _ = res.LastInsertId()
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Recalcula entryHash para retornar (mesma fórmula usada dentro do callback).
 	concat := prevHash + payloadHashHex + string(metaJSON) + actor + action + target + ifID + timestampStr
 	entrySum := sha256.Sum256([]byte(concat))
 	entryHash := hex.EncodeToString(entrySum[:])
-
-	res, err := tx.ExecContext(ctx, `
-		INSERT INTO audit_log (if_id, actor, action, target, payload_hash, prev_hash, entry_hash, metadata, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`,
-		nullable(ifID), actor, action, nullable(target),
-		payloadHashHex, prevHash, entryHash, string(metaJSON),
-		timestampStr,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("insert: %w", err)
-	}
-	id, _ := res.LastInsertId()
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("commit: %w", err)
-	}
 
 	return &Entry{
 		ID:          id,

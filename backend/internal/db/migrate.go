@@ -22,6 +22,24 @@ import (
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
+// MigrationCount retorna o número de migrations no embed FS.
+// Helper para testes (não-exportar migrationsFS deixa API limpa).
+// Sprint 30 (v3.33.0): adicionado quando test de migrate hardcodou
+// "want 13" — adicionar migration 014 quebrou test. Dinamizou.
+func MigrationCount() int {
+	entries, err := migrationsFS.ReadDir("migrations")
+	if err != nil {
+		return 0
+	}
+	count := 0
+	for _, e := range entries {
+		if !e.IsDir() {
+			count++
+		}
+	}
+	return count
+}
+
 // isPostgres detecta o driver. Para simplificar, usamos o nome do driver
 // exposto pelo sql.Driver. Migrate() também checa isso — single source
 // of truth em IsPostgresDSN, mas ele só roda no open. Aqui usamos um

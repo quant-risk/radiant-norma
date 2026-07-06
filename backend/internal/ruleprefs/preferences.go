@@ -9,6 +9,10 @@
 //
 // Nome do package: ruleprefs (e não rules) pra evitar conflito com
 // internal/audit/rules (que define as regras hardcoded).
+//
+// Sprint 30 (v3.33.0): todos os métodos de leitura/escrita usam
+// db.WithTenantTx para setar `app.if_id` em Postgres (FORCE RLS).
+// Em SQLite, helper é no-op (compat).
 
 package ruleprefs
 
@@ -18,6 +22,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/fortvna/radiant-norma/backend/internal/db"
 )
 
 // ErrRuleNotDisabled é retornado por Enable quando a regra não está
@@ -49,26 +55,29 @@ func NewPreferences(db *sql.DB) *Preferences {
 // ListDisabled retorna todas as regras desabilitadas por 1 IF.
 // Retorna slice vazio se nenhuma (não error).
 func (p *Preferences) ListDisabled(ctx context.Context, ifID string) ([]DisabledRule, error) {
-	rows, err := p.db.QueryContext(ctx,
-		`SELECT if_id, rule_code, disabled_at, disabled_by
-		 FROM disabled_rules
-		 WHERE if_id = ?
-		 ORDER BY disabled_at DESC`,
-		ifID)
-	if err != nil {
-		return nil, fmt.Errorf("query disabled: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-
 	var out []DisabledRule
-	for rows.Next() {
-		var r DisabledRule
-		if err := rows.Scan(&r.IFID, &r.RuleCode, &r.DisabledAt, &r.DisabledBy); err != nil {
-			return nil, fmt.Errorf("scan: %w", err)
+	err := db.WithTenantTx(ctx, p.db, ifID, func(tx *sql.Tx) error {
+		rows, err := tx.QueryContext(ctx,
+			`SELECT if_id, rule_code, disabled_at, disabled_by
+			 FROM disabled_rules
+			 WHERE if_id = ?
+			 ORDER BY disabled_at DESC`,
+			ifID)
+		if err != nil {
+			return fmt.Errorf("query disabled: %w", err)
 		}
-		out = append(out, r)
-	}
-	return out, rows.Err()
+		defer func() { _ = rows.Close() }()
+
+		for rows.Next() {
+			var r DisabledRule
+			if err := rows.Scan(&r.IFID, &r.RuleCode, &r.DisabledAt, &r.DisabledBy); err != nil {
+				return fmt.Errorf("scan: %w", err)
+			}
+			out = append(out, r)
+		}
+		return rows.Err()
+	})
+	return out, err
 }
 
 // ListDisabledCodes retorna só os códigos (rule_code) das regras
@@ -80,57 +89,71 @@ func (p *Preferences) ListDisabled(ctx context.Context, ifID string) ([]Disabled
 // struct) pra evitar overhead de carregar timestamps + actor quando
 // caller só precisa dos codes.
 func (p *Preferences) ListDisabledCodes(ctx context.Context, ifID string) ([]string, error) {
-	rows, err := p.db.QueryContext(ctx,
-		`SELECT rule_code FROM disabled_rules WHERE if_id = ?`,
-		ifID)
-	if err != nil {
-		return nil, fmt.Errorf("query disabled codes: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-
 	var out []string
-	for rows.Next() {
-		var code string
-		if err := rows.Scan(&code); err != nil {
-			return nil, fmt.Errorf("scan code: %w", err)
+	err := db.WithTenantTx(ctx, p.db, ifID, func(tx *sql.Tx) error {
+		rows, err := tx.QueryContext(ctx,
+			`SELECT rule_code FROM disabled_rules WHERE if_id = ?`,
+			ifID)
+		if err != nil {
+			return fmt.Errorf("query disabled codes: %w", err)
 		}
-		out = append(out, code)
-	}
-	return out, rows.Err()
+		defer func() { _ = rows.Close() }()
+
+		for rows.Next() {
+			var code string
+			if err := rows.Scan(&code); err != nil {
+				return fmt.Errorf("scan code: %w", err)
+			}
+			out = append(out, code)
+		}
+		return rows.Err()
+	})
+	return out, err
 }
 
 // IsDisabled checa se 1 regra específica está desabilitada por 1 IF.
 // Mais eficiente que ListDisabled se checar 1-2 regras (1 query).
 func (p *Preferences) IsDisabled(ctx context.Context, ifID, ruleCode string) (bool, error) {
 	var exists int
-	err := p.db.QueryRowContext(ctx,
-		`SELECT 1 FROM disabled_rules WHERE if_id = ? AND rule_code = ?`,
-		ifID, ruleCode,
-	).Scan(&exists)
-	if err == sql.ErrNoRows {
+	err := db.WithTenantTx(ctx, p.db, ifID, func(tx *sql.Tx) error {
+		queryErr := tx.QueryRowContext(ctx,
+			`SELECT 1 FROM disabled_rules WHERE if_id = ? AND rule_code = ?`,
+			ifID, ruleCode,
+		).Scan(&exists)
+		if queryErr == sql.ErrNoRows {
+			return nil // exists stays 0
+		}
+		return queryErr
+	})
+	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
 	if err != nil {
 		return false, fmt.Errorf("query is_disabled: %w", err)
 	}
-	return true, nil
+	return exists == 1, nil
 }
 
 // Disable adiciona regra ao set desabilitado. Idempotente — se já
 // desabilitada, retorna o registro existente sem erro.
 func (p *Preferences) Disable(ctx context.Context, ifID, ruleCode, actor string) (DisabledRule, error) {
 	now := time.Now().UTC()
-
-	_, err := p.db.ExecContext(ctx,
-		`INSERT INTO disabled_rules (if_id, rule_code, disabled_at, disabled_by)
-		 VALUES (?, ?, ?, ?)
-		 ON CONFLICT(if_id, rule_code) DO UPDATE SET
-		   disabled_at = excluded.disabled_at,
-		   disabled_by = excluded.disabled_by`,
-		ifID, ruleCode, now, actor,
-	)
+	err := db.WithTenantTx(ctx, p.db, ifID, func(tx *sql.Tx) error {
+		_, execErr := tx.ExecContext(ctx,
+			`INSERT INTO disabled_rules (if_id, rule_code, disabled_at, disabled_by)
+			 VALUES (?, ?, ?, ?)
+			 ON CONFLICT(if_id, rule_code) DO UPDATE SET
+			   disabled_at = excluded.disabled_at,
+			   disabled_by = excluded.disabled_by`,
+			ifID, ruleCode, now, actor,
+		)
+		if execErr != nil {
+			return fmt.Errorf("insert disabled: %w", execErr)
+		}
+		return nil
+	})
 	if err != nil {
-		return DisabledRule{}, fmt.Errorf("insert disabled: %w", err)
+		return DisabledRule{}, err
 	}
 
 	return DisabledRule{
@@ -144,18 +167,26 @@ func (p *Preferences) Disable(ctx context.Context, ifID, ruleCode, actor string)
 // Enable remove regra do set desabilitado. Retorna ErrRuleNotDisabled
 // se a regra não está desabilitada (no-op idempotente).
 func (p *Preferences) Enable(ctx context.Context, ifID, ruleCode string) error {
-	res, err := p.db.ExecContext(ctx,
-		`DELETE FROM disabled_rules WHERE if_id = ? AND rule_code = ?`,
-		ifID, ruleCode,
-	)
+	var rowsAffected int64
+	err := db.WithTenantTx(ctx, p.db, ifID, func(tx *sql.Tx) error {
+		res, execErr := tx.ExecContext(ctx,
+			`DELETE FROM disabled_rules WHERE if_id = ? AND rule_code = ?`,
+			ifID, ruleCode,
+		)
+		if execErr != nil {
+			return fmt.Errorf("delete disabled: %w", execErr)
+		}
+		ra, raErr := res.RowsAffected()
+		if raErr != nil {
+			return fmt.Errorf("rows affected: %w", raErr)
+		}
+		rowsAffected = ra
+		return nil
+	})
 	if err != nil {
-		return fmt.Errorf("delete disabled: %w", err)
+		return err
 	}
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("rows affected: %w", err)
-	}
-	if rows == 0 {
+	if rowsAffected == 0 {
 		return ErrRuleNotDisabled
 	}
 	return nil
@@ -178,52 +209,45 @@ func (p *Preferences) Toggle(ctx context.Context, ifID, ruleCode, actor string) 
 	// NOTA: BEGIN IMMEDIATE em SQLite bloqueia todo o DB até COMMIT.
 	// Em produção multi-pod com Postgres, preferimos SELECT FOR UPDATE
 	// (row-level lock). Por ora, single-instance + SQLite é OK.
-	tx, err := p.db.BeginTx(ctx, nil)
-	if err != nil {
-		return "", fmt.Errorf("begin tx: %w", err)
-	}
-	defer func() { _ = tx.Rollback() }() // no-op se Commit rodar
-
-	// Read current state dentro da tx (mantém lock)
-	var isDisabled bool
-	err = tx.QueryRowContext(ctx,
-		`SELECT EXISTS(SELECT 1 FROM disabled_rules WHERE if_id = ? AND rule_code = ?)`,
-		ifID, ruleCode,
-	).Scan(&isDisabled)
-	if err != nil {
-		return "", fmt.Errorf("read state: %w", err)
-	}
-
-	if isDisabled {
-		// Habilita (DELETE)
-		_, err := tx.ExecContext(ctx,
-			`DELETE FROM disabled_rules WHERE if_id = ? AND rule_code = ?`,
+	var newState string
+	err := db.WithTenantTx(ctx, p.db, ifID, func(tx *sql.Tx) error {
+		var isDisabled bool
+		queryErr := tx.QueryRowContext(ctx,
+			`SELECT EXISTS(SELECT 1 FROM disabled_rules WHERE if_id = ? AND rule_code = ?)`,
 			ifID, ruleCode,
-		)
-		if err != nil {
-			return "", fmt.Errorf("delete disabled: %w", err)
+		).Scan(&isDisabled)
+		if queryErr != nil {
+			return fmt.Errorf("read state: %w", queryErr)
 		}
-		if err := tx.Commit(); err != nil {
-			return "", fmt.Errorf("commit: %w", err)
-		}
-		return "enabled", nil
-	}
 
-	// Desabilita (INSERT com ON CONFLICT)
-	now := time.Now().UTC()
-	_, err = tx.ExecContext(ctx,
-		`INSERT INTO disabled_rules (if_id, rule_code, disabled_at, disabled_by)
-		 VALUES (?, ?, ?, ?)
-		 ON CONFLICT(if_id, rule_code) DO UPDATE SET
-		   disabled_at = excluded.disabled_at,
-		   disabled_by = excluded.disabled_by`,
-		ifID, ruleCode, now, actor,
-	)
-	if err != nil {
-		return "", fmt.Errorf("insert disabled: %w", err)
-	}
-	if err := tx.Commit(); err != nil {
-		return "", fmt.Errorf("commit: %w", err)
-	}
-	return "disabled", nil
+		if isDisabled {
+			// Habilita (DELETE)
+			_, execErr := tx.ExecContext(ctx,
+				`DELETE FROM disabled_rules WHERE if_id = ? AND rule_code = ?`,
+				ifID, ruleCode,
+			)
+			if execErr != nil {
+				return fmt.Errorf("delete disabled: %w", execErr)
+			}
+			newState = "enabled"
+			return nil
+		}
+
+		// Desabilita (INSERT com ON CONFLICT)
+		now := time.Now().UTC()
+		_, execErr := tx.ExecContext(ctx,
+			`INSERT INTO disabled_rules (if_id, rule_code, disabled_at, disabled_by)
+			 VALUES (?, ?, ?, ?)
+			 ON CONFLICT(if_id, rule_code) DO UPDATE SET
+			   disabled_at = excluded.disabled_at,
+			   disabled_by = excluded.disabled_by`,
+			ifID, ruleCode, now, actor,
+		)
+		if execErr != nil {
+			return fmt.Errorf("insert disabled: %w", execErr)
+		}
+		newState = "disabled"
+		return nil
+	})
+	return newState, err
 }
