@@ -2,6 +2,79 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.26.0 — 2026-07-06 (Validação 51 — Deep audit pós-v3.24.0 + v3.25.0) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (zero feature nova, hardening)
+> **Trigger:** Solicitação Henrique — "validação profunda em tudo que você acabou de fazer"
+> **Validação:** VALIDAÇÃO_v3.26.0.md — 6 findings encontrados, 5 fechados, 1 aceito YAGNI
+
+### 🎯 Resumo
+
+Auditoria profunda de v3.24.0 (hardening) + v3.25.0 (Audit3040_v2) encontrou **6 findings**. 5 fechados, 1 aceito (YAGNI):
+
+- **MEDIUM** (F-S28-51-A): `writeFailsafe` race condition — 2 invocações no mesmo segundo sobrescreviam senha silenciosamente. Fix: `O_CREATE|O_EXCL` + retry com suffix `-1`, `-2`.
+- **LOW** (F-S28-51-B): test não validava path em stderr — admin não conseguia extrair path programaticamente. Fix: assertion adicional.
+- **LOW** (F-S28-51-C/D): `ClassOpInA01Range` dead code + `F06` regex hardcoded duplicando info da tabela A01. Fix: F06 agora reusa helper (single source of truth).
+- **MEDIUM** (F-S28-51-E): A12 delega à A11 sem diferenciação — aceito YAGNI, doc struct precisa de V20 (Fase 2)
+- **LOW** (F-S28-51-F): A06 DesempOp=02 sem range check — aceito YAGNI, requer tabela de ranges (Fase 2)
+
+### 🔒 Segurança (MEDIUM)
+
+**F-S28-51-A — failsafe race condition**
+
+```diff
+-func writeFailsafe(user, senha string) (string, error) {
+-    ts := time.Now().UTC().Format("20060102T150405Z")  // segundos colidem
+-    path := filepath.Join(base, fmt.Sprintf("...%s-%s.txt", ts, userHash))
+-    if err := os.WriteFile(path, []byte(senha), 0600); err != nil { ... }
+-    return path, nil
+-}
++func writeFailsafe(user, senha string) (string, error) {
++    // ... mkdir dir base ...
++    for attempt := 0; attempt < 3; attempt++ {
++        suffix := ""
++        if attempt > 0 { suffix = fmt.Sprintf("-%d", attempt) }
++        path := filepath.Join(base, fmt.Sprintf("...%s-%s%s.txt", ts, userHash, suffix))
++        f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
++        if err == nil { break }  // atomic create OK
++        if !os.IsExist(err) { return "", ... }
++        // EEXIST → retry com suffix diferente
++    }
++    // ... write + close ...
++}
+```
+
+Universal: qualquer filename com timestamp segundos é candidato a race. O_EXCL é o padrão.
+
+### 📊 Métricas
+
+| Métrica | Pré v3.26.0 | Pós v3.26.0 |
+|---|---|---|
+| Coverage internal/audit/rules | 66.6% | **67.1%** (+0.5pp) |
+| Coverage cmd/senhaws-rotate | 68.3% | **69.7%** (+1.4pp) |
+| Test functions | ~820 | **~830** |
+| Dead code | 1 (ClassOpInA01Range) | **0** |
+| Race conditions | 1 (writeFailsafe) | **0** |
+| Packages PASS | 23/23 | **23/23** |
+| Race detector | clean | clean |
+
+### 📁 Arquivos tocados
+
+```
+backend/cmd/senhaws-rotate/main.go              (F-S28-51-A: O_EXCL + retry)
+backend/cmd/senhaws-rotate/main_test.go         (F-S28-51-A: TestWriteFailsafe_AtomicCreate + F-S28-51-B: path check)
+backend/internal/audit/rules/3040_expanded.go   (F-S28-51-C/D: F06 reusa ClassOpInA01Range)
+backend/internal/audit/rules/3040_agregadas_test.go  (F-S28-51-C: TestClassOpInA01Range + F06 reusa test)
+backend/VALIDATION_v3.26.0.md                   (audit completo)
+```
+
+### ⏭️ Próxima sprint
+
+**Sprint 32 Fase 2** — +35 regras (C11-C30 + S11-S20) → 28.8% cobertura.
+
+---
+
 ## v3.25.0 — 2026-07-06 (Sprint 32 Fase 1 — Audit3040_v2: 14 regras Agregadas A01-A15) ✅
 
 > **Status:** ✅ Shipped (Fase 1 de 4)

@@ -361,7 +361,12 @@ func runApplyWithManager(ctx context.Context, cfg *config, logger *slog.Logger, 
 // Validação 50 (F-S28-50-B): pattern anti-secret-leak. Stderr/log aggregator NÃO
 // recebem a senha. Admin lê o arquivo, configura manual, e remove.
 //
-// Path: $RADIANT_FAILSAFE_PATH (default: /tmp/radiant-senhaws-failsafe-<timestamp>.txt)
+// Validação 51 (F-S28-51-A): usa O_CREATE|O_EXCL|O_WRONLY pra evitar race
+// condition quando 2 invocações no mesmo segundo iriam gerar mesmo filename
+// (timestamp com precisão de segundos). O_EXCL garante atomic create — se
+// arquivo já existir, retorna EEXIST e caller decide (retry com suffix).
+//
+// Path: $RADIANT_FAILSAFE_PATH (default: /tmp/radiant-senhaws-failsafe-<ts>-<userhash>.txt)
 // Permissões: 0600 (rw só pro owner).
 // Conteúdo: linha única com a senha (sem newline final → evita cópia acidental).
 func writeFailsafe(user, senha string) (string, error) {
@@ -373,14 +378,41 @@ func writeFailsafe(user, senha string) (string, error) {
 	// Hash do user pra filename (não vaza user em tmp listing)
 	h := sha256.Sum256([]byte(user))
 	userHash := hex.EncodeToString(h[:6])
-	path := filepath.Join(base, fmt.Sprintf("radiant-senhaws-failsafe-%s-%s.txt", ts, userHash))
 
+	// Tenta criar atomicamente. Se arquivo já existir (mesmo segundo), tenta com
+	// suffix de nanosegundos. Após 3 tentativas, aborta (improvável — só em load
+	// muito alto de rotação).
+	var path string
+	var f *os.File
+	var err error
+
+	// Garante que o diretório base existe. Idempotente — só cria se não existir.
+	// Perm 0700 garante que arquivos 0600 não são visíveis a outros users.
 	if err := os.MkdirAll(base, 0700); err != nil {
-		return "", fmt.Errorf("mkdir failsafe dir: %w", err)
+		return "", fmt.Errorf("mkdir failsafe dir %q: %w", base, err)
 	}
+	for attempt := 0; attempt < 3; attempt++ {
+		suffix := ""
+		if attempt > 0 {
+			suffix = fmt.Sprintf("-%d", attempt)
+		}
+		path = filepath.Join(base, fmt.Sprintf("radiant-senhaws-failsafe-%s-%s%s.txt", ts, userHash, suffix))
+		f, err = os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+		if err == nil {
+			break
+		}
+		if !os.IsExist(err) {
+			return "", fmt.Errorf("open failsafe (attempt %d): %w", attempt, err)
+		}
+		// EEXIST → retry com suffix diferente
+	}
+	if err != nil {
+		return "", fmt.Errorf("write failsafe: 3 tentativas, path existe: %w", err)
+	}
+	defer f.Close()
 
-	if err := os.WriteFile(path, []byte(senha), 0600); err != nil {
-		return "", fmt.Errorf("write failsafe: %w", err)
+	if _, err := f.Write([]byte(senha)); err != nil {
+		return "", fmt.Errorf("write failsafe content: %w", err)
 	}
 	return path, nil
 }

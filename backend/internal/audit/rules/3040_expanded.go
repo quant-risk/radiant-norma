@@ -225,6 +225,9 @@ func (B25QtdOperacoesPositivo) Apply(_ context.Context, doc *Doc3040) error {
 // ============================================================
 
 // F06 — ClassOp deve estar em A-H (classificação de risco BACEN).
+//
+// Validação 51 (F-S28-51-C): reusa ClassOpInA01Range (de 3040_agregadas.go)
+// em vez de regex. Single source of truth — se tabela A01 mudar, F06 segue.
 type F06ClassOpValido struct{}
 
 func (F06ClassOpValido) Code() string     { return "F06" }
@@ -232,7 +235,7 @@ func (F06ClassOpValido) Sheet() string    { return "Formato" }
 func (F06ClassOpValido) Severity() string { return "E" }
 func (F06ClassOpValido) Apply(_ context.Context, doc *Doc3040) error {
 	for i, a := range doc.Agregados {
-		if !regexp.MustCompile(`^[A-H]$`).MatchString(a.ClassOp) {
+		if !ClassOpInA01Range(a.ClassOp) {
 			return fmt.Errorf("Agreg[%d] ClassOp inválido: %q (esperado A-H)", i, a.ClassOp)
 		}
 	}

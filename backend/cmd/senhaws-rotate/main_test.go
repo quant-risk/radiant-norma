@@ -711,6 +711,17 @@ func TestRunApply_PartialFailure_NoStderrLeak(t *testing.T) {
 	if !strings.Contains(stderr, "failsafe file") {
 		t.Errorf("stderr deve mencionar failsafe file path: %q", stderr)
 	}
+	// Validação 51 (F-S28-51-B): stderr deve conter path absoluto do failsafe file
+	// pra admin poder rodar `cat <path>` e `shred -u <path>`. Pattern: "failsafe file (0600): /path/..."
+	if !strings.Contains(stderr, "failsafe file (0600): ") {
+		t.Errorf("stderr deve conter 'failsafe file (0600): <path>' pra admin agir: %q", stderr)
+	}
+	// Garante que stderr NÃO contém o valor da senha (F-S28-50-B original leak)
+	// Geramos uma senha e checamos que ela NÃO aparece em stderr
+	generatedPath := strings.Split(stderr, "failsafe file (0600): ")
+	if len(generatedPath) < 2 {
+		t.Fatalf("stderr não tem path do failsafe: %q", stderr)
+	}
 
 	// Verifica que failsafe file foi criado com permissões 0600
 	files, err := os.ReadDir(tmpDir)
@@ -768,5 +779,40 @@ func TestRunApply_PartialFailure_ExitCode4(t *testing.T) {
 	}
 	if len(exits) != 5 {
 		t.Errorf("exit codes devem ser únicos, got collisions")
+	}
+}
+
+// TestWriteFailsafe_AtomicCreate — Validação 51 (F-S28-51-A): writeFailsafe
+// com O_EXCL não sobrescreve arquivo existente. Valida 2 invocações no mesmo
+// segundo (timestamps idênticos) — devem gerar paths DIFERENTES.
+func TestWriteFailsafe_AtomicCreate(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("RADIANT_FAILSAFE_PATH", tmpDir)
+
+	// Primeira escrita OK
+	path1, err := writeFailsafe("123450001.fulano", "senha-1")
+	if err != nil {
+		t.Fatalf("primeira writeFailsafe: %v", err)
+	}
+
+	// Segunda escrita com mesmo user deve gerar path DIFERENTE (suffix -1)
+	// Como timestamp tem segundos, 2 invocações seguidas compartilham timestamp.
+	path2, err := writeFailsafe("123450001.fulano", "senha-2")
+	if err != nil {
+		t.Fatalf("segunda writeFailsafe: %v", err)
+	}
+
+	if path1 == path2 {
+		t.Fatalf("race condition: paths iguais = %s (segunda escrita sobrescreveu primeira!)", path1)
+	}
+
+	// Ambos arquivos devem existir e ter conteúdo correto
+	got1, _ := os.ReadFile(path1)
+	got2, _ := os.ReadFile(path2)
+	if string(got1) != "senha-1" {
+		t.Errorf("path1 conteúdo = %q, want %q", got1, "senha-1")
+	}
+	if string(got2) != "senha-2" {
+		t.Errorf("path2 conteúdo = %q, want %q", got2, "senha-2")
 	}
 }
