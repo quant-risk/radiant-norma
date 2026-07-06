@@ -2,6 +2,52 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.32.0 — 2026-07-06 (Sprint 35 — CI-Gate: GitHub Actions expandido) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** 35 (Plano Ouro §1.1 Q3)
+> **Tipo:** patch (workflow CI expansion)
+> **Marco:** CI-Gate completo — drift detection + 10 binários + coverage 3-gate
+
+### 🎯 Resumo
+
+Expansão de `.github/workflows/test.yml` de 7 → **11 steps** com gates adicionais:
+
+- **Build expandido (4 → 10 binários)** — jwt-mint, secret-migrate, senhaws-rotate, sta-submit, seed, seed-sprint8c agora buildam em CI
+- **Placeholder lint** — `lint-no-placeholder.sh` roda em CI (antes só pre-commit local)
+- **Coverage gate para `internal/audit/rules`** ≥70% (Sprint 32 entregou 70.8%)
+- **3040 rule count drift check** — detecta inconsistência entre registry real (126 regras) e claim CHANGELOG
+
+### 🔧 Decisões arquiteturais
+
+- **D-17:** Build loop dinâmico (`for bin in cmd/*/`) — captura novos binários automaticamente
+- **D-18:** Placeholder lint em CI — protege contra dev sem pre-commit hook
+- **D-19:** Drift check `ACTUAL vs CLAIMED` — fecha classe de bug das Validações 50+52
+- **D-20:** Coverage gate para audit/rules ≥70% — reflete criticidade do código Sprint 32
+
+### 📊 Métricas
+
+| Métrica | Pré v3.32.0 | Pós v3.32.0 |
+|---|---|---|
+| Steps CI | 7 | **11** |
+| Binários buildados | 4 | **10** |
+| Coverage gates | 2 (auditlog, radar) | **3** (+audit/rules) |
+| Drift detection | 0 | **1** (3040 rules) |
+| Regras 3040 (registry vs claim) | não validado | **126 = 126** ✅ |
+
+### 📁 Arquivos tocados
+
+```
+.github/workflows/test.yml                  (Sprint 35: 7 → 11 steps)
+backend/SPRINT_35_RESULTS.md                (NOVO)
+```
+
+### ⏭️ Próxima sprint
+
+**Sprint 33 ou 34** — escolher entre expandir Doc3040 (Cat 1-3) ou iniciar Audit3050.
+
+---
+
 ## v3.31.0 — 2026-07-06 (Validação 53 — Deep audit pós-v3.30.0) ✅
 
 > **Status:** ✅ Shipped

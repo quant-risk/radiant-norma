@@ -223,7 +223,8 @@ Endpoints REST      20+ funcionais · JWT + CSRF + RateLimit + CORS
 Material BACEN      137 arquivos · 50 MB capturados
 Concorrentes mapeados 12 (Mitra/Matera/cadoc.ai/LUZ/Dattos/BIBlue/…)
 PDFs profissionais  4 (README · ENG_REVERSA · PRODUTO_TESE_ROADMAP · em breve MASTER_PLAN)
-Validações profundas 48 ciclos documentados (média 1.7/sprint)
+Validações profundas 53 ciclos documentados (média 1.7/sprint)
+CI-Gate          GitHub Actions 11 steps (build 10 binaries + race + 3 coverage gates + 3040 drift check)
 ```
 
 > ⚠️ **Status real de cobertura 3040:** 126/361 regras (34.9%). Sprint 32 Fases 1+2+3+4 entregues (66 regras: 14 Agregadas + 5 Sistemáticas + 19 Individuais + 28 finais). Carry-over 67 regras (DiaAtraso, CaractEsp, PCLD tables) documentado em SPRINT_32_FASE4_RESEARCH.md.

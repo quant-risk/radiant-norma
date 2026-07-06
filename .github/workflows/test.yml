@@ -4,8 +4,14 @@
 #   - go vet encontra issues
 #   - go test -race falha (detecta data races)
 #   - coverage fica abaixo dos thresholds
+#   - gofmt drift detectado
+#   - build falha em qualquer dos 10 binários
+#   - placeholder detectado em SPRINT_*.md
 #
-# Performance: ~30s em máquina decente. Cache de Go modules acelera.
+# Sprint 35 (v3.32.0): expandido de 4 → 10 binários + coverage gate para
+# internal/audit/rules + placeholder lint.
+#
+# Performance: ~60s em máquina decente. Cache de Go modules acelera.
 name: CI
 
 on:
@@ -36,23 +42,39 @@ jobs:
         working-directory: backend
         run: go vet ./...
 
-      - name: go build (compile all binaries)
+      - name: gofmt check
         working-directory: backend
         run: |
-          go build ./cmd/api
-          go build ./cmd/worker
-          go build ./cmd/radar
-          go build ./cmd/_verify
+          UNFORMATTED=$(gofmt -l .)
+          if [ -n "$UNFORMATTED" ]; then
+            echo "❌ Files not gofmt'd:"
+            echo "$UNFORMATTED"
+            exit 1
+          fi
+          echo "✓ all files gofmt'd"
+
+      - name: Placeholder lint (SPRINT_*.md)
+        run: bash scripts/lint-no-placeholder.sh
+
+      - name: Build ALL binaries
+        working-directory: backend
+        run: |
+          set -e
+          for bin in api worker radar jwt-mint secret-migrate senhaws-rotate sta-submit seed seed-sprint8c _verify; do
+            echo "Building cmd/$bin..."
+            go build -o /tmp/ci-bin-$bin ./cmd/$bin
+          done
+          echo "All 10 binaries built OK"
 
       - name: go test -race
         working-directory: backend
-        run: go test -race -v ./...
+        run: go test -race -count=1 ./...
 
       - name: Coverage report
         working-directory: backend
         run: go test -cover ./... | tee coverage.txt
 
-      - name: Check coverage thresholds
+      - name: Coverage gates
         working-directory: backend
         run: |
           # auditlog/ deve ter ≥85% (regra mais crítica — audit chain)
@@ -73,13 +95,44 @@ jobs:
           fi
           echo "✓ radar coverage OK"
 
-      - name: gofmt check
-        working-directory: backend
-        run: |
-          UNFORMATTED=$(gofmt -l .)
-          if [ -n "$UNFORMATTED" ]; then
-            echo "❌ Files not gofmt'd:"
-            echo "$UNFORMATTED"
+          # Sprint 35: audit/rules deve ter ≥70% (Sprint 32 entregou 70.8%)
+          COV=$(grep "internal/audit/rules" coverage.txt | grep -oE '[0-9]+\.[0-9]+%' | head -1 | tr -d '%')
+          echo "audit/rules coverage: ${COV}%"
+          if (( $(echo "$COV < 70" | bc -l) )); then
+            echo "❌ audit/rules coverage < 70% (got ${COV}%)"
             exit 1
           fi
-          echo "✓ all files formatted"
+          echo "✓ audit/rules coverage OK"
+
+      - name: 3040 rule count drift check (Sprint 35)
+        working-directory: backend
+        run: |
+          # Verifica que número de regras 3040 portadas bate com CHANGELOG.
+          # Drift entre código e CHANGELOG = inconsistência visível.
+          # Pega o último "Total 3040: **N → M**" do CHANGELOG (M = current).
+          CLAIMED=$(python3 -c "
+          import re
+          with open('CHANGELOG.md') as f:
+              text = f.read()
+          matches = []
+          for line in text.split('\n'):
+              if 'Total 3040' in line:
+                  m = re.search(r'\*\*(\d+).+?(\d+)\*\*', line)
+                  if m:
+                      matches.append((m.group(1), m.group(2)))
+          # CHANGELOG tem entries em ordem cronológica reversa (top = mais recente).
+          # Pega o primeiro match = mais recente.
+          print((matches[0][1] if matches else '').strip())
+          ")
+          ACTUAL=$(grep -hE 'return "[A-Z][0-9]+' internal/audit/rules/3040*.go internal/audit/rules/basic_rules.go | grep -oE '"[A-Z][0-9]+' | sort -u | wc -l | tr -d ' ')
+          echo "Regras 3040 no registry: ${ACTUAL}"
+          echo "Regras claim no CHANGELOG: ${CLAIMED}"
+          if [ -z "$CLAIMED" ]; then
+            echo "WARN: CHANGELOG não tem claim parseável — skipped"
+            exit 0
+          fi
+          if [ "$ACTUAL" != "$CLAIMED" ]; then
+            echo "DRIFT: registry tem ${ACTUAL} regras mas CHANGELOG diz ${CLAIMED}"
+            exit 1
+          fi
+          echo "Registry count = CHANGELOG claim"
