@@ -74,6 +74,12 @@ func WithTenantTx(
 	ifID string,
 	fn func(tx *sql.Tx) error,
 ) error {
+	// Sprint 30 (v3.33.0) Validação 55 [F-55-X]: nil check defensivo.
+	// Sem isso, nil d causa nil pointer panic em d.BeginTx. Caller error
+	// deve ser tratado graciosamente (log + early return), não crash.
+	if d == nil {
+		return fmt.Errorf("with tenant tx: nil *sql.DB")
+	}
 	tx, err := d.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
@@ -113,9 +119,15 @@ func WithTenantTx(
 // validateIFID garante que ifID é seguro para usar em SET LOCAL.
 // Aceita apenas alfanumérico + hífen + underscore (UUID-like).
 // Bloqueia qualquer caractere que poderia ser SQL injection.
+//
+// Sprint 30 (v3.33.0) Validação 55 [F-55-F]: empty string é aceita
+// (admin escape valve). Caller pode passar "" intencionalmente para
+// ações admin/system onde if_id no DB é NULL. Política 012 permite
+// `if_id IS NULL OR if_id = current_setting('app.if_id', true)` —
+// admin actions têm `if_id IS NULL`.
 func validateIFID(ifID string) error {
 	if ifID == "" {
-		return fmt.Errorf("empty ifID")
+		return nil // admin escape valve
 	}
 	if len(ifID) > 64 {
 		return fmt.Errorf("ifID too long (max 64 chars)")

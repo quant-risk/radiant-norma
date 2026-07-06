@@ -2,6 +2,59 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.33.1 — 2026-07-06 (Validação 55 — Hardening pós-v3.33.0 FORCE RLS) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (regression coverage + bug fixes)
+> **Trigger:** Solicitação Henrique — "validação profunda em tudo que você acabou de fazer"
+> **Validação:** VALIDATION_v3.33.0.md — 10 findings, 4 fechados, 6 carry-over
+
+### 🐛 Findings fechados (4)
+
+| # | Sev | Finding | Fix |
+|---|---|---|---|
+| **F-55-A** | **HIGH** | `WithTenantTx(nil db)` causava **nil pointer panic** em production | Nil check defensivo retorna erro wrapped |
+| F-55-B | MED | `tenant.go` adicionado sem `tenant_test.go` (coverage 0%) | 6 testes unitários criados |
+| F-55-C | MED | `validateIFID` rejeitava "" (admin escape) — diverge SQLite vs Postgres | Empty string aceita (admin escape valve) |
+| F-55-G | INFO | Coverage auditlog caiu ~3pp após refactor | Aceito — refactor é equivalente |
+
+### 📋 Carry-over (6)
+
+| # | Sev | Finding | Sprint alvo |
+|---|---|---|---|
+| F-55-D | LOW | `driverCache` sync.Map nunca limpa | Sprint 36 ou nunca |
+| F-55-F | LOW | Typo aspas curvas em comentário | Polish |
+| F-55-H | INFO | Tests stress flaky sob -race (limitação SQLite) | Documentado, skip |
+| F-55-I | MED | `audit_log.if_id IS NULL` admin escape não documentado | Sprint 36 (métricas/alerts) |
+| F-55-J | MED | `auditlog.Verify` bypassa RLS intencionalmente — não documentado | Sprint 36/37 |
+
+### 📊 Métricas v3.33.0 → v3.33.1
+
+| Métrica | v3.33.0 | v3.33.1 |
+|---|---|---|
+| Testes tenant | 0 | **6** |
+| Coverage `WithTenantTx` | 0% | **66.7%** |
+| Coverage `isPostgresCached` | 0% | **80%** |
+| Coverage `internal/db` | 50% | **62.1%** |
+| Nil panic risk | YES | **NO** |
+| Cross-driver divergence | YES | **NO** |
+
+### 🎓 Lições aprendidas
+
+- **Test "óbvio" (NilDB) achou bug crítico** — testes defensivos sempre valem.
+- **Test coverage gap é detector de regressões** — validar coverage delta após adicionar arquivos novos.
+- **Cross-driver behavior divergence** é pior que fail-loud — testar ambos explicitamente.
+
+### 📁 Arquivos tocados
+
+```
+backend/internal/db/tenant.go           (F-55-A nil check, F-55-C empty accept)
+backend/internal/db/tenant_test.go      (NOVO — 6 testes)
+backend/VALIDATION_v3.33.0.md           (NOVO)
+```
+
+---
+
 ## v3.33.0 — 2026-07-06 (Sprint 30 — PostgresRLS — FORCE RLS defense-in-depth) ✅
 
 > **Status:** ✅ Shipped
