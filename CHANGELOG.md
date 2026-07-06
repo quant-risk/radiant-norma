@@ -2,6 +2,118 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.21.0 — 2026-07-06 (Sprint 27: pre-commit hook — lint + gofmt + vet automatizado) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** Sprint 27 (fecha gap operacional do Sprint 25)
+> **Versão:** patch (2 scripts novos + hook — zero impacto em código existente)
+> **Trigger:** VALIDAÇÃO 47/48 §"Próximos passos" Sprint 27 (pre-commit hook)
+> **Validação:** 21/21 packages PASS + 7/7 binaries + race clean + gofmt/vet clean
+
+### 🎯 Resumo
+
+Sprint 27 fecha o **gap operacional do Sprint 25** — `lint-no-placeholder.sh`
+rodava manual. Agora roda **automaticamente** antes de cada `git commit` via
+pre-commit hook.
+
+**Decisão arquitetural:** symlink de `scripts/pre-commit.sh` em `.git/hooks/pre-commit`.
+Hook roda 3 checks (cada <2s):
+1. `lint-no-placeholder.sh` — detecta `(preencher X)` em SPRINT_*.md
+2. `gofmt -l backend/` — detecta drift de formatação Go
+3. `go vet ./...` — detecta constructs suspeitos
+
+**Decisões YAGNI conscientes:**
+- Sem `golangci-lint` ou framework externo (bash + stdlib suficiente).
+- Sem integração CI automática (lint roda local, CI é v28+).
+- Sem pre-push hook (pre-commit é o canônico git convention).
+- Sem `go test` no hook (leva ~2min, CI é lugar certo).
+- Sem auto-install via `go generate` ou similar (install-hooks.sh é script manual).
+
+**Decisões de design não-óbvias:**
+- **Symlink relativo** (`../../scripts/pre-commit.sh`): portabilidade entre máquinas.
+- **Backup automático** em `install-hooks.sh` se hook customizado já existe.
+- **Idempotência** do install: rodar 2x não quebra.
+- **Bypass** com `--no-verify` (padrão git, não precisa flag custom).
+
+### 🚀 O que entrou
+
+**`scripts/pre-commit.sh` (76 linhas bash):**
+- 3 checks sequenciais, formato consistente (`==> [N/3]`)
+- Output útil em caso de falha (mensagem + fix command)
+- Detecta placeholders, drift Go, vet issues
+
+**`scripts/install-hooks.sh` (35 linhas bash):**
+- Cria symlink `.git/hooks/pre-commit` → `scripts/pre-commit.sh`
+- Idempotente (rodar 2x não quebra)
+- Backup automático de hook customizado (`.bak`)
+
+**Hook instalado localmente:**
+- `.git/hooks/pre-commit` → symlink
+- Roda automaticamente antes de cada commit
+- Bypass via `--no-verify` para emergências
+
+### 🔧 Como usar
+
+```bash
+# Setup (uma vez por dev)
+./scripts/install-hooks.sh
+
+# Workflow normal
+git add .
+git commit -m "fix: ..."  # hook roda automaticamente
+
+# Bypass (emergência)
+git commit --no-verify -m "hotfix urgente"
+```
+
+### 📊 Estatísticas
+
+| Métrica | Valor |
+|---|---|
+| Arquivos novos | 2 (pre-commit.sh 76 linhas + install-hooks.sh 35 linhas) |
+| Packages PASS | **21/21** (zero regressão) |
+| Build smoke | 7/7 binaries |
+| gofmt drift | 0 |
+| vet | clean |
+| Race detector | clean |
+| Lint `lint-no-placeholder.sh` | ✅ 27/27 (Sprint 27 incluso) |
+
+### 🔒 Compatibilidade
+
+- **Zero impacto em código existente.** Scripts são additive.
+- **Hook não é commitado** (`.git/hooks/` é gitignored por default). Cada dev roda `./scripts/install-hooks.sh` uma vez.
+- **CI não muda.** Sprint 28+ pode adicionar step CI para `./scripts/pre-commit.sh` se virar requisito.
+
+### 🏗️ Lições aprendidas (carry forward)
+
+1. **Pre-commit hook = automação catching local.** Lint script → install hook → catching automático.
+2. **Bash + symlink > framework externo.** Não precisamos husky/pre-commit.com/lefthook.
+3. **Backup automático em install scripts.** Preserva customizações dev.
+4. **Idempotência em scripts de setup.** Roda N vezes sem erro (CI/container/erro humano).
+5. **Pre-commit hook NÃO inclui `go test`.** Leva ~2min, CI é lugar certo.
+6. **Sprint operacional (não feature).** Fecha gap operacional sem adicionar feature nova.
+
+### 📦 Arquivos tocados
+
+```
+scripts/pre-commit.sh                 (novo, 76 linhas)
+scripts/install-hooks.sh              (novo, 35 linhas)
+SPRINT_27_RESULTS.md                  (este)
+CHANGELOG.md                          (esta entrada)
+```
+
+### ⚠️ Próximos passos (Sprint 28+)
+
+| Sprint | Escopo | Justificativa |
+|---|---|---|
+| 28 | Vault integration | Secret manager rotation |
+| 29 | Smoke contra BACEN homolog | Requer credenciais Sisbacen |
+| 30 | `cmd/sta-submit` range upload | Chunked transfer (Sprint 21) |
+| 31 | Handler REST `/v1/sta/range-*` | Sprint 21 YAGNI |
+| 28+ | CI integration (`scripts/pre-commit.sh` em CI) | Cross-dev consistency |
+
+---
+
 ## v3.20.0 — 2026-07-06 (Validação 48 DEEPEST — Sprint 26 coverage gaps + dead code) ✅
 
 > **Status:** ✅ Shipped
