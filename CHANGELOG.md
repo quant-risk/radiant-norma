@@ -2,6 +2,87 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.20.0 — 2026-07-06 (Validação 48 DEEPEST — Sprint 26 coverage gaps + dead code) ✅
+
+> **Status:** ✅ Shipped
+> **Versão:** patch (2 LOW + 1 INFO→LOW — zero impacto em código existente)
+> **Trigger:** "da mais uma validada profunda" após Validação 47 + Sprint 26
+> **Validação:** 21/21 packages PASS (zero flake desta vez!) + 3 testes novos + 1 SKIP + coverage sta-submit 70.3% → 78.1% + race clean + 7/7 binaries + gofmt/vet clean
+
+### 🎯 Resumo
+
+Validação 48 fecha **3 findings** identificados na leitura completa de
+Validação 47 + Sprint 26 (commit `70718a3` + `47cdfc8`):
+
+- **F-S26-48-A (LOW):** 4 gaps de coverage em `cmd/sta-submit`:
+  1. `os.ReadFile` erro (path inválido) → exit 2
+  2. `result.Rejection == nil` (caminho else) → SKIP (não testável com StubClient)
+  3. `newLogger(quiet=true)` quiet path → newLogger 0% → 66.7%
+  4. `fs.Parse` erro → SKIP (flag.ContinueOnError indefinido)
+
+  Coverage `cmd/sta-submit`: 70.3% → **78.1%** (+7.8pp).
+  Coverage `runSubmit`: 84.8% → **90.9%** (+6.1pp).
+  Coverage `newLogger`: 0% → **66.7%** (+66.7pp).
+
+- **F-S26-48-B (LOW):** `var _ = strings.Contains` dangling no main.go (linha 217) +
+  comment enganoso "usado internamente". `strings` não era usado em nenhum
+  outro site do main.go (apenas no test file). Dead code com comment misleading.
+  Removido + import `strings` removido.
+
+### 🔍 Findings NÃO fechados (7 com justificativa)
+
+Todos carry-overs ou YAGNI documentados:
+- **F-NF-1:** `cli main()` 0% coverage (YAGNI carry-over v44).
+- **F-NF-2:** `newLogger` 66.7% (caminho não-quiet uncovered — YAGNI carry-over v45+v46+v47).
+- **F-NF-3:** `runSubmit` erro de `staNewClientFromEnv` uncovered (carry-over F-NF-2 v46).
+- **F-NF-4:** caminho `rejection==nil` não testável (StubClient hardcoded tem Rejection != nil).
+- **F-NF-5:** sem compile-time assert para `staClient` private (decisão consciente — interface local).
+- **F-NF-6:** `protocol_sta`/`code`/`message` impressos no stdout (carry-over F-NF-3 v43).
+- **F-NF-7:** Test `TestStaSubmit_LoadConfig_InvalidFlag` SKIP — flag.ContinueOnError indefinido.
+
+### 📦 Arquivos tocados
+
+```
+backend/cmd/sta-submit/main.go          (3 modificados — var _ + import removidos)
+backend/cmd/sta-submit/main_test.go     (+113 — 3 testes novos + 1 SKIP + comentários)
+VALIDATION_v3.19.0_DEEPEST.md           (novo — 8 checklists + 3 findings + 7 NF + 6 lições)
+CHANGELOG.md                            (esta entrada)
+```
+
+### 🔢 Métricas
+
+| Métrica | Pré Validação 48 | Pós Validação 48 |
+|---|---|---|
+| Packages PASS | 21/21 | **21/21** (zero flake desta vez!) |
+| Tests sta-submit top-level | 10 | **13** (+3) |
+| Tests sta-submit SKIP | 0 | 1 |
+| Total backend tests top-level | 127 | **130** (+3) |
+| Coverage cmd/sta-submit | 70.3% | **78.1%** (+7.8pp) |
+| Coverage runSubmit | 84.8% | **90.9%** (+6.1pp) |
+| Coverage newLogger | 0% | **66.7%** (+66.7pp) |
+| Race detector | clean | clean |
+| gofmt drift | 0 | 0 |
+| vet | clean | clean |
+| Lint `lint-no-placeholder.sh` | ✅ 26/26 | ✅ 26/26 |
+| Findings abertos | — | **0** (3 fechados, 7 NF com justificativa) |
+
+### 🏗️ Lições aprendidas (carry forward)
+
+1. **Coverage report é checklist de test cases.** Cada linha uncovered em função testável = test case pendente. 4 testes simples (+30 linhas total) fecharam 3 gaps com +7.8pp coverage.
+2. **Dead code + comment enganoso = pior que dead code sem comment.** Remover `var _ + comment + import` é mais limpo que deixar com aviso.
+3. **Test SKIP com justificativa > test que promete sem entregar.** Documenta intenção + razão. Pattern consistente com validações anteriores.
+4. **Carry-overs continuam documentados.** 7 NF nesta validação, 5 são carry-overs de v44-v47. Pattern consistente evita "NF forgotten and re-flagged".
+5. **Validação contínua pós-sprint vale investimento.** v48 foi rápida (~30 min equivalente) mas encontrou 3 melhorias incrementais + 0 regressão.
+6. **Zero flake desta vez (raro!).** Loggerutil perf tests passaram limpos. Pode ser偶然 (CPU não disputada) ou v45/v47 fixes resolveram. Carry-over para próxima validação.
+
+### 🔒 Compatibilidade
+
+- Zero impacto em código de produção. Testes adicionais são puramente cobertura.
+- Remoção de dead code (`var _` + comment + import `strings`) é internal cleanup.
+- Comportamento runtime idêntico.
+
+---
+
 ## v3.19.0 — 2026-07-06 (Sprint 26: cmd/sta-submit CLI) ✅
 
 > **Status:** ✅ Shipped

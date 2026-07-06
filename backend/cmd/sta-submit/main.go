@@ -35,7 +35,6 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
@@ -213,6 +212,3 @@ func main() {
 
 	os.Exit(runSubmit(ctx, cfg, logger))
 }
-
-// helper para string contains — usado internamente (não exposto)
-var _ = strings.Contains
