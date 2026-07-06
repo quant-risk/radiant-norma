@@ -44,6 +44,10 @@ var tabelaClassOpProvisaoA01 = []struct {
 	// H: provisão >= 100% (sem upper bound — classOp H é "irrecuperável",
 	// provisão idealmente 100% ou mais)
 	{"H", 1.00, 9.99, 0},
+	// HH: classificação HH é usada para operações com vencimentos > 1 ano
+	// (v310/v320/v330). Provisão 100% por definição (irrecuperável com hedge).
+	// Sprint 32 Fase 2: adicionado pra suportar S20.
+	{"HH", 1.00, 9.99, 0},
 }
 
 // ClassOpInA01Range retorna true se ClassOp existe na tabela A01.

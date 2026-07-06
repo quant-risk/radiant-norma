@@ -2,6 +2,71 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.27.0 — 2026-07-06 (Sprint 32 Fase 2 — Audit3040_v2: 5 regras Sistemáticas S12-S20) ✅
+
+> **Status:** ✅ Shipped (Fase 2 de 4)
+> **Sprint:** 32 (Plano Ouro §3.4 Épico D — Norma Engine)
+> **Versão:** minor (+5 regras, +2 arquivos)
+> **Trigger:** Plano Ouro §1.1 — fechar gap 3040 progressivamente
+> **Escopo honesto:** Plano original falava +35 regras (C11-C30 + S11-S20). Análise mostrou que só 5 implementáveis sem expandir Doc3040. **16 carry-over** (C11-C30 precisam `Operacao` struct).
+
+### 🎯 Resumo
+
+Port das **5 regras Sistemáticas** do CADOC 3040 conforme catálogo BACEN. Total de regras 3040 em Go: **74 → 79** (cobertura 20.5% → **21.9%**).
+
+**Regras implementadas:**
+
+| Code | Descrição | Status |
+|---|---|---|
+| S12 | DtVencOp compatível com parcelas | **STUB** pass-through (carry-over Fase 3) |
+| S15 | DtBase formato YYYY-MM válido | ✅ completo |
+| S17 | TpCli ∈ {1=PF, 2=PJ} | ✅ completo (Cd check carry-over Fase 3) |
+| S19 | DtBase >= 09/2010 (Res. 4.282/2013) | ✅ completo |
+| S20 | Vencimentos longos → ClassOp=HH | ✅ warning (severity A, heurística) |
+
+**Carry-over explícito (Fase 3):** C11-C30 (16), S11/S13/S14/S16/S18 (5) — todos precisam `Operacao` struct com campos `Inf, Cd, Valor, Perc, DtContr, Garantidores, Parcelas`.
+
+### 📊 Métricas
+
+| Métrica | Pré v3.27.0 | Pós v3.27.0 |
+|---|---|---|
+| Regras 3040 portadas | 74 | **79** (+5) |
+| Cobertura catálogo | 20.5% | **21.9%** |
+| Coverage internal/audit/rules | 67.1% | **68.1%** (+1.0pp) |
+| Test functions Fase 2 | 0 | **6** |
+| Packages PASS | 23/23 | **23/23** |
+| Race detector | clean | clean |
+
+### 🔧 Decisões arquiteturais
+
+**D-6: HH adicionado à tabela A01**
+
+S20 requer ClassOp=HH para vencimentos longos. Tabela A01 extendida:
+
+```go
+{"HH", 1.00, 9.99, 0}, // classificação HH — irrecuperável com hedge
+```
+
+Cascata: `ClassOpInA01Range`, `F06ClassOpValido`, `A01ClassOpProvisao` todos atualizados. Tests existentes (TestClassOpInA01Range, TestF06) atualizados.
+
+### 📁 Arquivos
+
+```
+backend/internal/audit/rules/3040_sistematicas.go         (NOVO — 145 LoC)
+backend/internal/audit/rules/3040_sistematicas_test.go    (NOVO — 220 LoC)
+backend/internal/audit/rules/3040_agregadas.go            (D-6: HH na tabela)
+backend/internal/audit/rules/3040_agregadas_test.go       (TestClassOpInA01Range: HH)
+backend/internal/audit/rules/registry.go                  (+5 Register)
+backend/SPRINT_32_FASE2_RESEARCH.md                       (NOVO)
+backend/SPRINT_32_FASE2_RESULTS.md                         (NOVO)
+```
+
+### ⏭️ Próxima sprint
+
+**Fase 3 do Sprint 32** — expandir `Doc3040` com `[]Operacao` struct + portar 45 regras (C11-C30 + S11/S13/S14/S16/S18 + I01-I15 + H01-H09) → 124 regras (34.4%).
+
+---
+
 ## v3.26.0 — 2026-07-06 (Validação 51 — Deep audit pós-v3.24.0 + v3.25.0) ✅
 
 > **Status:** ✅ Shipped

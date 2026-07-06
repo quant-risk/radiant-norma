@@ -206,11 +206,9 @@ func TestBuiltin3040_TotalRulesIs(t *testing.T) {
 	r := rules.Builtin3040()
 	total := len(r.Codes())
 	// Sprint 7b / v1.7.0: 5 raw + 55 tipadas = 60
-	//   - 5 raw (B01-B05)
-	//   - 25 originais (B06-B15, F01-F05, C01-C05, S01-S05)
-	//   - 30 novas (B16-B25, F06-F15, C06-C10, S06-S10)
-	// Sprint 32 / v3.25.0 Fase 1: +14 Agregadas (A01-A07, A09-A15; A08 não existe)
-	if total != 74 {
-		t.Errorf("Total regras = %d, want 74 (Sprint 32: 60 + 14 Agregadas)", total)
+	// Sprint 32 / v3.25.0 Fase 1: +14 Agregadas (A01-A07, A09-A15)
+	// Sprint 32 / v3.27.0 Fase 2: +5 Sistemáticas (S12 stub, S15, S17, S19, S20)
+	if total != 79 {
+		t.Errorf("Total regras = %d, want 79 (Sprint 32 Fase 2: 74 + 5 S)", total)
 	}
 }

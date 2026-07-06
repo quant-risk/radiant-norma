@@ -174,8 +174,9 @@ func (r *Registry) All() []Rule {
 //
 // Total pré-Sprint 32: 60 regras (Sprint 7b v1.7.0).
 // Sprint 32 Fase 1: +14 regras Agregadas (A01-A07, A09-A15) → 74 regras.
+// Sprint 32 Fase 2: +5 regras Sistemáticas (S12 stub, S15, S17, S19, S20) → 79 regras.
 //
-// Cobertura catálogo: 74/361 = 20.5% (era 16.6%).
+// Cobertura catálogo: 79/361 = 21.9%.
 func Builtin3040() *Registry {
 	r := NewRegistry()
 
@@ -274,6 +275,14 @@ func Builtin3040() *Registry {
 	r.Register(A13RiscoMedioMin{})
 	r.Register(A14LocalizExterior{})
 	r.Register(A15AgregadoDuplicadoCompleto{})
+
+	// Sprint 32 / v3.27.0 Fase 2 — Sistemáticas S12, S15, S17, S19, S20 (5 regras; S11/S13/S14/S16/S18 não implementadas nesta fase)
+	// S12 é stub pass-through (carry-over Fase 3: precisa Operacao.Parcelas)
+	r.Register(S12DtVencCompativelParcelas{})
+	r.Register(S15DtContrNaoFutura{})
+	r.Register(S17CdTamanhoPorTpCli{})
+	r.Register(S19DtBaseMinima{})
+	r.Register(S20VencimentosHH{})
 
 	return r
 }

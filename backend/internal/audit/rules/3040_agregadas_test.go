@@ -433,15 +433,15 @@ func TestRegistry_Agregadas(t *testing.T) {
 
 // TestClassOpInA01Range — Validação 51 (F-S28-51-C): helper exposto na
 // Sprint 32 e agora reusado por F06ClassOpValido (single source of truth).
-// Cobre todas ClassOp válidas + 2 inválidas.
+// Sprint 32 Fase 2: HH adicionado à tabela (S20 — Vencimentos HH).
 func TestClassOpInA01Range(t *testing.T) {
-	validas := []string{"AA", "A", "B", "C", "D", "E", "F", "G", "H"}
+	validas := []string{"AA", "A", "B", "C", "D", "E", "F", "G", "H", "HH"}
 	for _, c := range validas {
 		if !ClassOpInA01Range(c) {
 			t.Errorf("ClassOp %q deveria estar na tabela A01", c)
 		}
 	}
-	invalidas := []string{"", "X", "Z", "9", "AA1", " a"}
+	invalidas := []string{"", "X", "Z", "9", "AA1", " a", "AAA"}
 	for _, c := range invalidas {
 		if ClassOpInA01Range(c) {
 			t.Errorf("ClassOp %q NÃO deveria estar na tabela A01", c)
@@ -450,13 +450,13 @@ func TestClassOpInA01Range(t *testing.T) {
 }
 
 // TestF06_ReusaClassOpInA01Range — Validação 51: F06 agora reusa tabela A01
-// em vez de regex hardcoded. Test valida comportamento equivalente.
+// em vez de regex hardcoded. Sprint 32 Fase 2: HH agora aceito.
 func TestF06_ReusaClassOpInA01Range(t *testing.T) {
 	tests := []struct {
 		classOp  string
 		querErro bool
 	}{
-		{"A", false}, {"B", false}, {"H", false},
+		{"A", false}, {"B", false}, {"H", false}, {"HH", false}, // HH adicionado
 		{"X", true}, {"9", true}, {"", true},
 	}
 	for _, tt := range tests {
