@@ -2,6 +2,61 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.31.0 — 2026-07-06 (Validação 53 — Deep audit pós-v3.30.0) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (S41/S46 Inf list fix)
+> **Trigger:** Solicitação Henrique — "validação profunda em tudo que você acabou de fazer"
+> **Validação:** VALIDAÇÃO_v3.31.0.md — 3 findings, 1 fechado, 2 aceitos YAGNI/INFO
+
+### 🎯 Resumo
+
+Auditoria profunda de v3.30.0 (Sprint 32 Fase 4) encontrou **3 findings**. 1 fechado, 2 aceitos:
+
+- **LOW** (F-S32-53-A): S41 + S46 incluíam `0105` indevidamente. Inf 0105 = aquisição (não cedente). Fix: removido.
+- **LOW** (F-S32-53-B): S25 cobre 4 de 13 Inf cessionário. Aceito YAGNI (carry-over).
+- **INFO** (F-S32-53-C): Falso alarme `IPOC[:4]` panic — Go slice safe. Descartado.
+
+### 🔧 Fix principal (LOW)
+
+**F-S32-53-A — Drift intra-sprint S41 vs S46**
+
+S41 exclui 0105 corretamente. S46 não. Drift causado por implementar regras similares em momentos diferentes sem helper compartilhado.
+
+```diff
+ // S46
+-for _, inf := range []string{"0101", "0103", "0104", "0105", "0106", ...} {
++for _, inf := range []string{"0101", "0103", "0104", "0106", ...} {
+```
+
+**Risco antes:** S46 flagava 0105 (Inf aquisição) como Cd formato data inválido. Falso positivo.
+
+Universal: implementar helper `infsCedente()` ao invés de duplicar maps inline.
+
+### 📊 Métricas
+
+| Métrica | Pré v3.31.0 | Pós v3.31.0 |
+|---|---|---|
+| Findings abertos | 0 (pós-52) | **0** (1 fechado + 2 aceitos) |
+| Coverage audit/rules | 70.8% | **70.8%** |
+| S41 Inf list | 7 entries (com 0105) | **6 entries** (sem 0105) |
+| S46 Inf list | 19 entries (com 0105) | **18 entries** (sem 0105) |
+| Packages PASS | 23/23 | **23/23** |
+| Race detector | clean | clean |
+
+### 📁 Arquivos tocados
+
+```
+backend/internal/audit/rules/3040_fase4.go            (F-S32-53-A: S41 + S46 Inf list)
+backend/VALIDATION_v3.31.0.md                       (audit completo)
+```
+
+### ⏭️ Próxima sprint
+
+**Sprint 35 (CI-Gate)** — adicionar `.github/workflows/ci.yml` com `go test -race`, `gofmt`, `go vet`, coverage gate.
+
+---
+
 ## v3.30.0 — 2026-07-06 (Sprint 32 Fase 4 — Audit3040_v2: 28 regras finais + Stub severity "I") ✅
 
 > **Status:** ✅ Shipped — Sprint 32 FECHADO

@@ -414,6 +414,9 @@ func (S34CdCessao) Apply(_ context.Context, doc *Doc3040) error {
 }
 
 // S41 — Ident de Inf 01 (exceto 0105), 0303, 1001, 1203: CNPJ 8 dígitos.
+//
+// Catálogo BACEN lista Inf 01 = {0101, 0103, 0104, 0106} (0105 excetuado).
+// 0102 não é listado em S41 (não é Inf de cedente — é Inf de aquisição).
 type S41IdentCNPJ8Digitos struct{}
 
 func (S41IdentCNPJ8Digitos) Code() string     { return "S41" }
@@ -423,7 +426,7 @@ func (S41IdentCNPJ8Digitos) Apply(_ context.Context, doc *Doc3040) error {
 	infsCNPJ := map[string]bool{
 		"0101": true, "0103": true, "0104": true, "0106": true,
 		"0303": true, "1001": true, "1203": true,
-		// 0105 excluido
+		// 0105 excluido (não exige CNPJ)
 	}
 	for i, op := range doc.Operacoes {
 		if !infsCNPJ[op.Inf] {
@@ -525,6 +528,10 @@ func (S45IdentCPFouCNPJ) Apply(_ context.Context, doc *Doc3040) error {
 }
 
 // S46 — Cd das Inf 01, 0303, 0304, 07, 10, 1201, 1701: formato AAAA-MM-DD.
+//
+// Catálogo BACEN lista Inf 01 = {0101, 0103, 0104, 0106}. Inf 07 = {0701-0707}.
+// Inf 10 = {1001, 1002, 1003}. Validação 53 (F-S32-53-A): removido 0105
+// (não é Inf de cedente — é Inf de aquisição, não exige formato data).
 type S46CdFormatoData struct{}
 
 func (S46CdFormatoData) Code() string     { return "S46" }
@@ -532,9 +539,11 @@ func (S46CdFormatoData) Sheet() string    { return "Sistemáticas" }
 func (S46CdFormatoData) Severity() string { return "E" }
 func (S46CdFormatoData) Apply(_ context.Context, doc *Doc3040) error {
 	infs := map[string]bool{}
-	for _, inf := range []string{"0101", "0103", "0104", "0105", "0106", "0303", "0304",
+	for _, inf := range []string{"0101", "0103", "0104", "0106",
+		"0303", "0304",
 		"0701", "0702", "0703", "0704", "0705", "0706", "0707",
-		"1001", "1002", "1003", "1201", "1701"} {
+		"1001", "1002", "1003",
+		"1201", "1701"} {
 		infs[inf] = true
 	}
 	re := regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)

@@ -363,12 +363,12 @@ func Builtin3040() *Registry {
 	// C31-C40 (subset de 14) — FatAnual, Perc Indexador, Inf 1201-1203
 	r.Register(C31FaturamentoObrigatorio{})
 	r.Register(C32PercIndexadorObrigatorio{})
-	r.Register(C33DiasAtrasoObrigatorio{})      // stub — requer DiaAtraso em Operacao
+	r.Register(C33DiasAtrasoObrigatorio{}) // stub — requer DiaAtraso em Operacao
 	r.Register(C34Inf1201Coobrigacao{})
 	r.Register(C35Inf1201Obrigatorio{})
 	r.Register(C36IdentCedenteObrigatorio{})
 	r.Register(C37Inf1202{})
-	r.Register(C38Pacote1512{})                  // stub — parser cruzamento pacotes
+	r.Register(C38Pacote1512{}) // stub — parser cruzamento pacotes
 	r.Register(C39Inf1203{})
 	r.Register(C40Inf1201CdIdent{})
 	// C51-C55 (5 regras) — Inf específicas adicionais
@@ -380,18 +380,18 @@ func Builtin3040() *Registry {
 	r.Register(S21Mod15SemVenc310{})
 	r.Register(S22Mod1511NaoPF{})
 	r.Register(S25CNPJCabecalhoDiferente{})
-	r.Register(S26NatuOp02TemInf{})               // stub — requer NatuOp em Operacao
-	r.Register(S33Inf0101Natureza{})              // stub — idem
-	r.Register(S34CdCessao{})                     // stub — cruzamento original/cedida
+	r.Register(S26NatuOp02TemInf{})  // stub — requer NatuOp em Operacao
+	r.Register(S33Inf0101Natureza{}) // stub — idem
+	r.Register(S34CdCessao{})        // stub — cruzamento original/cedida
 	r.Register(S41IdentCNPJ8Digitos{})
 	r.Register(S42CedenteIgualCabecalho{})
 	r.Register(S43CedenteIgualCliente{})
-	r.Register(S44CaractEsp35{})                  // stub — requer CaractEsp em Operacao
+	r.Register(S44CaractEsp35{}) // stub — requer CaractEsp em Operacao
 	r.Register(S45IdentCPFouCNPJ{})
 	r.Register(S46CdFormatoData{})
 	// S69-S70 (Fechamento)
 	r.Register(S69ClassOpHHProvZero{})
-	r.Register(S70IntramesDtContr{})              // stub — requer DtIntrames
+	r.Register(S70IntramesDtContr{}) // stub — requer DtIntrames
 
 	return r
 }
