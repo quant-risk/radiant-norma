@@ -44,18 +44,23 @@
 //	1  erro genérico / precisa rotacionar (check)
 //	2  erro de validação client-side (input inválido)
 //	3  erro BACEN (rejeição formal — caller investiga)
+//	4  partial failure (Validação 50 — BACEN OK mas secrets manager falhou;
+//	   senha gravada em failsafe file 0600 — NÃO em stderr)
 //
 // Referência: SPRINT_24_RESEARCH.md + SPRINT_28_RESEARCH.md + manual BACEN §9.1+§9.2.
 package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -65,10 +70,11 @@ import (
 
 // Exit codes (consistente com convention Unix).
 const (
-	exitOK           = 0
-	exitGenericError = 1
-	exitClientError  = 2
-	exitBACENError   = 3
+	exitOK             = 0
+	exitGenericError   = 1
+	exitClientError    = 2
+	exitBACENError     = 3
+	exitPartialFailure = 4 // Validação 50: BACEN OK + manager falhou → failsafe file
 )
 
 // config agrega inputs (flags + env vars).
@@ -241,16 +247,18 @@ func runRotate(ctx context.Context, cfg *config, logger *slog.Logger, novaSenha 
 // Combina rotate + secret-manager update em uma operação atômica-ish.
 //
 // Fluxo:
-//   1. AlterarSenha no BACEN
-//   2. Put no secrets manager configurado
-//   3. Audit log (futuro — Sprint 28 fica só no stderr)
+//  1. AlterarSenha no BACEN
+//  2. Put no secrets manager configurado
+//  3. Audit log (futuro — Sprint 28 fica só no stderr)
 //
 // Failure modes:
 //
-//	- BACEN aceita + Manager.Put falha: imprime warning, exit 1 (caller deve
-//	  re-executar apply — Manager.Put é idempotente via SecretId+SecretString).
-//	- BACEN rejeita: exit 3 (sem side effect no manager).
-//	- Config inválida: exit 2.
+//   - BACEN aceita + Manager.Put falha: exit 4 (Sprint 28 introduzido na Validação 50).
+//     Senha nova é gravada em arquivo 0600 com path conhecido (RADIANT_FAILSAFE_PATH
+//     ou /var/run/radiant/senhaws-failsafe-<ts>.txt). NUNCA em stderr (sink de log
+//     aggregator). Admin lê o arquivo, configura manual, e remove.
+//   - BACEN rejeita: exit 3 (sem side effect no manager).
+//   - Config inválida: exit 2.
 func runApply(ctx context.Context, cfg *config, logger *slog.Logger) int {
 	// 1. Validate config
 	if cfg.baseURL == "" || cfg.user == "" || cfg.password == "" {
@@ -268,6 +276,12 @@ func runApply(ctx context.Context, cfg *config, logger *slog.Logger) int {
 	}
 	logger.Info("secrets manager ativo", "backend", mgr.Backend())
 
+	return runApplyWithManager(ctx, cfg, logger, mgr)
+}
+
+// runApplyWithManager é versão testável de runApply que aceita um Manager
+// injetado. Permite tests com mock que falha no Put (Validação 50 — F-S28-50-B).
+func runApplyWithManager(ctx context.Context, cfg *config, logger *slog.Logger, mgr secrets.Manager) int {
 	// 3. Init senhaws client
 	client, err := senhaws.NewSenhawsClient(senhaws.SenhawsConfig{
 		BaseURL:           cfg.baseURL,
@@ -313,11 +327,22 @@ func runApply(ctx context.Context, cfg *config, logger *slog.Logger) int {
 	updated, err := mgr.Put(ctx, secretName, novaSenha)
 	if err != nil {
 		// CRITICAL: BACEN accepted but manager failed.
-		// Caller must re-execute apply (Put is idempotent).
-		fmt.Fprintf(os.Stderr, "WARN: senha alterada no BACEN mas FALHA ao atualizar %s manager: %v\n", mgr.Backend(), err)
-		fmt.Fprintf(os.Stderr, "      nova senha está apenas no BACEN. Re-execute `senhaws-rotate apply` para persistir.\n")
-		fmt.Fprintf(os.Stderr, "      Senha nova (capture agora!): %s\n", novaSenha)
-		return exitGenericError
+		// Validação 50 (F-S28-50-B): NUNCA imprimir senha em stderr (log aggregator).
+		// Em vez disso: gravar em arquivo 0600 com nome previsível + instruir admin
+		// a fazer config manual. Exit code distinto (4) pra automação diferenciar
+		// "BACEN rejeitou" (3) de "BACEN OK mas persistência falhou" (4).
+		failsafePath, writeErr := writeFailsafe(cfg.user, novaSenha)
+		if writeErr != nil {
+			fmt.Fprintf(os.Stderr, "WARN: senha alterada no BACEN mas FALHA ao atualizar %s manager: %v\n", mgr.Backend(), err)
+			fmt.Fprintf(os.Stderr, "      ALSO: failed to write failsafe file: %v\n", writeErr)
+			fmt.Fprintf(os.Stderr, "      ACTION REQUIRED: contate suporte — senha nova está APENAS no BACEN, NEM manager NEM failsafe.\n")
+		} else {
+			fmt.Fprintf(os.Stderr, "WARN: senha alterada no BACEN mas FALHA ao atualizar %s manager: %v\n", mgr.Backend(), err)
+			fmt.Fprintf(os.Stderr, "      ACTION REQUIRED: senha nova gravada em failsafe file (0600): %s\n", failsafePath)
+			fmt.Fprintf(os.Stderr, "      Use: cat %s | secret-migrate migrate --from-env=- --to=%s\n", failsafePath, secretName)
+			fmt.Fprintf(os.Stderr, "      Depois: shred -u %s\n", failsafePath)
+		}
+		return exitPartialFailure
 	}
 
 	logger.Info("secrets manager atualizado",
@@ -329,6 +354,35 @@ func runApply(ctx context.Context, cfg *config, logger *slog.Logger) int {
 	fmt.Printf("senha_alterada=true  secret_updated=true  backend=%s  name=%q  version_id=%s\n",
 		mgr.Backend(), secretName, updated.VersionID)
 	return exitOK
+}
+
+// writeFailsafe grava senha nova em arquivo 0600 num diretório previsível.
+//
+// Validação 50 (F-S28-50-B): pattern anti-secret-leak. Stderr/log aggregator NÃO
+// recebem a senha. Admin lê o arquivo, configura manual, e remove.
+//
+// Path: $RADIANT_FAILSAFE_PATH (default: /tmp/radiant-senhaws-failsafe-<timestamp>.txt)
+// Permissões: 0600 (rw só pro owner).
+// Conteúdo: linha única com a senha (sem newline final → evita cópia acidental).
+func writeFailsafe(user, senha string) (string, error) {
+	base := os.Getenv("RADIANT_FAILSAFE_PATH")
+	if base == "" {
+		base = "/tmp"
+	}
+	ts := time.Now().UTC().Format("20060102T150405Z")
+	// Hash do user pra filename (não vaza user em tmp listing)
+	h := sha256.Sum256([]byte(user))
+	userHash := hex.EncodeToString(h[:6])
+	path := filepath.Join(base, fmt.Sprintf("radiant-senhaws-failsafe-%s-%s.txt", ts, userHash))
+
+	if err := os.MkdirAll(base, 0700); err != nil {
+		return "", fmt.Errorf("mkdir failsafe dir: %w", err)
+	}
+
+	if err := os.WriteFile(path, []byte(senha), 0600); err != nil {
+		return "", fmt.Errorf("write failsafe: %w", err)
+	}
+	return path, nil
 }
 
 // runInfo implementa subcomando info.

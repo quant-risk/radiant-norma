@@ -45,7 +45,7 @@ func TestHasMixedCase(t *testing.T) {
 		{"Abc", true},
 		{"aBc", true},
 		{"123", false},
-		{"Abc1", true}, // mixed case + digit
+		{"Abc1", true},  // mixed case + digit
 		{"1a2b", false}, // only digits + lowercase, no upper
 	}
 	for _, tt := range tests {
@@ -91,6 +91,53 @@ func TestValidationErr_Is(t *testing.T) {
 	}
 }
 
+// TestBackendErr_Is — Validação 50: backendErr type usado por runList.
+func TestBackendErr_Is(t *testing.T) {
+	e1 := &backendErr{msg: "feature unavailable"}
+	e2 := &backendErr{msg: "other reason"}
+	if !e1.Is(e2) {
+		t.Error("backendErr should match other backendErr instances")
+	}
+	if e1.Error() != "feature unavailable" {
+		t.Errorf("Error() = %q, want %q", e1.Error(), "feature unavailable")
+	}
+	// Deve ser diferente de validationErr
+	if e1.Is(&validationErr{msg: "x"}) {
+		t.Error("backendErr should NOT match validationErr")
+	}
+}
+
+// =============================================================================
+// runMigrateBatch smoke (Validação 50 — coverage)
+// =============================================================================
+
+func TestRunMigrateBatch_ReadsJSON(t *testing.T) {
+	tmpFile := t.TempDir() + "/secrets.json"
+	jsonContent := `[{"from_env": "FAKE_ENV_1", "to_name": "fake/path/1"}, {"from_env": "FAKE_ENV_2", "to_name": "fake/path/2"}]`
+	if err := os.WriteFile(tmpFile, []byte(jsonContent), 0600); err != nil {
+		t.Fatalf("write tmp file: %v", err)
+	}
+
+	t.Setenv("RADIANT_SECRETS_BACKEND", "memory")
+
+	// FAKE_ENV_1 e FAKE_ENV_2 não estão setadas → SKIP em ambos → success_count=0
+	// mas sem erro fatal
+	err := runMigrateBatch([]string{"--file=" + tmpFile}, nil)
+	if err != nil {
+		t.Fatalf("runMigrateBatch should succeed even with missing env vars (SKIP): %v", err)
+	}
+}
+
+func TestRunMigrateBatch_MissingFile(t *testing.T) {
+	err := runMigrateBatch([]string{"--file=/nonexistent/path/secrets.json"}, nil)
+	if err == nil {
+		t.Fatal("expected error for missing file")
+	}
+	if exitCode(err) != 1 {
+		t.Errorf("exitCode = %d, want 1 (generic error for missing file)", exitCode(err))
+	}
+}
+
 // =============================================================================
 // exitCode tests
 // =============================================================================
@@ -115,19 +162,30 @@ func TestExitCode(t *testing.T) {
 }
 
 // =============================================================================
-// runList test (env backend reports not supported)
+// runList tests (Validação 50 — exit 3 honesto em backend não-AWS)
 // =============================================================================
 
-func TestRunList_EnvBackend(t *testing.T) {
+// TestRunList_NonAWSReturnsError verifica que list em backend não-AWS retorna
+// erro explícito (não exit 0 silencioso). Validação 50 F-S28-50-A: hollow stub
+// removido — caller agora distingue "feature não suportada" de "lista vazia".
+func TestRunList_NonAWSReturnsError(t *testing.T) {
 	oldVal := os.Getenv("RADIANT_SECRETS_BACKEND")
 	defer os.Setenv("RADIANT_SECRETS_BACKEND", oldVal)
 	os.Setenv("RADIANT_SECRETS_BACKEND", "memory")
 
 	err := runList([]string{"--prefix=bacen/"}, nil)
-	if err != nil {
-		t.Fatalf("runList failed: %v", err)
+	if err == nil {
+		t.Fatal("runList should error on non-AWS backend (memory/env)")
 	}
-	// Output verified by capturing stdout in shell, just check no error
+	if !strings.Contains(err.Error(), "not supported") {
+		t.Errorf("error should mention 'not supported', got %v", err)
+	}
+	if !strings.Contains(err.Error(), "memory") {
+		t.Errorf("error should mention backend name, got %v", err)
+	}
+	if exitCode(err) != 3 {
+		t.Errorf("exitCode = %d, want 3 (backend error)", exitCode(err))
+	}
 }
 
 // =============================================================================

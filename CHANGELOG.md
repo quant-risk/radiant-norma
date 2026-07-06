@@ -2,6 +2,117 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.24.0 — 2026-07-06 (Validação 50 — Deep audit + hardening pós-Sprint 28) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (zero feature nova, zero breaking change) + hardening
+> **Trigger:** Solicitação Henrique — "validação profunda em tudo que você acabou de fazer"
+> **Validação:** VALIDAÇÃO_v3.24.0.md — 8 findings encontrados, 6 fechados, 2 aceitos (YAGNI), 0 regressão
+
+### 🎯 Resumo
+
+Auditoria profunda do Plano Ouro (v3.22.0) + Sprint 28 (v3.23.0) encontrou **8 findings**. 6 fechados com fixes cirúrgicos:
+
+- **1 HIGH** (F-S28-50-B): `senhaws-rotate apply` vazava senha Sisbacen em stderr quando manager.Put falhava → failsafe file 0600 + exit code 4
+- **2 MEDIUM**: `secret-migrate list` retornava exit 0 silencioso ("TODO Sprint 29+") → exit 3 + `backendErr` type; inconsistência MASTER_PLAN sobre `012` vs `014` RLS → esclarecimento
+- **3 LOW**: dead code em `aws.go` (`var _ = errors.As`) e `memory.go` (`slogLogger interface{}`) removidos; cobertura `cmd/secret-migrate` +8.4pp via batch tests
+
+### 🔒 O que mudou
+
+#### Segurança (HIGH)
+
+**F-S28-50-B — failsafe file pattern para partial failure**
+
+Quando BACEN aceita senha nova (204) mas `secrets.Manager.Put` falha (AWS IAM, network, etc), a senha **NÃO pode** ir pro stderr (sink de log aggregator). Solução:
+
+```
+$ RADIANT_SECRETS_BACKEND=aws senhaws-rotate apply
+WARN: senha alterada no BACEN mas FALHA ao atualizar aws manager: AccessDenied
+      ACTION REQUIRED: senha nova gravada em failsafe file (0600): /tmp/radiant-senhaws-failsafe-20260706T053015Z-a1b2c3d4e5f6.txt
+      Use: cat <path> | secret-migrate migrate --from-env=- --to=bacen/senha/<user>
+      Depois: shred -u <path>
+exit: 4   # NOVO — partial failure (BACEN OK, manager FALHOU)
+```
+
+Senha raw NUNCA em stderr. Admin lê arquivo (0600), configura manual, `shred -u`. User no filename é SHA-256[:6] (não vaza identidade em `ls /tmp`).
+
+#### Hollow stubs removidos (MEDIUM)
+
+**F-S28-50-A — `secret-migrate list` agora retorna exit 3 honesto**
+
+```
+$ secret-migrate list --prefix=bacen/
+erro: list not supported on backend=env (apenas AWS Secrets Manager suporta ListSecrets). Sprint 29+ adiciona suporte
+exit: 3   # era 0 antes (silent failure)
+```
+
+Caller agora distingue "lista vazia" (exit 0) de "feature não suportada" (exit 3). AWS ListSecrets será adicionado em Sprint 29 (BacenHomologSmoke).
+
+#### Drift docs (MEDIUM)
+
+**F-S28-50-F/H — MASTER_PLAN §1.1 linha 80**
+
+Antes:
+```
+| 30 | PostgresRLS | Ativar migration 012_rls_policies.sql. ...
+```
+(conflitava com linha 594 que dizia `014_rls_enforce.sql`, e com ROADMAP/CHANGELOG que diziam só `014`)
+
+Depois:
+```
+| 30 | PostgresRLS | Ativar migration `012_rls_policies.sql` (em `internal/db/migrations/`) +
+                    criar migration `014_rls_enforce.sql` com FORCE ROW LEVEL SECURITY.
+                    Defense-in-depth multi-tenant. Auditoria SOC 2.
+```
+
+Resolve ambiguidade: 012 (policies base, existe) + 014 (enforce, criar).
+
+#### Dead code removido (LOW)
+
+- `internal/secrets/aws.go`: removido `var _ = errors.As` (era "avoid lint warning" theater — lint warning não existe)
+- `internal/secrets/memory.go`: removido type `slogLogger interface{}` + dummy var + import "strings" (era "preparado pro futuro" theater — YAGNI)
+
+### 📊 Métricas
+
+| Métrica | Pré v3.24.0 | Pós v3.24.0 |
+|---|---|---|
+| Packages PASS | 23/23 | **23/23** |
+| Test functions | ~544 | **770+** |
+| Coverage cmd/secret-migrate | 48.7% | **57.1%** (+8.4pp) |
+| Coverage cmd/senhaws-rotate | 66.2% | **68.3%** (+2.1pp) |
+| Coverage internal/secrets | 64.5% | 58.3% (-6.2pp — código morto removido muda ratio, linhas cobertas similar) |
+| Hollow stubs | 2 | **0** |
+| Secret leaks (stderr) | 1 | **0** |
+| Drift docs Sprint 30 | 2 | **0** |
+| Race detector | clean | clean |
+| Build smoke | 10/10 | **10/10** |
+
+### 🔄 Compatibilidade
+
+- `senhaws-rotate apply` agora retorna **exit 4** em partial failure (era exit 1). Automação que trata exit 1 = "BACEN rejeitou" precisa atualizar pra exit 3; exit 4 = "BACEN OK + manager falhou".
+- `secret-migrate list` em backend não-AWS agora retorna **exit 3** (era 0). Scripts que assumiam exit 0 precisam atualizar.
+- Zero impacto em API REST, subcomandos check/rotate/info, interface `secrets.Manager`.
+
+### 📁 Arquivos tocados
+
+```
+internal/secrets/aws.go              (F-S28-50-C: dead code removed)
+internal/secrets/memory.go           (F-S28-50-D: dead code removed)
+cmd/senhaws-rotate/main.go           (F-S28-50-B: failsafe + runApplyWithManager + exit 4)
+cmd/senhaws-rotate/main_test.go      (F-S28-50-B: 4 tests novos)
+cmd/secret-migrate/main.go           (F-S28-50-A: backendErr type + runList honest)
+cmd/secret-migrate/main_test.go      (F-S28-50-A + 2 batch tests)
+MASTER_PLAN.md                       (F-S28-50-F+H: 012+014 esclarecimento)
+VALIDATION_v3.24.0.md                (audit completo)
+CHANGELOG.md                         (esta entrada)
+```
+
+### ⏭️ Próxima sprint
+
+**Sprint 32 — Audit3040_v2** — fechar 3040 de 16% → 60% (maior entrega técnica Q3). Portar regras Agreg (A01-A20) + Indiv (I01-I20) + 40+ regras B/F/C/S adicionais.
+
+---
+
 ## v3.23.0 — 2026-07-06 (Sprint 28: VaultIntegration — AWS Secrets Manager para Sisbacen) ✅
 
 > **Status:** ✅ Shipped

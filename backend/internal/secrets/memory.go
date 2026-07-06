@@ -3,7 +3,6 @@ package secrets
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 )
@@ -14,10 +13,8 @@ import (
 // é para tests. Razão: tests não querem mockar env vars; MemoryManager permite
 // fixture determinística.
 type MemoryManager struct {
-	mu      sync.RWMutex
-	store   map[string]*Secret
-	logger  *slogLogger
-	logSink func(string, ...any)
+	mu    sync.RWMutex
+	store map[string]*Secret
 }
 
 // NewMemoryManager cria um MemoryManager vazio.
@@ -111,11 +108,3 @@ func (m *MemoryManager) Delete(ctx context.Context, name string) error {
 }
 
 func (m *MemoryManager) Backend() string { return BackendMemory }
-
-// slogLogger is an interface to allow optional slog integration without import cycle.
-// Empty for now; can be wired in later sprint if needed.
-type slogLogger interface{}
-var _ slogLogger = (*string)(nil)
-
-// Keep "strings" import used (helper for future string ops on names)
-var _ = strings.ToUpper

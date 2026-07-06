@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -16,6 +17,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/fortvna/radiant-norma/backend/internal/secrets"
 )
 
 // captureStdout captura stdout durante execução de fn e retorna conteúdo.
@@ -494,9 +497,9 @@ var _ = io.Discard
 
 // TestSenhawsRotate_Apply_Success — Sprint 28 (v3.23.0) subcomando apply.
 // Verifica que apply:
-//   1. Chama BACEN AlterarSenha
-//   2. Atualiza secret manager (memory backend em test)
-//   3. Exit 0 + stdout contém secret_updated=true
+//  1. Chama BACEN AlterarSenha
+//  2. Atualiza secret manager (memory backend em test)
+//  3. Exit 0 + stdout contém secret_updated=true
 func TestSenhawsRotate_Apply_Success(t *testing.T) {
 	// Use memory backend (definido em NewManagerFromEnv)
 	t.Setenv("RADIANT_SECRETS_BACKEND", "memory")
@@ -610,5 +613,160 @@ func TestSenhawsRotate_Apply_SecretNameFormat(t *testing.T) {
 
 	if capturedURL != "/senha" {
 		t.Errorf("BACEN path = %q, esperado /senha", capturedURL)
+	}
+}
+
+// =============================================================================
+// Validação 50 — F-S28-50-B: senha NÃO pode vazar em stderr quando manager.Put
+// falha. Pattern: gravar em arquivo 0600 com path conhecido, instruir admin.
+// =============================================================================
+
+// TestWriteFailsafe_BasicRoundTrip verifica que writeFailsafe grava em arquivo
+// 0600 num path previsível com hash do user.
+func TestWriteFailsafe_BasicRoundTrip(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("RADIANT_FAILSAFE_PATH", tmpDir)
+
+	path, err := writeFailsafe("123450001.fulano", "senha-secreta-123")
+	if err != nil {
+		t.Fatalf("writeFailsafe failed: %v", err)
+	}
+
+	// Path contém hash do user (não o user raw)
+	if strings.Contains(path, "123450001") || strings.Contains(path, "fulano") {
+		t.Errorf("failsafe path deve conter hash, não user raw: %s", path)
+	}
+
+	// Arquivo existe e tem permissões 0600
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("failsafe file not found: %v", err)
+	}
+	if info.Size() != int64(len("senha-secreta-123")) {
+		t.Errorf("failsafe size = %d, want %d", info.Size(), len("senha-secreta-123"))
+	}
+
+	// Permissões: somente owner rw
+	if mode := info.Mode().Perm(); mode != 0600 {
+		t.Errorf("failsafe perms = %o, want 0600", mode)
+	}
+
+	// Conteúdo = senha (sem newline)
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read failsafe: %v", err)
+	}
+	if string(got) != "senha-secreta-123" {
+		t.Errorf("failsafe content = %q, want %q", got, "senha-secreta-123")
+	}
+
+	// Cleanup
+	os.Remove(path)
+}
+
+// failingManager simula um secrets.Manager cujo Put sempre retorna erro.
+// Usado pra exercitar o caminho partial failure em runApply (BACEN OK + manager falha).
+type failingManager struct {
+	*secrets.MemoryManager
+	putErr error
+}
+
+func (f *failingManager) Put(ctx context.Context, name, value string) (*secrets.Secret, error) {
+	return nil, f.putErr
+}
+
+// TestRunApply_PartialFailure_NoStderrLeak — Validação 50 F-S28-50-B.
+//
+// Cenário: BACEN aceita (204) mas Manager.Put falha. runApply NÃO deve
+// imprimir a senha em stderr. Deve gravar failsafe file 0600 e retornar exit 4.
+func TestRunApply_PartialFailure_NoStderrLeak(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("RADIANT_FAILSAFE_PATH", tmpDir)
+
+	srv := mockSenhawsServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}, nil)
+	cfg := baseCfg(srv.URL)
+
+	mgr := &failingManager{
+		MemoryManager: secrets.NewMemoryManager(),
+		putErr:        &secrets.AccessDeniedError{Name: "bacen/senha/x", Backend: "memory", Cause: errors.New("simulated")},
+	}
+
+	stderr := captureStderr(t, func() {
+		_ = captureStdout(t, func() {
+			code := runApplyWithManager(context.Background(), cfg, silentLogger(), mgr)
+			if code != exitPartialFailure {
+				t.Errorf("partial failure: exit = %d, want %d (exitPartialFailure)", code, exitPartialFailure)
+			}
+		})
+	})
+
+	// Verifica que a senha nova NÃO vazou em stderr (F-S28-50-B original era
+	// "Senha nova (capture agora!): <senha>" — esse pattern NÃO pode aparecer)
+	if strings.Contains(stderr, "Senha nova (capture") {
+		t.Errorf("stderr NÃO deve conter padrão 'Senha nova (capture' (Validação 50): %q", stderr)
+	}
+	// Verifica que mensagem de failsafe file foi emitida (admin consegue agir)
+	if !strings.Contains(stderr, "failsafe file") {
+		t.Errorf("stderr deve mencionar failsafe file path: %q", stderr)
+	}
+
+	// Verifica que failsafe file foi criado com permissões 0600
+	files, err := os.ReadDir(tmpDir)
+	if err != nil {
+		t.Fatalf("read tmpdir: %v", err)
+	}
+	if len(files) == 0 {
+		t.Fatal("expected failsafe file in tmpdir, found 0")
+	}
+	for _, f := range files {
+		info, _ := f.Info()
+		if info.Mode().Perm() != 0600 {
+			t.Errorf("failsafe %s perms = %o, want 0600", f.Name(), info.Mode().Perm())
+		}
+	}
+}
+
+// TestRunApply_HappyPath_NoFailsafe verifica que em caso de sucesso NÃO
+// há failsafe file (sanity).
+func TestRunApply_HappyPath_NoFailsafe(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("RADIANT_FAILSAFE_PATH", tmpDir)
+	t.Setenv("RADIANT_SECRETS_BACKEND", "memory")
+
+	srv := mockSenhawsServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}, nil)
+	cfg := baseCfg(srv.URL)
+
+	_ = captureStderr(t, func() {
+		_ = captureStdout(t, func() {
+			code := runApply(context.Background(), cfg, silentLogger())
+			if code != exitOK {
+				t.Errorf("happy: exit = %d, want %d", code, exitOK)
+			}
+		})
+	})
+
+	files, _ := os.ReadDir(tmpDir)
+	if len(files) != 0 {
+		t.Errorf("happy path não deve criar failsafe file, found %d", len(files))
+	}
+}
+
+// TestRunApply_PartialFailure_ExitCode4 verifica que exitPartialFailure é
+// distinto. Validação 50 introduziu exit 4 pra automação diferenciar
+// "BACEN rejeitou" (3) de "BACEN OK + manager falhou" (4).
+func TestRunApply_PartialFailure_ExitCode4(t *testing.T) {
+	if exitPartialFailure != 4 {
+		t.Errorf("exitPartialFailure = %d, want 4", exitPartialFailure)
+	}
+	exits := map[int]bool{
+		exitOK: true, exitGenericError: true, exitClientError: true,
+		exitBACENError: true, exitPartialFailure: true,
+	}
+	if len(exits) != 5 {
+		t.Errorf("exit codes devem ser únicos, got collisions")
 	}
 }

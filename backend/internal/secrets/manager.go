@@ -23,11 +23,11 @@
 //
 // Segurança:
 //
-//	- Nenhum valor de secret é logado em NENHUM nível (incluindo Debug).
-//	  Apenas o nome do secret aparece em logs.
-//	- Erros tipados (NotFoundError, AccessDeniedError, ValidationError)
-//	  permitem caller classificar sem expor values.
-//	- AWS auth via IAM role (zero credenciais em código).
+//   - Nenhum valor de secret é logado em NENHUM nível (incluindo Debug).
+//     Apenas o nome do secret aparece em logs.
+//   - Erros tipados (NotFoundError, AccessDeniedError, ValidationError)
+//     permitem caller classificar sem expor values.
+//   - AWS auth via IAM role (zero credenciais em código).
 package secrets
 
 import (

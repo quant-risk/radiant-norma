@@ -2,7 +2,6 @@ package secrets
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -192,6 +191,3 @@ func extractErrMsg(s string) string {
 
 // Compile-time guarantee: AWSManager implementa Manager.
 var _ Manager = (*AWSManager)(nil)
-
-// Reference errors.As to keep it in scope (avoid lint warning).
-var _ = errors.As

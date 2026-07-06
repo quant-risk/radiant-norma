@@ -19,11 +19,11 @@ import (
 //
 // Segurança:
 //
-//	- Nenhum valor de env var é logado.
-//	- Apenas o nome do secret aparece em logs/métricas.
-//	- Put chama os.Setenv que afeta o PROCESS inteiro — callers devem
-//	  assumir que outras partes do código podem ver o valor.
-//	  Em produção, use AWSManager. EnvManager é dev/test fallback.
+//   - Nenhum valor de env var é logado.
+//   - Apenas o nome do secret aparece em logs/métricas.
+//   - Put chama os.Setenv que afeta o PROCESS inteiro — callers devem
+//     assumir que outras partes do código podem ver o valor.
+//     Em produção, use AWSManager. EnvManager é dev/test fallback.
 type EnvManager struct {
 	prefix string
 	mu     sync.Mutex

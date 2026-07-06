@@ -16,7 +16,7 @@
 //	secret-migrate migrate-batch --file=secrets.json
 //
 //	# Listar secrets já migrados
-//	secret-migrate list --prefix=bacen/
+//	secret-migrate list --prefix=bacen/   [Sprint 29+: AWS ListSecrets]
 //
 // Decisão Sprint 28: tool de migração é one-shot, NÃO roda em prod como daemon.
 // Apaga env var do processo após sucesso (com --delete-env).
@@ -39,7 +39,7 @@ const usage = `secret-migrate — CLI para migrar secrets entre backends.
 Subcomandos:
   migrate         Migra 1 secret de env var → backend configurado
   migrate-batch   Migra lista de secrets de arquivo JSON
-  list            Lista secrets no backend (filtro por prefix)
+  list            Lista secrets no backend (filtro por prefix) [AWS only — Sprint 29+]
   version         Imprime versão
 
 Env vars:
@@ -51,15 +51,15 @@ Exit codes:
   0  sucesso
   1  erro genérico
   2  erro de validação (input inválido)
-  3  erro de backend (AWS access denied, etc)
+  3  erro de backend (AWS access denied, feature não suportada, etc)
 `
 
 type migrateConfig struct {
-	fromEnv    string
-	toName     string
-	deleteEnv  bool
-	dryRun     bool
-	quiet      bool
+	fromEnv   string
+	toName    string
+	deleteEnv bool
+	dryRun    bool
+	quiet     bool
 }
 
 func main() {
@@ -269,14 +269,18 @@ func runList(args []string, logger *slog.Logger) error {
 		return fmt.Errorf("init manager: %w", err)
 	}
 
-	// EnvManager e MemoryManager não implementam list.
-	// AWSManager listaria via ListSecrets (TODO se virar requisito).
-	fmt.Printf("backend=%s list_not_supported=true\n", mgr.Backend())
-	if prefix != "" {
-		fmt.Printf("filter_prefix=%q\n", prefix)
+	// Validação 50 (F-S28-50-A): list requer backend AWS — EnvManager/MemoryManager
+	// não implementam listagem. Retornar erro tipado (exit 3) em vez de exit 0
+	// silencioso, pra caller distinguir "funcionou, lista vazia" de
+	// "feature não suportada neste backend".
+	if mgr.Backend() != secrets.BackendAWS {
+		return &backendErr{msg: fmt.Sprintf("list not supported on backend=%s (apenas AWS Secrets Manager suporta ListSecrets). Sprint 29+ adiciona suporte", mgr.Backend())}
 	}
-	fmt.Println("(list operation requires AWS backend — TODO Sprint 29+)")
-	return nil
+
+	// AWS path: AWSManager.List() será implementado em Sprint 29 (BACEN homolog smoke
+	// precisa de listagem operacional). Por ora, retorna erro transparente.
+	return &backendErr{msg: fmt.Sprintf("AWS ListSecrets ainda não implementado (Sprint 29+). Backend=%s, prefix=%q",
+		mgr.Backend(), prefix)}
 }
 
 // looksLikeSecret heurística simples: > 8 chars + mixed case OR contém dígito.
@@ -312,6 +316,9 @@ func exitCode(err error) int {
 	if _, ok := err.(*validationErr); ok {
 		return 2
 	}
+	if _, ok := err.(*backendErr); ok {
+		return 3
+	}
 	if secrets.IsNotFound(err) || secrets.IsAccessDenied(err) {
 		return 3
 	}
@@ -323,5 +330,17 @@ type validationErr struct{ msg string }
 func (e *validationErr) Error() string { return e.msg }
 func (e *validationErr) Is(target error) bool {
 	_, ok := target.(*validationErr)
+	return ok
+}
+
+// backendErr sinaliza erro operacional do backend (feature não suportada,
+// AWS access denied, etc). Exit 3 — caller distingue de erro genérico (1)
+// e validação (2). Validação 50: usado por runList pra reportar "list not
+// supported" de forma honesta.
+type backendErr struct{ msg string }
+
+func (e *backendErr) Error() string { return e.msg }
+func (e *backendErr) Is(target error) bool {
+	_, ok := target.(*backendErr)
 	return ok
 }

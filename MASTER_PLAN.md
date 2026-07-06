@@ -77,7 +77,7 @@ Não vendemos software. Vendemos **tranquilidade mensurável**:
 |---|---|---|
 | **28** | VaultIntegration | AWS Secrets Manager / Vault para rotação Sisbacen (Sprint 23+27 encadeiam) |
 | **29** | BacenHomologSmoke | Smoke real contra sta-h.bcb.gov.br/staws + www9.bcb.gov.br/senhaws. Credenciais Sisbacen reais. |
-| **30** | PostgresRLS | Ativar migration 012_rls_policies.sql. Defense-in-depth multi-tenant. Auditoria SOC 2. |
+| **30** | PostgresRLS | Ativar migration `012_rls_policies.sql` (em `internal/db/migrations/`) + criar migration `014_rls_enforce.sql` com FORCE ROW LEVEL SECURITY. Defense-in-depth multi-tenant. Auditoria SOC 2. |
 | **31** | RangeUploadAPI | Handlers REST `/v1/sta/range-*` — fechar YAGNI da Sprint 21. Frontend pode chunked-upload. |
 | **32** | Audit3040_v2 | Portar 80+ regras restantes 3040 (B/F/C/S + Agreg + Indiv). Coverage 16% → 60%. |
 | **33** | Audit3050 | Portar 170 regras 3050 TXB_V11. XSD já tem no BACEN, parser XML + 170 regras. |
