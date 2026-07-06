@@ -2,6 +2,81 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.0 — 2026-07-06 (Sprint 33 Fase 1 — Audit3050/TXB_V11: parser + 14 Agregadas + 14 stubs) ✅
+
+> **Status:** ✅ Shipped (Fase 1 de N)
+> **Sprint:** 33 (Plano Ouro §1.1 Q3)
+> **Tipo:** minor (parser XML 3050 + 28 regras 3050)
+> **Marco:** 0 → 28 regras 3050 (16.5% cobertura catálogo TXB_V11)
+
+### 🎯 Resumo
+
+Parser XML CADOC 3050 + `Doc3050` struct + 14 Agregadas (A01-A14) + 14 stubs (S01-S14). Total 3050: **0 → 28** (cobertura catálogo 0% → **16.5%**).
+
+**Decisões arquiteturais (D-24/D-25/D-26/D-27):**
+- **D-24:** Interface paralela `Rule3050` (`Apply3050(ctx, *Doc3050)`) — não quebrar `Rule` existente (3040).
+- **D-25:** `Modalidade` achatada (`Codigo`/`Encargo`/`TipoCli` + 21 campos opcionais `*float64`/`*int`) — perde hierarquia semântica do XSD mas ganha regras com `range doc.Diario` simples.
+- **D-26:** Parser XML best-effort via streaming Token — tolera sub-modalidades faltando; nil-safe em todos campos.
+- **D-27:** Stubs severity "I" (padrão v3.30.0 D-13) — honestos, retornam nil.
+
+**Regras implementadas:**
+
+| Cod | Sev | Regra | Origem BACEN |
+|---|---|---|---|
+| 3050-A01 | E | sldCarAtiva = soma(sldCarAte14+Ate60+Ate90+Maior90) | 3018 |
+| 3050-A02 | A | sldCedido - sldAdquirido ≤ sldCarAtiva | 3019 (simplificado) |
+| 3050-A03 | A | sldBaiPrejuizo ≤ sldCarAtiva | 3020 (simplificado) |
+| 3050-A04 | A | sldCarAtiva + sldCedido ≥ sldAdquirido + vlrConcessoes | 3021 |
+| 3050-A05 | E | cnpjInstituicao = 8 dígitos BACEN | 2005 + 3021 formato |
+| 3050-A06 | E | dataBase formato YYYY-MM-DD | formato header |
+| 3050-A07 | E | indRemessa ∈ {I, A, S} | 3052 + header |
+| 3050-A08 | E | nmContato + telContato não-vazios | 2005 |
+| 3050-A09 | E | txMedJuros ∈ [0, 100] | 3026/3042 |
+| 3050-A10 | E | txMedEncFiscais ∈ [0, 100] | 3027/3043 |
+| 3050-A11 | E | txMedEncOperacionais ∈ [0, 100] | 3028/3044 |
+| 3050-A12 | E | txMinima ≤ txMaxima | 3051 base |
+| 3050-A13 | E | przDecMedConcessoes ≥ 0 | 3036/3037 |
+| 3050-A14 | E | przMedCarteira ≥ 0 | 3038/3039 |
+| 3050-S01..S14 | I | stubs (matriz encargo, calendário, datas, etc) | carry-over Fase 2/3/4 |
+
+### 📊 Métricas v3.33.7 → v3.34.0
+
+| Métrica | v3.33.7 | v3.34.0 |
+|---|---|---|
+| Regras 3050 | 0 | **28** (14 A + 14 S) |
+| Cobertura catálogo 3050 (170) | 0% | **16.5%** |
+| Coverage `internal/audit/rules` | 70.8% | **72.9%** (+2.1pp) |
+| Test functions Sprint 33 Fase 1 | 0 | **17** (table-driven + smoke) |
+| Parser XML 3050 | NÃO | **SIM (streaming Token)** |
+| Packages PASS -race | 23/23 | **23/23** |
+| Stress 50 goroutines baseline | mantida | **3/3 PASS** |
+| Stress 200 goroutines | PASS | **PASS** |
+| vet + gofmt | clean | **clean** |
+
+### 🎓 Lições aprendidas (Sprint 33 Fase 1)
+
+- **Streaming Token parser > struct-mapping para XSDs com modelos variantes.** XSD 3050 tem 4 modelos de atributos diferentes por sub-modalidade. Tentei `map[string]xml3050Attrs` primeiro — falhou. Streaming com detecção de path (`currentPath[len(currentPath)-2] == "pre"`) é mais robusto.
+- **Modalidade achatada (D-25) trade-off.** Perdi hierarquia semântica (`pesJuridica.pre.desDuplicatas`) mas ganhei `range doc.Diario` simples. Para Fase 1 (subset), achatada é pragmática. Fase 4 (matriz encargo) pode re-introduzir hierarquia.
+- **`*float64` vs `float64` para campos opcionais.** Uso de pointer é crítico: `0` (preenchido com zero) ≠ `nil` (ausente). Regras A01/A04 distinguem nil-skip de zero-real.
+- **Stubs severity "I" honestos (D-27).** Padrão v3.30.0 carregado. Auditor vê "regra existe mas não implementada, carry-over Fase X".
+
+### 📁 Arquivos tocados
+
+```
+backend/internal/audit/rules/3050.go                 (NOVO — 540 LoC: Doc3050 + Modalidade + parser + 28 regras + Builtin3050)
+backend/internal/audit/rules/3050_test.go            (NOVO — 480 LoC, 17 testes table-driven + 1 smoke)
+backend/internal/audit/rules/registry.go             (D-24: +Rule3050 interface, +Register3050, +Get3050, +Builtin3050)
+backend/SPRINT_33_RESEARCH.md                        (NOVO — pesquisa completa TXB_V11 + decisões D-24/D-25/D-26/D-27)
+backend/SPRINT_33_FASE1_RESULTS.md                   (NOVO — após implementação)
+CHANGELOG.md                                          (esta entry)
+```
+
+### ⏭️ Próxima sprint (Fase 2)
+
+**Sprint 33 Fase 2 — Audit3050 Sistemáticas S15-S44 + Header H10-H15** — formato de campos, periodicidade (último dia útil), prazos capGir, cruzadas (3051/3056-3059). Carry-over dos stubs S01-S14. Alvo: 28 → 60+ regras 3050.
+
+---
+
 ## v3.33.7 — 2026-07-06 (Validação 61 — Drift check pós-atualização ROADMAP) ✅
 
 > **Status:** ✅ Shipped

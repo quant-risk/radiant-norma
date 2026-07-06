@@ -153,15 +153,17 @@ func (r RawRuleFunc) ApplyRaw(ctx context.Context, s string) error {
 
 // Registry agrega regras indexadas por código.
 type Registry struct {
-	rules    map[string]Rule
-	rawRules map[string]RawRule
+	rules     map[string]Rule
+	rawRules  map[string]RawRule
+	rules3050 map[string]Rule3050 // Sprint 33 Fase 1 — regras CADOC 3050
 }
 
 // NewRegistry cria um registry vazio.
 func NewRegistry() *Registry {
 	return &Registry{
-		rules:    make(map[string]Rule),
-		rawRules: make(map[string]RawRule),
+		rules:     make(map[string]Rule),
+		rawRules:  make(map[string]RawRule),
+		rules3050: make(map[string]Rule3050),
 	}
 }
 
@@ -176,6 +178,39 @@ func (r *Registry) Register(rule Rule) {
 // tipado do 3040.
 func (r *Registry) RegisterRaw(rule RawRule) {
 	r.rawRules[rule.Code()] = rule
+}
+
+// Register3050 adiciona uma regra tipada para CADOC 3050 (TXB).
+//
+// Sprint 33 Fase 1 (D-24): interface paralela Rule3050 para não quebrar
+// Rule existente (3040). Registry indexa ambos em maps separados.
+func (r *Registry) Register3050(rule Rule3050) {
+	r.rules3050[rule.Code()] = rule
+}
+
+// Get3050 retorna a regra 3050 por código.
+func (r *Registry) Get3050(code string) Rule3050 {
+	return r.rules3050[code]
+}
+
+// Codes3050 retorna todos os códigos 3050 registrados.
+func (r *Registry) Codes3050() []string {
+	out := make([]string, 0, len(r.rules3050))
+	for k := range r.rules3050 {
+		out = append(out, k)
+	}
+	return out
+}
+
+// All3050 retorna todas as regras 3050 (útil para inventário).
+func (r *Registry) All3050() []Rule3050 {
+	out := make([]string, 0, len(r.rules3050))
+	_ = out // unused
+	out3050 := make([]Rule3050, 0, len(r.rules3050))
+	for _, r := range r.rules3050 {
+		out3050 = append(out3050, r)
+	}
+	return out3050
 }
 
 // Get retorna a regra tipada (Doc3040) por código.
