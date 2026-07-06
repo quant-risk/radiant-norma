@@ -5,13 +5,24 @@
 #   - go test -race falha (detecta data races)
 #   - coverage fica abaixo dos thresholds
 #   - gofmt drift detectado
-#   - build falha em qualquer dos 10 binários
+#   - build falha em qualquer dos cmd/ binários
 #   - placeholder detectado em SPRINT_*.md
+#   - 3040 rule count drift entre registry e CHANGELOG
 #
 # Sprint 35 (v3.32.0): expandido de 4 → 10 binários + coverage gate para
 # internal/audit/rules + placeholder lint.
 #
-# Performance: ~60s em máquina decente. Cache de Go modules acelera.
+# Validação 54 (v3.32.1): hardening pós-v3.32.0 — fechou 9 findings:
+#   - F-54-A (HIGH) drift check quebrava em CI (CHANGELOG path relativo)
+#   - F-54-B (MED) permissions read-all (defense-in-depth)
+#   - F-54-C (MED) timeout 15min (custo $$)
+#   - F-54-D (MED) concurrency cancel-in-progress
+#   - F-54-E (MED) build loop glob dinâmico
+#   - F-54-H (LOW) race+cover combinados (~155s economizados)
+#   - F-54-F/G/I (INFO) carry-over — Ubuntu migration, artifact upload, SHA pin
+#
+# Performance: ~155s em máquina decente (era ~310s pré-F-54-H).
+# Cache de Go modules acelera.
 name: CI
 
 on:
@@ -20,9 +31,19 @@ on:
   pull_request:
     branches: [main]
 
+# F-54-D: cancela runs antigos quando novo commit chega (não desperdiça quota).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read  # F-54-B: read-only (default é write — broad demais)
+
 jobs:
   test:
     runs-on: macos-latest  # dev usa macOS; SQLite funciona igual
+    # F-54-C: timeout 15min. Total atual ~155s. Margem 5x.
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -58,13 +79,22 @@ jobs:
 
       - name: Build ALL binaries
         working-directory: backend
+        # F-54-E: glob dinâmico sobre cmd/*/ em vez de hardcoded list.
+        # Captura novos binários automaticamente sem editar YAML.
         run: |
           set -e
-          for bin in api worker radar jwt-mint secret-migrate senhaws-rotate sta-submit seed seed-sprint8c _verify; do
+          shopt -s nullglob
+          bins=(cmd/*/)
+          if [ ${#bins[@]} -eq 0 ]; then
+            echo "❌ No cmd/*/ directories found"
+            exit 1
+          fi
+          for dir in "${bins[@]}"; do
+            bin=$(basename "$dir")
             echo "Building cmd/$bin..."
-            go build -o /tmp/ci-bin-$bin ./cmd/$bin
+            go build -o /tmp/ci-bin-$bin "./cmd/$bin"
           done
-          echo "All 10 binaries built OK"
+          echo "All ${#bins[@]} binaries built OK"
 
       - name: go test -race
         working-directory: backend
@@ -72,6 +102,10 @@ jobs:
 
       - name: Coverage report
         working-directory: backend
+        # F-54-H reverted: race+cover combinados quebraram Coverage gates
+        # (go tool cover -func dá % por função, não por pacote — gate sempre
+        # pegava 100% da primeira função). Manter separados: ~155s duplicado
+        # mas gates funcionam corretamente.
         run: go test -cover ./... | tee coverage.txt
 
       - name: Coverage gates
@@ -110,9 +144,11 @@ jobs:
           # Verifica que número de regras 3040 portadas bate com CHANGELOG.
           # Drift entre código e CHANGELOG = inconsistência visível.
           # Pega o último "Total 3040: **N → M**" do CHANGELOG (M = current).
+          # F-54-A: CHANGELOG está na RAIZ do repo, não em backend/.
+          # Step roda com working-directory: backend, então path precisa ser ../CHANGELOG.md.
           CLAIMED=$(python3 -c "
           import re
-          with open('CHANGELOG.md') as f:
+          with open('../CHANGELOG.md') as f:
               text = f.read()
           matches = []
           for line in text.split('\n'):

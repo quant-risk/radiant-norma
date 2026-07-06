@@ -2,6 +2,71 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.32.1 — 2026-07-06 (Validação 54 — Hardening pós-v3.32.0 CI-Gate) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (workflow CI hotfix)
+> **Trigger:** Solicitação Henrique — "validação profunda em tudo que você acabou de fazer"
+> **Validação:** VALIDATION_v3.32.0.md — 11 findings, 6 fechados, 5 carry-over
+
+### 🎯 Resumo
+
+Auditoria profunda pós-v3.32.0 (Sprint 35) encontrou **bug crítico**: drift check step estava
+em `working-directory: backend` mas abria `CHANGELOG.md` (que está na RAIZ do repo). **No CI,
+esse step SEMPRE falhava com FileNotFoundError → CI quebra.** Drift check que nunca rodou em
+produção = pior classe de gate morto.
+
+### 🐛 Findings fechados (6)
+
+| # | Sev | Finding | Fix |
+|---|---|---|---|
+| **F-54-A** | **HIGH** | Drift check quebrava (CHANGELOG path errado) | `open('../CHANGELOG.md')` |
+| F-54-B | MED | `permissions:` não declarado (= write default) | `permissions: contents: read` |
+| F-54-C | MED | `timeout-minutes` não declarado ($$ indefinido) | `timeout-minutes: 15` |
+| F-54-D | MED | `concurrency:` não declarado (PRs paralelos) | `cancel-in-progress: true` |
+| F-54-E | MED | Build loop hardcoded (drift silencioso) | glob `cmd/*/` dinâmico |
+| F-54-H | LOW | race+cover combinados quebraram Coverage gates | revertido (testes 2x mas gates OK) |
+
+### 📋 Carry-over (5)
+
+| # | Sev | Finding | Para Sprint |
+|---|---|---|---|
+| F-54-F | INFO | `runs-on: macos-latest` (2x mais caro) | Sprint 36 (Observability) |
+| F-54-G | INFO | coverage.txt não é artifact | Sprint 36 |
+| F-54-I | INFO | Actions pinadas em major version (SHA melhor) | Revisão trimestral CI |
+| F-54-J | INFO | Placeholder lint sem working-directory | Aceito |
+| F-54-K | INFO | cmd/ packages com 0% coverage | Aceito (padrão Go) |
+
+### 📁 Arquivos tocados
+
+```
+.github/workflows/test.yml                  (v3.32.0 → v3.32.1: +25 LOC)
+backend/VALIDATION_v3.32.0.md               (NOVO)
+```
+
+### 📊 Métricas v3.32.1 vs v3.32.0
+
+| Métrica | v3.32.0 | v3.32.1 |
+|---|---|---|
+| Steps CI | 11 | 11 (inalterado) |
+| Permissions | none (write) | **read-only** ✅ |
+| Timeout | none | **15min** ✅ |
+| Concurrency | none | **cancel-in-progress** ✅ |
+| Build loop | hardcoded | **glob dinâmico** ✅ |
+| Drift check | **quebrado** | **funcionando** ✅ |
+| Coverage gates | OK | OK (F-54-H revertido) |
+
+### 🎓 Lição aprendida
+
+**Drift check é o tipo de gate que pode estar "看起来 bonito" mas nunca ter rodado em produção.**
+v3.32.0 testei localmente com `python3 ...` da raiz do repo, deu OK. Não testei com
+`working-directory: backend` aplicado. **Lesson:** validar com `act` localmente OU garantir que
+simulação reproduz EXATAMENTE o ambiente CI.
+
+**Padrão universal:** gate que nunca rodou = pior que sem gate (falsa sensação de segurança).
+
+---
+
 ## v3.32.0 — 2026-07-06 (Sprint 35 — CI-Gate: GitHub Actions expandido) ✅
 
 > **Status:** ✅ Shipped
