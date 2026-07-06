@@ -2,12 +2,56 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.33.6 — 2026-07-06 (Validação 60 — Drift cleanup pós-V59) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (drift numérico em doc da V59 — sem mudança de código)
+> **Trigger:** Solicitação Henrique — "validação profunda em tudo que você acabou de fazer"
+> **Validação:** VALIDATION_v3.33.5.md — 4 findings (A-D), **4 fechados (LOW, drift), 0 carry-over próprio**
+
+### 🐛 Findings fechados (4)
+
+| # | Sev | Finding | Fix |
+|---|---|---|---|
+| F-60-A | LOW | TL;DR doc V59 imprecisa sobre "5 findings" sem distinguir status | TL;DR detalhado: 2 fechados + 1 revertido + 2 carry |
+| F-60-B | LOW | Resumo V59 cita só F-59-A com "-15 net" irreal (código revertido) | Resumo honesto: único fix = comentário REVERTIDA (+4 LOC) |
+| F-60-C | LOW | Off-by-one "12 carry-overs históricos" (real = 11) | "11 carry-overs" + lista detalhada |
+| F-60-D | LOW | CHANGELOG entry v3.33.5 soma confusa ("1+3+1") | Soma explícita: 2 fechados + 1 revertido + 1 carry próprio + 1 carry histórico |
+
+### 📊 Métricas v3.33.5 → v3.33.6
+
+| Métrica | v3.33.5 | v3.33.6 |
+|---|---|---|
+| Drift numérico doc V59 | YES (4 imprecisões) | **NO (todas fechadas)** |
+| Stress 50 goroutines | 11/15 (73%) | **11/15 (73%)** (mantida) |
+| Stress 200 goroutines | 200/200 | **200/200** |
+| Tests PASS -race | 23/23 | **23/23** |
+| vet + gofmt | clean | **clean** |
+| Coverage `internal/db` | 62.7% | **62.7% (mantida)** |
+| Coverage `auditlog` | 92.5% | **92.5% (mantida)** |
+
+### 🎓 Lições aprendidas (V60)
+
+- **Releases sob turnaround curto produzem drift numérico.** V59 teve cycle curto pelo F-59-A experimental revertido, gerou imprecisões numéricas (5 vs 2+1+2, 12 vs 11, etc). V60 fechou 4 dessas.
+- **Self-verify é parte da release, não só auditoria.** Doc fixes também merecem grep-check pré-tag.
+- **V_normal + V_drift_cleanup = par.** V59 entregou, V60 fechou drift numérico. Especialmente útil em releases com revert/scope-creep.
+
+### 📁 Arquivos tocados
+
+```
+backend/VALIDATION_v3.33.5.md       (NOVO — Validação 60)
+backend/VALIDATION_v3.33.4.md       (F-60-A/B/C Errata V60 section)
+CHANGELOG.md                         (F-60-D entry header corrigido + nova entry v3.33.6)
+```
+
+---
+
 ## v3.33.5 — 2026-07-06 (Validação 59 — Flake retry experiment revertido + audit regra memory) ✅
 
 > **Status:** ✅ Shipped
 > **Tipo:** patch (experimental revertido + audit processual)
 > **Trigger:** Solicitação Henrique — "validação profunda em tudo que você acabou de fazer"
-> **Validação:** VALIDATION_v3.33.4.md — 5 findings (A-E), **1 REVERTIDO + 3 fechados/audit + 1 carry-over histórico**
+> **Validação:** VALIDATION_v3.33.4.md — 5 findings (A-E), **2 fechados (B, C) + 1 revertido (A) + 1 carry próprio (D) + 1 carry histórico (E)**
 
 ### 📋 Resumo V59 (sem fix shipped, mas valioso)
 

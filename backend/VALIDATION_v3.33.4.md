@@ -9,7 +9,12 @@
 
 Auditoria profunda da Validação 58 (v3.33.4) usando self-verify checklist (regra HOT memory). **Self-verify confirmou todos os 5 fixes V58 aplicados** (F-58-A headline, F-58-B refs, F-58-C linha 135, F-58-D baseline, F-58-H Log timeout).
 
-V59 fechou **5 findings** com foco em **estabilidade do stress test sob carga V59**. Um F-59-A experimental (retry-on-SQLITE_BUSY) **foi implementado e revertido na mesma validação** após evidência empírica: retries amplificaram contenção em vez de absorver, regressão de 73% → 33% pass rate. V59 commita V58+ como baseline estável e carry F-59-A para Sprint polish.
+V59 fechou **5 findings (A-E)** com foco em **estabilidade do stress test sob carga V59**:
+- **2 fechados (B, C)** — audit regra memory + self-verify V58 confirmado
+- **1 revertido (A)** — retry-on-SQLITE_BUSY experimental mostrou regressão empírica (73% → 33%)
+- **2 carry (D, E)** — flake residual sob carga variável + carry-over histórico intocado
+
+F-59-A experimental (retry-on-SQLITE_BUSY) **foi implementado e revertido na mesma validação** após evidência empírica: retries amplificaram contenção em vez de absorver, regressão de 73% → 33% pass rate. V59 commita V58+ como baseline estável e carry F-59-A para Sprint polish.
 
 ## Findings — detalhamento
 
@@ -129,18 +134,20 @@ Flake varia 30-10% conforme carga da máquina. CPU contention + SHA256 compute +
 ### F-59-E — Carry-over histórico intocado (INFO → DOCUMENTADO)
 
 **Severidade:** INFO
-**Observação:** 12 carry-overs históricos (F-54-F/G/I/K, F-55-I/J, F-56-E/H, F-57-F, F-58-E/F) ainda abertos. V59 não fechou nenhum — escopo V59 era flake+audit, não carry-over cleanup. Doc mantém lista completa.
+**Observação:** 11 carry-overs históricos (F-54-F/G/I/K = 4, F-55-I/J = 2, F-56-E/H = 2, F-57-F = 1, F-58-E/F = 2) ainda abertos. V59 não fechou nenhum — escopo V59 era flake+audit, não carry-over cleanup. Doc mantém lista completa.
 
 ---
 
 ## Resumo de fixes aplicados em v3.33.5
 
+V59 não shipou fix material. **Único fix shipped:** comentário explicativo da reversão em `WithTenantTx` (carry-over F-59-A). Há também o doc VALIDAÇÃO_v3.33.4.md (este arquivo).
+
 | Fix | Mudança | LOC |
 |---|---|---|
-| F-59-A | Retry-on-SQLITE_BUSY implementado E revertido (carry-over para Sprint polish) | -0/+15 → -15 net |
-| **Total** | | **net +0 (revert)** |
+| F-59-A | Comentário REVERTIDA em `WithTenantTx` (experimental revertido, carry-over Sprint polish) | +4 / 0 |
+| **Total** | | **+4 / -0 (cosmético)** |
 
-**Não-fix (intencional):** Carry-over F-59-A. Implementação experimental vivia em branch mas foi revertida em mesma V59 porque empírica mostrou regressão.
+**Não-fix (intencional):** F-59-A retry foi implementado em branch local, empírica mostrou regressão (73% → 33%), revertido na mesma V59. Comentário carrega contexto para revisão futura.
 
 ## Validação final
 
@@ -205,3 +212,29 @@ V57: 80% / V58: 90% / V59: 70% (variação 10-30%). Não é "passa sempre" → �
 | F-54-K (cmd/ 0% coverage) | LOW | Polish + cmd/*_test patterns |
 
 Próxima sprint: **Sprint 33 (Audit3050) — TXB_V11, 170 regras catálogo** (Plano Ouro §1.1 Q2).
+
+---
+
+## Errata — Validação 60 (v3.33.6) fechou 4 imprecisões no doc da V59
+
+### F-60-A — TL;DR imprecisa (LOW → FECHADO)
+**Severidade:** LOW
+**Bug:** TL;DR original dizia "V59 fechou 5 findings" sem distinguir status. Real: 2 fechados + 1 revertido + 2 carry.
+**Fix:** TL;DR detalhado com lista por status.
+
+### F-60-B — Sumário cita só F-59-A mas ignora B/C (LOW → FECHADO)
+**Severidade:** LOW
+**Bug:** Tabela Resumo V59 citava apenas F-59-A com "-0/+15 → -15 net" — código revertido não estava no disco. Real: único fix shipped = comentário REVERTIDA (+4 LOC).
+**Fix:** Resumo honesto com +4/-0 (cosmético).
+
+### F-60-C — Off-by-one "12 carry-overs históricos" (LOW → FECHADO)
+**Severidade:** LOW
+**Bug:** Doc V59 dizia "12 carry-overs históricos" mas lista tem 11 items. Off-by-one.
+**Fix:** "11 carry-overs históricos" + lista detalhada.
+
+### F-60-D — CHANGELOG entry v3.33.5 com soma confusa (LOW → FECHADO)
+**Severidade:** LOW
+**Bug:** Header CHANGELOG "1 REVERTIDO + 3 fechados/audit + 1 carry-over histórico" — 3 fechados/audit não bate com real.
+**Fix:** "2 fechados (B, C) + 1 revertido (A) + 1 carry próprio (D) + 1 carry histórico (E)".
+
+Próxima sprint: **Sprint 33 (Audit3050) — TXB_V11, 170 regras catálogo.**
