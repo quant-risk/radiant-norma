@@ -209,7 +209,8 @@ func TestBuiltin3040_TotalRulesIs(t *testing.T) {
 	// Sprint 32 / v3.25.0 Fase 1: +14 Agregadas (A01-A07, A09-A15)
 	// Sprint 32 / v3.27.0 Fase 2: +5 Sistemáticas (S12 stub, S15, S17, S19, S20)
 	// Sprint 32 / v3.29.0 Fase 3: +19 Individuais/Campos/Header (C11-C20, S13/S14, I01-I05/I11, H01-H03)
-	if total != 98 {
-		t.Errorf("Total regras = %d, want 98 (Sprint 32 Fase 3: 79 + 19)", total)
+	// Sprint 32 / v3.30.0 Fase 4: +28 (C31-C40/C51-C55/S21-S46/S69-S70)
+	if total != 126 {
+		t.Errorf("Total regras = %d, want 126 (Sprint 32 Fase 4: 98 + 28)", total)
 	}
 }

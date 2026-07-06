@@ -358,6 +358,7 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 	// Sprint 32 Fase 1: +14 Agregadas → 74 regras.
 	// Sprint 32 Fase 2: +5 Sistemáticas → 79 regras.
 	// Sprint 32 Fase 3: +19 Individuais/Campos/Header → 98 regras.
+	// Sprint 32 Fase 4: +28 (C31-C40, C51-C55, S21-S46, S69-S70) → 126 regras.
 	expectedCodigos := []string{
 		// Básicas raw (Sprint 6 v1.5.0 / W3)
 		"B01", "B02", "B03", "B04", "B05",
@@ -395,6 +396,15 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 		"S13", "S14",
 		"I01", "I02", "I03", "I04", "I05", "I11",
 		"H01", "H02", "H03",
+		// Sprint 32 Fase 4 — Fechamento (28 regras)
+		// C41-C50 carry-over (vários requerem CaractEsp, VencOriginal)
+		// C56-C80 carry-over (vários requerem Porte, TipoIdentificação)
+		// S37-S40, S47-S68 carry-over (DiaAtraso, PCLD tables, Porte)
+		"C31", "C32", "C33", "C34", "C35", "C36", "C37", "C38", "C39", "C40",
+		"C51", "C52", "C54", "C55",
+		"S21", "S22", "S25", "S26", "S33", "S34",
+		"S41", "S42", "S43", "S44", "S45", "S46",
+		"S69", "S70",
 	}
 
 	if len(codes) != len(expectedCodigos) {

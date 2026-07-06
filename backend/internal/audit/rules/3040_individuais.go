@@ -430,12 +430,12 @@ func (I05VencimentosUnicos) Apply(_ context.Context, doc *Doc3040) error {
 // que aceita sempre (carry-over Fase 4: adicionar NatuOp a Operacao).
 type I11CliNaoNatuOp32 struct{}
 
-func (I11CliNaoNatuOp32) Code() string     { return "I11" }
-func (I11CliNaoNatuOp32) Sheet() string    { return "Individualizadas" }
-func (I11CliNaoNatuOp32) Severity() string { return "E" }
+func (I11CliNaoNatuOp32) Code() string  { return "I11" }
+func (I11CliNaoNatuOp32) Sheet() string { return "Individualizadas" }
+
+// Severity "I" — stub. Carry-over Fase 5: requer Operacao.NatuOp.
+func (I11CliNaoNatuOp32) Severity() string { return "I" }
 func (I11CliNaoNatuOp32) Apply(_ context.Context, _ *Doc3040) error {
-	// Sprint 32 Fase 3: stub. Requer NatuOp individual no struct Operacao.
-	// Quando parser popular NatuOp por op, essa regra valida Cli+NatuOp≠32.
 	return nil
 }
 

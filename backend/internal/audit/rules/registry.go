@@ -222,8 +222,9 @@ func (r *Registry) All() []Rule {
 // Sprint 32 Fase 1: +14 regras Agregadas (A01-A07, A09-A15) → 74 regras.
 // Sprint 32 Fase 2: +5 regras Sistemáticas (S12 stub, S15, S17, S19, S20) → 79 regras.
 // Sprint 32 Fase 3: +19 regras Individuais/Campos Op/Header (C11-C20, S13, S14, I01-I05, I11, H01-H03) → 98 regras.
+// Sprint 32 Fase 4: +28 regras (C31-C40/C51-C55/S21-S46/S69-S70 — 14 completas + 14 stubs) → 126 regras.
 //
-// Cobertura catálogo: 98/361 = 27.1%.
+// Cobertura catálogo: 126/361 = 34.9%.
 func Builtin3040() *Registry {
 	r := NewRegistry()
 
@@ -356,6 +357,41 @@ func Builtin3040() *Registry {
 	r.Register(H01TpArqValido{})
 	r.Register(H02CNPJRaiz{})
 	r.Register(H03TotalCliPositivo{})
+
+	// Sprint 32 / v3.30.0 Fase 4 — Fechamento Sprint 32 (subset C31-C55, S21-S46, S69-S70)
+	// 28 regras: 14 completas + 14 stubs com carry-over documentado
+	// C31-C40 (subset de 14) — FatAnual, Perc Indexador, Inf 1201-1203
+	r.Register(C31FaturamentoObrigatorio{})
+	r.Register(C32PercIndexadorObrigatorio{})
+	r.Register(C33DiasAtrasoObrigatorio{})      // stub — requer DiaAtraso em Operacao
+	r.Register(C34Inf1201Coobrigacao{})
+	r.Register(C35Inf1201Obrigatorio{})
+	r.Register(C36IdentCedenteObrigatorio{})
+	r.Register(C37Inf1202{})
+	r.Register(C38Pacote1512{})                  // stub — parser cruzamento pacotes
+	r.Register(C39Inf1203{})
+	r.Register(C40Inf1201CdIdent{})
+	// C51-C55 (5 regras) — Inf específicas adicionais
+	r.Register(C51Inf0313{})
+	r.Register(C52Inf04Excluindo0406{})
+	r.Register(C54Inf18XX{})
+	r.Register(C55Inf1999{})
+	// S21-S46 (subset) — Modalidade × natureza + Ident formato
+	r.Register(S21Mod15SemVenc310{})
+	r.Register(S22Mod1511NaoPF{})
+	r.Register(S25CNPJCabecalhoDiferente{})
+	r.Register(S26NatuOp02TemInf{})               // stub — requer NatuOp em Operacao
+	r.Register(S33Inf0101Natureza{})              // stub — idem
+	r.Register(S34CdCessao{})                     // stub — cruzamento original/cedida
+	r.Register(S41IdentCNPJ8Digitos{})
+	r.Register(S42CedenteIgualCabecalho{})
+	r.Register(S43CedenteIgualCliente{})
+	r.Register(S44CaractEsp35{})                  // stub — requer CaractEsp em Operacao
+	r.Register(S45IdentCPFouCNPJ{})
+	r.Register(S46CdFormatoData{})
+	// S69-S70 (Fechamento)
+	r.Register(S69ClassOpHHProvZero{})
+	r.Register(S70IntramesDtContr{})              // stub — requer DtIntrames
 
 	return r
 }

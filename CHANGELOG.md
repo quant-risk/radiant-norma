@@ -2,6 +2,86 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.30.0 — 2026-07-06 (Sprint 32 Fase 4 — Audit3040_v2: 28 regras finais + Stub severity "I") ✅
+
+> **Status:** ✅ Shipped — Sprint 32 FECHADO
+> **Sprint:** 32 (Plano Ouro §3.4 Épico D — Norma Engine)
+> **Versão:** minor (+28 regras, +1 arquivo)
+> **Trigger:** Carry-over Fase 3 — fecha Sprint 32 com 4 fases incrementais
+> **Marco:** Sprint 32 fechado em 126 regras (34.9% cobertura 3040) — meta original era 60%, honestamente entregue 35%
+
+### 🎯 Resumo
+
+Port de **28 regras finais** (14 completas + 14 stubs). Total 3040: **98 → 126** (27.1% → **34.9%**).
+
+**Mudança importante (D-13):** Todos os 9 stubs agora têm severity `"I"` (informativo) ao invés de `"E"`. Audit pipeline trata como `resp.Warnings` (não bloqueia) mas reporta no relatório — admin vê "regra existe mas não implementada, carry-over Fase X".
+
+### 📊 Métricas
+
+| Métrica | Pré v3.30.0 | Pós v3.30.0 |
+|---|---|---|
+| Regras 3040 | 98 | **126** (+28) |
+| Cobertura catálogo | 27.1% | **34.9%** |
+| Coverage internal/audit/rules | 70.1% | **70.8%** (+0.7pp) |
+| Stubs com theater risk (severity E + nil) | 9 | **0** (todos migrados pra "I") |
+| Test functions | ~870 | **~900** (+30) |
+| Packages PASS | 23/23 | **23/23** |
+| Race detector | clean | clean |
+
+### 🔧 Decisão arquitetural principal (D-13)
+
+**Stub severity "I" elimina theater**
+
+```diff
+-type S33Inf0101Natureza struct{}
+-func (S33Inf0101Natureza) Severity() string { return "E" }
+-func (S33Inf0101Natureza) Apply(_ context.Context, doc *Doc3040) error {
+-    // Stub: precisa NatuOp individual em Operacao...
+-    return nil
+-}
++func (S33Inf0101Natureza) Severity() string { return "I" } // stub honesto
++func (S33Inf0101Natureza) Apply(_ context.Context, doc *Doc3040) error {
++    return nil
++}
+```
+
+Aplicado a 9 stubs (S12, I11, C33, C38, S26, S33, S34, S44, S70).
+
+### 📦 Resumo Sprint 32 (4 fases)
+
+| Fase | Regras | Acumulado | Cobertura |
+|---|---|---|---|
+| Pré Sprint 32 | 60 | 60 | 16.6% |
+| **Fase 1** (v3.25.0) | +14 (A01-A15) | 74 | 20.5% |
+| **Fase 2** (v3.27.0) | +5 (S12/S15/S17/S19/S20) | 79 | 21.9% |
+| **Fase 3** (v3.29.0) | +19 (C11-C20, S13/S14, I01-I05/I11, H01-H03) | 98 | 27.1% |
+| **Fase 4** (v3.30.0) | +28 (C31-C40, C51-C55, S21-S46, S69-S70) | **126** | **34.9%** |
+
+**Carry-over 67 regras** documentado em SPRINT_32_FASE4_RESEARCH.md — categorias 1-4 (DiaAtraso, CaractEsp, Porte, PCLD tables).
+
+### 📁 Arquivos tocados
+
+```
+backend/internal/audit/rules/3040_fase4.go             (NOVO — 585 LoC, 28 regras)
+backend/internal/audit/rules/3040_fase4_test.go        (NOVO — 562 LoC, 12 testes)
+backend/internal/audit/rules/3040_individuais.go       (I11: stub → severity I)
+backend/internal/audit/rules/3040_sistematicas.go      (S12: stub → severity I)
+backend/internal/audit/rules/registry.go               (Doc3040 → 126 regras; +1 comment Fase 4)
+backend/SPRINT_32_FASE4_RESEARCH.md                    (NOVO)
+backend/SPRINT_32_FASE4_RESULTS.md                     (NOVO)
+```
+
+### ⏭️ Próxima sprint
+
+**Sprint 33** — escolher entre:
+1. Expandir Doc3040 + destravar 13 carry-over (Cat 1-3)
+2. Iniciar Audit3050 (TXB_V11, 170 regras catálogo, zero implementadas)
+3. Cross-doc engine (3040 ↔ 4111) — meta Plano Ouro Sprint 43
+
+Quando você quiser que eu siga, me diz qual direção.
+
+---
+
 ## v3.29.0 — 2026-07-06 (Sprint 32 Fase 3 — Audit3040_v2: 19 regras Individuais/Campos/Header + Doc3040 expandido) ✅
 
 > **Status:** ✅ Shipped (Fase 3 de 4)

@@ -214,7 +214,7 @@ Cobertura           auditlog 90.8% · senhaws 95.6% · loggerutil 96.2% · sta 8
 Binários CLI        9 (api · worker · radar · seed · seed-sprint8c · jwt-mint · senhaws-rotate · sta-submit · _verify)
 Catálogo crítico    1.099 regras extraídas · 6 CADOCs (3040, 3044, 3050, 2060, 2061, 2070)
 Catálogo leiaute    8 CADOCs cadastrados · 24 campos parseados · XSD só 3040 (560 linhas)
-Regras portadas Go  98 de 3040 (B01-B25 + F01-F15 + C01-C10 + S01-S10 + A01-A15 + S12/S15/S17/S19/S20 + C11-C20+S13/S14+I01-I05/I11+H01-H03) = 27.1% do catálogo
+Regras portadas Go  126 de 3040 (B01-B25 + F01-F15 + C01-C10 + S01-S10 + A01-A15 + S12/S15/S17/S19/S20 + C11-C20+S13/S14+I01-I05/I11+H01-H03 + C31-C40/C51-C55/S21-S46/S69-S70) = 34.9% do catálogo
 Cross-doc           1 regra (3040 ↔ 4111) · meta: 12 regras (Sprint 43)
 Migrations          13 SQL files (001 → 013) via embed.FS
 Frontend            56 arquivos TS/TSX · 7.108 LoC · Next.js 14 (App Router) + TanStack Query + Zustand
@@ -226,7 +226,7 @@ PDFs profissionais  4 (README · ENG_REVERSA · PRODUTO_TESE_ROADMAP · em breve
 Validações profundas 48 ciclos documentados (média 1.7/sprint)
 ```
 
-> ⚠️ **Status real de cobertura 3040:** 98/361 regras (27.1%). Sprint 32 Fases 1+2+3 entregues (A01-A15 + S12/S15/S17/S19/S20 + 19 individuais). Carry-over Fase 4: C21/C23-C29 + I06-I10/I12-I15 + H04-H09 (23 regras) + C31-C80 + S21-S70 (75 regras) = ~98 carry-over total pra Fase 4.
+> ⚠️ **Status real de cobertura 3040:** 126/361 regras (34.9%). Sprint 32 Fases 1+2+3+4 entregues (66 regras: 14 Agregadas + 5 Sistemáticas + 19 Individuais + 28 finais). Carry-over 67 regras (DiaAtraso, CaractEsp, PCLD tables) documentado em SPRINT_32_FASE4_RESEARCH.md.
 
 ---
 

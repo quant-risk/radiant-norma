@@ -30,11 +30,12 @@ import (
 // Comportamento atual: aceita sempre (pass-through) — não bloqueia envios válidos.
 type S12DtVencCompativelParcelas struct{}
 
-func (S12DtVencCompativelParcelas) Code() string     { return "S12" }
-func (S12DtVencCompativelParcelas) Sheet() string    { return "Sistemáticas" }
-func (S12DtVencCompativelParcelas) Severity() string { return "E" }
+func (S12DtVencCompativelParcelas) Code() string  { return "S12" }
+func (S12DtVencCompativelParcelas) Sheet() string { return "Sistemáticas" }
+
+// Severity "I" — stub. Carry-over: requer Operacao.Parcelas (Fase 5).
+func (S12DtVencCompativelParcelas) Severity() string { return "I" }
 func (S12DtVencCompativelParcelas) Apply(_ context.Context, _ *Doc3040) error {
-	// Sprint 32 Fase 2: stub pass-through. Fase 3 valida contra Operacao.Parcelas.
 	return nil
 }
 
