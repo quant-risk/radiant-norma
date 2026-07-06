@@ -2,6 +2,60 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.25.0 — 2026-07-06 (Sprint 32 Fase 1 — Audit3040_v2: 14 regras Agregadas A01-A15) ✅
+
+> **Status:** ✅ Shipped (Fase 1 de 4)
+> **Sprint:** 32 (Plano Ouro §3.4 Épico D — Norma Engine)
+> **Versão:** minor (+14 regras, +1 arquivo de regras, +1 arquivo de testes)
+> **Trigger:** Plano Ouro §1.1 — fechar gap 3040 de 16.6% → 60%
+> **Próximas fases:** Fase 2 (próxima sprint: +35 → 28.8%); Fase 3 (I01-I15 + H01-H09); Fase 4 (C31-C80 + S41-S70)
+
+### 🎯 Resumo
+
+Port das **14 regras Agregadas (A01-A07, A09-A15)** do CADOC 3040 conforme catálogo BACEN `scr3040_criticas`. Total de regras 3040 em Go: **60 → 74** (cobertura 16.6% → **20.5%**).
+
+**Decisões arquiteturais:**
+- D-2: Tabela estática ClassOp × Provisão (Res. BCB 352) — O(1) lookup, zero allocation
+- D-3: Helpers de agregação (`totalVencimentos`, `maxVencimento`) reusados por 6 regras
+- D-5: Tests inline (não fixtures JSON) — table-driven com 5-7 cases por regra
+
+### 📊 Métricas
+
+| Métrica | Pré v3.25.0 | Pós v3.25.0 |
+|---|---|---|
+| Regras 3040 portadas | 60 | **74** (+14) |
+| Cobertura catálogo | 16.6% (60/361) | **20.5%** (74/361) |
+| Coverage internal/audit/rules | 62.8% | **66.6%** (+3.8pp) |
+| Test functions | ~770 | **~820** (+50 subtests table-driven) |
+| Packages PASS | 23/23 | **23/23** |
+| Race detector | clean | clean |
+
+### 🐛 Bugs encontrados pelos próprios tests
+
+Quality gate funcionou — tests pegaram 3 boundary bugs antes do commit:
+
+1. **A01 boundary:** ratio == provMax é inválido (provMax exclusive)
+2. **A11/A12 threshold:** lógica original rejeitava só < 500k; refatorada pra thresholds específicos (4 → 500k, 5 → 5M)
+3. **A01 ClassOp H:** tabela original dizia `< 101%`, correto é `>= 100% sem upper bound`
+
+### 📁 Arquivos
+
+```
+backend/internal/audit/rules/3040_agregadas.go         (NOVO — 477 LoC)
+backend/internal/audit/rules/3040_agregadas_test.go    (NOVO — 432 LoC, 15 testes)
+backend/internal/audit/rules/registry.go               (+14 Register)
+backend/internal/audit/rules/raw_rules_test.go         (60 → 74)
+backend/internal/audit/rules/3040_test.go              (lista códigos atualizada)
+backend/SPRINT_32_RESEARCH.md                          (NOVO)
+backend/SPRINT_32_RESULTS.md                           (NOVO)
+```
+
+### ⏭️ Próxima sprint
+
+**Fase 2 do Sprint 32** (próxima entrega): +35 regras (C11-C30 + S11-S20) → 28.8% cobertura 3040.
+
+---
+
 ## v3.24.0 — 2026-07-06 (Validação 50 — Deep audit + hardening pós-Sprint 28) ✅
 
 > **Status:** ✅ Shipped

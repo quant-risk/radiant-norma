@@ -172,10 +172,10 @@ func (r *Registry) All() []Rule {
 //   - Campos Obrigatórios: C01-C05 (obrigatoriedade condicional)
 //   - Semântica: S01-S05 (semântica geral)
 //
-// Total: 60 regras (Sprint 7b v1.7.0):
-//   - 5 raw (B01-B05)
-//   - 25 originais (Sprint 4)
-//   - 30 novas (Sprint 7b: B16-B25, F06-F15, C06-C10, S06-S10)
+// Total pré-Sprint 32: 60 regras (Sprint 7b v1.7.0).
+// Sprint 32 Fase 1: +14 regras Agregadas (A01-A07, A09-A15) → 74 regras.
+//
+// Cobertura catálogo: 74/361 = 20.5% (era 16.6%).
 func Builtin3040() *Registry {
 	r := NewRegistry()
 
@@ -256,6 +256,24 @@ func Builtin3040() *Registry {
 	r.Register(S08PFRiscoMin{})
 	r.Register(S09SomaVencimentos{})
 	r.Register(S10PropriaNaoME{})
+
+	// Sprint 32 / v3.25.0 — Agregadas A01-A15 (14 regras; A08 não existe no catálogo)
+	// Classificação × Provisão × Vencimentos (Tier 3 — Agregadas)
+	r.Register(A01ClassOpProvisao{})
+	r.Register(A02ClassOpVencSemPrazo{})
+	r.Register(A03ClassOpVencComPrazo{})
+	r.Register(A04MinimoVencimento{})
+	r.Register(A05NatuOpLocaliz{})
+	r.Register(A06DesempOpVenc{})
+	r.Register(A07AgregadoDuplicado{})
+	// A08 não consta no catálogo BACEN scr3040_criticas (pula para A09)
+	r.Register(A09FaixaVlrMedia{})
+	r.Register(A10QtdOpMaiorQtdCli{})
+	r.Register(A11FaixaAltVencMedioBaixo{})
+	r.Register(A12FaixaAltRiscoMedio{})
+	r.Register(A13RiscoMedioMin{})
+	r.Register(A14LocalizExterior{})
+	r.Register(A15AgregadoDuplicadoCompleto{})
 
 	return r
 }

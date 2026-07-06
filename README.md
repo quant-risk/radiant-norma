@@ -214,7 +214,7 @@ Cobertura           auditlog 90.8% · senhaws 95.6% · loggerutil 96.2% · sta 8
 Binários CLI        9 (api · worker · radar · seed · seed-sprint8c · jwt-mint · senhaws-rotate · sta-submit · _verify)
 Catálogo crítico    1.099 regras extraídas · 6 CADOCs (3040, 3044, 3050, 2060, 2061, 2070)
 Catálogo leiaute    8 CADOCs cadastrados · 24 campos parseados · XSD só 3040 (560 linhas)
-Regras portadas Go  60 de 3040 (B01-B25 + F01-F15 + C01-C10 + S01-S10) = 16.6% do catálogo
+Regras portadas Go  74 de 3040 (B01-B25 + F01-F15 + C01-C10 + S01-S10 + A01-A15) = 20.5% do catálogo
 Cross-doc           1 regra (3040 ↔ 4111) · meta: 12 regras (Sprint 43)
 Migrations          13 SQL files (001 → 013) via embed.FS
 Frontend            56 arquivos TS/TSX · 7.108 LoC · Next.js 14 (App Router) + TanStack Query + Zustand
@@ -226,7 +226,7 @@ PDFs profissionais  4 (README · ENG_REVERSA · PRODUTO_TESE_ROADMAP · em breve
 Validações profundas 48 ciclos documentados (média 1.7/sprint)
 ```
 
-> ⚠️ **Status real de cobertura 3040:** 60/361 regras (16.6%). Diferencial vs BCValidador oficial ainda parcial — Sprint 32 fecha até 60%.
+> ⚠️ **Status real de cobertura 3040:** 74/361 regras (20.5%). Sprint 32 Fase 1 entregue (A01-A15). Faltam 3 fases pra meta de 60% (Fase 2: C11-C30+S11-S20, Fase 3: I01-I15+H01-H09, Fase 4: C31-C80+S41-S70).
 
 ---
 

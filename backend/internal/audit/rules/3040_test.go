@@ -355,6 +355,7 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 	codes := r.Codes()
 
 	// Sprint 7b / v1.7.0: 60 regras — 5 raw + 55 tipadas.
+	// Sprint 32 / v3.25.0 Fase 1: +14 Agregadas → 74 regras.
 	expectedCodigos := []string{
 		// Básicas raw (Sprint 6 v1.5.0 / W3)
 		"B01", "B02", "B03", "B04", "B05",
@@ -377,6 +378,10 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 		"S01", "S02", "S03", "S04", "S05",
 		// Semântica expandida (Sprint 7b)
 		"S06", "S07", "S08", "S09", "S10",
+		// Agregadas (Sprint 32 Fase 1)
+		// A08 não consta no catálogo BACEN scr3040_criticas
+		"A01", "A02", "A03", "A04", "A05", "A06", "A07",
+		"A09", "A10", "A11", "A12", "A13", "A14", "A15",
 	}
 
 	if len(codes) != len(expectedCodigos) {
