@@ -65,8 +65,8 @@
 | **52** | CrossDoc_DRSAC — 3040 ↔ DRSAC ↔ 4111 |
 | **53** | AIInsights_v1 — LLM interpreta audit_log (opt-in) |
 | **54** | SchemaRegistry_v2 — Versionamento automático + changelog público |
-| **55** | Pilot3 — Cliente-piloto ESG-first |
-| **56** | SOC2_Type1 — Auditoria SOC 2 Type I |
+| **55** | Pilot3 — Cliente-piloto ESG-first | ✅ fechada (v3.34.50 — pilot service + ESG steps + REST API) |
+| **56** | SOC2_Type1 — Auditoria SOC 2 Type I | ✅ fechada (v3.34.38 — readiness + evidence collector) |
 
 **Saída:** "Radiant Norma ESG" vendável. Diferencial competitivo massivo.
 
@@ -78,16 +78,16 @@
 
 | Sprint | Entregas |
 |---|---|
-| **57** | AuditDRM_Completo |
-| **58** | AuditDLI |
-| **59** | SDK_GO — github.com/fortvna/radiant-norma-go |
-| **60** | SDK_Python |
-| **61** | Webhooks outbound |
-| **62** | Marketplace — Catálogo de regras customizadas |
-| **63** | MultiRegion — Replicação BR-SP1/SP2 |
-| **64** | Pilot4 — Banco S3-S4 |
-| **65** | SOC2_Type2 |
-| **66** | SeriesA_Raise (opcional) |
+| **57** | AuditDRM_Completo | ✅ fechada (v3.34.39 — parser DRM/DLO + 7 cross-doc) |
+| **58** | AuditDLI | ✅ fechada (v3.34.40 — parser Documento 2062 DLI + validações estruturais) |
+| **59** | SDK_GO — github.com/fortvna/radiant-norma-go | ✅ fechada (v3.34.41 — Go SDK) |
+| **60** | SDK_Python | ✅ fechada (v3.34.42 — PyPI radiant-norma) |
+| **61** | Webhooks outbound | ✅ fechada (v3.34.43 — registry + delivery worker + REST API) |
+| **62** | Marketplace — Catálogo de regras customizadas | ✅ fechada (v3.34.44 — publish/install/rate) |
+| **63** | MultiRegion — Replicação BR-SP1/SP2 | ✅ fechada (v3.34.45 — BR-SP1/SP2 replication) |
+| **64** | Pilot4 — Banco S3-S4 | ✅ fechada (v3.34.46 — Banco S3-S4 onboarding) |
+| **65** | SOC2_Type2 | ✅ fechada (v3.34.47 — continuous evidence collection) |
+| **66** | SeriesA_Raise (opcional) | backlog (depends on M4: R$ 100k MRR) |
 
 **Saída:** "Radiant Norma Enterprise" — plataforma regulatória end-to-end.
 
@@ -140,4 +140,4 @@ Output: `cmd/synth-gen` CLI que produz envios sintéticos para `cmd/seed` e test
 
 ---
 
-**Última atualização:** 2026-07-07 (Sprint 44 Radar_v2 shipped ✅) · Plano Ouro aprovado por Henrique.
+**Última atualização:** 2026-07-07 (Sprint 55 Pilot3 ESG-first ✅ + Validação 72 — 3 bugs auth) · Plano Ouro aprovado por Henrique.
