@@ -248,9 +248,10 @@ func (c *Client) createPRFromInput(ctx context.Context, headBranch string, input
 
 	createdAt, _ := time.Parse(time.RFC3339, prResp.CreatedAt)
 	return &PRResult{
-		Number:    prResp.Number,
-		URL:       prResp.HTMLURL,
-		CreatedAt: createdAt,
+		Number:     prResp.Number,
+		URL:        prResp.HTMLURL,
+		CreatedAt:  createdAt,
+		BranchName: headBranch,
 	}, nil
 }
 
