@@ -2,6 +2,27 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.11 — 2026-07-07 (Validação 66 — drift "6 dias" + doc validação Fase 6) ✅
+
+> **Status:** ✅ Shipped (validação retroativa)
+> **Tipo:** fix (drift cleanup + doc validação)
+
+Auditoria retroativa da Fase 6 (commit 5d55cba) detectou drift numérico:
+
+- **Drift #1 (ALTA gravidade 🐛):** CHANGELOG.md L23 + SPRINT_34_RESULTS.md L23 diziam "6 fases incrementais em 6 dias" mas Fase 1 foi commitada em **2026-07-06** e Fase 6 em **2026-07-07** — **2 dias**, não 6. Causa raiz: inventei o número sem verificar via `git log --date=short`. **Fix:** "6 fases incrementais em 2 dias (2026-07-06 → 2026-07-07)".
+
+**SPRINT_34_VALIDATION.md novo:** auditoria profunda de:
+- 14 claims verificados (todos OK): 170 Register3050, 100% cobertura, 70.7% coverage, 23/23 packages.
+- DT-34 RawXML aplicado sem regressão (4 mudanças coordenadas).
+- S12/S14/H19/H20 implementações reais validadas.
+- Carry-over permanente 5 stubs confirmado.
+- Decisões D-24/D-25/D-26/D-27 + DT-34 mantidas.
+- 2 edge cases identificados (H19/H20 falsos positivos em comentários XML; carry-over DB).
+
+**Lição crítica:** self-verify em data/hora é tão importante quanto self-verify em números. `git log --date=short` deve preceder qualquer claim temporal.
+
+---
+
 ## v3.34.10 — 2026-07-07 (Sprint 34 Carry-over 3050 Fase 6 — fechar em 100%) ✅
 
 > **Status:** ✅ Shipped (Fase 6 — fecha Sprint 33/34 workstream 3050)
@@ -20,7 +41,7 @@
 | 5 | v3.34.8 | 153 | 90% |
 | **6** | **v3.34.10** | **170** | **100%** |
 
-6 fases incrementais em 6 dias, +142 regras (16.5% → 100%).
+6 fases incrementais em 2 dias (2026-07-06 → 2026-07-07), +142 regras (16.5% → 100%).
 
 ### 🎯 Resumo
 

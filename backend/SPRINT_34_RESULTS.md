@@ -20,7 +20,7 @@ Shipped. **170 regras 3050 totais** (153 anteriores + 17 Fase 6). Cobertura **10
 | 5 | v3.34.8 | 153 | 90% |
 | **6** | **v3.34.10** | **170** | **100%** |
 
-6 fases incrementais em 6 dias, +142 regras (16.5% → 100%).
+6 fases incrementais em 2 dias (Fase 1 em 2026-07-06 → Fase 6 em 2026-07-07), +142 regras (16.5% → 100%).
 
 ## 📦 Entregas vs planejado
 
