@@ -2,6 +2,30 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.5 — 2026-07-07 (Validação 63 — drift comentário IsUltimoDiaUtilMes + doc validação Fase 3) ✅
+
+> **Status:** ✅ Shipped (validação retroativa)
+> **Tipo:** fix (drift cleanup + doc validação)
+
+Auditoria retroativa da Fase 3 (commit 4a1c3b1) detectou drift entre comentário e implementação:
+
+- **Drift #1 (BAIXA):** `IsUltimoDiaUtilMes` comentário dizia "varre do último dia do mês até o dia 1, retornando true no primeiro dia útil encontrado" mas código **NÃO varre** — apenas verifica se data == último dia do mês E é dia útil.
+- **Correção:** comentário reescrito para refletir implementação real + documentar edge case conhecido (último dia = sábado → retorna false, semântica não-bacen).
+
+**Edge case identificado para Fase 4:** se último dia do mês cai em sábado (ex: 2025-05-31), BACEN real consideraria sexta anterior (2025-05-30) como último dia útil. Implementação atual não captura isso. Carry-over.
+
+**SPRINT_33_FASE3_VALIDATION.md novo:** auditoria profunda de:
+- 13 claims verificados contra código real (todos OK).
+- 24 regras Fase 3 auditadas individualmente (1:1 regra → test).
+- DT-28/DT-29/DT-30 aplicadas.
+- 23/23 packages PASS -race, coverage 72.5%, vet+gofmt clean.
+- Carry-over S09/S13/S24 stub → real confirmado.
+- 3 edge cases identificados para Fase 4.
+
+Sem mudanças de regras — apenas drift cleanup + documentação.
+
+---
+
 ## v3.34.4 — 2026-07-07 (Sprint 33 Fase 3 — Audit3050 Header + Individuais + Sistema + carry-over) ✅
 
 > **Status:** ✅ Shipped (Fase 3 de N)
