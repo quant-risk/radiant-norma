@@ -138,10 +138,17 @@ func (c *Client) CreateCustomer(ctx context.Context, input CreateCustomerInput) 
 		return nil, err
 	}
 
+	// Extrai tenant_id dos metadados se presente.
+	tenantID := ""
+	if stripeResp.Metadata != nil {
+		tenantID = stripeResp.Metadata["tenant_id"]
+	}
+
 	return &Customer{
 		ID:        stripeResp.ID,
 		Email:     stripeResp.Email,
 		Name:      stripeResp.Name,
+		TenantID:  tenantID,
 		CreatedAt: time.Unix(stripeResp.Created, 0),
 	}, nil
 }
@@ -369,7 +376,6 @@ func (c *Client) PriceIDToPlan(priceID string) (Plan, error) {
 }
 
 func (c *Client) setAuth(req *http.Request) {
-	req.SetBasicAuth(c.cfg.SecretKey, "")
 	req.Header.Set("Authorization", "Bearer "+c.cfg.SecretKey)
 	req.Header.Set("Stripe-Version", "2024-12-18.acacia")
 }

@@ -326,9 +326,28 @@ func (h *WebhookHandler) isEventProcessed(ctx context.Context, eventID string) (
 
 // markEventProcessed marca o evento como processado no billing_events.
 func (h *WebhookHandler) markEventProcessed(ctx context.Context, event *StripeEvent, rawBody []byte) error {
+	// Extrai customer_id do payload do evento para encontrar tenant real.
+	var customerID string
+	var data struct {
+		Object struct {
+			Customer string `json:"customer"`
+		} `json:"object"`
+	}
+	if json.Unmarshal(event.Data, &data) == nil {
+		customerID = data.Object.Customer
+	}
+
+	// Busca tenant_id real pelo stripe_customer_id.
+	var tenantID string
+	if customerID != "" {
+		_ = h.db.QueryRowContext(ctx, `
+			SELECT id FROM ifs WHERE stripe_customer_id = ?
+		`, customerID).Scan(&tenantID)
+	}
+
 	_, err := h.db.ExecContext(ctx, `
 		INSERT OR IGNORE INTO billing_events (tenant_id, event_type, stripe_event_id, payload, processed_at)
-		VALUES ('', ?, ?, ?, CURRENT_TIMESTAMP)
-	`, event.Type, event.ID, string(rawBody))
+		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+	`, tenantID, event.Type, event.ID, string(rawBody))
 	return err
 }
