@@ -75,7 +75,7 @@ func remainingJoin(parts []string) string {
 		return ""
 	}
 	if len(parts) == 1 {
-		return ", " + parts[0]
+		return parts[0]
 	}
 	result := ""
 	for i := 0; i < len(parts)-1; i++ {
