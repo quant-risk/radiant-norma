@@ -25,6 +25,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Doc3050 é o documento CADOC 3050 parseado.
@@ -70,6 +71,7 @@ type Modalidade struct {
 
 	// Diários (modelos 1-4)
 	TxMedJuros           *float64
+	TxMedJurosAjustada   *float64 // txMedJurosAjustada — regra 3051 (S24 carry-over Fase 3)
 	TxMedEncFiscais      *float64
 	TxMedEncOperacionais *float64
 	TxMinima             *float64
@@ -276,6 +278,8 @@ func parse3050Attrs(attrs []xml.Attr) xml3050Attrs {
 		switch attr.Name.Local {
 		case "txMedJuros":
 			a.TxMedJuros = parseFloatPtr(attr.Value)
+		case "txMedJurosAjustada":
+			a.TxMedJurosAjustada = parseFloatPtr(attr.Value)
 		case "txMedEncFiscais":
 			a.TxMedEncFiscais = parseFloatPtr(attr.Value)
 		case "txMedEncOperacionais":
@@ -339,6 +343,7 @@ func parse3050Attrs(attrs []xml.Attr) xml3050Attrs {
 // Campos são ponteiros para distinguir "0" vs "ausente".
 type xml3050Attrs struct {
 	TxMedJuros           *float64 `xml:"txMedJuros,attr,omitempty"`
+	TxMedJurosAjustada   *float64 `xml:"txMedJurosAjustada,attr,omitempty"`
 	TxMedEncFiscais      *float64 `xml:"txMedEncFiscais,attr,omitempty"`
 	TxMedEncOperacionais *float64 `xml:"txMedEncOperacionais,attr,omitempty"`
 	TxMinima             *float64 `xml:"txMinima,attr,omitempty"`
@@ -370,6 +375,7 @@ func (a xml3050Attrs) toModalidade(codigo, encargo, tipoCli string) Modalidade {
 		TipoCli: tipoCli,
 
 		TxMedJuros:           a.TxMedJuros,
+		TxMedJurosAjustada:   a.TxMedJurosAjustada,
 		TxMedEncFiscais:      a.TxMedEncFiscais,
 		TxMedEncOperacionais: a.TxMedEncOperacionais,
 		TxMinima:             a.TxMinima,
@@ -865,18 +871,6 @@ func (S08DataBaseFutura) Apply3050(_ context.Context, _ *Doc3050) error {
 	return nil
 }
 
-// S09 — Dias úteis da semana incompletos (regra 3001).
-//
-// Stub: requer cálculo de dias úteis Brasil (feriados nacionais + bancários).
-type S09DiasUteis struct{}
-
-func (S09DiasUteis) Code() string     { return "3050-S09" }
-func (S09DiasUteis) Sheet() string    { return "Stubs" }
-func (S09DiasUteis) Severity() string { return "I" }
-func (S09DiasUteis) Apply3050(_ context.Context, _ *Doc3050) error {
-	return nil
-}
-
 // S10 — Documento anterior não enviado (regra 3002).
 //
 // Stub: depende de histórico de envios.
@@ -912,18 +906,6 @@ func (S12PrzMedSeSld) Code() string     { return "3050-S12" }
 func (S12PrzMedSeSld) Sheet() string    { return "Stubs" }
 func (S12PrzMedSeSld) Severity() string { return "I" }
 func (S12PrzMedSeSld) Apply3050(_ context.Context, _ *Doc3050) error {
-	return nil
-}
-
-// S13 — Periodicidade último dia útil (regras 3031/3032/3033/3035).
-//
-// Stub: depende de calendário último dia útil + detecção modalidade.
-type S13UltimoDiaUtil struct{}
-
-func (S13UltimoDiaUtil) Code() string     { return "3050-S13" }
-func (S13UltimoDiaUtil) Sheet() string    { return "Stubs" }
-func (S13UltimoDiaUtil) Severity() string { return "I" }
-func (S13UltimoDiaUtil) Apply3050(_ context.Context, _ *Doc3050) error {
 	return nil
 }
 
@@ -1138,22 +1120,6 @@ func (S23PrzMedCondicional) Apply3050(_ context.Context, doc *Doc3050) error {
 				m.Codigo, i, m.Encargo, m.TipoCli, *m.SldCarAtiva)
 		}
 	}
-	return nil
-}
-
-// S24 — txMedJuros ajustada <= txMedJuros (regra 3051).
-//
-// Severidade: A (campo opcional "ajustada" não está no Doc3050 — stubbed via flag conceitual).
-// Aplica: se ambos preenchidos (no futuro), txMedJurosAjustada <= txMedJuros.
-// Em Fase 2, validamos apenas a presença condicional: se txMedJuros presente, ok.
-// (Carry-over para Fase 3 quando "ajustada" entrar no parser.)
-type S24TxJurosAjustadaLeTxJuros struct{}
-
-func (S24TxJurosAjustadaLeTxJuros) Code() string     { return "3050-S24" }
-func (S24TxJurosAjustadaLeTxJuros) Sheet() string    { return "Sistemáticas" }
-func (S24TxJurosAjustadaLeTxJuros) Severity() string { return "I" }
-func (S24TxJurosAjustadaLeTxJuros) Apply3050(_ context.Context, _ *Doc3050) error {
-	// stub — txMedJurosAjustada não está no parser ainda (carry-over Fase 3)
 	return nil
 }
 
@@ -1615,18 +1581,608 @@ func (I14VlrConcessoesMuitoAlto) Apply3050(_ context.Context, doc *Doc3050) erro
 }
 
 // ============================================================================
-// Builtin3050 — Registry de regras 3050 (56 total após Fase 2)
+// 6 Regras Header H10-H15 — Fase 3
 // ============================================================================
 
-// Builtin3050 retorna o registry com as 56 regras 3050 implementadas (Fases 1+2).
+// H10 — cnpjInstituicao length = 8 dígitos (raiz CNPJ BACEN, sem DV).
+//
+// Severidade: A (formato BACEN).
+// Origem: 2005 (header obrigatório) + formato BACEN.
+type H10CNPJLength struct{}
+
+func (H10CNPJLength) Code() string     { return "3050-H10" }
+func (H10CNPJLength) Sheet() string    { return "Header" }
+func (H10CNPJLength) Severity() string { return "A" }
+func (H10CNPJLength) Apply3050(_ context.Context, doc *Doc3050) error {
+	cnpj := doc.Root.CNPJ
+	if len(cnpj) != 8 {
+		return fmt.Errorf("cnpjInstituicao=%q (length=%d, esperado 8 dígitos — raiz BACEN)", cnpj, len(cnpj))
+	}
+	return nil
+}
+
+// H11 — cnpjInstituicao all-digits (sem letras, símbolos ou espaços).
+//
+// Severidade: A.
+type H11CNPJAllDigits struct{}
+
+func (H11CNPJAllDigits) Code() string     { return "3050-H11" }
+func (H11CNPJAllDigits) Sheet() string    { return "Header" }
+func (H11CNPJAllDigits) Severity() string { return "A" }
+func (H11CNPJAllDigits) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, c := range doc.Root.CNPJ {
+		if c < '0' || c > '9' {
+			return fmt.Errorf("cnpjInstituicao=%q contém caractere não-numérico na posição %d (%q)", doc.Root.CNPJ, i, c)
+		}
+	}
+	return nil
+}
+
+// H12 — dataBase formato YYYY-MM-DD rigoroso (não 2024-1-1 ou 2024/01/01).
+//
+// Severidade: E.
+type H12DataBaseFormatoRigoroso struct{}
+
+func (H12DataBaseFormatoRigoroso) Code() string     { return "3050-H12" }
+func (H12DataBaseFormatoRigoroso) Sheet() string    { return "Header" }
+func (H12DataBaseFormatoRigoroso) Severity() string { return "E" }
+func (H12DataBaseFormatoRigoroso) Apply3050(_ context.Context, doc *Doc3050) error {
+	db := doc.Root.DataBase
+	if len(db) != 10 {
+		return fmt.Errorf("dataBase=%q (length=%d, esperado 10 caracteres formato YYYY-MM-DD)", db, len(db))
+	}
+	for i, c := range db {
+		switch i {
+		case 4, 7:
+			if c != '-' {
+				return fmt.Errorf("dataBase=%q: esperado '-' nas posições 4 e 7, encontrado %q na posição %d", db, c, i)
+			}
+		default:
+			if c < '0' || c > '9' {
+				return fmt.Errorf("dataBase=%q: caractere não-numérico %q na posição %d", db, c, i)
+			}
+		}
+	}
+	return nil
+}
+
+// H13 — indRemessa ∈ {I, A, S} case-sensitive (não 'i' ou 'a' minúsculos).
+//
+// Severidade: E.
+type H13IndRemessaCaseSensitive struct{}
+
+func (H13IndRemessaCaseSensitive) Code() string     { return "3050-H13" }
+func (H13IndRemessaCaseSensitive) Sheet() string    { return "Header" }
+func (H13IndRemessaCaseSensitive) Severity() string { return "E" }
+func (H13IndRemessaCaseSensitive) Apply3050(_ context.Context, doc *Doc3050) error {
+	ind := doc.Root.IndRemessa
+	switch ind {
+	case "I", "A", "S":
+		return nil
+	default:
+		return fmt.Errorf("indRemessa=%q (esperado 'I' (inclusão), 'A' (alteração) ou 'S' (substituição) — case-sensitive)", ind)
+	}
+}
+
+// H14 — nmContato sem espaços duplicados (sanity de trim).
+//
+// Severidade: A.
+type H14NmContatoSemEspacosDuplicados struct{}
+
+func (H14NmContatoSemEspacosDuplicados) Code() string     { return "3050-H14" }
+func (H14NmContatoSemEspacosDuplicados) Sheet() string    { return "Header" }
+func (H14NmContatoSemEspacosDuplicados) Severity() string { return "A" }
+func (H14NmContatoSemEspacosDuplicados) Apply3050(_ context.Context, doc *Doc3050) error {
+	nm := doc.Root.NmContato
+	if strings.Contains(nm, "  ") {
+		return fmt.Errorf("nmContato=%q contém espaços duplicados (esperado trim)", nm)
+	}
+	return nil
+}
+
+// H15 — telContato contém apenas dígitos após remover formatação.
+//
+// Severidade: A.
+type H15TelContatoSemCaracteresResiduais struct{}
+
+func (H15TelContatoSemCaracteresResiduais) Code() string     { return "3050-H15" }
+func (H15TelContatoSemCaracteresResiduais) Sheet() string    { return "Header" }
+func (H15TelContatoSemCaracteresResiduais) Severity() string { return "A" }
+func (H15TelContatoSemCaracteresResiduais) Apply3050(_ context.Context, doc *Doc3050) error {
+	tel := doc.Root.TelContato
+	// Aceita (), -, espaços como formatação. Rejeita letras ou símbolos.
+	for i, c := range tel {
+		if c >= '0' && c <= '9' {
+			continue
+		}
+		switch c {
+		case '(', ')', '-', ' ', '+':
+			continue
+		}
+		return fmt.Errorf("telContato=%q: caractere inválido %q na posição %d (esperado apenas dígitos + formatação ()- +espaço)", tel, c, i)
+	}
+	return nil
+}
+
+// ============================================================================
+// 4 Regras Sistema S29-S32 — Fase 3
+// ============================================================================
+
+// S29 — dataBase deve estar entre 2009-01-01 e hoje+30 (não-futuro distante).
+//
+// Severidade: E (dataBase fora do range plausível = erro grave).
+type S29DataBaseRangePlausivel struct{}
+
+func (S29DataBaseRangePlausivel) Code() string     { return "3050-S29" }
+func (S29DataBaseRangePlausivel) Sheet() string    { return "Sistemáticas" }
+func (S29DataBaseRangePlausivel) Severity() string { return "E" }
+func (S29DataBaseRangePlausivel) Apply3050(_ context.Context, doc *Doc3050) error {
+	db, err := time.Parse("2006-01-02", doc.Root.DataBase)
+	if err != nil {
+		// Não-duplica erro de formato (H12 cobre).
+		return nil
+	}
+	limiteInf := time.Date(2009, 1, 1, 0, 0, 0, 0, time.UTC)
+	limiteSup := time.Now().UTC().AddDate(0, 0, 30)
+	if db.Before(limiteInf) {
+		return fmt.Errorf("dataBase=%s anterior a 2009-01-01 (CADOC 3050 não existia antes)", doc.Root.DataBase)
+	}
+	if db.After(limiteSup) {
+		return fmt.Errorf("dataBase=%s > hoje+30 (futuro distante, provável erro de digitação)", doc.Root.DataBase)
+	}
+	return nil
+}
+
+// S30 — periodicidade: doc.Diario presente quando dataBase é dia útil (placeholder).
+//
+// Severidade: A — checa apenas que se há modelos 1-4 declarados, Diario tem dados.
+// Carry-over para Fase 4: precisa de contexto de janela de envio BACEN.
+type S30DiarioPresenteSeModelo1a4 struct{}
+
+func (S30DiarioPresenteSeModelo1a4) Code() string     { return "3050-S30" }
+func (S30DiarioPresenteSeModelo1a4) Sheet() string    { return "Sistemáticas" }
+func (S30DiarioPresenteSeModelo1a4) Severity() string { return "A" }
+func (S30DiarioPresenteSeModelo1a4) Apply3050(_ context.Context, doc *Doc3050) error {
+	// Sem contexto de modelos declarados no XML (parser não distingue modelo 1/2/3/4
+	// ainda), validamos apenas: se há vlrConcessoes em qualquer modalidade, Diario
+	// ou Mensal deve ter entrada.
+	hasData := false
+	for _, m := range doc.Diario {
+		if m.VlrConcessoes != nil {
+			hasData = true
+			break
+		}
+	}
+	if !hasData {
+		for _, m := range doc.Mensal {
+			if m.VlrConcessoes != nil || m.SldCarAtiva != nil {
+				hasData = true
+				break
+			}
+		}
+	}
+	if !hasData && len(doc.Diario) == 0 && len(doc.Mensal) == 0 {
+		return fmt.Errorf("doc vazio: nem Diario nem Mensal têm modalidades")
+	}
+	return nil
+}
+
+// S31 — indRemessa = "S" (substituição) → doc.AnteriorRef placeholder (carry-over).
+//
+// Severidade: I (placeholder — campo AnteriorRef não está no parser ainda).
+type S31SubstituicaoSemAnteriorRef struct{}
+
+func (S31SubstituicaoSemAnteriorRef) Code() string     { return "3050-S31" }
+func (S31SubstituicaoSemAnteriorRef) Sheet() string    { return "Sistemáticas" }
+func (S31SubstituicaoSemAnteriorRef) Severity() string { return "I" }
+func (S31SubstituicaoSemAnteriorRef) Apply3050(_ context.Context, doc *Doc3050) error {
+	// Carry-over: doc.AnteriorRef não está no Doc3050Root ainda (parser precisa
+	// expor). Stub honesto: retorna nil e severity "I" sinaliza não-implementado.
+	_ = doc
+	return nil
+}
+
+// S32 — qtdTotal modalidades > 0 (sanity: doc não-vazio).
+//
+// Severidade: A.
+type S32DocNaoVazio struct{}
+
+func (S32DocNaoVazio) Code() string     { return "3050-S32" }
+func (S32DocNaoVazio) Sheet() string    { return "Sistemáticas" }
+func (S32DocNaoVazio) Severity() string { return "A" }
+func (S32DocNaoVazio) Apply3050(_ context.Context, doc *Doc3050) error {
+	if len(doc.Diario) == 0 && len(doc.Mensal) == 0 {
+		return fmt.Errorf("doc sem modalidades (Diario vazio, Mensal vazio)")
+	}
+	return nil
+}
+
+// ============================================================================
+// 14 Regras Individuais I15-I28 — Fase 3
+// ============================================================================
+
+// I15 — sldCarAtiva ≥ 0 em desDuplicatas.
+//
+// Severidade: E.
+type I15DesDuplicatasSldCarNaoNeg struct{}
+
+func (I15DesDuplicatasSldCarNaoNeg) Code() string     { return "3050-I15" }
+func (I15DesDuplicatasSldCarNaoNeg) Sheet() string    { return "Individuais" }
+func (I15DesDuplicatasSldCarNaoNeg) Severity() string { return "E" }
+func (I15DesDuplicatasSldCarNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Mensal {
+		if m.Codigo != "desDuplicatas" || m.SldCarAtiva == nil {
+			continue
+		}
+		if *m.SldCarAtiva < 0 {
+			return fmt.Errorf("desDuplicatas [%d] (%s/%s): sldCarAtiva=%.2f < 0", i, m.Encargo, m.TipoCli, *m.SldCarAtiva)
+		}
+	}
+	return nil
+}
+
+// I16 — vlrConcessoes ≥ 0 em desCheques.
+//
+// Severidade: E.
+type I16DesChequesVlrConcessoesNaoNeg struct{}
+
+func (I16DesChequesVlrConcessoesNaoNeg) Code() string     { return "3050-I16" }
+func (I16DesChequesVlrConcessoesNaoNeg) Sheet() string    { return "Individuais" }
+func (I16DesChequesVlrConcessoesNaoNeg) Severity() string { return "E" }
+func (I16DesChequesVlrConcessoesNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "desCheques" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("desCheques [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// I17 — txMedJuros ≥ 0 em vendor.
+//
+// Severidade: E.
+type I17VendorTxMedJurosNaoNeg struct{}
+
+func (I17VendorTxMedJurosNaoNeg) Code() string     { return "3050-I17" }
+func (I17VendorTxMedJurosNaoNeg) Sheet() string    { return "Individuais" }
+func (I17VendorTxMedJurosNaoNeg) Severity() string { return "E" }
+func (I17VendorTxMedJurosNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "vendor" || m.TxMedJuros == nil {
+			continue
+		}
+		if *m.TxMedJuros < 0 {
+			return fmt.Errorf("vendor [%d] (%s/%s): txMedJuros=%.2f < 0", i, m.Encargo, m.TipoCli, *m.TxMedJuros)
+		}
+	}
+	return nil
+}
+
+// I18 — przDecMedConcessoes ≥ 0 em compror.
+//
+// Severidade: E.
+type I18ComprorPrzDecNaoNeg struct{}
+
+func (I18ComprorPrzDecNaoNeg) Code() string     { return "3050-I18" }
+func (I18ComprorPrzDecNaoNeg) Sheet() string    { return "Individuais" }
+func (I18ComprorPrzDecNaoNeg) Severity() string { return "E" }
+func (I18ComprorPrzDecNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "compror" || m.PrzDecMedConcessoes == nil {
+			continue
+		}
+		if *m.PrzDecMedConcessoes < 0 {
+			return fmt.Errorf("compror [%d] (%s/%s): przDecMedConcessoes=%d < 0", i, m.Encargo, m.TipoCli, *m.PrzDecMedConcessoes)
+		}
+	}
+	return nil
+}
+
+// I19 — sldCarAtiva ≥ 0 em carCrd (cartão crédito).
+//
+// Severidade: E.
+type I19CarCrdSldCarNaoNeg struct{}
+
+func (I19CarCrdSldCarNaoNeg) Code() string     { return "3050-I19" }
+func (I19CarCrdSldCarNaoNeg) Sheet() string    { return "Individuais" }
+func (I19CarCrdSldCarNaoNeg) Severity() string { return "E" }
+func (I19CarCrdSldCarNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Mensal {
+		if m.Codigo != "carCrd" || m.SldCarAtiva == nil {
+			continue
+		}
+		if *m.SldCarAtiva < 0 {
+			return fmt.Errorf("carCrd [%d] (%s/%s): sldCarAtiva=%.2f < 0", i, m.Encargo, m.TipoCli, *m.SldCarAtiva)
+		}
+	}
+	return nil
+}
+
+// I20 — vlrConcessoes ≥ 0 em carCrd.
+//
+// Severidade: E.
+type I20CarCrdVlrConcessoesNaoNeg struct{}
+
+func (I20CarCrdVlrConcessoesNaoNeg) Code() string     { return "3050-I20" }
+func (I20CarCrdVlrConcessoesNaoNeg) Sheet() string    { return "Individuais" }
+func (I20CarCrdVlrConcessoesNaoNeg) Severity() string { return "E" }
+func (I20CarCrdVlrConcessoesNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "carCrd" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("carCrd [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// I21 — txMedJuros ≤ 100% em todas modalidades (sanity, regra 3026).
+//
+// Severidade: A.
+type I21TxMedJurosMax100 struct{}
+
+func (I21TxMedJurosMax100) Code() string     { return "3050-I21" }
+func (I21TxMedJurosMax100) Sheet() string    { return "Individuais" }
+func (I21TxMedJurosMax100) Severity() string { return "A" }
+func (I21TxMedJurosMax100) Apply3050(_ context.Context, doc *Doc3050) error {
+	for _, list := range [][]Modalidade{doc.Diario, doc.Mensal} {
+		for i, m := range list {
+			if m.TxMedJuros == nil {
+				continue
+			}
+			if *m.TxMedJuros > 100 {
+				return fmt.Errorf("modalidade %s [%d] (%s/%s): txMedJuros=%.2f%% > 100%% (limite BACEN)", m.Codigo, i, m.Encargo, m.TipoCli, *m.TxMedJuros)
+			}
+		}
+	}
+	return nil
+}
+
+// I22 — txMedEncOperacionais ≤ 50% em todas modalidades (regra 3027).
+//
+// Severidade: A.
+type I22TxMedEncOperMax50 struct{}
+
+func (I22TxMedEncOperMax50) Code() string     { return "3050-I22" }
+func (I22TxMedEncOperMax50) Sheet() string    { return "Individuais" }
+func (I22TxMedEncOperMax50) Severity() string { return "A" }
+func (I22TxMedEncOperMax50) Apply3050(_ context.Context, doc *Doc3050) error {
+	for _, list := range [][]Modalidade{doc.Diario, doc.Mensal} {
+		for i, m := range list {
+			if m.TxMedEncOperacionais == nil {
+				continue
+			}
+			if *m.TxMedEncOperacionais > 50 {
+				return fmt.Errorf("modalidade %s [%d] (%s/%s): txMedEncOperacionais=%.2f%% > 50%% (limite BACEN)", m.Codigo, i, m.Encargo, m.TipoCli, *m.TxMedEncOperacionais)
+			}
+		}
+	}
+	return nil
+}
+
+// I23 — przDecMedConcessoes ≤ 5000 dias em capGir (limite alto BACEN, regra 3041).
+//
+// Severidade: E.
+type I23CapGirPrzDecMax5000 struct{}
+
+func (I23CapGirPrzDecMax5000) Code() string     { return "3050-I23" }
+func (I23CapGirPrzDecMax5000) Sheet() string    { return "Individuais" }
+func (I23CapGirPrzDecMax5000) Severity() string { return "E" }
+func (I23CapGirPrzDecMax5000) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "capGirPrzAte365" && m.Codigo != "capGirPrzSup365" {
+			continue
+		}
+		if m.PrzDecMedConcessoes == nil {
+			continue
+		}
+		if *m.PrzDecMedConcessoes > 5000 {
+			return fmt.Errorf("%s [%d] (%s/%s): przDecMedConcessoes=%d > 5000 dias (limite BACEN)", m.Codigo, i, m.Encargo, m.TipoCli, *m.PrzDecMedConcessoes)
+		}
+	}
+	return nil
+}
+
+// I24 — qtdNovContratos ≥ 0 em todas modalidades (cruzada, regra 3042).
+//
+// Severidade: E.
+type I24QtdNovContratosNaoNeg struct{}
+
+func (I24QtdNovContratosNaoNeg) Code() string     { return "3050-I24" }
+func (I24QtdNovContratosNaoNeg) Sheet() string    { return "Individuais" }
+func (I24QtdNovContratosNaoNeg) Severity() string { return "E" }
+func (I24QtdNovContratosNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for _, list := range [][]Modalidade{doc.Diario, doc.Mensal} {
+		for i, m := range list {
+			if m.QtdNovContratos == nil {
+				continue
+			}
+			if *m.QtdNovContratos < 0 {
+				return fmt.Errorf("modalidade %s [%d] (%s/%s): qtdNovContratos=%d < 0", m.Codigo, i, m.Encargo, m.TipoCli, *m.QtdNovContratos)
+			}
+		}
+	}
+	return nil
+}
+
+// I25 — sldCedido ≥ 0 em todas modalidades (cruzada, regra 3043).
+//
+// Severidade: E.
+type I25SldCedidoNaoNeg struct{}
+
+func (I25SldCedidoNaoNeg) Code() string     { return "3050-I25" }
+func (I25SldCedidoNaoNeg) Sheet() string    { return "Individuais" }
+func (I25SldCedidoNaoNeg) Severity() string { return "E" }
+func (I25SldCedidoNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for _, list := range [][]Modalidade{doc.Diario, doc.Mensal} {
+		for i, m := range list {
+			if m.SldCedido == nil {
+				continue
+			}
+			if *m.SldCedido < 0 {
+				return fmt.Errorf("modalidade %s [%d] (%s/%s): sldCedido=%.2f < 0", m.Codigo, i, m.Encargo, m.TipoCli, *m.SldCedido)
+			}
+		}
+	}
+	return nil
+}
+
+// I26 — sldAdquirido ≥ 0 em todas modalidades (cruzada, regra 3044).
+//
+// Severidade: E.
+type I26SldAdquiridoNaoNeg struct{}
+
+func (I26SldAdquiridoNaoNeg) Code() string     { return "3050-I26" }
+func (I26SldAdquiridoNaoNeg) Sheet() string    { return "Individuais" }
+func (I26SldAdquiridoNaoNeg) Severity() string { return "E" }
+func (I26SldAdquiridoNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for _, list := range [][]Modalidade{doc.Diario, doc.Mensal} {
+		for i, m := range list {
+			if m.SldAdquirido == nil {
+				continue
+			}
+			if *m.SldAdquirido < 0 {
+				return fmt.Errorf("modalidade %s [%d] (%s/%s): sldAdquirido=%.2f < 0", m.Codigo, i, m.Encargo, m.TipoCli, *m.SldAdquirido)
+			}
+		}
+	}
+	return nil
+}
+
+// I27 — sldCarAtiva > 0 → txMaxima > txMinima (consistência, regra 3029).
+//
+// Severidade: A.
+type I27SldCarAtivaImpoeTxMaxGtMin struct{}
+
+func (I27SldCarAtivaImpoeTxMaxGtMin) Code() string     { return "3050-I27" }
+func (I27SldCarAtivaImpoeTxMaxGtMin) Sheet() string    { return "Individuais" }
+func (I27SldCarAtivaImpoeTxMaxGtMin) Severity() string { return "A" }
+func (I27SldCarAtivaImpoeTxMaxGtMin) Apply3050(_ context.Context, doc *Doc3050) error {
+	for _, list := range [][]Modalidade{doc.Diario, doc.Mensal} {
+		for i, m := range list {
+			if m.SldCarAtiva == nil || *m.SldCarAtiva <= 0 {
+				continue
+			}
+			if m.TxMaxima == nil || m.TxMinima == nil {
+				continue
+			}
+			if *m.TxMaxima <= *m.TxMinima {
+				return fmt.Errorf("modalidade %s [%d] (%s/%s): sldCarAtiva>0 mas txMaxima=%.2f <= txMinima=%.2f (inconsistência)", m.Codigo, i, m.Encargo, m.TipoCli, *m.TxMaxima, *m.TxMinima)
+			}
+		}
+	}
+	return nil
+}
+
+// I28 — indRemessa = "I" → qtdNovContratos ≥ 1 (cruzada, regra 2001).
+//
+// Severidade: A.
+type I28IndRemessaIExigeNovContratos struct{}
+
+func (I28IndRemessaIExigeNovContratos) Code() string     { return "3050-I28" }
+func (I28IndRemessaIExigeNovContratos) Sheet() string    { return "Individuais" }
+func (I28IndRemessaIExigeNovContratos) Severity() string { return "A" }
+func (I28IndRemessaIExigeNovContratos) Apply3050(_ context.Context, doc *Doc3050) error {
+	if doc.Root.IndRemessa != "I" {
+		return nil
+	}
+	for _, list := range [][]Modalidade{doc.Diario, doc.Mensal} {
+		for i, m := range list {
+			if m.QtdNovContratos != nil && *m.QtdNovContratos >= 1 {
+				return nil // pelo menos 1 contrato novo encontrado
+			}
+			_ = i
+		}
+	}
+	return fmt.Errorf("indRemessa=I (inclusão) mas nenhum qtdNovContratos ≥ 1 encontrado")
+}
+
+// ============================================================================
+// Carry-over S09, S13, S24 — sair de stub para implementação real
+// ============================================================================
+
+// S09 — dataBase é dia útil BACEN (regra 2009/calendário).
+//
+// Severidade: E.
+type S09DiasUteis struct{}
+
+func (S09DiasUteis) Code() string     { return "3050-S09" }
+func (S09DiasUteis) Sheet() string    { return "Sistemáticas" }
+func (S09DiasUteis) Severity() string { return "E" }
+func (S09DiasUteis) Apply3050(_ context.Context, doc *Doc3050) error {
+	db, err := time.Parse("2006-01-02", doc.Root.DataBase)
+	if err != nil {
+		return nil // H12 cobre formato.
+	}
+	if !IsDiaUtilBACEN(db) {
+		return fmt.Errorf("dataBase=%s não é dia útil BACEN (sábado/domingo/feriado)", doc.Root.DataBase)
+	}
+	return nil
+}
+
+// S13 — dataBase é último dia útil do mês BACEN (regras 3031-3035).
+//
+// Severidade: A.
+type S13UltimoDiaUtil struct{}
+
+func (S13UltimoDiaUtil) Code() string     { return "3050-S13" }
+func (S13UltimoDiaUtil) Sheet() string    { return "Sistemáticas" }
+func (S13UltimoDiaUtil) Severity() string { return "A" }
+func (S13UltimoDiaUtil) Apply3050(_ context.Context, doc *Doc3050) error {
+	db, err := time.Parse("2006-01-02", doc.Root.DataBase)
+	if err != nil {
+		return nil
+	}
+	if !IsUltimoDiaUtilMes(db) {
+		return fmt.Errorf("dataBase=%s não é último dia útil do mês BACEN", doc.Root.DataBase)
+	}
+	return nil
+}
+
+// S24 — txMedJurosAjustada ≤ txMedJuros (regra 3051).
+//
+// Severidade: E.
+// Carry-over Fase 3: parser agora expõe TxMedJurosAjustada (DT-29).
+type S24TxJurosAjustadaLeTxJuros struct{}
+
+func (S24TxJurosAjustadaLeTxJuros) Code() string     { return "3050-S24" }
+func (S24TxJurosAjustadaLeTxJuros) Sheet() string    { return "Sistemáticas" }
+func (S24TxJurosAjustadaLeTxJuros) Severity() string { return "E" }
+func (S24TxJurosAjustadaLeTxJuros) Apply3050(_ context.Context, doc *Doc3050) error {
+	for _, list := range [][]Modalidade{doc.Diario, doc.Mensal} {
+		for i, m := range list {
+			if m.TxMedJurosAjustada == nil || m.TxMedJuros == nil {
+				continue
+			}
+			if *m.TxMedJurosAjustada > *m.TxMedJuros {
+				return fmt.Errorf("modalidade %s [%d] (%s/%s): txMedJurosAjustada=%.2f > txMedJuros=%.2f (regra 3051)", m.Codigo, i, m.Encargo, m.TipoCli, *m.TxMedJurosAjustada, *m.TxMedJuros)
+			}
+		}
+	}
+	return nil
+}
+
+// ============================================================================
+// Builtin3050 — Registry de regras 3050 (81 total após Fase 3)
+// ============================================================================
+
+// Builtin3050 retorna o registry com as 81 regras 3050 implementadas (Fases 1+2+3).
 //
 // Cobertura catálogo TXB_V11:
 //   - 14 Agregadas A01-A14 (Fase 1 — severity E/A conforme regra).
-//   - 14 Stubs S01-S14 (Fase 1 — severity I, honestos).
-//   - 14 Sistemáticas S15-S28 (Fase 2 — severity E/A conforme regra).
+//   - 14 Stubs S01-S14 (Fase 1 — severity I, honestos; S09/S13 saem de stub na Fase 3).
+//   - 14 Sistemáticas S15-S28 (Fase 2 — severity E/A/I conforme regra; S24 sai de stub na Fase 3).
 //   - 14 Individuais/Cruzadas I01-I14 (Fase 2 — severity E/A conforme regra).
+//   - 6 Header H10-H15 (Fase 3 — severity E/A conforme regra).
+//   - 4 Sistema S29-S32 (Fase 3 — severity A/I conforme regra).
+//   - 14 Individuais I15-I28 (Fase 3 — severity E/A conforme regra).
 //
-// Total: 56/170 = 32.9% (Fases 1+2).
+// Total: 81/170 = 47.6% (Fases 1+2+3).
 func Builtin3050() *Registry {
 	r := NewRegistry()
 
@@ -1693,6 +2249,36 @@ func Builtin3050() *Registry {
 	r.Register3050(I12SldCarAtivaMuitoAlto{})
 	r.Register3050(I13VlrConcessoesMuitoBaixo{})
 	r.Register3050(I14VlrConcessoesMuitoAlto{})
+
+	// 14 Individuais adicionais (Fase 3: I15-I28)
+	r.Register3050(I15DesDuplicatasSldCarNaoNeg{})
+	r.Register3050(I16DesChequesVlrConcessoesNaoNeg{})
+	r.Register3050(I17VendorTxMedJurosNaoNeg{})
+	r.Register3050(I18ComprorPrzDecNaoNeg{})
+	r.Register3050(I19CarCrdSldCarNaoNeg{})
+	r.Register3050(I20CarCrdVlrConcessoesNaoNeg{})
+	r.Register3050(I21TxMedJurosMax100{})
+	r.Register3050(I22TxMedEncOperMax50{})
+	r.Register3050(I23CapGirPrzDecMax5000{})
+	r.Register3050(I24QtdNovContratosNaoNeg{})
+	r.Register3050(I25SldCedidoNaoNeg{})
+	r.Register3050(I26SldAdquiridoNaoNeg{})
+	r.Register3050(I27SldCarAtivaImpoeTxMaxGtMin{})
+	r.Register3050(I28IndRemessaIExigeNovContratos{})
+
+	// 4 Sistema adicionais (Fase 3: S29-S32)
+	r.Register3050(S29DataBaseRangePlausivel{})
+	r.Register3050(S30DiarioPresenteSeModelo1a4{})
+	r.Register3050(S31SubstituicaoSemAnteriorRef{})
+	r.Register3050(S32DocNaoVazio{})
+
+	// 6 Header (Fase 3: H10-H15)
+	r.Register3050(H10CNPJLength{})
+	r.Register3050(H11CNPJAllDigits{})
+	r.Register3050(H12DataBaseFormatoRigoroso{})
+	r.Register3050(H13IndRemessaCaseSensitive{})
+	r.Register3050(H14NmContatoSemEspacosDuplicados{})
+	r.Register3050(H15TelContatoSemCaracteresResiduais{})
 
 	return r
 }

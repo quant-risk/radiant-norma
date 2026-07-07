@@ -442,6 +442,8 @@ func TestA14_PrzMedCarteiraNaoNeg(t *testing.T) {
 
 func TestS01_S14_StubsReturnNil(t *testing.T) {
 	doc := doc3050ValidoBase()
+	// Fase 3: S09 (DiasUteis) e S13 (UltimoDiaUtil) saíram de stub — implementações
+	// reais. S01-S08, S10-S12, S14 continuam como stubs (severity "I").
 	stubs := []struct {
 		code string
 		rule Rule3050
@@ -454,11 +456,9 @@ func TestS01_S14_StubsReturnNil(t *testing.T) {
 		{"3050-S06", S06SubstituicaoSemOriginal{}},
 		{"3050-S07", S07Compactacao{}},
 		{"3050-S08", S08DataBaseFutura{}},
-		{"3050-S09", S09DiasUteis{}},
 		{"3050-S10", S10DocAnterior{}},
 		{"3050-S11", S11VlrConcessoesVsTaxas{}},
 		{"3050-S12", S12PrzMedSeSld{}},
-		{"3050-S13", S13UltimoDiaUtil{}},
 		{"3050-S14", S14Cruzadas{}},
 	}
 
@@ -478,8 +478,8 @@ func TestS01_S14_StubsReturnNil(t *testing.T) {
 
 func TestBuiltin3050_TotalRulesIs(t *testing.T) {
 	r := Builtin3050()
-	if got := len(r.All3050()); got != 56 {
-		t.Fatalf("Builtin3050 deveria ter 56 regras (Fase 1 28 + Fase 2 28), got %d", got)
+	if got := len(r.All3050()); got != 80 {
+		t.Fatalf("Builtin3050 deveria ter 80 regras (Fase 1 28 + Fase 2 28 + Fase 3 24), got %d", got)
 	}
 
 	codes := r.Codes3050()
@@ -493,6 +493,27 @@ func TestBuiltin3050_TotalRulesIs(t *testing.T) {
 	// 14 Stubs S01-S14
 	for i := 1; i <= 14; i++ {
 		code := "3050-S" + itoaPad2(i)
+		if r.Get3050(code) == nil {
+			t.Errorf("regra %s não encontrada no registry", code)
+		}
+	}
+	// 18 Sistemáticas S15-S32 (Fases 2 e 3)
+	for i := 15; i <= 32; i++ {
+		code := "3050-S" + itoaPad2(i)
+		if r.Get3050(code) == nil {
+			t.Errorf("regra %s não encontrada no registry", code)
+		}
+	}
+	// 28 Individuais I01-I28 (Fases 2 e 3)
+	for i := 1; i <= 28; i++ {
+		code := "3050-I" + itoaPad2(i)
+		if r.Get3050(code) == nil {
+			t.Errorf("regra %s não encontrada no registry", code)
+		}
+	}
+	// 6 Header H10-H15 (Fase 3)
+	for i := 10; i <= 15; i++ {
+		code := "3050-H" + itoaPad2(i)
 		if r.Get3050(code) == nil {
 			t.Errorf("regra %s não encontrada no registry", code)
 		}

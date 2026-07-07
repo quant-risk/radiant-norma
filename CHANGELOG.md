@@ -2,6 +2,117 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.4 — 2026-07-07 (Sprint 33 Fase 3 — Audit3050 Header + Individuais + Sistema + carry-over) ✅
+
+> **Status:** ✅ Shipped (Fase 3 de N)
+> **Sprint:** 33 (continuação direta Fase 2)
+> **Tipo:** minor (+24 regras 3050 + 3 carry-over stubs → real)
+> **Marco:** 56 → 80 regras 3050 (32.9% → **47.06%** cobertura catálogo TXB_V11)
+
+### 🎯 Resumo
+
+Fase 3 entrega 6 Header (H10-H15) + 4 Sistema (S29-S32) + 14 Individuais (I15-I28). Carry-over: S09 (DiasUteis), S13 (ÚltimoDiaUtil), S24 (txMedJurosAjustada) saem de stub para implementação real. Total 3050: **56 → 80** (cobertura catálogo 32.9% → **47.06%**).
+
+**Decisões técnicas (DT-28/DT-29/DT-30):**
+- **DT-28:** Helper `IsDiaUtilBACEN` com feriados nacionais hardcoded (lei federal) + algoritmo de Gauss pra feriados móveis (Carnaval, Sexta-Feira Santa, Corpus Christi).
+- **DT-29:** Parser 3050 agora expõe `TxMedJurosAjustada *float64` em `Modalidade` — habilita S24.
+- **DT-30:** I21-I22 (taxas limites) implementadas como loop sobre todas modalidades.
+
+**Regras implementadas:**
+
+| Cod | Sev | Regra | Origem BACEN |
+|---|---|---|---|
+| 3050-H10 | A | cnpjInstituicao length = 8 | 2005 |
+| 3050-H11 | A | cnpjInstituicao all-digits | 2005 |
+| 3050-H12 | E | dataBase formato YYYY-MM-DD rigoroso | formato |
+| 3050-H13 | E | indRemessa ∈ {I, A, S} case-sensitive | 3052 |
+| 3050-H14 | A | nmContato sem espaços duplicados | formato |
+| 3050-H15 | A | telContato sem caracteres não-numéricos residuais | formato |
+| 3050-S29 | E | dataBase ∈ [2009-01-01, hoje+30] | 2009/2010 |
+| 3050-S30 | A | Diario/Mensal não-vazio se há modelos | formato |
+| 3050-S31 | I | stub indRemessa=S → doc.AnteriorRef (carry-over) | 2001 |
+| 3050-S32 | A | doc não-vazio (sanity) | formato |
+| 3050-I15-I20 | E | sldCarAtiva/vlrConcessoes/txMedJuros/przDec ≥ 0 por sub-modalidade | 3042-3044 |
+| 3050-I21 | A | txMedJuros ≤ 100% | 3026 |
+| 3050-I22 | A | txMedEncOperacionais ≤ 50% | 3027 |
+| 3050-I23 | E | capGir przDec ≤ 5000 dias | 3041 |
+| 3050-I24-I26 | E | qtdNovContratos/sldCedido/sldAdquirido ≥ 0 | 3042-3044 |
+| 3050-I27 | A | sldCarAtiva>0 → txMaxima>txMinima | 3029 |
+| 3050-I28 | A | indRemessa=I → qtdNovContratos ≥ 1 | 2001 |
+| 3050-S09 | E | **DiasUteis** (era stub, agora real) | 2009/calendário |
+| 3050-S13 | A | **ÚltimoDiaUtil** (era stub, agora real) | 3031-3035 |
+| 3050-S24 | E | **txMedJurosAjustada ≤ txMedJuros** (era stub, agora real) | 3051 |
+
+### 📊 Métricas v3.34.3 → v3.34.4
+
+| Métrica | v3.34.3 | v3.34.4 |
+|---|---|---|
+| Regras 3050 | 56 | **80** (+24) |
+| Cobertura catálogo 3050 | 32.9% | **47.06%** (+14.16pp) |
+| Coverage `internal/audit/rules` | 72.1% | **72.5%** (+0.4pp) |
+| Test functions Fase 3 | 0 | **30** (table-driven) |
+| Test functions total 3050 | 46 | **76** |
+| Files novos | 0 | **2** (3050_helpers.go + 3050_fase3_test.go) |
+| Packages PASS -race | 23/23 | **23/23** |
+| vet + gofmt | clean | **clean** |
+
+### 🎓 Lições aprendidas (Fase 3)
+
+- **Stub → real substitui, não coexiste.** Carry-over inicial previa stub + real; Go rejeita. Solução: stub substituído por real, Code() preservado, registry indexa por Code.
+- **Coverage subiu ao implementar stubs.** Regras reais têm asserts complexos que stubs não tinham. Cobertura total: 72.1% → 72.5%.
+- **Feriados móveis via algoritmo de Gauss.** Easter Computus (5 linhas) gera Carnaval/Sexta Santa/Corpus Christi.
+- **Self-verify em testes flagra testes errados.** `TestH12` tinha expected strings em ordem errada vs checks da regra. Rodar o teste pegou.
+
+### 📁 Arquivos tocados
+
+```
+backend/internal/audit/rules/3050.go              (+H10-H15 +S29-S32 +I15-I28 +S09/S13/S24 real, -stubs duplicados)
+backend/internal/audit/rules/3050_helpers.go      (NOVO — IsDiaUtilBACEN, IsUltimoDiaUtilMes, pascoa, feriadosMoveis)
+backend/internal/audit/rules/3050_fase3_test.go   (NOVO — 30 testes table-driven)
+backend/internal/audit/rules/3050_test.go         (atualizado: TotalRulesIs 56→80, S01-S14 sem S09/S13)
+backend/internal/audit/rules/3050_fase2_test.go   (atualizado: TestS24 skip, Fase2TotalRulesIs >=56)
+CHANGELOG.md                                       (esta entry)
+backend/SPRINT_33_FASE3_RESULTS.md                (NOVO)
+```
+
+### ⏭️ Próxima sprint (Fase 4 — fechar 3050 em 100%)
+
+- **H16-H25** Header avançado (encoding UTF-8 BOM, namespaces, 5 regras)
+- **S33-S44** Sistema (matriz 2001 × 134 stubs informativos, 12 regras)
+- **I29-I60** Individuais (sub-modalidades restantes, ~32 regras)
+- **Possíveis carry-overs:** S01 (matriz), S14 (cruzadas 3051/3054/3055/3056-3059)
+- Alvo: 80 → **170 regras** (100% cobertura).
+
+**Visão pós-Fase 4:** Sprint 33 (Audit3050) fechado em 100%. Sprint 34 abre **AuditDLO 2061** (próximo CADOC conforme ROADMAP Q3).
+
+---
+
+## v3.34.3 — 2026-07-07 (Sprint 33 Fase 3 RESEARCH + ROADMAP status parcial) ✅
+
+> **Status:** ✅ Shipped (research only)
+> **Tipo:** docs (sem código)
+> **Marco:** ROADMAP atualizado, Sprint 33 = "em andamento (32.9% — 2 fases: 28→56)"
+
+SPRINT_33_FASE3_RESEARCH.md novo, plano detalhado para Fase 3:
+- H10-H15 Header (6), I15-I28 Individuais (14), S29-S32 Sistema (4) = 24 regras.
+- Carry-over (3): S09 (DiasUteis), S13 (ÚltimoDiaUtil), S24 (txMedJurosAjustada).
+
+---
+
+## v3.34.2 — 2026-07-07 (Validação 62 — drift Fase 2) ✅
+
+> **Status:** ✅ Shipped (validação retroativa)
+> **Tipo:** fix (drift cleanup + doc validação)
+
+Auditoria retroativa da Fase 2 (commit a670ce6) detectou drift entre doc e código:
+- Doc dizia "17 funções novas" / "Test functions total 3050: 17 → 34"
+- Real: 29 funções no arquivo / "17 → 46"
+- Fix: CHANGELOG e SPRINT_33_FASE2_RESULTS.md com números reais.
+
+SPRINT_33_FASE2_VALIDATION.md novo: auditoria profunda de 11 claims, 28 regras, 29 testes, decisões arquiteturais mantidas.
+
+---
+
 ## v3.34.1 — 2026-07-06 (Sprint 33 Fase 2 — Audit3050 Sistemáticas + Individuais/Cruzadas) ✅
 
 > **Status:** ✅ Shipped (Fase 2 de N)

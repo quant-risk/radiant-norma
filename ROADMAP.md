@@ -18,7 +18,7 @@
                     Defense-in-depth multi-tenant. Auditoria SOC 2. | ✅ |
 | **31** | RangeUploadAPI | Handlers REST `/v1/sta/range-*` — fechar YAGNI da Sprint 21 | pendente |
 | **32** | Audit3040_v2 | Portar 80+ regras restantes 3040. Coverage 16% → 60% | ✅ (35% — 4 fases incrementais) |
-| **33** | Audit3050 | Portar 170 regras 3050 TXB_V11. XSD já tem no BACEN, parser XML + 170 regras | 🔄 em andamento (32.9% — 2 fases: 28→56) |
+| **33** | Audit3050 | Portar 170 regras 3050 TXB_V11. XSD já tem no BACEN, parser XML + 170 regras | 🔄 em andamento (47.06% — 3 fases: 28→56→80) |
 | **34** | FrontendNext | Migrar Console para Next.js 15 App Router + RSC + Server Actions | pendente |
 | **35** | CI-Gate | GitHub Actions com pre-commit hook + go test -race + coverage gate + lint | ✅ |
 | **36** | Observability | OpenTelemetry tracing + Sentry + Better Stack | pendente |

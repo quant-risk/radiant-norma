@@ -454,25 +454,23 @@ func TestI14_VlrConcessoesMuitoAlto(t *testing.T) {
 // ========== S24 — Stub (txMedJurosAjustada carry-over) ==========
 
 func TestS24_StubReturnsNil(t *testing.T) {
-	doc := doc3050ValidoBase()
-	rule := S24TxJurosAjustadaLeTxJuros{}
-	if err := rule.Apply3050(context.Background(), doc); err != nil {
-		t.Errorf("stub S24 deveria retornar nil, got %v", err)
-	}
-	if rule.Severity() != "I" {
-		t.Errorf("S24 severity deveria ser I, got %s", rule.Severity())
-	}
+	// REMOVIDO na Fase 3: S24 saiu de stub (TxMedJurosAjustada exposta no parser).
+	// Implementação real coberta por TestS24_TxJurosAjustadaLeTxJuros_RealImplementation
+	// em 3050_fase3_test.go. Stub check obsoleto — deixado apenas como sentinel.
+	t.Skip("S24 não é mais stub (Fase 3); ver TestS24_TxJurosAjustadaLeTxJuros_RealImplementation em 3050_fase3_test.go")
 }
 
-// ========== Builtin3050 — Fase 2 total 56 regras ==========
+// ========== Builtin3050 — Fase 2 spot-check (códigos presentes) ==========
 
 func TestBuiltin3050_Fase2TotalRulesIs(t *testing.T) {
 	r := Builtin3050()
-	if got := len(r.All3050()); got != 56 {
-		t.Fatalf("Builtin3050 deveria ter 56 regras (14 A + 14 S Fase 1 + 14 S + 14 I Fase 2), got %d", got)
+	// Fase 3 atualiza total pra 80; aqui só validamos que os códigos da Fase 2
+	// continuam presentes (não-regrediu).
+	if got := len(r.All3050()); got < 56 {
+		t.Fatalf("Builtin3050 deveria ter pelo menos 56 regras, got %d", got)
 	}
 
-	// Spot-check: S15-S28 + I01-I14
+	// Spot-check: S15-S28 + I01-I14 (Fase 2)
 	for _, code := range []string{"3050-S15", "3050-S16", "3050-S17", "3050-S18", "3050-S19",
 		"3050-S20", "3050-S21", "3050-S22", "3050-S23", "3050-S24", "3050-S25", "3050-S26",
 		"3050-S27", "3050-S28"} {
