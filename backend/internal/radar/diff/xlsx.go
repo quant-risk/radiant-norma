@@ -108,17 +108,6 @@ func normalizeHeader(col string) string {
 	return string(result)
 }
 
-// findCodeCol encontra a coluna que contém o código da regra.
-func findCodeCol(header []string) int {
-	for i, col := range header {
-		norm := normalizeHeader(col)
-		if norm == "codigo" || norm == "regra" || norm == "code" || norm == "rule" {
-			return i
-		}
-	}
-	return -1
-}
-
 // padRow preenche uma linha com strings vazios até o tamanho do header.
 func padRow(row []string, size int) []string {
 	if len(row) >= size {
