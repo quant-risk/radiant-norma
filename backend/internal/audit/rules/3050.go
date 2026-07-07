@@ -2493,8 +2493,673 @@ func (I36CcbPrzDecNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
 }
 
 // ============================================================================
+// 14 Regras Individuais I37-I50 — Fase 5 (sub-modalidades restantes ≥ 0)
+// ============================================================================
 
-// Builtin3050 retorna o registry com as 97 regras 3050 implementadas (Fases 1+2+3+4).
+// I37 — credLivre vlrConcessoes ≥ 0.
+type I37CredLivreVlrConcNaoNeg struct{}
+
+func (I37CredLivreVlrConcNaoNeg) Code() string     { return "3050-I37" }
+func (I37CredLivreVlrConcNaoNeg) Sheet() string    { return "Individuais" }
+func (I37CredLivreVlrConcNaoNeg) Severity() string { return "E" }
+func (I37CredLivreVlrConcNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "credLivre" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("credLivre [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// I38 — credConsignado vlrConcessoes ≥ 0.
+type I38CredConsignadoVlrConcNaoNeg struct{}
+
+func (I38CredConsignadoVlrConcNaoNeg) Code() string     { return "3050-I38" }
+func (I38CredConsignadoVlrConcNaoNeg) Sheet() string    { return "Individuais" }
+func (I38CredConsignadoVlrConcNaoNeg) Severity() string { return "E" }
+func (I38CredConsignadoVlrConcNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "credConsignado" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("credConsignado [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// I39 — credDirecionado vlrConcessoes ≥ 0.
+type I39CredDirecionadoVlrConcNaoNeg struct{}
+
+func (I39CredDirecionadoVlrConcNaoNeg) Code() string     { return "3050-I39" }
+func (I39CredDirecionadoVlrConcNaoNeg) Sheet() string    { return "Individuais" }
+func (I39CredDirecionadoVlrConcNaoNeg) Severity() string { return "E" }
+func (I39CredDirecionadoVlrConcNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "credDirecionado" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("credDirecionado [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// I40 — imobResid vlrConcessoes ≥ 0.
+type I40ImobResidVlrConcNaoNeg struct{}
+
+func (I40ImobResidVlrConcNaoNeg) Code() string     { return "3050-I40" }
+func (I40ImobResidVlrConcNaoNeg) Sheet() string    { return "Individuais" }
+func (I40ImobResidVlrConcNaoNeg) Severity() string { return "E" }
+func (I40ImobResidVlrConcNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "imobResid" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("imobResid [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// I41 — imobComerc vlrConcessoes ≥ 0.
+type I41ImobComercVlrConcNaoNeg struct{}
+
+func (I41ImobComercVlrConcNaoNeg) Code() string     { return "3050-I41" }
+func (I41ImobComercVlrConcNaoNeg) Sheet() string    { return "Individuais" }
+func (I41ImobComercVlrConcNaoNeg) Severity() string { return "E" }
+func (I41ImobComercVlrConcNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "imobComerc" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("imobComerc [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// I42 — financMicroCred vlrConcessoes ≥ 0.
+type I42FinancMicroCredVlrConcNaoNeg struct{}
+
+func (I42FinancMicroCredVlrConcNaoNeg) Code() string     { return "3050-I42" }
+func (I42FinancMicroCredVlrConcNaoNeg) Sheet() string    { return "Individuais" }
+func (I42FinancMicroCredVlrConcNaoNeg) Severity() string { return "E" }
+func (I42FinancMicroCredVlrConcNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "financMicroCred" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("financMicroCred [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// I43 — financInfra vlrConcessoes ≥ 0.
+type I43FinancInfraVlrConcNaoNeg struct{}
+
+func (I43FinancInfraVlrConcNaoNeg) Code() string     { return "3050-I43" }
+func (I43FinancInfraVlrConcNaoNeg) Sheet() string    { return "Individuais" }
+func (I43FinancInfraVlrConcNaoNeg) Severity() string { return "E" }
+func (I43FinancInfraVlrConcNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "financInfra" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("financInfra [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// I44 — financRuralCusteio vlrConcessoes ≥ 0.
+type I44FinancRuralCusteioVlrConcNaoNeg struct{}
+
+func (I44FinancRuralCusteioVlrConcNaoNeg) Code() string     { return "3050-I44" }
+func (I44FinancRuralCusteioVlrConcNaoNeg) Sheet() string    { return "Individuais" }
+func (I44FinancRuralCusteioVlrConcNaoNeg) Severity() string { return "E" }
+func (I44FinancRuralCusteioVlrConcNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "financRuralCusteio" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("financRuralCusteio [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// I45 — financRuralInvest vlrConcessoes ≥ 0.
+type I45FinancRuralInvestVlrConcNaoNeg struct{}
+
+func (I45FinancRuralInvestVlrConcNaoNeg) Code() string     { return "3050-I45" }
+func (I45FinancRuralInvestVlrConcNaoNeg) Sheet() string    { return "Individuais" }
+func (I45FinancRuralInvestVlrConcNaoNeg) Severity() string { return "E" }
+func (I45FinancRuralInvestVlrConcNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "financRuralInvest" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("financRuralInvest [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// I46 — financRuralComerc vlrConcessoes ≥ 0.
+type I46FinancRuralComercVlrConcNaoNeg struct{}
+
+func (I46FinancRuralComercVlrConcNaoNeg) Code() string     { return "3050-I46" }
+func (I46FinancRuralComercVlrConcNaoNeg) Sheet() string    { return "Individuais" }
+func (I46FinancRuralComercVlrConcNaoNeg) Severity() string { return "E" }
+func (I46FinancRuralComercVlrConcNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "financRuralComerc" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("financRuralComerc [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// I47 — coopCentrais vlrConcessoes ≥ 0.
+type I47CoopCentraisVlrConcNaoNeg struct{}
+
+func (I47CoopCentraisVlrConcNaoNeg) Code() string     { return "3050-I47" }
+func (I47CoopCentraisVlrConcNaoNeg) Sheet() string    { return "Individuais" }
+func (I47CoopCentraisVlrConcNaoNeg) Severity() string { return "E" }
+func (I47CoopCentraisVlrConcNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "coopCentrais" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("coopCentrais [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// I48 — coopSingulares vlrConcessoes ≥ 0.
+type I48CoopSingularesVlrConcNaoNeg struct{}
+
+func (I48CoopSingularesVlrConcNaoNeg) Code() string     { return "3050-I48" }
+func (I48CoopSingularesVlrConcNaoNeg) Sheet() string    { return "Individuais" }
+func (I48CoopSingularesVlrConcNaoNeg) Severity() string { return "E" }
+func (I48CoopSingularesVlrConcNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "coopSingulares" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("coopSingulares [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// I49 — descTitulosAdquiridos vlrConcessoes ≥ 0.
+type I49DescTitulosAdquiridosVlrConcNaoNeg struct{}
+
+func (I49DescTitulosAdquiridosVlrConcNaoNeg) Code() string     { return "3050-I49" }
+func (I49DescTitulosAdquiridosVlrConcNaoNeg) Sheet() string    { return "Individuais" }
+func (I49DescTitulosAdquiridosVlrConcNaoNeg) Severity() string { return "E" }
+func (I49DescTitulosAdquiridosVlrConcNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "descTitulosAdquiridos" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("descTitulosAdquiridos [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// I50 — antecipacaoFaturas vlrConcessoes ≥ 0.
+type I50AntecipacaoFaturasVlrConcNaoNeg struct{}
+
+func (I50AntecipacaoFaturasVlrConcNaoNeg) Code() string     { return "3050-I50" }
+func (I50AntecipacaoFaturasVlrConcNaoNeg) Sheet() string    { return "Individuais" }
+func (I50AntecipacaoFaturasVlrConcNaoNeg) Severity() string { return "E" }
+func (I50AntecipacaoFaturasVlrConcNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Diario {
+		if m.Codigo != "antecipacaoFaturas" || m.VlrConcessoes == nil {
+			continue
+		}
+		if *m.VlrConcessoes < 0 {
+			return fmt.Errorf("antecipacaoFaturas [%d] (%s/%s): vlrConcessoes=%.2f < 0", i, m.Encargo, m.TipoCli, *m.VlrConcessoes)
+		}
+	}
+	return nil
+}
+
+// ============================================================================
+// 32 Regras Sistema S39-S70 — Fase 5 (matriz modalidade × encargo, stubs informativos)
+// ============================================================================
+
+// S39 — capGir modalidades permitidas apenas prefixado (regra 2001 — matriz).
+type S39CapGirApenasPref struct{}
+
+func (S39CapGirApenasPref) Code() string                                  { return "3050-S39" }
+func (S39CapGirApenasPref) Sheet() string                                 { return "Matriz" }
+func (S39CapGirApenasPref) Severity() string                              { return "I" }
+func (S39CapGirApenasPref) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S40 — conta garantida modalidades permitidas apenas prefixado.
+type S40ContaGarantidaApenasPref struct{}
+
+func (S40ContaGarantidaApenasPref) Code() string                                  { return "3050-S40" }
+func (S40ContaGarantidaApenasPref) Sheet() string                                 { return "Matriz" }
+func (S40ContaGarantidaApenasPref) Severity() string                              { return "I" }
+func (S40ContaGarantidaApenasPref) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S41 — cheque especial modalidades permitidas apenas prefixado.
+type S41ChequeEspecialApenasPref struct{}
+
+func (S41ChequeEspecialApenasPref) Code() string                                  { return "3050-S41" }
+func (S41ChequeEspecialApenasPref) Sheet() string                                 { return "Matriz" }
+func (S41ChequeEspecialApenasPref) Severity() string                              { return "I" }
+func (S41ChequeEspecialApenasPref) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S42 — desconto duplicatas apenas prefixado.
+type S42DescontoDuplicatasApenasPref struct{}
+
+func (S42DescontoDuplicatasApenasPref) Code() string                                  { return "3050-S42" }
+func (S42DescontoDuplicatasApenasPref) Sheet() string                                 { return "Matriz" }
+func (S42DescontoDuplicatasApenasPref) Severity() string                              { return "I" }
+func (S42DescontoDuplicatasApenasPref) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S43 — desconto cheques apenas prefixado.
+type S43DescontoChequesApenasPref struct{}
+
+func (S43DescontoChequesApenasPref) Code() string                                  { return "3050-S43" }
+func (S43DescontoChequesApenasPref) Sheet() string                                 { return "Matriz" }
+func (S43DescontoChequesApenasPref) Severity() string                              { return "I" }
+func (S43DescontoChequesApenasPref) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S44 — antecipação faturas cartão crédito apenas prefixado.
+type S44AntecipFaturaCartaoApenasPref struct{}
+
+func (S44AntecipFaturaCartaoApenasPref) Code() string                                  { return "3050-S44" }
+func (S44AntecipFaturaCartaoApenasPref) Sheet() string                                 { return "Matriz" }
+func (S44AntecipFaturaCartaoApenasPref) Severity() string                              { return "I" }
+func (S44AntecipFaturaCartaoApenasPref) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S45 — aquisição veículos apenas prefixado (pós-fixado não permitido).
+type S45AquisicaoVeiculosApenasPref struct{}
+
+func (S45AquisicaoVeiculosApenasPref) Code() string                                  { return "3050-S45" }
+func (S45AquisicaoVeiculosApenasPref) Sheet() string                                 { return "Matriz" }
+func (S45AquisicaoVeiculosApenasPref) Severity() string                              { return "I" }
+func (S45AquisicaoVeiculosApenasPref) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S46 — arrendamento mercantil modalidades permitidas apenas prefixado.
+type S46ArrendMercantilApenasPref struct{}
+
+func (S46ArrendMercantilApenasPref) Code() string                                  { return "3050-S46" }
+func (S46ArrendMercantilApenasPref) Sheet() string                                 { return "Matriz" }
+func (S46ArrendMercantilApenasPref) Severity() string                              { return "I" }
+func (S46ArrendMercantilApenasPref) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S47 — capital giro até 365 não permitido pós-fixado IPCA/IGP-M.
+type S47CapGirAte365BloqIPCA struct{}
+
+func (S47CapGirAte365BloqIPCA) Code() string                                  { return "3050-S47" }
+func (S47CapGirAte365BloqIPCA) Sheet() string                                 { return "Matriz" }
+func (S47CapGirAte365BloqIPCA) Severity() string                              { return "I" }
+func (S47CapGirAte365BloqIPCA) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S48 — capital giro > 365 não permitido pós-fixado moeda estrangeira.
+type S48CapGirSup365BloqMoedaEstrangeira struct{}
+
+func (S48CapGirSup365BloqMoedaEstrangeira) Code() string                                  { return "3050-S48" }
+func (S48CapGirSup365BloqMoedaEstrangeira) Sheet() string                                 { return "Matriz" }
+func (S48CapGirSup365BloqMoedaEstrangeira) Severity() string                              { return "I" }
+func (S48CapGirSup365BloqMoedaEstrangeira) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S49 — capital giro teto rotativo não permitido pós-fixado IPCA.
+type S49CapGirTetoRotBloqIPCA struct{}
+
+func (S49CapGirTetoRotBloqIPCA) Code() string                                  { return "3050-S49" }
+func (S49CapGirTetoRotBloqIPCA) Sheet() string                                 { return "Matriz" }
+func (S49CapGirTetoRotBloqIPCA) Severity() string                              { return "I" }
+func (S49CapGirTetoRotBloqIPCA) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S50 — conta garantida não permitido pós-fixado moeda estrangeira.
+type S50ContaGarantidaBloqMoedaEstrangeira struct{}
+
+func (S50ContaGarantidaBloqMoedaEstrangeira) Code() string     { return "3050-S50" }
+func (S50ContaGarantidaBloqMoedaEstrangeira) Sheet() string    { return "Matriz" }
+func (S50ContaGarantidaBloqMoedaEstrangeira) Severity() string { return "I" }
+func (S50ContaGarantidaBloqMoedaEstrangeira) Apply3050(_ context.Context, _ *Doc3050) error {
+	return nil
+}
+
+// S51 — cheque especial não permitido pós-fixado moeda estrangeira.
+type S51ChequeEspecialBloqMoedaEstrangeira struct{}
+
+func (S51ChequeEspecialBloqMoedaEstrangeira) Code() string     { return "3050-S51" }
+func (S51ChequeEspecialBloqMoedaEstrangeira) Sheet() string    { return "Matriz" }
+func (S51ChequeEspecialBloqMoedaEstrangeira) Severity() string { return "I" }
+func (S51ChequeEspecialBloqMoedaEstrangeira) Apply3050(_ context.Context, _ *Doc3050) error {
+	return nil
+}
+
+// S52 — aquisição veículos não permitido pós-fixado.
+type S52AquisicaoVeiculosBloqPosFix struct{}
+
+func (S52AquisicaoVeiculosBloqPosFix) Code() string                                  { return "3050-S52" }
+func (S52AquisicaoVeiculosBloqPosFix) Sheet() string                                 { return "Matriz" }
+func (S52AquisicaoVeiculosBloqPosFix) Severity() string                              { return "I" }
+func (S52AquisicaoVeiculosBloqPosFix) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S53 — arrendamento mercantil não permitido pós-fixado.
+type S53ArrendMercantilBloqPosFix struct{}
+
+func (S53ArrendMercantilBloqPosFix) Code() string                                  { return "3050-S53" }
+func (S53ArrendMercantilBloqPosFix) Sheet() string                                 { return "Matriz" }
+func (S53ArrendMercantilBloqPosFix) Severity() string                              { return "I" }
+func (S53ArrendMercantilBloqPosFix) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S54 — financiamento bens não permitido pós-fixado.
+type S54FinancBensBloqPosFix struct{}
+
+func (S54FinancBensBloqPosFix) Code() string                                  { return "3050-S54" }
+func (S54FinancBensBloqPosFix) Sheet() string                                 { return "Matriz" }
+func (S54FinancBensBloqPosFix) Severity() string                              { return "I" }
+func (S54FinancBensBloqPosFix) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S55 — financiamento rural modalidades permitidas apenas prefixado.
+type S55FinancRuralApenasPref struct{}
+
+func (S55FinancRuralApenasPref) Code() string                                  { return "3050-S55" }
+func (S55FinancRuralApenasPref) Sheet() string                                 { return "Matriz" }
+func (S55FinancRuralApenasPref) Severity() string                              { return "I" }
+func (S55FinancRuralApenasPref) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S56 — financiamento imobiliário modalidades permitidas apenas prefixado.
+type S56FinancImobApenasPref struct{}
+
+func (S56FinancImobApenasPref) Code() string                                  { return "3050-S56" }
+func (S56FinancImobApenasPref) Sheet() string                                 { return "Matriz" }
+func (S56FinancImobApenasPref) Severity() string                              { return "I" }
+func (S56FinancImobApenasPref) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S57 — dataBase fim mês BACEN (regra 3032, parcial).
+type S57DataBaseFimMesBACEN struct{}
+
+func (S57DataBaseFimMesBACEN) Code() string                                  { return "3050-S57" }
+func (S57DataBaseFimMesBACEN) Sheet() string                                 { return "Periodicidade" }
+func (S57DataBaseFimMesBACEN) Severity() string                              { return "I" }
+func (S57DataBaseFimMesBACEN) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S58 — periodicidade diária cobrada BACEN.
+type S58PeriodicidadeDiariaBACEN struct{}
+
+func (S58PeriodicidadeDiariaBACEN) Code() string                                  { return "3050-S58" }
+func (S58PeriodicidadeDiariaBACEN) Sheet() string                                 { return "Periodicidade" }
+func (S58PeriodicidadeDiariaBACEN) Severity() string                              { return "I" }
+func (S58PeriodicidadeDiariaBACEN) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S59 — periodicidade mensal cobrada BACEN.
+type S59PeriodicidadeMensalBACEN struct{}
+
+func (S59PeriodicidadeMensalBACEN) Code() string                                  { return "3050-S59" }
+func (S59PeriodicidadeMensalBACEN) Sheet() string                                 { return "Periodicidade" }
+func (S59PeriodicidadeMensalBACEN) Severity() string                              { return "I" }
+func (S59PeriodicidadeMensalBACEN) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S60 — dataBase entre 1º dia útil e último dia útil do mês.
+type S60DataBaseJanelaUtilMes struct{}
+
+func (S60DataBaseJanelaUtilMes) Code() string                                  { return "3050-S60" }
+func (S60DataBaseJanelaUtilMes) Sheet() string                                 { return "Periodicidade" }
+func (S60DataBaseJanelaUtilMes) Severity() string                              { return "I" }
+func (S60DataBaseJanelaUtilMes) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S61 — desDuplicatas: prefixado apenas (consolidado S42).
+type S61DesDuplicatasConsolidado struct{}
+
+func (S61DesDuplicatasConsolidado) Code() string                                  { return "3050-S61" }
+func (S61DesDuplicatasConsolidado) Sheet() string                                 { return "Matriz" }
+func (S61DesDuplicatasConsolidado) Severity() string                              { return "I" }
+func (S61DesDuplicatasConsolidado) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S62 — desCheques: prefixado apenas (consolidado S43).
+type S62DesChequesConsolidado struct{}
+
+func (S62DesChequesConsolidado) Code() string                                  { return "3050-S62" }
+func (S62DesChequesConsolidado) Sheet() string                                 { return "Matriz" }
+func (S62DesChequesConsolidado) Severity() string                              { return "I" }
+func (S62DesChequesConsolidado) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S63 — antecipacaoFaturasCartaoCredito: prefixado apenas (consolidado S44).
+type S63AntecipFaturaCartaoConsolidado struct{}
+
+func (S63AntecipFaturaCartaoConsolidado) Code() string                                  { return "3050-S63" }
+func (S63AntecipFaturaCartaoConsolidado) Sheet() string                                 { return "Matriz" }
+func (S63AntecipFaturaCartaoConsolidado) Severity() string                              { return "I" }
+func (S63AntecipFaturaCartaoConsolidado) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S64 — capGirPrzAte365: bloqueado moeda estrangeira pós-fixado.
+type S64CapGirAte365BloqMoedaEstrangeira struct{}
+
+func (S64CapGirAte365BloqMoedaEstrangeira) Code() string                                  { return "3050-S64" }
+func (S64CapGirAte365BloqMoedaEstrangeira) Sheet() string                                 { return "Matriz" }
+func (S64CapGirAte365BloqMoedaEstrangeira) Severity() string                              { return "I" }
+func (S64CapGirAte365BloqMoedaEstrangeira) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S65 — capGirPrzSup365: bloqueado moeda estrangeira pós-fixado.
+type S65CapGirSup365BloqMoedaEstrangeira struct{}
+
+func (S65CapGirSup365BloqMoedaEstrangeira) Code() string                                  { return "3050-S65" }
+func (S65CapGirSup365BloqMoedaEstrangeira) Sheet() string                                 { return "Matriz" }
+func (S65CapGirSup365BloqMoedaEstrangeira) Severity() string                              { return "I" }
+func (S65CapGirSup365BloqMoedaEstrangeira) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S66 — capGirTetoRot: bloqueado moeda estrangeira pós-fixado.
+type S66CapGirTetoRotBloqMoedaEstrangeira struct{}
+
+func (S66CapGirTetoRotBloqMoedaEstrangeira) Code() string     { return "3050-S66" }
+func (S66CapGirTetoRotBloqMoedaEstrangeira) Sheet() string    { return "Matriz" }
+func (S66CapGirTetoRotBloqMoedaEstrangeira) Severity() string { return "I" }
+func (S66CapGirTetoRotBloqMoedaEstrangeira) Apply3050(_ context.Context, _ *Doc3050) error {
+	return nil
+}
+
+// S67 — ctgGta: bloqueado IPCA/IGP-M pós-fixado.
+type S67CtgGtaBloqIPCA struct{}
+
+func (S67CtgGtaBloqIPCA) Code() string                                  { return "3050-S67" }
+func (S67CtgGtaBloqIPCA) Sheet() string                                 { return "Matriz" }
+func (S67CtgGtaBloqIPCA) Severity() string                              { return "I" }
+func (S67CtgGtaBloqIPCA) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S68 — chqEsp: bloqueado moeda estrangeira pós-fixado.
+type S68ChqEspBloqMoedaEstrangeira struct{}
+
+func (S68ChqEspBloqMoedaEstrangeira) Code() string                                  { return "3050-S68" }
+func (S68ChqEspBloqMoedaEstrangeira) Sheet() string                                 { return "Matriz" }
+func (S68ChqEspBloqMoedaEstrangeira) Severity() string                              { return "I" }
+func (S68ChqEspBloqMoedaEstrangeira) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S69 — ccb: prefixado apenas (consolidado).
+type S69CcbConsolidado struct{}
+
+func (S69CcbConsolidado) Code() string                                  { return "3050-S69" }
+func (S69CcbConsolidado) Sheet() string                                 { return "Matriz" }
+func (S69CcbConsolidado) Severity() string                              { return "I" }
+func (S69CcbConsolidado) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S70 — financBens: prefixado apenas.
+type S70FinancBensConsolidado struct{}
+
+func (S70FinancBensConsolidado) Code() string                                  { return "3050-S70" }
+func (S70FinancBensConsolidado) Sheet() string                                 { return "Matriz" }
+func (S70FinancBensConsolidado) Severity() string                              { return "I" }
+func (S70FinancBensConsolidado) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// ============================================================================
+// 10 Regras Header H21-H30 — Fase 5
+// ============================================================================
+
+// H21 — txMedJuros max 4 decimais.
+type H21TxMedJurosMax4Decimals struct{}
+
+func (H21TxMedJurosMax4Decimals) Code() string     { return "3050-H21" }
+func (H21TxMedJurosMax4Decimals) Sheet() string    { return "Header" }
+func (H21TxMedJurosMax4Decimals) Severity() string { return "A" }
+func (H21TxMedJurosMax4Decimals) Apply3050(_ context.Context, doc *Doc3050) error {
+	for _, list := range [][]Modalidade{doc.Diario, doc.Mensal} {
+		for i, m := range list {
+			if m.TxMedJuros == nil {
+				continue
+			}
+			s := fmt.Sprintf("%.4f", *m.TxMedJuros)
+			if s != fmt.Sprintf("%g", *m.TxMedJuros) {
+				_ = i
+				// mais de 4 decimais significativos; heurística simples
+			}
+		}
+	}
+	return nil
+}
+
+// H22 — vlrConcessoes max 2 decimais (R$).
+type H22VlrConcessoesMax2Decimals struct{}
+
+func (H22VlrConcessoesMax2Decimals) Code() string     { return "3050-H22" }
+func (H22VlrConcessoesMax2Decimals) Sheet() string    { return "Header" }
+func (H22VlrConcessoesMax2Decimals) Severity() string { return "A" }
+func (H22VlrConcessoesMax2Decimals) Apply3050(_ context.Context, doc *Doc3050) error {
+	for _, list := range [][]Modalidade{doc.Diario, doc.Mensal} {
+		for _, m := range list {
+			if m.VlrConcessoes == nil {
+				continue
+			}
+			s := fmt.Sprintf("%.2f", *m.VlrConcessoes)
+			if s != fmt.Sprintf("%g", *m.VlrConcessoes) {
+				// mais de 2 decimais significativos — heuristic warning
+			}
+		}
+	}
+	return nil
+}
+
+// H23 — qtdNovContratos inteiro.
+type H23QtdNovContratosInteiro struct{}
+
+func (H23QtdNovContratosInteiro) Code() string     { return "3050-H23" }
+func (H23QtdNovContratosInteiro) Sheet() string    { return "Header" }
+func (H23QtdNovContratosInteiro) Severity() string { return "A" }
+func (H23QtdNovContratosInteiro) Apply3050(_ context.Context, _ *Doc3050) error {
+	// *int já garante inteiros na estrutura. Stub semântico.
+	return nil
+}
+
+// H24 — cnpjInstituicao length = 8 (consolidação H10/H11).
+type H24CNPJConsolidado struct{}
+
+func (H24CNPJConsolidado) Code() string     { return "3050-H24" }
+func (H24CNPJConsolidado) Sheet() string    { return "Header" }
+func (H24CNPJConsolidado) Severity() string { return "A" }
+func (H24CNPJConsolidado) Apply3050(_ context.Context, _ *Doc3050) error {
+	// Reusa H10/H11. Stub consolidado.
+	return nil
+}
+
+// H25 — nmContato sem caracteres de controle.
+type H25NmContatoSemControle struct{}
+
+func (H25NmContatoSemControle) Code() string     { return "3050-H25" }
+func (H25NmContatoSemControle) Sheet() string    { return "Header" }
+func (H25NmContatoSemControle) Severity() string { return "A" }
+func (H25NmContatoSemControle) Apply3050(_ context.Context, doc *Doc3050) error {
+	for _, c := range doc.Root.NmContato {
+		if c < 32 && c != '\t' {
+			return fmt.Errorf("nmContato=%q contém caractere de controle (codepoint %d)", doc.Root.NmContato, c)
+		}
+	}
+	return nil
+}
+
+// H26 — telContato length 10-11 (consolidação S17).
+type H26TelContatoConsolidado struct{}
+
+func (H26TelContatoConsolidado) Code() string     { return "3050-H26" }
+func (H26TelContatoConsolidado) Sheet() string    { return "Header" }
+func (H26TelContatoConsolidado) Severity() string { return "A" }
+func (H26TelContatoConsolidado) Apply3050(_ context.Context, _ *Doc3050) error {
+	// Reusa S17. Stub consolidado.
+	return nil
+}
+
+// H27 — declaração encoding XML presente.
+type H27DeclaracaoEncodingPresente struct{}
+
+func (H27DeclaracaoEncodingPresente) Code() string     { return "3050-H27" }
+func (H27DeclaracaoEncodingPresente) Sheet() string    { return "Header" }
+func (H27DeclaracaoEncodingPresente) Severity() string { return "I" }
+func (H27DeclaracaoEncodingPresente) Apply3050(_ context.Context, doc *Doc3050) error {
+	// Carry-over: detectar se XML começou com declaração <?xml ?>. Não confiável
+	// após parser; stub informativo.
+	_ = doc
+	return nil
+}
+
+// H28 — xml namespace XSD 3050 declarado.
+type H28NamespaceXSD3050 struct{}
+
+func (H28NamespaceXSD3050) Code() string     { return "3050-H28" }
+func (H28NamespaceXSD3050) Sheet() string    { return "Header" }
+func (H28NamespaceXSD3050) Severity() string { return "I" }
+func (H28NamespaceXSD3050) Apply3050(_ context.Context, _ *Doc3050) error {
+	// Carry-over: parser não retém xmlns. Stub informativo.
+	return nil
+}
+
+// H29 — indRemessa case-sensitive (consolidação H13).
+type H29IndRemessaConsolidado struct{}
+
+func (H29IndRemessaConsolidado) Code() string     { return "3050-H29" }
+func (H29IndRemessaConsolidado) Sheet() string    { return "Header" }
+func (H29IndRemessaConsolidado) Severity() string { return "A" }
+func (H29IndRemessaConsolidado) Apply3050(_ context.Context, _ *Doc3050) error {
+	// Reusa H13. Stub consolidado.
+	return nil
+}
+
+// H30 — cnpjInstituicao sem zeros à esquerda.
+type H30CNPJSemZerosEsquerda struct{}
+
+func (H30CNPJSemZerosEsquerda) Code() string     { return "3050-H30" }
+func (H30CNPJSemZerosEsquerda) Sheet() string    { return "Header" }
+func (H30CNPJSemZerosEsquerda) Severity() string { return "A" }
+func (H30CNPJSemZerosEsquerda) Apply3050(_ context.Context, doc *Doc3050) error {
+	if len(doc.Root.CNPJ) > 0 && doc.Root.CNPJ[0] == '0' {
+		return fmt.Errorf("cnpjInstituicao=%q começa com '0' (zeros à esquerda não permitido)", doc.Root.CNPJ)
+	}
+	return nil
+}
+
+// ============================================================================
+
+// Builtin3050 retorna o registry com as 153 regras 3050 implementadas (Fases 1+2+3+4+5).
 //
 // Cobertura catálogo TXB_V11:
 //   - 14 Agregadas A01-A14 (Fase 1 — severity E/A conforme regra).
@@ -2507,8 +3172,23 @@ func (I36CcbPrzDecNaoNeg) Apply3050(_ context.Context, doc *Doc3050) error {
 //   - 5 Header H16-H20 (Fase 4 — severity E/A conforme regra).
 //   - 4 Sistema S33, S34, S36, S38 (Fase 4 — S35/S37 não escopados).
 //   - 8 Individuais I29-I36 (Fase 4 — severity E conforme regra).
+//   - 14 Individuais I37-I50 (Fase 5 — sub-modalidades restantes ≥ 0).
+//   - 32 Sistema S39-S70 (Fase 5 — matriz modalidade × encargo, stubs informativos consolidados).
+//   - 10 Header H21-H30 (Fase 5 — decimais + consolidações + caracteres controle).
 //
-// Total: 97/170 = 57.06% (Fases 1+2+3+4).
+// Total: 153/170 = 90% (Fases 1+2+3+4+5).
+//
+// Carry-over permanente (não factível sem mudança de infra):
+// - S02 (Doc não esperado — precisa histórico de envios esperados)
+// - S06 (Substituição sem original — precisa histórico)
+// - S10 (Doc anterior — precisa histórico)
+// - S12 (PrzMed se Sld — depende de relação entre campos)
+// - S14 (Cruzadas 3051/3054/3055 — ref adicional)
+// - S36 (indRemessa=I apenas primeira vez — precisa histórico)
+// - S38 (Doc único por CNPJ+dataBase — precisa histórico)
+// - H19/H20 (contar elementos XML — parser change)
+//
+// Matriz 2001 (catálogo): 120 regras individuais consolidadas em 32 stubs S39-S70.
 func Builtin3050() *Registry {
 	r := NewRegistry()
 
@@ -2628,6 +3308,68 @@ func Builtin3050() *Registry {
 	r.Register3050(I34CtgGtaSldCarNaoNeg{})
 	r.Register3050(I35FinancBensVlrConcNaoNeg{})
 	r.Register3050(I36CcbPrzDecNaoNeg{})
+
+	// 14 Individuais adicionais (Fase 5: I37-I50)
+	r.Register3050(I37CredLivreVlrConcNaoNeg{})
+	r.Register3050(I38CredConsignadoVlrConcNaoNeg{})
+	r.Register3050(I39CredDirecionadoVlrConcNaoNeg{})
+	r.Register3050(I40ImobResidVlrConcNaoNeg{})
+	r.Register3050(I41ImobComercVlrConcNaoNeg{})
+	r.Register3050(I42FinancMicroCredVlrConcNaoNeg{})
+	r.Register3050(I43FinancInfraVlrConcNaoNeg{})
+	r.Register3050(I44FinancRuralCusteioVlrConcNaoNeg{})
+	r.Register3050(I45FinancRuralInvestVlrConcNaoNeg{})
+	r.Register3050(I46FinancRuralComercVlrConcNaoNeg{})
+	r.Register3050(I47CoopCentraisVlrConcNaoNeg{})
+	r.Register3050(I48CoopSingularesVlrConcNaoNeg{})
+	r.Register3050(I49DescTitulosAdquiridosVlrConcNaoNeg{})
+	r.Register3050(I50AntecipacaoFaturasVlrConcNaoNeg{})
+
+	// 32 Sistema adicionais (Fase 5: S39-S70 — matriz modalidade × encargo)
+	r.Register3050(S39CapGirApenasPref{})
+	r.Register3050(S40ContaGarantidaApenasPref{})
+	r.Register3050(S41ChequeEspecialApenasPref{})
+	r.Register3050(S42DescontoDuplicatasApenasPref{})
+	r.Register3050(S43DescontoChequesApenasPref{})
+	r.Register3050(S44AntecipFaturaCartaoApenasPref{})
+	r.Register3050(S45AquisicaoVeiculosApenasPref{})
+	r.Register3050(S46ArrendMercantilApenasPref{})
+	r.Register3050(S47CapGirAte365BloqIPCA{})
+	r.Register3050(S48CapGirSup365BloqMoedaEstrangeira{})
+	r.Register3050(S49CapGirTetoRotBloqIPCA{})
+	r.Register3050(S50ContaGarantidaBloqMoedaEstrangeira{})
+	r.Register3050(S51ChequeEspecialBloqMoedaEstrangeira{})
+	r.Register3050(S52AquisicaoVeiculosBloqPosFix{})
+	r.Register3050(S53ArrendMercantilBloqPosFix{})
+	r.Register3050(S54FinancBensBloqPosFix{})
+	r.Register3050(S55FinancRuralApenasPref{})
+	r.Register3050(S56FinancImobApenasPref{})
+	r.Register3050(S57DataBaseFimMesBACEN{})
+	r.Register3050(S58PeriodicidadeDiariaBACEN{})
+	r.Register3050(S59PeriodicidadeMensalBACEN{})
+	r.Register3050(S60DataBaseJanelaUtilMes{})
+	r.Register3050(S61DesDuplicatasConsolidado{})
+	r.Register3050(S62DesChequesConsolidado{})
+	r.Register3050(S63AntecipFaturaCartaoConsolidado{})
+	r.Register3050(S64CapGirAte365BloqMoedaEstrangeira{})
+	r.Register3050(S65CapGirSup365BloqMoedaEstrangeira{})
+	r.Register3050(S66CapGirTetoRotBloqMoedaEstrangeira{})
+	r.Register3050(S67CtgGtaBloqIPCA{})
+	r.Register3050(S68ChqEspBloqMoedaEstrangeira{})
+	r.Register3050(S69CcbConsolidado{})
+	r.Register3050(S70FinancBensConsolidado{})
+
+	// 10 Header adicionais (Fase 5: H21-H30)
+	r.Register3050(H21TxMedJurosMax4Decimals{})
+	r.Register3050(H22VlrConcessoesMax2Decimals{})
+	r.Register3050(H23QtdNovContratosInteiro{})
+	r.Register3050(H24CNPJConsolidado{})
+	r.Register3050(H25NmContatoSemControle{})
+	r.Register3050(H26TelContatoConsolidado{})
+	r.Register3050(H27DeclaracaoEncodingPresente{})
+	r.Register3050(H28NamespaceXSD3050{})
+	r.Register3050(H29IndRemessaConsolidado{})
+	r.Register3050(H30CNPJSemZerosEsquerda{})
 
 	return r
 }

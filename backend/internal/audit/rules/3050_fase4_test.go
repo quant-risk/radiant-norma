@@ -257,35 +257,8 @@ func TestParseDoc3050_DetectaBOM(t *testing.T) {
 // ========== Integração ==========
 
 func TestBuiltin3050_Fase4TotalRulesIs97(t *testing.T) {
-	r := Builtin3050()
-	got := len(r.All3050())
-	if got != 97 {
-		t.Fatalf("Builtin3050 deveria ter 97 regras após Fase 4, got %d", got)
-	}
-	// Confere Fase 4: H16-H20 (5) + S33-S38 (4: S33, S34, S36, S38) + I29-I36 (8) = 17.
-	fase4Count := 0
-	for _, code := range r.Codes3050() {
-		if len(code) < 7 {
-			continue
-		}
-		prefix := code[:6]
-		num := code[6:]
-		switch prefix {
-		case "3050-H":
-			if num >= "16" && num <= "20" {
-				fase4Count++
-			}
-		case "3050-S":
-			if num == "33" || num == "34" || num == "36" || num == "38" {
-				fase4Count++
-			}
-		case "3050-I":
-			if num >= "29" && num <= "36" {
-				fase4Count++
-			}
-		}
-	}
-	if fase4Count != 17 {
-		t.Errorf("esperado 17 regras Fase 4 (H16-H20 + S33/S34/S36/S38 + I29-I36), got %d", fase4Count)
-	}
+	// REMOVIDO na Fase 5: contagem mudou de 97 (Fase 4) para 153 (Fase 5).
+	// Teste obsoleto — deixado apenas como sentinel. Verificação real em
+	// TestBuiltin3050_TotalRulesIs (3050_test.go).
+	t.Skip("contagem mudou pós-Fase 5 (153 regras); ver TestBuiltin3050_TotalRulesIs em 3050_test.go")
 }

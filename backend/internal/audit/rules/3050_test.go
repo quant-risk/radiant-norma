@@ -478,8 +478,8 @@ func TestS01_S14_StubsReturnNil(t *testing.T) {
 
 func TestBuiltin3050_TotalRulesIs(t *testing.T) {
 	r := Builtin3050()
-	if got := len(r.All3050()); got != 97 {
-		t.Fatalf("Builtin3050 deveria ter 97 regras (Fase 1 28 + Fase 2 28 + Fase 3 24 + Fase 4 17), got %d", got)
+	if got := len(r.All3050()); got != 153 {
+		t.Fatalf("Builtin3050 deveria ter 153 regras (Fase 1 28 + Fase 2 28 + Fase 3 24 + Fase 4 17 + Fase 5 56), got %d", got)
 	}
 
 	codes := r.Codes3050()
@@ -497,25 +497,25 @@ func TestBuiltin3050_TotalRulesIs(t *testing.T) {
 			t.Errorf("regra %s não encontrada no registry", code)
 		}
 	}
-	// 22 Sistemáticas S15-S38 (Fases 2, 3, 4 — S35 e S37 não implementados)
-	for i := 15; i <= 38; i++ {
+	// 22 Sistemáticas S15-S70 (Fases 2, 3, 4, 5 — S35, S37 não implementados; S71-S70 = S70)
+	for i := 15; i <= 70; i++ {
 		if i == 35 || i == 37 {
-			continue // S35 redundante com S26; S37 não escopado na Fase 4
+			continue // S35 redundante com S26; S37 não escopado
 		}
 		code := "3050-S" + itoaPad2(i)
 		if r.Get3050(code) == nil {
 			t.Errorf("regra %s não encontrada no registry", code)
 		}
 	}
-	// 36 Individuais I01-I36 (Fases 2, 3, 4)
-	for i := 1; i <= 36; i++ {
+	// 50 Individuais I01-I50 (Fases 2, 3, 4, 5)
+	for i := 1; i <= 50; i++ {
 		code := "3050-I" + itoaPad2(i)
 		if r.Get3050(code) == nil {
 			t.Errorf("regra %s não encontrada no registry", code)
 		}
 	}
-	// 11 Header H10-H20 (Fases 3 e 4)
-	for i := 10; i <= 20; i++ {
+	// 21 Header H10-H30 (Fases 3, 4, 5)
+	for i := 10; i <= 30; i++ {
 		code := "3050-H" + itoaPad2(i)
 		if r.Get3050(code) == nil {
 			t.Errorf("regra %s não encontrada no registry", code)
