@@ -44,7 +44,7 @@
 | **42** | Audit3044 — Engine JSON eventos | ✅ fechada (17 regras T01-T19 — 15 reais + 2 carry-over) |
 | **43** | CrossDoc_v2 — 5+ regras cross-doc | ✅ fechada (8 regras XD01-XD08) |
 | **44** | Radar_v2 — Diff semântico + auto-PR | ✅ fechada (v3.34.25 — diff XLSX + GitHub Auto-PR) |
-| **45** | StripeBilling — Lite/Pro/Scale/Enterprise + self-service |
+| **45** | StripeBilling — Lite/Pro/Scale/Enterprise + self-service | ✅ fechada (v3.34.26 — Stripe billing + webhooks) |
 | **46** | WhiteLabel — Tema customizável pra Fintech BaaS |
 | **47** | DRSACResearch — Solicitação formal BACEN |
 | **48** | Pilot2 — Segundo cliente (IP médio) |

@@ -2,6 +2,40 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.26 — 2026-07-07 (Sprint 45 StripeBilling — Integração Stripe) ✅
+
+> **Status:** ✅ Shipped (Stripe billing + webhooks)
+> **Sprint:** 45 (StripeBilling)
+> **Tipo:** minor (novo package billing)
+> **Marco:** Billing integrado para planos Lite/Pro/Scale/Enterprise
+
+### 🎯 Resumo
+
+Sprint 45 adiciona integração Stripe para gestão de subscriptions e billing.
+
+**Arquivos novos:**
+- `internal/billing/stripe.go` — Cliente Stripe + operations (Customer, Subscription, Portal).
+- `internal/billing/webhook.go` — WebhookHandler (customer.subscription.*, invoice.payment.*).
+- `internal/billing/subscription.go` — SubscriptionService (tenant billing info).
+- `internal/billing/billing_test.go` — 15 testes para billing package.
+- `internal/db/migrations/015_stripe_billing.sql` — Colunas Stripe + billing_events.
+- `SPRINT_45_RESEARCH.md` — RESEARCH completo.
+
+**Features:**
+- `billing.NewClient` — Cliente Stripe com validação de config.
+- `billing.CreateCustomer` / `CreateSubscription` — Cria customer e subscription no Stripe.
+- `billing.GetPortalURL` — Gera URL do Stripe Customer Portal.
+- `billing.VerifyWebhookSignature` — HMAC-SHA256 verification (timing-safe).
+- `WebhookHandler.Handle` — Processa webhooks Stripe e atualiza DB.
+- `SubscriptionService.GetTenantBillingInfo` — Informações de billing por tenant.
+- `SubscriptionService.CreateCustomerAndSubscription` — Fluxo completo onboarding.
+
+**Planos suportados:** Lite, Pro, Scale, Enterprise (trial de 14 dias).
+
+**Segurança:** Webhook signature verification, dry-run se keys não configuradas, idempotência via stripe_event_id.
+
+---
+
 ## v3.34.25 — 2026-07-07 (Sprint 44 Radar_v2 — Diff Semantic + Auto-PR) ✅
 
 > **Status:** ✅ Shipped (diff semântico + GitHub Auto-PR)
