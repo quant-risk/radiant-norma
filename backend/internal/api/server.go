@@ -223,9 +223,10 @@ func (s *Server) Router() http.Handler {
 		r.Get("/events/stream", s.eventsStreamHandler)
 
 		// Sprint 46 (v3.34.27): WhiteLabel branding.
-		// GET /tenant/branding: branding do tenant autenticado.
-		// PUT /admin/tenant/:id/branding: admin atualiza branding de qualquer tenant.
-		// GET /tenant/branding/public/:slug: público por tenant_slug.
+		// GET /v1/tenant/branding: branding do tenant autenticado.
+		// PUT /v1/tenant/branding: atualiza branding do tenant autenticado.
+		// GET /v1/tenant/branding/public/{slug}: público por tenant_slug.
+		// PUT /v1/admin/tenant/{id}/branding: admin atualiza branding de qualquer tenant.
 		r.Route("/tenant/branding", func(r chi.Router) {
 			r.Get("/", s.getBranding)
 			r.Put("/", s.updateBranding)
