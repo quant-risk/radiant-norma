@@ -230,9 +230,10 @@ func TestInsert_EmptyXSDAndChangelogAreNULL(t *testing.T) {
 	d := testutil.NewTestDB(t)
 	reg := schema.New(d)
 
+	// Sprint 54 v3.34.37: Changelog agora é auto-computado quando vazio.
+	// XSD vazio continua como NULL; Changelog auto-gera "versão inicial".
 	v := helperVersion("3040", time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 		"http://example.com/v1", "")
-	// XSD e Changelog vazios (defaults)
 	if err := reg.Insert(&v); err != nil {
 		t.Fatalf("Insert: %v", err)
 	}
@@ -241,12 +242,16 @@ func TestInsert_EmptyXSDAndChangelogAreNULL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetEffective: %v", err)
 	}
-	// nullableString("") → NULL → XSD/Changelog vazios ao recuperar
+	// XSD vazio continua NULL
 	if got.XSD != "" {
 		t.Errorf("XSD não deveria estar preenchido, got %q", got.XSD)
 	}
-	if got.Changelog != "" {
-		t.Errorf("Changelog não deveria estar preenchido, got %q", got.Changelog)
+	// Changelog agora é auto-computado ("versão inicial" para primeiro insert)
+	if got.Changelog == "" {
+		t.Errorf("Changelog deveria estar preenchido (auto-computed), got empty")
+	}
+	if got.Changelog != "versão inicial (1 campos)" {
+		t.Errorf("Changelog inesperado: %q", got.Changelog)
 	}
 }
 

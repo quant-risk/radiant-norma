@@ -175,6 +175,8 @@ func (s *Server) Router() http.Handler {
 		r.Get("/schemas", s.listSchemas)
 		r.Get("/schemas/{cadoc}", s.getSchema)
 		r.Get("/schemas/{cadoc}/versions", s.listVersions)
+		// Sprint 54 v3.34.37: public changelog timeline.
+		r.Get("/schemas/{cadoc}/changelog", s.listSchemaChangelog)
 
 		// Rules (críticas)
 		r.Get("/rules", s.listRules)

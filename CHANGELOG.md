@@ -2,6 +2,62 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.37 — 2026-07-07 (Sprint 54 SchemaRegistry_v2 — Auto-changelog + Endpoint Público) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** 54 (SchemaRegistry_v2)
+> **Tipo:** minor (schema diff engine + novo endpoint)
+> **Marco:** Changelog automático na inserção de schema + endpoint público de timeline
+
+### 🎯 Resumo
+
+Sprint 54 adiciona versionamento automático de changelog e endpoint público. Quando um novo schema é inserido via `Registry.Insert()`, o changelog é automaticamente computado diffing contra a versão anterior — sem necessidade de passá-lo manualmente.
+
+**Arquivos novos:**
+- `internal/schema/changelog.go` — diff engine (added/removed/modified por campo)
+- `internal/schema/changelog_test.go` — 9 testes
+- `internal/api/schema_changelog_handlers.go` — `GET /v1/schemas/{cadoc}/changelog`
+
+**Arquivos alterados:**
+- `internal/schema/registry.go` — `Insert()` agora auto-computa changelog se vazio
+- `internal/schema/registry_test.go` — teste atualizado para novo comportamento
+
+## v3.34.36 — 2026-07-07 (Hotfix Sprint 53: rate limiter thread-unsafe) ✅
+
+> **Status:** ✅ Hotfix shipped
+> **Bug:** `rateLimiter.mu` era `int` (zero), não `sync.Mutex` — lock/unlock eram no-ops, maprace em produção.
+> **Fix:** `mu int → sync.Mutex` + `defer Unlock()`.
+
+## v3.34.35 — 2026-07-07 (Sprint 53 AIInsights_v1 — LLM interpreta audit_log) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** 53 (AIInsights_v1)
+> **Tipo:** minor (novo service + endpoint)
+> **Marco:** Primeiro insight LLM — usuário pergunta em linguagem natural sobre seu ambiente
+
+### 🎯 Resumo
+
+Sprint 53 adiciona `POST /v1/insights/ask` — endpoint que aceita perguntas em linguagem natural sobre o estado do ambiente CADOC/SCR/RADAR do tenant, com resposta fundamente nos dados reais.
+
+**Arquivos novos:**
+- `backend/internal/insights/llm.go` — LLMService + MiniMaxChat + OpenAIChat + rate limiter
+- `backend/internal/api/insights_llm_handlers.go` — handler POST /v1/insights/ask
+- `backend/internal/db/migrations/018_insights_conversations.sql` — ifs.llm_insights_enabled + conversations
+- `SPRINT_53_RESEARCH.md` — RESEARCH completo
+
+**Arquivos alterados:**
+- `backend/cmd/api/main.go` — wired via LLM_API_KEY / LLM_PROVIDER / LLM_MODEL
+- `backend/internal/api/server.go` — 11th arg InsightsLLM em NewServer() + rota /insights/ask
+
+## v3.34.34 — 2026-07-07 (Hotfix Sprint 52: 4 bugs em validação profunda) ✅
+
+> **Status:** ✅ Hotfix shipped
+> **Bugs:** 4 bugs encontrados em code review profundo:
+> 1. `XD4111CNPJConsistente`: cnpj/dataBase são atributos do root, não child elements — usava `ExtractTextBetween` que nunca batia. Corrigido com `extractRootAttr` (regexp no root element).
+> 2. `XD4111DataBaseConsistente`: mesmo problema — `dataBase` é atributo.
+> 3. `extractTVMTotal3040`: retornava o PRIMEIRO `<Saldo>`, não o último. TVM pode ter múltiplos. Corrigido com `xml.Decoder`.
+> 4. DRSAC adapters (XD-DR02~08): erros de parse eram silenciosamente descartados (`return nil`). Agora propagam como `crossdoc.Error`.
+
 ## v3.34.33 — 2026-07-07 (Sprint 52 CrossDoc_DRSAC — Integração DRSAC+4111 no CrossDoc Engine) ✅
 
 > **Status:** ✅ Shipped

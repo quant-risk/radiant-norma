@@ -90,7 +90,18 @@ func (r *Registry) GetEffective(cadocCode string, dataBase time.Time) (*Version,
 }
 
 // Insert adiciona uma nova versão de schema.
+// Se v.Changelog for "", o changelog é automaticamente computado diffando
+// com a versão mais recente anterior do mesmo CADOC (se houver).
+//
+//nolint:revive
 func (r *Registry) Insert(v *Version) error {
+	// Auto-compute changelog if not provided
+	changelog := v.Changelog
+	if changelog == "" {
+		prevFields := r.getPreviousFields(v.CadocCode, v.EffectiveFrom)
+		changelog = ComputeChangelog(prevFields, v.Fields)
+	}
+
 	fieldsJSON, err := json.Marshal(v.Fields)
 	if err != nil {
 		return fmt.Errorf("marshal fields: %w", err)
@@ -100,12 +111,29 @@ func (r *Registry) Insert(v *Version) error {
 		VALUES (?, ?, ?, ?, ?, ?)
 	`,
 		v.CadocCode, v.EffectiveFrom.Format("2006-01-02"), v.SourceURI, string(fieldsJSON),
-		nullableString(v.XSD), nullableString(v.Changelog),
+		nullableString(v.XSD), nullableString(changelog),
 	)
 	if err != nil {
 		return fmt.Errorf("insert: %w", err)
 	}
 	return nil
+}
+
+// getPreviousFields retorna os campos da versão mais recente anterior ao effectiveFrom.
+func (r *Registry) getPreviousFields(cadocCode string, effectiveFrom time.Time) []Field {
+	var fieldsJSON string
+	err := r.db.QueryRow(`
+		SELECT fields_json FROM schema_versions
+		WHERE cadoc_code = ? AND effective_from < ?
+		ORDER BY effective_from DESC LIMIT 1`,
+		cadocCode, effectiveFrom.Format("2006-01-02"),
+	).Scan(&fieldsJSON)
+	if err != nil {
+		return nil
+	}
+	var fields []Field
+	_ = json.Unmarshal([]byte(fieldsJSON), &fields)
+	return fields
 }
 
 // List retorna todas as versões de um CADOC, ordenadas da mais recente para mais antiga.
