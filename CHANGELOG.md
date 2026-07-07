@@ -2,6 +2,46 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.24 — 2026-07-07 (Sprint 43 CrossDoc_v2 — DRL/DLP × 3044) ✅
+
+> **Status:** ✅ Shipped (cross-doc DRL/DLP × 3044)
+> **Sprint:** 43 (CrossDoc_v2 — Regras Cross-Documento Liquidez)
+> **Tipo:** minor (8 regras cross-doc)
+> **Marco:** Cross-doc liquidity (XD01-XD08)
+
+### 🎯 Resumo
+
+Sprint 43 adiciona 8 regras cross-documento que validam consistência entre DRL (LCR), DLP (NSFR) e 3044 (eventos JSON).
+
+**Arquivos novos:**
+- `crossdoc_liquidity.go` — XD01-XD08 + Set3044 global.
+- `crossdoc_liquidity_test.go` — 16 subtests (cross-doc rules).
+- `SPRINT_43_RESEARCH.md` — RESEARCH completo.
+
+### Regras Cross-Doc
+
+| Cod | Sev | Descrição |
+|---|---|---|
+| **XD01** | E | CNPJ DRL == DLP == 3044 |
+| **XD02** | E | DtBase DRL == DLP == dataSaldoDevedor 3044 |
+| **XD03** | A | Soma saldoDevedor 3044 >= HQLA DRL |
+| **XD04** | A | NSFR/LCR consistentes (LCR<80% E NSFR>120% = alerta) |
+| **XD05** | A | Soma pagamentos 3044 <= Outflows DRL |
+| **XD06** | E | IPOC em 3044 existe no histórico (carry-over) |
+| **XD07** | E | Atraso 3044 consistente com DRL/DLP (carry-over) |
+| **XD08** | A | Consistência prazos 3044 vs DRL/DLP (carry-over) |
+
+### Métricas v3.34.23 → v3.34.24
+
+| Métrica | v3.34.23 | v3.34.24 |
+|---|---|---|
+| Regras cross-doc XD01-XD08 | 0 | **8** (+8) |
+| Test subtests Sprint 43 | 0 | **16** |
+| Packages PASS -race | 23/23 | **23/23** |
+| Build / vet / gofmt | clean | **clean** |
+
+---
+
 ## v3.34.23 — 2026-07-07 (Sprint 42 Audit3044 — Engine JSON Eventos) ✅
 
 > **Status:** ✅ Shipped (parser JSON + 17 regras T01-T19)
