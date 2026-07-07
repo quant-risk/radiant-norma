@@ -2,6 +2,27 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.46 — 2026-07-07 (Sprint 64 Pilot4 — Banco S3-S4 onboarding) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** 64 (Pilot4)
+> **Tipo:** minor (novo package pilot)
+> **Marco:** Onboarding infrastructure para Banco S3/S4 Pilot 4
+
+### 🎯 Resumo
+
+Sprint 64 adiciona infraestrutura de onboarding para pilotos —追踪 programas piloto, participantes e passos de onboarding para bancos S3/S4.
+
+**Arquivos novos:**
+- `backend/internal/pilot/service.go` — Service: CreateProgram, Enroll, InitOnboarding, CompleteStep, OnboardingProgress, SetSegment
+- `backend/internal/db/migrations/022_pilot4_onboarding.sql` — ifs.segment, pilot_programs, pilot_participants, onboarding_steps
+
+**Modelo:**
+- `ifs.segment`: s1 | s2 | s3 | s4
+- `pilot_programs`: programas piloto (ex: "Banco S3-S4 Pilot 4")
+- `pilot_participants`: bancos em piloto (onboarding | active | churned)
+- `onboarding_steps`: 5 passos padrão (docs_submitted → go_live)
+
 ## v3.34.45 — 2026-07-07 (Sprint 63 MultiRegion — BR-SP1/SP2 replication) ✅
 
 > **Status:** ✅ Shipped
