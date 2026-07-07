@@ -2,6 +2,29 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.9 — 2026-07-07 (Validação 65 — bug funcional H21/H22 + drift testes) ✅
+
+> **Status:** ✅ Shipped (validação retroativa)
+> **Tipo:** fix (drift cleanup + bug crítico)
+
+Auditoria retroativa da Fase 5 (commit fb9944b) detectou 3 drifts:
+
+- **Drift #1 (ALTA gravidade 🐛):** `H21TxMedJurosMax4Decimals` e `H22VlrConcessoesMax2Decimals` tinham heurística mas **sempre retornavam nil** mesmo quando a comparação era true. Stubs disfarçados de regras funcionais. **Causa raiz:** comentário descrevia intenção mas faltava `return fmt.Errorf(...)`. **Fix:** implementação real com `strconv.FormatFloat(v, 'f', -1, 64)` + count de decimais significativos.
+- **Drift #2 (BAIXA):** `3050_helpers.go` header dizia "Fase 3+4 helpers" mas arquivo continua relevante. Atualizado para "Fase 3+4+5 helpers".
+- **Drift #3 (BAIXA):** CHANGELOG + RESULTS diziam "22 testes" mas arquivo tinha 19. Atualizado para 21 (após adicionar TestH21 + TestH22).
+
+**Tests adicionados:**
+- TestH21_TxMedJurosMax4Decimals (4 cases: 1/4/5/6 decimais)
+- TestH22_VlrConcessoesMax2Decimals (4 cases: 1/2/3/4 decimais)
+
+**SPRINT_33_FASE5_VALIDATION.md novo:** auditoria profunda de:
+- 13 claims verificados (todos OK): 153 Register3050, 90% cobertura, 70.9% coverage, 23/23 packages.
+- H21/H22 stubs disfarçados detectados — corrigidos in-loop.
+- Decisões D-24/D-25/D-26/D-27 + DT-32 mantidas.
+- 3 edge cases identificados para próxima sprint.
+
+---
+
 ## v3.34.8 — 2026-07-07 (Sprint 33 Fase 5 — Audit3050 fechar em 90%) ✅
 
 > **Status:** ✅ Shipped (Fase 5 — fecha Sprint 33 workstream 3050)
@@ -45,8 +68,8 @@ Fase 5 entrega 14 Individuais (I37-I50 — sub-modalidades restantes ≥ 0) + 32
 | Regras 3050 | 97 | **153** (+56) |
 | Cobertura catálogo 3050 | 57.06% | **90%** (+32.94pp) |
 | Coverage `internal/audit/rules` | 72.2% | **70.8%** (-1.4pp — stubs matriz sem asserts) |
-| Test functions Fase 5 | 0 | **22** |
-| Test functions total 3050 | 96 | **118** |
+| Test functions Fase 5 | 0 | **21** |
+| Test functions total 3050 | 96 | **117** |
 | Packages PASS -race | 23/23 | **23/23** |
 | vet + gofmt | clean | **clean** |
 
@@ -72,7 +95,7 @@ Fase 5 entrega 14 Individuais (I37-I50 — sub-modalidades restantes ≥ 0) + 32
 
 ```
 backend/internal/audit/rules/3050.go              (+I37-I50 +S39-S70 +H21-H30 = 56 regras)
-backend/internal/audit/rules/3050_fase5_test.go   (NOVO — 22 testes table-driven)
+backend/internal/audit/rules/3050_fase5_test.go   (NOVO — 21 testes table-driven)
 backend/internal/audit/rules/3050_test.go         (atualizado: TotalRulesIs 97→153)
 backend/internal/audit/rules/3050_fase4_test.go   (atualizado: Fase4TotalRulesIs97 skip)
 CHANGELOG.md                                       (esta entry)

@@ -197,13 +197,55 @@ func TestH30_CNPJSemZerosEsquerda(t *testing.T) {
 	}
 }
 
+// ========== H21-H22 — Decimais (implementação real, Fase 5 validação) ==========
+
+func TestH21_TxMedJurosMax4Decimals(t *testing.T) {
+	tests := []struct {
+		nome        string
+		val         *float64
+		wantErrSubs string
+	}{
+		{"happy: 15.5 (1 decimal)", ptrF(15.5), ""},
+		{"happy: 15.1234 (4 decimais)", ptrF(15.1234), ""},
+		{"violação: 15.12345 (5 decimais)", ptrF(15.12345), "5 decimais"},
+		{"violação: 15.000001 (6 decimais)", ptrF(15.000001), "6 decimais"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.nome, func(t *testing.T) {
+			doc := &Doc3050{Diario: []Modalidade{{Codigo: "credLivre", Encargo: "pre", TipoCli: "pesJuridica", TxMedJuros: tt.val}}}
+			err := H21TxMedJurosMax4Decimals{}.Apply3050(context.Background(), doc)
+			checkErr(t, err, tt.wantErrSubs)
+		})
+	}
+}
+
+func TestH22_VlrConcessoesMax2Decimals(t *testing.T) {
+	tests := []struct {
+		nome        string
+		val         *float64
+		wantErrSubs string
+	}{
+		{"happy: 1000.00 (2 decimais)", ptrF(1000.00), ""},
+		{"happy: 1000.5 (1 decimal)", ptrF(1000.5), ""},
+		{"violação: 1000.123 (3 decimais)", ptrF(1000.123), "3 decimais"},
+		{"violação: 100.0001 (4 decimais)", ptrF(100.0001), "4 decimais"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.nome, func(t *testing.T) {
+			doc := &Doc3050{Diario: []Modalidade{{Codigo: "credLivre", Encargo: "pre", TipoCli: "pesJuridica", VlrConcessoes: tt.val}}}
+			err := H22VlrConcessoesMax2Decimals{}.Apply3050(context.Background(), doc)
+			checkErr(t, err, tt.wantErrSubs)
+		})
+	}
+}
+
 // ========== H21-H30 stubs consolidações + decimais ==========
 
-func TestH21_H30_StubsReasonable(t *testing.T) {
-	// Verifica que H21-H30 não panicam e retornam nil para docs típicos.
+func TestH23_H29_StubsReasonable(t *testing.T) {
+	// Verifica que H23-H29 (excluindo H21/H22 com lógica real) não panicam e retornam nil.
 	rules := []func(context.Context, *Doc3050) error{
-		H21TxMedJurosMax4Decimals{}.Apply3050,
-		H22VlrConcessoesMax2Decimals{}.Apply3050,
 		H23QtdNovContratosInteiro{}.Apply3050,
 		H24CNPJConsolidado{}.Apply3050,
 		H26TelContatoConsolidado{}.Apply3050,

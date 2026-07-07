@@ -25,14 +25,14 @@ Shipped. **153 regras 3050 totais** (97 anteriores + 56 Fase 5). Cobertura **90%
 | Regras 3050 | 97 | **153** (+56) |
 | Cobertura catálogo 3050 | 57.06% | **90%** (+32.94pp) |
 | Coverage `internal/audit/rules` | 72.2% | **70.8%** (-1.4pp — stubs matriz sem asserts) |
-| Test functions Fase 5 | 0 | **22** (3050_fase5_test.go) |
-| Test functions total 3050 | 96 | **118** |
+| Test functions Fase 5 | 0 | **21** (3050_fase5_test.go) |
+| Test functions total 3050 | 96 | **117** |
 | Files novos | 0 | **1** (3050_fase5_test.go) |
 | LOC Go adicionados | 0 | ~1500 (3050.go delta + fase5_test) |
 | Packages PASS -race | 23/23 | **23/23** |
 | vet + gofmt | clean | **clean** |
 
-## 🧪 Testes Fase 5 (22 funções)
+## 🧪 Testes Fase 5 (21 funções)
 
 ### Individuais (14 — I37-I50)
 
@@ -42,11 +42,13 @@ Shipped. **153 regras 3050 totais** (97 anteriores + 56 Fase 5). Cobertura **90%
 
 - TestS39_S70_MatrizStubs (32 sub-tests verificando Code/Sheet/Severity/Apply)
 
-### Header (3 — H25/H30/H21-H30)
+### Header (5 — H21/H22/H25/H30 + H23-H29 stubs)
 
+- TestH21_TxMedJurosMax4Decimals (4 cases: 1/4/5/6 decimais)
+- TestH22_VlrConcessoesMax2Decimals (4 cases: 1/2/3/4 decimais)
 - TestH25_NmContatoSemControle (4 cases: normal/tab/newline/null)
 - TestH30_CNPJSemZerosEsquerda (3 cases)
-- TestH21_H30_StubsReasonable (8 regras, 1 caso)
+- TestH23_H29_StubsReasonable (6 regras, 1 caso)
 
 ### Integração (1)
 
@@ -74,7 +76,7 @@ Shipped. **153 regras 3050 totais** (97 anteriores + 56 Fase 5). Cobertura **90%
 
 ```
 backend/internal/audit/rules/3050.go              (+I37-I50 +S39-S70 +H21-H30 = 56 regras Tier 1+2+3)
-backend/internal/audit/rules/3050_fase5_test.go   (NOVO — 22 testes table-driven)
+backend/internal/audit/rules/3050_fase5_test.go   (NOVO — 21 testes table-driven)
 backend/internal/audit/rules/3050_test.go         (atualizado: TotalRulesIs 97→153)
 backend/internal/audit/rules/3050_fase4_test.go   (atualizado: Fase4TotalRulesIs97 skip)
 CHANGELOG.md                                       (entry v3.34.8)

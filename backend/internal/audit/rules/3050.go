@@ -3025,15 +3025,19 @@ func (H21TxMedJurosMax4Decimals) Code() string     { return "3050-H21" }
 func (H21TxMedJurosMax4Decimals) Sheet() string    { return "Header" }
 func (H21TxMedJurosMax4Decimals) Severity() string { return "A" }
 func (H21TxMedJurosMax4Decimals) Apply3050(_ context.Context, doc *Doc3050) error {
+	const maxDecimals = 4
 	for _, list := range [][]Modalidade{doc.Diario, doc.Mensal} {
 		for i, m := range list {
 			if m.TxMedJuros == nil {
 				continue
 			}
-			s := fmt.Sprintf("%.4f", *m.TxMedJuros)
-			if s != fmt.Sprintf("%g", *m.TxMedJuros) {
-				_ = i
-				// mais de 4 decimais significativos; heurística simples
+			s := strconv.FormatFloat(*m.TxMedJuros, 'f', -1, 64)
+			decimals := 0
+			if idx := strings.Index(s, "."); idx >= 0 {
+				decimals = len(s) - idx - 1
+			}
+			if decimals > maxDecimals {
+				return fmt.Errorf("modalidade %s [%d] (%s/%s): txMedJuros=%s tem %d decimais (max %d)", m.Codigo, i, m.Encargo, m.TipoCli, s, decimals, maxDecimals)
 			}
 		}
 	}
@@ -3047,14 +3051,19 @@ func (H22VlrConcessoesMax2Decimals) Code() string     { return "3050-H22" }
 func (H22VlrConcessoesMax2Decimals) Sheet() string    { return "Header" }
 func (H22VlrConcessoesMax2Decimals) Severity() string { return "A" }
 func (H22VlrConcessoesMax2Decimals) Apply3050(_ context.Context, doc *Doc3050) error {
+	const maxDecimals = 2
 	for _, list := range [][]Modalidade{doc.Diario, doc.Mensal} {
-		for _, m := range list {
+		for i, m := range list {
 			if m.VlrConcessoes == nil {
 				continue
 			}
-			s := fmt.Sprintf("%.2f", *m.VlrConcessoes)
-			if s != fmt.Sprintf("%g", *m.VlrConcessoes) {
-				// mais de 2 decimais significativos — heuristic warning
+			s := strconv.FormatFloat(*m.VlrConcessoes, 'f', -1, 64)
+			decimals := 0
+			if idx := strings.Index(s, "."); idx >= 0 {
+				decimals = len(s) - idx - 1
+			}
+			if decimals > maxDecimals {
+				return fmt.Errorf("modalidade %s [%d] (%s/%s): vlrConcessoes=%s tem %d decimais (max %d — R$)", m.Codigo, i, m.Encargo, m.TipoCli, s, decimals, maxDecimals)
 			}
 		}
 	}

@@ -1,8 +1,9 @@
-// Package rules — Sprint 33 Fase 3+4 helpers.
+// Package rules — Sprint 33 Fase 3+4+5 helpers.
 //
 // Helpers compartilhados por S09 (DiasUteis) + S13 (ÚltimoDiaUtilMes,
 // com edge case fix Fase 4 para último dia do mês em sábado) + validações
-// de dataBase em geral.
+// de dataBase em geral. Também exporta feriados nacionais + Gauss Easter
+// Computus (pascoa/feriadosMoveis) usados por S09/S13.
 package rules
 
 import "time"
