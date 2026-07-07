@@ -150,7 +150,7 @@ func (XD03) Apply(_ context.Context, _ *Doc3040) error {
 //
 // Se LCR < 100% E NSFR >= 100%, pode indicar inconsistência (instituição
 // com funding estável mas liquidez de curto prazo comprometida).
-// Regra de警告 (não bloqueante) — cenário pode ser legítimo.
+// Regra de alerta (não bloqueante) — cenário pode ser legítimo.
 type XD04 struct{}
 
 func (XD04) Code() string     { return "XD04" }
