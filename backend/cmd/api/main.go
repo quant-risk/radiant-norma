@@ -21,6 +21,8 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/db"
 	"github.com/fortvna/radiant-norma/backend/internal/insights"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
+	"github.com/fortvna/radiant-norma/backend/internal/marketplace"
+	"github.com/fortvna/radiant-norma/backend/internal/pilot"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/realtime"
 	"github.com/fortvna/radiant-norma/backend/internal/ruleprefs"
@@ -76,6 +78,8 @@ func main() {
 	logger.Info("STA client inicializado", "backend", sta.BackendName(staClient))
 	radarSvc := radar.New(d, 6*time.Hour)
 	brandingSvc := branding.NewBrandingService(d)
+	marketplaceSvc := marketplace.NewService(d)
+	pilotSvc := pilot.NewService(d)
 
 	// Sprint 53 — v3.34.35: AI Insights via LLM (opt-in).
 	// Configurado via env vars: LLM_PROVIDER, LLM_API_KEY, LLM_MODEL.
@@ -102,7 +106,7 @@ func main() {
 		logger.Info("insights LLM initialized", "provider", os.Getenv("LLM_PROVIDER"))
 	}
 
-	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, ruleprefs.NewPreferences(d), ruleprefs.NewToggleLimiter(10, time.Minute), insights.NewAcknowledgments(d), brandingSvc, insightsLLM)
+	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, ruleprefs.NewPreferences(d), ruleprefs.NewToggleLimiter(10, time.Minute), insights.NewAcknowledgments(d), brandingSvc, insightsLLM, marketplaceSvc, pilotSvc)
 
 	// Sprint 10 — Hub SSE + wrap audit logger pra publicar eventos em
 	// real-time. Em produção, hub pode ser substituído por Kafka/Redis

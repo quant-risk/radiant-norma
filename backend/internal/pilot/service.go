@@ -184,6 +184,16 @@ var DefaultSteps = []string{
 	"go_live",
 }
 
+// ESGSteps são os passos de onboarding específicos para o piloto ESG-first.
+// Incluem configuração DRSAC, teste de cross-doc, e verificação do dashboard ESG.
+var ESGSteps = []string{
+	"drsac_policy_configured",  // Política DRSAC configurada no tenant
+	"drsac_first_submission",   // Primeiro envio DRSAC 2030 testado
+	"crossdoc_drsac_verified",  // Cross-doc DRSAC×3040 verificado
+	"esg_dashboard_configured", // Dashboard ESG configurado e verificado
+	"esg_go_live",              // Módulo ESG em produção
+}
+
 // InitOnboarding cria todos os passos de onboarding para um tenant.
 func (s *Service) InitOnboarding(ctx context.Context, ifID string) error {
 	for _, key := range DefaultSteps {
@@ -194,6 +204,21 @@ func (s *Service) InitOnboarding(ctx context.Context, ifID string) error {
 		`, id, ifID, key)
 		if err != nil {
 			return fmt.Errorf("init onboarding: %w", err)
+		}
+	}
+	return nil
+}
+
+// InitESGOnboarding cria os passos de onboarding específicos para o Pilot3 ESG-first.
+func (s *Service) InitESGOnboarding(ctx context.Context, ifID string) error {
+	for _, key := range ESGSteps {
+		id := newID()
+		_, err := s.db.ExecContext(ctx, `
+			INSERT OR IGNORE INTO onboarding_steps (id, if_id, step_key, status)
+			VALUES (?, ?, ?, 'pending')
+		`, id, ifID, key)
+		if err != nil {
+			return fmt.Errorf("init esg onboarding: %w", err)
 		}
 	}
 	return nil
@@ -286,4 +311,61 @@ func ValidSegment(seg string) bool {
 	default:
 		return false
 	}
+}
+
+// ============================================================
+// Sprint 55: Pilot3 ESG-first helpers
+// ============================================================
+
+const pilot3Name = "Pilot 3 — ESG-first"
+const pilot3Description = "Programa piloto para cliente com foco ESG/DRSAC. Onboarding com passos específicos DRSAC + dashboard ESG."
+
+// CreatePilot3IfNotExists cria o programa Pilot3 ESG-first se ainda não existir.
+func (s *Service) CreatePilot3IfNotExists(ctx context.Context) (*Program, bool, error) {
+	programs, err := s.ListPrograms(ctx)
+	if err != nil {
+		return nil, false, err
+	}
+	for _, p := range programs {
+		if p.Name == pilot3Name {
+			return &p, false, nil // já existe
+		}
+	}
+	// Criar novo programa
+	prog, err := s.CreateProgram(ctx, pilot3Name, pilot3Description, nil, nil)
+	if err != nil {
+		return nil, false, err
+	}
+	return prog, true, nil
+}
+
+// EnrollESG enrolls a tenant in the Pilot3 ESG-first program,
+// initializing ESG-specific onboarding steps.
+func (s *Service) EnrollESG(ctx context.Context, ifID string) error {
+	prog, _, err := s.CreatePilot3IfNotExists(ctx)
+	if err != nil {
+		return fmt.Errorf("enroll esg: %w", err)
+	}
+	if err := s.Enroll(ctx, prog.ID, ifID); err != nil {
+		return fmt.Errorf("enroll esg: %w", err)
+	}
+	return s.InitESGOnboarding(ctx, ifID)
+}
+
+// GetESGProgress returns onboarding progress for ESG pilot (0.0-1.0).
+func (s *Service) GetESGProgress(ctx context.Context, ifID string) (float64, []OnboardingStep, error) {
+	steps, err := s.GetOnboardingProgress(ctx, ifID)
+	if err != nil {
+		return 0, nil, err
+	}
+	if len(steps) == 0 {
+		return 0, steps, nil
+	}
+	var completed int
+	for _, st := range steps {
+		if st.Status == "completed" {
+			completed++
+		}
+	}
+	return float64(completed) / float64(len(steps)), steps, nil
 }

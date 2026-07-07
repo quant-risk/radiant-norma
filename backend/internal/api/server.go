@@ -23,6 +23,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/insights"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/marketplace"
+	"github.com/fortvna/radiant-norma/backend/internal/pilot"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/realtime"
 	"github.com/fortvna/radiant-norma/backend/internal/ruleprefs"
@@ -105,6 +106,9 @@ type Server struct {
 
 	// Sprint 62 — v3.34.44: Marketplace de regras customizadas.
 	Marketplace *marketplace.Service
+
+	// Sprint 55 — Pilot3 ESG-first.
+	Pilot *pilot.Service
 }
 
 // auditLogAPI é interface mínima que *auditlog.Logger e *realtime.HubAwareLogger
@@ -115,12 +119,14 @@ type auditLogAPI interface {
 }
 
 // NewServer cria um Server.
-func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences, tl *ruleprefs.ToggleLimiter, ack *insights.Acknowledgments, br *branding.BrandingService, insightsLLM *insights.LLMService) *Server {
+func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences, tl *ruleprefs.ToggleLimiter, ack *insights.Acknowledgments, br *branding.BrandingService, insightsLLM *insights.LLMService, mp *marketplace.Service, pilotSvc *pilot.Service) *Server {
 	return &Server{
 		DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient,
 		Radar: rad, RulePrefs: rp, ToggleLimiter: tl, Insights: ack,
 		Branding:    br,
 		InsightsLLM: insightsLLM,
+		Marketplace: mp,
+		Pilot:       pilotSvc,
 		startedAt:   time.Now(),
 		RateLimiter: newMemoryRateLimiter(),
 	}
@@ -265,6 +271,18 @@ func (s *Server) Router() http.Handler {
 			r.Post("/{id}/install", s.installRule)
 			r.Post("/{id}/rate", s.rateRule)
 			r.Get("/installed", s.listInstalledRules)
+		})
+
+		// Sprint 55 — v3.34.49: Pilot3 ESG-first.
+		r.Route("/v1/pilot", func(r chi.Router) {
+			r.Get("/programs", s.listPilotPrograms)
+			r.Post("/programs", s.createPilotProgram)
+			r.Get("/programs/{programId}/participants", s.listPilotParticipants)
+			r.Post("/programs/{programId}/enroll", s.enrollPilotParticipant)
+			r.Get("/participants/{ifID}/steps", s.getPilotSteps)
+			r.Post("/participants/{ifID}/steps/{stepKey}/complete", s.completePilotStep)
+			r.Get("/participants/{ifID}/esg/progress", s.getESGonboardingProgress)
+			r.Post("/participants/{ifID}/esg/enroll", s.enrollESGParticipant)
 		})
 
 		// Sprint 56 v3.34.38: SOC 2 Type I readiness + evidence.
@@ -1146,6 +1164,134 @@ func (s *Server) adminUpdateBranding(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, b)
 }
+
+// ============================================================
+// Sprint 55: Pilot3 ESG-first handlers
+// ============================================================
+
+func (s *Server) listPilotPrograms(w http.ResponseWriter, r *http.Request) {
+	programs, err := s.Pilot.ListPrograms(r.Context())
+	if err != nil {
+		s.userError(w, http.StatusInternalServerError, "pilot.listPrograms", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, programs)
+}
+
+func (s *Server) createPilotProgram(w http.ResponseWriter, r *http.Request) {
+	claims, err := auth.ClaimsFromContext(r.Context())
+	if err != nil || claims == nil || !claims.HasRole(auth.RoleAdmin) {
+		http.Error(w, `{"error":"admin required"}`, http.StatusForbidden)
+		return
+	}
+	var req struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
+		return
+	}
+	prog, err := s.Pilot.CreateProgram(r.Context(), req.Name, req.Description, nil, nil)
+	if err != nil {
+		s.userError(w, http.StatusBadRequest, "pilot.createProgram", err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, prog)
+}
+
+func (s *Server) listPilotParticipants(w http.ResponseWriter, r *http.Request) {
+	programID := chi.URLParam(r, "programId")
+	if programID == "" {
+		http.Error(w, `{"error":"program_id requerido"}`, http.StatusBadRequest)
+		return
+	}
+	participants, err := s.Pilot.ListParticipants(r.Context(), programID)
+	if err != nil {
+		s.userError(w, http.StatusInternalServerError, "pilot.listParticipants", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, participants)
+}
+
+func (s *Server) enrollPilotParticipant(w http.ResponseWriter, r *http.Request) {
+	ifID := getIfID(r)
+	if ifID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+	programID := chi.URLParam(r, "programId")
+	if programID == "" {
+		http.Error(w, `{"error":"program_id requerido"}`, http.StatusBadRequest)
+		return
+	}
+	if err := s.Pilot.Enroll(r.Context(), programID, ifID); err != nil {
+		s.userError(w, http.StatusBadRequest, "pilot.enroll", err)
+		return
+	}
+	p, _ := s.Pilot.GetParticipant(r.Context(), programID, ifID)
+	writeJSON(w, http.StatusCreated, p)
+}
+
+func (s *Server) getPilotSteps(w http.ResponseWriter, r *http.Request) {
+	ifID := chi.URLParam(r, "ifID")
+	if ifID == "" {
+		http.Error(w, `{"error":"if_id requerido"}`, http.StatusBadRequest)
+		return
+	}
+	steps, err := s.Pilot.GetOnboardingProgress(r.Context(), ifID)
+	if err != nil {
+		s.userError(w, http.StatusInternalServerError, "pilot.getSteps", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, steps)
+}
+
+func (s *Server) completePilotStep(w http.ResponseWriter, r *http.Request) {
+	ifID := chi.URLParam(r, "ifID")
+	stepKey := chi.URLParam(r, "stepKey")
+	if ifID == "" || stepKey == "" {
+		http.Error(w, `{"error":"if_id e step_key requeridos"}`, http.StatusBadRequest)
+		return
+	}
+	if err := s.Pilot.CompleteStep(r.Context(), ifID, stepKey); err != nil {
+		s.userError(w, http.StatusBadRequest, "pilot.completeStep", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "completed"})
+}
+
+func (s *Server) getESGonboardingProgress(w http.ResponseWriter, r *http.Request) {
+	ifID := chi.URLParam(r, "ifID")
+	if ifID == "" {
+		http.Error(w, `{"error":"if_id requerido"}`, http.StatusBadRequest)
+		return
+	}
+	progress, steps, err := s.Pilot.GetESGProgress(r.Context(), ifID)
+	if err != nil {
+		s.userError(w, http.StatusInternalServerError, "pilot.getESGProgress", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"progress": progress, "steps": steps})
+}
+
+func (s *Server) enrollESGParticipant(w http.ResponseWriter, r *http.Request) {
+	ifID := getIfID(r)
+	if ifID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+	if err := s.Pilot.EnrollESG(r.Context(), ifID); err != nil {
+		s.userError(w, http.StatusBadRequest, "pilot.enrollESG", err)
+		return
+	}
+	progress, steps, _ := s.Pilot.GetESGProgress(r.Context(), ifID)
+	writeJSON(w, http.StatusCreated, map[string]any{"progress": progress, "steps": steps})
+}
+
+// ============================================================
+// writeJSON
+// ============================================================
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")

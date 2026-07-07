@@ -91,3 +91,33 @@ func TestDefaultSteps(t *testing.T) {
 		}
 	}
 }
+
+func TestESGSteps(t *testing.T) {
+	expected := []string{
+		"drsac_policy_configured",
+		"drsac_first_submission",
+		"crossdoc_drsac_verified",
+		"esg_dashboard_configured",
+		"esg_go_live",
+	}
+	if len(ESGSteps) != len(expected) {
+		t.Errorf("ESGSteps len: got %d, want %d", len(ESGSteps), len(expected))
+	}
+	for i, e := range expected {
+		if ESGSteps[i] != e {
+			t.Errorf("ESGSteps[%d]: got %q, want %q", i, ESGSteps[i], e)
+		}
+	}
+}
+
+func TestPilot3Constants(t *testing.T) {
+	if pilot3Name == "" {
+		t.Error("pilot3Name should not be empty")
+	}
+	if pilot3Description == "" {
+		t.Error("pilot3Description should not be empty")
+	}
+	if pilot3Name != "Pilot 3 — ESG-first" {
+		t.Errorf("pilot3Name: got %q", pilot3Name)
+	}
+}
