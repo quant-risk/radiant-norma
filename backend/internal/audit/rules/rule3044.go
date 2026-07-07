@@ -355,15 +355,6 @@ func (T19) Apply(_ context.Context, doc *Doc3044) error {
 	return nil
 }
 
-// dominioClass3050 é o conjunto de códigos 3050 válidos para T08.
-//
-// Extraído do XSD BACEN 3050 (TXB_V11). Prefixos válidos:
-// 1 = Crédito Pessoal, 2 = Habitacional, 3 = Rural, etc.
-// Validado como string numérica de 9 dígitos.
-var dominioClass3050Prefixes = []string{
-	"1", "2", "3", "4", "5", "6", "7", "8", "9",
-}
-
 // Class3050Valido verifica se class3050 pertence ao domínio (prefixo válido).
 //
 // Validação T08: class3050 deve começar com dígito 1-9 e ter 9 dígitos.
