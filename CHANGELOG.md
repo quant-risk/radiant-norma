@@ -2,6 +2,26 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.47 — 2026-07-07 (Sprint 65 SOC2 Type II — Continuous evidence collection) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** 65 (SOC2 Type II)
+> **Tipo:** minor (extensão package soc2)
+> **Marco:** Continuous evidence collection + immutable audit trail para SOC 2 Type II
+
+### 🎯 Resumo
+
+Sprint 65 adiciona tooling SOC 2 Type II — collection contínua de evidências, monitoring de controles por período, e findings management.
+
+**Arquivos novos:**
+- `backend/internal/soc2/evidence_collector.go` — TypeIICollector: Collect, Query, UpdateControlStatus, CreateFinding, ResolveFinding, ListFindings
+- `backend/internal/db/migrations/023_soc2_type2.sql` — soc2_evidence_log, soc2_control_status, soc2_findings
+
+**Modelo:**
+- `soc2_evidence_log`: log append-only de evidências (automated_check | manual_review | system_log | document)
+- `soc2_control_status`: status por controle por período (compliant | non_compliant | in_progress)
+- `soc2_findings`: findings de auditoria (open | in_resolution | closed | accepted_risk)
+
 ## v3.34.46 — 2026-07-07 (Sprint 64 Pilot4 — Banco S3-S4 onboarding) ✅
 
 > **Status:** ✅ Shipped
