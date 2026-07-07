@@ -2,6 +2,41 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.29 — 2026-07-07 (Sprint 48 Pilot2 — Tenant Lifecycle Service) ✅
+
+> **Status:** ✅ Shipped (Tenant service)
+> **Sprint:** 48 (Pilot2)
+> **Tipo:** minor (novo package tenant)
+> **Marco:** Infraestrutura de lifecycle de tenant para onboarding de IP médio
+
+### 🎯 Resumo
+
+Sprint 48 adiciona o TenantService (`internal/tenant`) para gestão completa do lifecycle de tenants: criação, busca, listagem, desativação e atualização de plano. Serve como base para onboarding de segundo cliente IP médio (S3-S4).
+
+**Arquivos novos:**
+- `internal/tenant/tenant.go` — TenantService (Create, Get, GetByCNPJ, List, Deactivate, UpdatePlano).
+- `internal/tenant/tenant_test.go` — 14 testes unitários.
+- `SPRINT_48_RESEARCH.md` — RESEARCH completo.
+
+**Funcionalidades:**
+| Método | Descrição |
+|---|---|
+| `Create(input)` | Cria tenant com CNPJ (8 dígitos), tipo, segmento (S1-S5), plano |
+| `Get(id)` | Busca tenant por ID |
+| `GetByCNPJ(cnpj)` | Busca tenant por CNPJ |
+| `List(segmento)` | Lista tenants com filtro por segmento |
+| `Deactivate(id)` | Soft-delete (deleted_at) |
+| `UpdatePlano(id, plano)` | Upgrade/downgrade de plano |
+
+**Validações:**
+- CNPJ: exatamente 8 dígitos numéricos
+- Tipo: SCD, IP, SEP, BC, SCD_S3, IP_S3
+- Segmento: S1, S2, S3, S4, S5
+- Plano: lite, pro, scale, enterprise
+- CNPJ único entre tenants ativos
+
+---
+
 ## v3.34.28 — 2026-07-07 (Sprint 47 DRSACResearch — Parser DRSAC 2030) ✅
 
 > **Status:** ✅ Shipped (DRSAC parsing + validação)
