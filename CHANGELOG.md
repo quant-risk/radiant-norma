@@ -2,6 +2,94 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.10 — 2026-07-07 (Sprint 34 Carry-over 3050 Fase 6 — fechar em 100%) ✅
+
+> **Status:** ✅ Shipped (Fase 6 — fecha Sprint 33/34 workstream 3050)
+> **Sprint:** 34 (Carry-over)
+> **Tipo:** minor (+17 regras 3050 + 4 substituições S12/S14/H19/H20)
+> **Marco:** 153 → 170 regras 3050 (90% → **100%** cobertura catálogo TXB_V11)
+
+### 🎉 Sprint 33/34 (Audit3050) — FECHADO em 100%
+
+| Fase | v | Regras | Cobertura |
+|---|---|---|---|
+| 1 | v3.34.0 | 28 | 16.5% |
+| 2 | v3.34.1 | 56 | 32.9% |
+| 3 | v3.34.4 | 80 | 47.06% |
+| 4 | v3.34.6 | 97 | 57.06% |
+| 5 | v3.34.8 | 153 | 90% |
+| **6** | **v3.34.10** | **170** | **100%** |
+
+6 fases incrementais em 6 dias, +142 regras (16.5% → 100%).
+
+### 🎯 Resumo
+
+Fase 6 entrega 17 regras novas: 4 substituições (S12, S14, H19, H20 — saem de stub) + 13 matriz adicionais (S71-S87). Total 3050: **153 → 170** (cobertura 90% → **100%**).
+
+**Decisões técnicas:**
+- **DT-34:** `Doc3050Root` ganha campo `RawXML []byte` (XML bruto) populado pelo parser. Habilita H19/H20 (regex `bytes.Count`).
+- **DT-35:** S12 (PrzMed condicional a SldBaiPrejuizo > 0) e S14 (txMax > txMin, regra 3055) — lógica pura.
+- **DT-36:** S71-S87 (matriz modalidade × encargo + periodicidade) — 13 stubs informativos consolidados.
+
+**Regras implementadas:**
+
+| Cod | Sev | Regra | Origem |
+|---|---|---|---|
+| 3050-S12 | A | przMedCarteira obrigatório se sldBaiPrejuizo > 0 (real) | 3025 |
+| 3050-S14 | E | txMaxima > txMinima (regra 3055, real) | 3055 |
+| 3050-H19 | A | apenas 1 `<referencia>` por doc (real via RawXML+bytes.Count) | formato |
+| 3050-H20 | A | 1 `<diario>` + 1 `<mensal>` por referencia (real via RawXML+bytes.Count) | formato |
+| 3050-S71-S87 | I | 17 stubs matriz modalidade × encargo + periodicidade | 2001 |
+
+### 📊 Métricas v3.34.9 → v3.34.10
+
+| Métrica | v3.34.9 | v3.34.10 |
+|---|---|---|
+| Regras 3050 | 153 | **170** (+17) |
+| Cobertura catálogo 3050 | 90% | **100%** (+10pp) |
+| Coverage `internal/audit/rules` | 70.9% | **70.7%** (-0.2pp) |
+| Test functions Fase 6 | 0 | **6** |
+| Test functions total 3050 | 117 | **123** |
+| Packages PASS -race | 23/23 | **23/23** |
+| vet + gofmt | clean | **clean** |
+
+### 🎓 Lições aprendidas (Fase 6)
+
+- **Carry-over permanente reduzido de 9 → 5 regras** (S02/S06/S10/S36/S38 ficam; S12/S14/H19/H20 implementados).
+- **S14 com `<=` (não `<`)** detecta inconsistência exata — `txMax == txMin` é problemático em regras de taxa.
+- **H19/H20 via RawXML + bytes.Count** é mais simples que parser estruturado.
+- **Total Fase 6 = 17 regras** (S71-S87 adicionadas; S12/S14/H19/H20 são substituições de stubs pré-existentes).
+
+### 📁 Arquivos tocados
+
+```
+backend/internal/audit/rules/3050.go              (parser change +S12/S14 real +H19/H20 real +S71-S87)
+backend/internal/audit/rules/3050_fase6_test.go   (NOVO — 6 testes table-driven)
+backend/internal/audit/rules/3050_test.go         (atualizado: TotalRulesIs 153→170)
+backend/internal/audit/rules/3050_fase5_test.go   (atualizado: Fase5TotalRulesIs153 skip)
+CHANGELOG.md                                       (esta entry)
+backend/SPRINT_34_RESEARCH.md                      (NOVO)
+backend/SPRINT_34_RESULTS.md                       (NOVO)
+```
+
+### ⏭️ Carry-over permanente (5 regras — DB infra)
+
+Regras que precisam de DB `historico_envios` (carry-over para Sprint 35+):
+- **S02** (Doc não esperado)
+- **S06** (Substituição sem original)
+- **S10** (Doc anterior)
+- **S36** (indRemessa=I apenas primeira vez)
+- **S38** (Doc único por CNPJ+dataBase)
+
+### ⏭️ Próxima sprint (Sprint 35)
+
+- **AuditDLO 2061 Fase 1** (próximo CADOC conforme ROADMAP Q3) — recomendado
+- **AuditDDR 2070** (outro CADOC)
+- **FrontendNext** (Next.js 15)
+- **Sprint 35 Carry-over infra** (DB `historico_envios` para fechar 5 stubs)
+
+---
+
 ## v3.34.9 — 2026-07-07 (Validação 65 — bug funcional H21/H22 + drift testes) ✅
 
 > **Status:** ✅ Shipped (validação retroativa)

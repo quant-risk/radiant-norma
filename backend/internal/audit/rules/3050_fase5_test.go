@@ -268,35 +268,8 @@ func TestH23_H29_StubsReasonable(t *testing.T) {
 // ========== Integração ==========
 
 func TestBuiltin3050_Fase5TotalRulesIs153(t *testing.T) {
-	r := Builtin3050()
-	got := len(r.All3050())
-	if got != 153 {
-		t.Fatalf("Builtin3050 deveria ter 153 regras após Fase 5, got %d", got)
-	}
-	// Confere Fase 5: I37-I50 (14) + S39-S70 (32) + H21-H30 (10) = 56.
-	fase5Count := 0
-	for _, code := range r.Codes3050() {
-		if len(code) < 7 {
-			continue
-		}
-		prefix := code[:6]
-		num := code[6:]
-		switch prefix {
-		case "3050-H":
-			if num >= "21" && num <= "30" {
-				fase5Count++
-			}
-		case "3050-S":
-			if num >= "39" && num <= "70" {
-				fase5Count++
-			}
-		case "3050-I":
-			if num >= "37" && num <= "50" {
-				fase5Count++
-			}
-		}
-	}
-	if fase5Count != 56 {
-		t.Errorf("esperado 56 regras Fase 5 (H21-H30 + S39-S70 + I37-I50), got %d", fase5Count)
-	}
+	// REMOVIDO na Fase 6: contagem mudou de 153 (Fase 5) para 170 (Fase 6).
+	// Teste obsoleto — deixado apenas como sentinel. Verificação real em
+	// TestBuiltin3050_TotalRulesIs (3050_test.go).
+	t.Skip("contagem mudou pós-Fase 6 (170 regras); ver TestBuiltin3050_TotalRulesIs em 3050_test.go")
 }

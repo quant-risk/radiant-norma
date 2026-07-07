@@ -443,7 +443,8 @@ func TestA14_PrzMedCarteiraNaoNeg(t *testing.T) {
 func TestS01_S14_StubsReturnNil(t *testing.T) {
 	doc := doc3050ValidoBase()
 	// Fase 3: S09 (DiasUteis) e S13 (UltimoDiaUtil) saíram de stub — implementações
-	// reais. S01-S08, S10-S12, S14 continuam como stubs (severity "I").
+	// reais. Fase 6: S12 (PrzMedSeSld) e S14 (Cruzadas) também saíram de stub.
+	// S01-S08, S10, S11 continuam como stubs (severity "I").
 	stubs := []struct {
 		code string
 		rule Rule3050
@@ -458,8 +459,6 @@ func TestS01_S14_StubsReturnNil(t *testing.T) {
 		{"3050-S08", S08DataBaseFutura{}},
 		{"3050-S10", S10DocAnterior{}},
 		{"3050-S11", S11VlrConcessoesVsTaxas{}},
-		{"3050-S12", S12PrzMedSeSld{}},
-		{"3050-S14", S14Cruzadas{}},
 	}
 
 	for _, s := range stubs {
@@ -478,8 +477,8 @@ func TestS01_S14_StubsReturnNil(t *testing.T) {
 
 func TestBuiltin3050_TotalRulesIs(t *testing.T) {
 	r := Builtin3050()
-	if got := len(r.All3050()); got != 153 {
-		t.Fatalf("Builtin3050 deveria ter 153 regras (Fase 1 28 + Fase 2 28 + Fase 3 24 + Fase 4 17 + Fase 5 56), got %d", got)
+	if got := len(r.All3050()); got != 170 {
+		t.Fatalf("Builtin3050 deveria ter 170 regras (Fase 1-5 153 + Fase 6 17), got %d", got)
 	}
 
 	codes := r.Codes3050()
@@ -497,8 +496,8 @@ func TestBuiltin3050_TotalRulesIs(t *testing.T) {
 			t.Errorf("regra %s não encontrada no registry", code)
 		}
 	}
-	// 22 Sistemáticas S15-S70 (Fases 2, 3, 4, 5 — S35, S37 não implementados; S71-S70 = S70)
-	for i := 15; i <= 70; i++ {
+	// 73 Sistemáticas S15-S87 (Fases 2, 3, 4, 5, 6 — S35, S37 não implementados)
+	for i := 15; i <= 87; i++ {
 		if i == 35 || i == 37 {
 			continue // S35 redundante com S26; S37 não escopado
 		}

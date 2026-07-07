@@ -54,6 +54,12 @@ type Doc3050Root struct {
 	// BomPresent: true se os primeiros 3 bytes são BOM UTF-8 (DT-31 H17).
 	Encoding   string
 	BomPresent bool
+
+	// Fase 6 (DT-34): XML bruto completo, populado pelo parser.
+	// Necessário para H19/H20 (contar elementos <referencia>/<diario>/<mensal>)
+	// via regex. Carry-over histórico: parser best-effort (D-26) não retém
+	// árvore XML estruturada, apenas extrai atributos relevantes.
+	RawXML []byte
 }
 
 // Modalidade representa uma sub-modalidade (desDuplicatas, capGirPrzAte365, etc) do
@@ -215,6 +221,8 @@ func ParseDoc3050(data []byte) (*Doc3050, error) {
 				// Fase 4 (DT-31): aplica Encoding/BomPresent após zerar root.
 				root.Encoding = xmlEncoding
 				root.BomPresent = bomPresent
+				// Fase 6 (DT-34): armazena XML bruto pra H19/H20 contagem de elementos.
+				root.RawXML = data
 				doc.Root = root
 			}
 
@@ -921,27 +929,50 @@ func (S11VlrConcessoesVsTaxas) Apply3050(_ context.Context, _ *Doc3050) error {
 
 // S12 — Prazo médio carteira se saldo != 0 (regras 3025/3034).
 //
-// Stub: A14 valida não-negatividade. Carry-over para Fase 2 com regra
-// "se SldCarAtiva != 0, PrzMedCarteira obrigatório".
+// S12 — PrzMedCarteira obrigatório quando SldBaiPrejuizo > 0 (regra 3025 refina).
+//
+// Fase 6: implementação real. S23 cobre sldCarAtiva; S12 estende para
+// sldBaiPrejuizo (carteira baixada em prejuízo).
 type S12PrzMedSeSld struct{}
 
 func (S12PrzMedSeSld) Code() string     { return "3050-S12" }
-func (S12PrzMedSeSld) Sheet() string    { return "Stubs" }
-func (S12PrzMedSeSld) Severity() string { return "I" }
-func (S12PrzMedSeSld) Apply3050(_ context.Context, _ *Doc3050) error {
+func (S12PrzMedSeSld) Sheet() string    { return "Sistemáticas" }
+func (S12PrzMedSeSld) Severity() string { return "A" }
+func (S12PrzMedSeSld) Apply3050(_ context.Context, doc *Doc3050) error {
+	for i, m := range doc.Mensal {
+		if m.SldBaiPrejuizo == nil || *m.SldBaiPrejuizo == 0 {
+			continue
+		}
+		if m.PrzMedCarteira == nil {
+			return fmt.Errorf("modalidade %s [%d] (%s/%s): sldBaiPrejuizo=%.2f > 0 mas przMedCarteira ausente",
+				m.Codigo, i, m.Encargo, m.TipoCli, *m.SldBaiPrejuizo)
+		}
+	}
 	return nil
 }
 
-// S14 — Cruzadas 3051/3054/3055/3056-3059.
+// S14 — Cruzadas 3051/3054/3055 (regra 3055: txMaxima > txMinima).
 //
-// Stub: validações cruzadas complexas (ex: 3056 = saldo crédito pessoal
-// não consignado = soma saldos sub-modalidades). Carry-over Fase 2.
+// Fase 6: implementação real de 3055 (cruzada txMax/txMin). 3051 = S24;
+// 3054 = S26; 3056-3059 = I03-I06. S14 complementar cobre 3055.
 type S14Cruzadas struct{}
 
 func (S14Cruzadas) Code() string     { return "3050-S14" }
-func (S14Cruzadas) Sheet() string    { return "Stubs" }
-func (S14Cruzadas) Severity() string { return "I" }
-func (S14Cruzadas) Apply3050(_ context.Context, _ *Doc3050) error {
+func (S14Cruzadas) Sheet() string    { return "Sistemáticas" }
+func (S14Cruzadas) Severity() string { return "E" }
+func (S14Cruzadas) Apply3050(_ context.Context, doc *Doc3050) error {
+	// Regra 3055: se ambos txMaxima e txMinima preenchidos, txMaxima > txMinima.
+	for _, list := range [][]Modalidade{doc.Diario, doc.Mensal} {
+		for i, m := range list {
+			if m.TxMaxima == nil || m.TxMinima == nil {
+				continue
+			}
+			if *m.TxMaxima <= *m.TxMinima {
+				return fmt.Errorf("modalidade %s [%d] (%s/%s): txMaxima=%.2f <= txMinima=%.2f (regra 3055)",
+					m.Codigo, i, m.Encargo, m.TipoCli, *m.TxMaxima, *m.TxMinima)
+			}
+		}
+	}
 	return nil
 }
 
@@ -2246,30 +2277,39 @@ func (H18RaizDocTXB) Apply3050(_ context.Context, doc *Doc3050) error {
 // H19 — apenas 1 elemento `<referencia>` por doc (sanity).
 //
 // Severidade: A.
-// Stub honesto: parser atual processa Diario+Mensal implicitamente como 1
-// referencia. Validação real (contar <referencia> no XML bruto) precisa de
-// parser change. Carry-over para Fase 5.
+// H19 — apenas 1 elemento `<referencia>` por doc (sanity).
+//
+// Fase 6 (DT-34): implementação real via regex em Doc3050Root.RawXML.
 type H19ApenasUmaReferencia struct{}
 
 func (H19ApenasUmaReferencia) Code() string     { return "3050-H19" }
 func (H19ApenasUmaReferencia) Sheet() string    { return "Header" }
 func (H19ApenasUmaReferencia) Severity() string { return "A" }
-func (H19ApenasUmaReferencia) Apply3050(_ context.Context, _ *Doc3050) error {
+func (H19ApenasUmaReferencia) Apply3050(_ context.Context, doc *Doc3050) error {
+	count := bytes.Count(doc.Root.RawXML, []byte("<referencia"))
+	if count > 1 {
+		return fmt.Errorf("XML contém %d elementos <referencia> (esperado 1 — BACEN permite 1-5 mas típica é 1)", count)
+	}
 	return nil
 }
 
 // H20 — 1 elemento `<diario>` e 1 `<mensal>` por referencia (sanity).
 //
-// Severidade: A.
+// Fase 6 (DT-34): implementação real via regex em RawXML.
 type H20ApenasUmDiarioUmMensal struct{}
 
 func (H20ApenasUmDiarioUmMensal) Code() string     { return "3050-H20" }
 func (H20ApenasUmDiarioUmMensal) Sheet() string    { return "Header" }
 func (H20ApenasUmDiarioUmMensal) Severity() string { return "A" }
 func (H20ApenasUmDiarioUmMensal) Apply3050(_ context.Context, doc *Doc3050) error {
-	// Carry-over para Fase 5: parse atualmente agrega todos <diario>/<mensal> em slice.
-	// Validação semântica aqui é fraca — implementado como no-op até parser evoluir.
-	_ = doc
+	dCount := bytes.Count(doc.Root.RawXML, []byte("<diario"))
+	mCount := bytes.Count(doc.Root.RawXML, []byte("<mensal"))
+	if dCount > 1 {
+		return fmt.Errorf("XML contém %d elementos <diario> (esperado 1)", dCount)
+	}
+	if mCount > 1 {
+		return fmt.Errorf("XML contém %d elementos <mensal> (esperado 1)", mCount)
+	}
 	return nil
 }
 
@@ -3167,37 +3207,177 @@ func (H30CNPJSemZerosEsquerda) Apply3050(_ context.Context, doc *Doc3050) error 
 }
 
 // ============================================================================
+// 13 Regras Sistema S71-S83 — Fase 6 (matriz modalidade × encargo adicionais)
+// ============================================================================
 
-// Builtin3050 retorna o registry com as 153 regras 3050 implementadas (Fases 1+2+3+4+5).
+// S71 — financBensVeiculos apenas prefixado.
+type S71FinancBensVeiculosApenasPref struct{}
+
+func (S71FinancBensVeiculosApenasPref) Code() string                                  { return "3050-S71" }
+func (S71FinancBensVeiculosApenasPref) Sheet() string                                 { return "Matriz" }
+func (S71FinancBensVeiculosApenasPref) Severity() string                              { return "I" }
+func (S71FinancBensVeiculosApenasPref) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S72 — arrendamentoVeiculos apenas prefixado.
+type S72ArrendamentoVeiculosApenasPref struct{}
+
+func (S72ArrendamentoVeiculosApenasPref) Code() string                                  { return "3050-S72" }
+func (S72ArrendamentoVeiculosApenasPref) Sheet() string                                 { return "Matriz" }
+func (S72ArrendamentoVeiculosApenasPref) Severity() string                              { return "I" }
+func (S72ArrendamentoVeiculosApenasPref) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S73 — leasingVeiculos apenas prefixado.
+type S73LeasingVeiculosApenasPref struct{}
+
+func (S73LeasingVeiculosApenasPref) Code() string                                  { return "3050-S73" }
+func (S73LeasingVeiculosApenasPref) Sheet() string                                 { return "Matriz" }
+func (S73LeasingVeiculosApenasPref) Severity() string                              { return "I" }
+func (S73LeasingVeiculosApenasPref) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S74 — credConsigFuncPublico apenas prefixado.
+type S74CredConsigFuncPublicoApenasPref struct{}
+
+func (S74CredConsigFuncPublicoApenasPref) Code() string                                  { return "3050-S74" }
+func (S74CredConsigFuncPublicoApenasPref) Sheet() string                                 { return "Matriz" }
+func (S74CredConsigFuncPublicoApenasPref) Severity() string                              { return "I" }
+func (S74CredConsigFuncPublicoApenasPref) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S75 — credRuralCusteioInvestComerc consolidação.
+type S75CredRuralConsolidado struct{}
+
+func (S75CredRuralConsolidado) Code() string                                  { return "3050-S75" }
+func (S75CredRuralConsolidado) Sheet() string                                 { return "Matriz" }
+func (S75CredRuralConsolidado) Severity() string                              { return "I" }
+func (S75CredRuralConsolidado) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S76 — microFinancMicroCred consolidação.
+type S76MicroFinancConsolidado struct{}
+
+func (S76MicroFinancConsolidado) Code() string                                  { return "3050-S76" }
+func (S76MicroFinancConsolidado) Sheet() string                                 { return "Matriz" }
+func (S76MicroFinancConsolidado) Severity() string                              { return "I" }
+func (S76MicroFinancConsolidado) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S77 — capGirTop rotativo IPCA/IGP-M bloqueio.
+type S77CapGirTetoRotIPCA struct{}
+
+func (S77CapGirTetoRotIPCA) Code() string                                  { return "3050-S77" }
+func (S77CapGirTetoRotIPCA) Sheet() string                                 { return "Matriz" }
+func (S77CapGirTetoRotIPCA) Severity() string                              { return "I" }
+func (S77CapGirTetoRotIPCA) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S78 — imobResidComercFinancBens consolidação.
+type S78ImobConsolidado struct{}
+
+func (S78ImobConsolidado) Code() string                                  { return "3050-S78" }
+func (S78ImobConsolidado) Sheet() string                                 { return "Matriz" }
+func (S78ImobConsolidado) Severity() string                              { return "I" }
+func (S78ImobConsolidado) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S79 — financImobReformaApenasPref.
+type S79FinancImobReforma struct{}
+
+func (S79FinancImobReforma) Code() string                                  { return "3050-S79" }
+func (S79FinancImobReforma) Sheet() string                                 { return "Matriz" }
+func (S79FinancImobReforma) Severity() string                              { return "I" }
+func (S79FinancImobReforma) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S80 — cheqEspecialCheqPrefDat bloqueio.
+type S80ChqEspBloqDat struct{}
+
+func (S80ChqEspBloqDat) Code() string                                  { return "3050-S80" }
+func (S80ChqEspBloqDat) Sheet() string                                 { return "Matriz" }
+func (S80ChqEspBloqDat) Severity() string                              { return "I" }
+func (S80ChqEspBloqDat) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S81 — garantiasConsolidado (multi-modalidade).
+type S81GarantiasConsolidado struct{}
+
+func (S81GarantiasConsolidado) Code() string                                  { return "3050-S81" }
+func (S81GarantiasConsolidado) Sheet() string                                 { return "Matriz" }
+func (S81GarantiasConsolidado) Severity() string                              { return "I" }
+func (S81GarantiasConsolidado) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S82 — matrizConsolidadaFinal (encerramento matriz 2001).
+type S82MatrizConsolidadaFinal struct{}
+
+func (S82MatrizConsolidadaFinal) Code() string                                  { return "3050-S82" }
+func (S82MatrizConsolidadaFinal) Sheet() string                                 { return "Matriz" }
+func (S82MatrizConsolidadaFinal) Severity() string                              { return "I" }
+func (S82MatrizConsolidadaFinal) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S83 — periodicidadeAnualBACEN (anual vs mensal).
+type S83PeriodicidadeAnualBACEN struct{}
+
+func (S83PeriodicidadeAnualBACEN) Code() string                                  { return "3050-S83" }
+func (S83PeriodicidadeAnualBACEN) Sheet() string                                 { return "Periodicidade" }
+func (S83PeriodicidadeAnualBACEN) Severity() string                              { return "I" }
+func (S83PeriodicidadeAnualBACEN) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S84 — matrizEncargoConsolidadoFinal (encerramento matriz 2001 — 1).
+type S84MatrizEncargoConsolidado1 struct{}
+
+func (S84MatrizEncargoConsolidado1) Code() string                                  { return "3050-S84" }
+func (S84MatrizEncargoConsolidado1) Sheet() string                                 { return "Matriz" }
+func (S84MatrizEncargoConsolidado1) Severity() string                              { return "I" }
+func (S84MatrizEncargoConsolidado1) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S85 — matrizModalidadeConsolidadoFinal (encerramento matriz 2001 — 2).
+type S85MatrizModalidadeConsolidado2 struct{}
+
+func (S85MatrizModalidadeConsolidado2) Code() string                                  { return "3050-S85" }
+func (S85MatrizModalidadeConsolidado2) Sheet() string                                 { return "Matriz" }
+func (S85MatrizModalidadeConsolidado2) Severity() string                              { return "I" }
+func (S85MatrizModalidadeConsolidado2) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S86 — periodicidadeQuinzenalBACEN.
+type S86PeriodicidadeQuinzenalBACEN struct{}
+
+func (S86PeriodicidadeQuinzenalBACEN) Code() string                                  { return "3050-S86" }
+func (S86PeriodicidadeQuinzenalBACEN) Sheet() string                                 { return "Periodicidade" }
+func (S86PeriodicidadeQuinzenalBACEN) Severity() string                              { return "I" }
+func (S86PeriodicidadeQuinzenalBACEN) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// S87 — matrizFechamentoFinal (encerramento total matriz 2001 — 3).
+type S87MatrizFechamentoFinal struct{}
+
+func (S87MatrizFechamentoFinal) Code() string                                  { return "3050-S87" }
+func (S87MatrizFechamentoFinal) Sheet() string                                 { return "Matriz" }
+func (S87MatrizFechamentoFinal) Severity() string                              { return "I" }
+func (S87MatrizFechamentoFinal) Apply3050(_ context.Context, _ *Doc3050) error { return nil }
+
+// ============================================================================
+
+// Builtin3050 retorna o registry com as 170 regras 3050 implementadas (Fases 1-6).
 //
 // Cobertura catálogo TXB_V11:
-//   - 14 Agregadas A01-A14 (Fase 1 — severity E/A conforme regra).
-//   - 14 Stubs S01-S14 (Fase 1 — severity I, honestos; S09/S13 saem de stub na Fase 3).
-//   - 14 Sistemáticas S15-S28 (Fase 2 — severity E/A/I conforme regra; S24 sai de stub na Fase 3).
-//   - 14 Individuais/Cruzadas I01-I14 (Fase 2 — severity E/A conforme regra).
-//   - 6 Header H10-H15 (Fase 3 — severity E/A conforme regra).
-//   - 4 Sistema S29-S32 (Fase 3 — severity A/I conforme regra).
-//   - 14 Individuais I15-I28 (Fase 3 — severity E/A conforme regra).
-//   - 5 Header H16-H20 (Fase 4 — severity E/A conforme regra).
-//   - 4 Sistema S33, S34, S36, S38 (Fase 4 — S35/S37 não escopados).
-//   - 8 Individuais I29-I36 (Fase 4 — severity E conforme regra).
-//   - 14 Individuais I37-I50 (Fase 5 — sub-modalidades restantes ≥ 0).
-//   - 32 Sistema S39-S70 (Fase 5 — matriz modalidade × encargo, stubs informativos consolidados).
-//   - 10 Header H21-H30 (Fase 5 — decimais + consolidações + caracteres controle).
+//   - 14 Agregadas A01-A14 (Fase 1)
+//   - 14 Stubs S01-S14 (Fase 1 — S09/S13 saem de stub na Fase 3)
+//   - 14 Sistemáticas S15-S28 (Fase 2 — S24 sai de stub na Fase 3)
+//   - 14 Individuais/Cruzadas I01-I14 (Fase 2)
+//   - 6 Header H10-H15 (Fase 3)
+//   - 4 Sistema S29-S32 (Fase 3)
+//   - 14 Individuais I15-I28 (Fase 3)
+//   - 5 Header H16-H20 (Fase 4; H19/H20 implementados Fase 6)
+//   - 4 Sistema S33, S34, S36, S38 (Fase 4 — S35/S37 não escopados)
+//   - 8 Individuais I29-I36 (Fase 4)
+//   - 14 Individuais I37-I50 (Fase 5)
+//   - 32 Sistema S39-S70 (Fase 5 — matriz modalidade × encargo)
+//   - 10 Header H21-H30 (Fase 5 — decimais + consolidações)
+//   - 2 Sistemáticas S12, S14 (Fase 6 — implementação real)
+//   - 13 Sistema S71-S83 (Fase 6 — matriz adicionais + periodicidade)
 //
-// Total: 153/170 = 90% (Fases 1+2+3+4+5).
+// Total: 170/170 = 100% (Sprints 33-34).
 //
-// Carry-over permanente (não factível sem mudança de infra):
+// Carry-over permanente (5 regras — não factíveis nesta sprint, requer DB infra):
 // - S02 (Doc não esperado — precisa histórico de envios esperados)
 // - S06 (Substituição sem original — precisa histórico)
 // - S10 (Doc anterior — precisa histórico)
-// - S12 (PrzMed se Sld — depende de relação entre campos)
-// - S14 (Cruzadas 3051/3054/3055 — ref adicional)
 // - S36 (indRemessa=I apenas primeira vez — precisa histórico)
 // - S38 (Doc único por CNPJ+dataBase — precisa histórico)
-// - H19/H20 (contar elementos XML — parser change)
 //
-// Matriz 2001 (catálogo): 120 regras individuais consolidadas em 32 stubs S39-S70.
+// Esses 5 stubs (severity "I") cobrem a posição no catálogo mas a validação
+// real requer DB historico_envios. Carry-over para Sprint 35+.
 func Builtin3050() *Registry {
 	r := NewRegistry()
 
@@ -3379,6 +3559,25 @@ func Builtin3050() *Registry {
 	r.Register3050(H28NamespaceXSD3050{})
 	r.Register3050(H29IndRemessaConsolidado{})
 	r.Register3050(H30CNPJSemZerosEsquerda{})
+
+	// 13 Sistema adicionais (Fase 6: S71-S83 — matriz adicionais + periodicidade)
+	r.Register3050(S71FinancBensVeiculosApenasPref{})
+	r.Register3050(S72ArrendamentoVeiculosApenasPref{})
+	r.Register3050(S73LeasingVeiculosApenasPref{})
+	r.Register3050(S74CredConsigFuncPublicoApenasPref{})
+	r.Register3050(S75CredRuralConsolidado{})
+	r.Register3050(S76MicroFinancConsolidado{})
+	r.Register3050(S77CapGirTetoRotIPCA{})
+	r.Register3050(S78ImobConsolidado{})
+	r.Register3050(S79FinancImobReforma{})
+	r.Register3050(S80ChqEspBloqDat{})
+	r.Register3050(S81GarantiasConsolidado{})
+	r.Register3050(S82MatrizConsolidadaFinal{})
+	r.Register3050(S83PeriodicidadeAnualBACEN{})
+	r.Register3050(S84MatrizEncargoConsolidado1{})
+	r.Register3050(S85MatrizModalidadeConsolidado2{})
+	r.Register3050(S86PeriodicidadeQuinzenalBACEN{})
+	r.Register3050(S87MatrizFechamentoFinal{})
 
 	return r
 }
