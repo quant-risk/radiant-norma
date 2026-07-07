@@ -642,5 +642,16 @@ func Builtin3040() *Registry {
 	r.Register(N07PrazoMaxDestravada{})
 	r.Register(N08CarenciaMinDestravada{})
 
+	// Sprint 40 / v3.34.21 — AuditDRL 2160 (LCR — Liquidity Coverage Ratio)
+	// 8 regras: LCR01-LCR08 (E/A com lógica real).
+	r.Register(LCR01{})
+	r.Register(LCR02{})
+	r.Register(LCR03{})
+	r.Register(LCR04{})
+	r.Register(LCR05{})
+	r.Register(LCR06{})
+	r.Register(LCR07{})
+	r.Register(LCR08{})
+
 	return r
 }

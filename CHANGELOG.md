@@ -2,6 +2,58 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.21 — 2026-07-07 (Sprint 40 AuditDRL 2160 — LCR Liquidity Coverage Ratio) ✅
+
+> **Status:** ✅ Shipped (parser DRL + 8 regras LCR)
+> **Sprint:** 40 (AuditDRL — LCR — Liquidity Coverage Ratio)
+> **Tipo:** minor (parser DRL + 8 regras LCR)
+> **Marco:** DRL parser + 8 regras (100% catálogo LCR básico)
+
+### 🎯 Resumo
+
+Sprint 40 adiciona parser DRL (Demonstrativo de Liquidez) + 8 regras LCR (Liquidity Coverage Ratio) conforme BACEN Res. 4.605.
+
+**LCR Ratio = HQLA / (Outflows - Inflows) * 100 >= 100%**
+
+**Arquivos novos:**
+- `drl.go` — DocDRL + ParseDocDRL (best-effort XML).
+- `2160.go` — 8 regras LCR (LCR01-LCR08).
+- `2160_test.go` — 11 subtests (parser + regras).
+
+**V70 pre-check aplicado preventivamente:** 0 stubs disfarçados em 8 regras (vs. 37.5% em Sprint 39).
+
+### Regras LCR
+
+| Cod | Sev | Regra |
+|---|---|---|
+| **LCR01** | E | LCR Ratio >= 100% (mínimo regulatório) |
+| **LCR02** | E | HQLA >= 0 |
+| **LCR03** | E | Outflows >= 0 |
+| **LCR04** | E | Inflows <= Outflows (consistência) |
+| **LCR05** | A | LCR declarado == calculado (tolerância 1%) |
+| **LCR06** | E | Cenário 1 (base) LCR >= 100% |
+| **LCR07** | E | Cenário 2 (adverso) LCR >= 100% |
+| **LCR08** | A | DtBase formato YYYY-MM-DD |
+
+### Métricas v3.34.20 → v3.34.21
+
+| Métrica | v3.34.20 | v3.34.21 |
+|---|---|---|
+| Regras Registry 3040 | 266 | **274** (+8 LCR) |
+| Test functions Sprint 40 | 0 | **3 (11 subtests)** |
+| Packages PASS -race | 23/23 | **23/23** |
+| Build / vet / gofmt | clean | **clean** |
+
+### 📁 Arquivos Sprint 40
+
+```
+backend/internal/audit/rules/drl.go         (NOVO — DocDRL + parser)
+backend/internal/audit/rules/2160.go        (NOVO — 8 regras LCR)
+backend/internal/audit/rules/2160_test.go   (NOVO — 11 subtests)
+```
+
+---
+
 ## v3.34.20 — 2026-07-07 (Validação 70 — drift fix pós-Sprint 39) ✅
 
 > **Status:** ✅ Shipped (docs + drift fixes)
