@@ -28,6 +28,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
 	"github.com/fortvna/radiant-norma/backend/internal/version"
+	"github.com/fortvna/radiant-norma/backend/internal/webhook"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -97,6 +98,9 @@ type Server struct {
 
 	// Sprint 53 — v3.34.35: AI Insights via LLM (opt-in).
 	InsightsLLM *insights.LLMService
+
+	// Sprint 61 — v3.34.43: Webhooks outbound.
+	Webhook *webhook.Service
 }
 
 // auditLogAPI é interface mínima que *auditlog.Logger e *realtime.HubAwareLogger
@@ -241,6 +245,14 @@ func (s *Server) Router() http.Handler {
 			r.Get("/public/{slug}", s.getBrandingBySlug)
 		})
 		r.Put("/admin/tenant/{id}/branding", s.adminUpdateBranding)
+
+		// Sprint 61 v3.34.43: Webhooks outbound.
+		r.Route("/v1/webhooks", func(r chi.Router) {
+			r.Get("/", s.listWebhooks)
+			r.Post("/", s.registerWebhook)
+			r.Delete("/{id}", s.deleteWebhook)
+			r.Get("/{id}/deliveries", s.listDeliveries)
+		})
 
 		// Sprint 56 v3.34.38: SOC 2 Type I readiness + evidence.
 		r.Route("/admin/soc2", func(r chi.Router) {

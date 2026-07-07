@@ -2,16 +2,74 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
-## v3.34.40 — 2026-07-07 (Sprint 58 AuditDLI — Parser Documento 2062 DLI) ✅
+## v3.34.43 — 2026-07-07 (Sprint 61 Webhooks Outbound) ✅
 
 > **Status:** ✅ Shipped
-> **Sprint:** 58 (AuditDLI)
-> **Tipo:** minor (novo package docdli)
-> **Marco:** Primeiro parser para Documento 2062 — DLI (Demonstrativo de Limites Operacionais)
+> **Sprint:** 61 (Webhooks Outbound)
+> **Tipo:** minor (novo package webhook)
+> **Marco:** Webhooks registry + delivery worker + HMAC-SHA256 assinatura
 
 ### 🎯 Resumo
 
-Sprint 58 adiciona o parser para Documento 2062 DLI. Implementa parse XML → structs `DocumentoDLI`, validações estruturais (DLI-01 a DLI-08) e helpers para extração de limites, contas COSIF e indicadores. Integrado ao audit service via `applyRegra` com parse cacheado.
+Sprint 61 adiciona webhooks outbound — permite que tenants registrem callbacks HTTP que são disparados quando eventos ocorrem na plataforma.
+
+**Arquivos novos:**
+- `backend/internal/webhook/service.go` — Service: List, Register, Delete, Dispatch, Deliver; event types
+- `backend/internal/webhook/dispatcher.go` — Dispatcher: worker pool (4 workers), retry with exponential backoff (1/5/15/30/60m)
+- `backend/internal/webhook/helpers.go` — deliver(), isRetryable(), SignPayload() HMAC-SHA256
+- `backend/internal/api/webhook_handlers.go` — REST handlers (GET/POST/DELETE /v1/webhooks, GET deliveries)
+- `backend/internal/db/migrations/019_webhooks.sql` — webhooks + webhook_deliveries tables
+
+**Endpoints:**
+- `GET /v1/webhooks` — lista webhooks do tenant
+- `POST /v1/webhooks` — registra novo webhook
+- `DELETE /v1/webhooks/{id}` — remove webhook
+- `GET /v1/webhooks/{id}/deliveries` — histórico de tentativas
+
+**Eventos:**
+- `validation.completed` — disparado após cada validação CADOC
+- `schema.changed` — disparado quando schema versionado muda
+- `radar.change_detected` — disparado quando radar detecta mudança de layout
+
+## v3.34.42 — 2026-07-07 (Sprint 60 SDK_Python — PyPI package) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** 60 (SDK_Python)
+> **Tipo:** minor (novo módulo PyPI)
+> **Marco:** Primeiro SDK Python publicável via PyPI (radiant-norma)
+
+### 🎯 Resumo
+
+Sprint 60 cria o SDK Python publicável via PyPI.
+
+**Arquivos novos:**
+- `sdk/python/pyproject.toml` — setuptools build, Python>=3.9
+- `sdk/python/src/radiant/__init__.py` — exports públicos
+- `sdk/python/src/radiant/client.py` — Client + 5 sub-services
+- `sdk/python/src/radiant/types.py` — ValidationResult, ErrorResponse (Exception), etc.
+- `sdk/python/src/radiant/py.typed` — PEP 561 type hints marker
+- `sdk/python/README.md` — documentação completa
+- `sdk/python/tests/test_radiant.py` — 10 testes com responses/pytest
+
+## v3.34.41 — 2026-07-07 (Sprint 59 SDK_GO — github.com/fortvna/radiant-norma-go) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** 59 (SDK_GO)
+> **Tipo:** minor (novo módulo Go)
+> **Marco:** SDK Go como módulo separado publicável via proxy Go
+
+### 🎯 Resumo
+
+Sprint 59 cria o SDK Go como módulo separado publicável.
+
+**Arquivos novos:**
+- `sdk/go/go.mod` — module github.com/fortvna/radiant-norma-go
+- `sdk/go/client.go` — Client + 5 sub-services (Cadocs, Audit, Radar, Insights, Schemas)
+- `sdk/go/types.go` — ValidationResult, CrossDocResult, ScanResult, LLMAnswer, etc.
+- `sdk/go/README.md` — documentação completa com exemplos
+- `sdk/go/client_test.go` — 10 testes unitários (httptest server)
+
+## v3.34.40 — 2026-07-07 (Sprint 58 AuditDLI — Parser Documento 2062 DLI) ✅
 
 **Arquivos novos:**
 - `backend/internal/docdli/parser.go` — DocumentoDLI structs, Parse(), Validate(), ValidateDocument(), helpers
