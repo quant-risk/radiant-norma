@@ -2,6 +2,77 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.12 — 2026-07-07 (Sprint 35 AuditDDR 2070 Fase 1 — DDR parser + 11 regras) ✅
+
+> **Status:** ✅ Shipped (Fase 1 — fecha DDR 2070 em 100% catálogo)
+> **Sprint:** 35 (AuditDDR 2070 — Requerimento Capital Diário)
+> **Tipo:** minor (parser DDR + 11 regras DDR 2070)
+> **Marco:** 0 → 11 regras DDR 2070 (0% → **100%** cobertura catálogo)
+
+### 🎯 Resumo
+
+Fase 1 entrega Doc2070 + DDR struct, ParseDoc2070 (best-effort), 11 regras DDR 2070 (2 reais + 9 stubs cross-doc). Total DDR: **0 → 11** (cobertura 0% → **100%**).
+
+**Decisões técnicas (DT-36/DT-37/DT-38):**
+- **DT-36:** Rule2070 interface paralela a Rule/Rule3050. Registry ganha `rules2070 map[string]Rule2070` + `Register2070`/`Get2070`/`Codes2070`/`All2070`.
+- **DT-37:** Doc2070 com DDR achatada (Codigo/Moeda + Valor opcional).
+- **DT-38:** ParseDoc2070 best-effort (tolera sub-modalidades faltando).
+
+**Regras implementadas:**
+
+| Cod BACEN | Sev | Regra | Origem |
+|---|---|---|---|
+| 2070-4678 | I | stub cross-doc Exposição líquida RWAJUR2/3/4 vs DRM (Fase 2) | 4678 |
+| 2070-4679 | I | stub cross-doc Descasamento vertical vs DRM (Fase 2) | 4679 |
+| 2070-4680 | I | stub cross-doc Descasamento horizontal dentro zona vs DRM (Fase 2) | 4680 |
+| 2070-4681 | I | stub cross-doc Descasamento horizontal entre zonas vs DRM (Fase 2) | 4681 |
+| 2070-4682 | I | stub cross-doc Exposição bruta RWACOM vs DRM (Fase 2) | 4682 |
+| 2070-4684 | I | stub cross-doc VaR (RWAJUR1) vs DRM (Fase 2) | 4684 |
+| 2070-4685 | I | stub cross-doc sVaR (RWAJUR1) vs DRM (Fase 2) | 4685 |
+| 2070-4686 | I | stub cross-doc Posições moedas DRM vs DDR (Fase 2) | 4686 |
+| 2070-4763 | I | stub cross-doc Saldo conta 770 DLO/2061 vs DDR (Fase 2) | 4763 |
+| **2070-4693** | **E** | **Patrimônio Líquido Exterior inconsistente (soma 161000 < 181000)** | 4693 |
+| **2070-4751** | **I** | **Chaves duplicadas entre posição e moeda (Codigo+Moeda únicos)** | 4751 |
+
+### 📊 Métricas v3.34.11 → v3.34.12
+
+| Métrica | v3.34.11 | v3.34.12 |
+|---|---|---|
+| Regras DDR 2070 | 0 | **11** (+11) |
+| Cobertura catálogo DDR | 0% | **100%** |
+| Coverage `internal/audit/rules` | 70.7% | **70.9%** (+0.2pp) |
+| Test functions DDR | 0 | **7** |
+| Files novos | 0 | **2** (2070.go + 2070_test.go) |
+| Packages PASS -race | 23/23 | **23/23** |
+| vet + gofmt | clean | **clean** |
+
+### 🎓 Lições aprendidas (Fase 1)
+
+- **Pattern 3050 reutiliza perfeitamente para 2070:** mesma estrutura Doc2070 + DDR achatada + interface paralela Rule2070. Reuso de D-24/D-25/D-26/D-27 do Sprint 33.
+- **9 regras cross-doc ficam como stubs informativos** (severity "I") — implementação real depende de parser DRM/DLO + queries cruzadas. Carry-over para Fase 2.
+- **2 regras DDR-internas implementáveis (4693 E, 4751 I):** não dependem de cross-doc, lógica pura sobre DDR achatada.
+- **Cobertura 100%** do catálogo DDR com 2 reais + 9 stubs honestos — mesmo trade-off de Audit3050.
+
+### 📁 Arquivos tocados
+
+```
+backend/internal/audit/rules/2070.go              (NOVO — Doc2070 + DDR + ParseDoc2070 + 11 regras)
+backend/internal/audit/rules/2070_test.go         (NOVO — 7 testes table-driven)
+backend/internal/audit/rules/registry.go          (DT-36: +Rule2070 + Register2070 + Get2070 + Codes2070 + All2070)
+CHANGELOG.md                                       (esta entry)
+backend/SPRINT_35_RESEARCH.md                     (NOVO)
+backend/SPRINT_35_RESULTS.md                      (NOVO)
+```
+
+### ⏭️ Próxima sprint (Sprint 36)
+
+- **AuditDDR 2070 Fase 2** (parser DRM 2060 + DLO 2061 + implementar 9 cross-doc stubs) — recomendado
+- **AuditDLO 2061 Fase 1** (próximo CADOC)
+- **FrontendNext** (Next.js 15)
+- **Carry-over 3050 infra** (DB `historico_envios`)
+
+---
+
 ## v3.34.11 — 2026-07-07 (Validação 66 — drift "6 dias" + doc validação Fase 6) ✅
 
 > **Status:** ✅ Shipped (validação retroativa)

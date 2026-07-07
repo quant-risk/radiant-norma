@@ -156,6 +156,7 @@ type Registry struct {
 	rules     map[string]Rule
 	rawRules  map[string]RawRule
 	rules3050 map[string]Rule3050 // Sprint 33 Fase 1 — regras CADOC 3050
+	rules2070 map[string]Rule2070 // Sprint 35 Fase 1 — regras CADOC 2070 (DDR)
 }
 
 // NewRegistry cria um registry vazio.
@@ -164,6 +165,7 @@ func NewRegistry() *Registry {
 		rules:     make(map[string]Rule),
 		rawRules:  make(map[string]RawRule),
 		rules3050: make(map[string]Rule3050),
+		rules2070: make(map[string]Rule2070),
 	}
 }
 
@@ -221,6 +223,36 @@ func (r *Registry) Get(code string) Rule {
 // GetRaw retorna a regra raw (XML bruto) por código.
 func (r *Registry) GetRaw(code string) RawRule {
 	return r.rawRules[code]
+}
+
+// Register2070 adiciona uma regra tipada para CADOC 2070 (DDR).
+//
+// Sprint 35 Fase 1 — DT-36: interface paralela Rule2070.
+func (r *Registry) Register2070(rule Rule2070) {
+	r.rules2070[rule.Code()] = rule
+}
+
+// Get2070 retorna a regra 2070 por código.
+func (r *Registry) Get2070(code string) Rule2070 {
+	return r.rules2070[code]
+}
+
+// Codes2070 retorna todos os códigos 2070 registrados.
+func (r *Registry) Codes2070() []string {
+	out := make([]string, 0, len(r.rules2070))
+	for k := range r.rules2070 {
+		out = append(out, k)
+	}
+	return out
+}
+
+// All2070 retorna todas as regras 2070 (útil para inventário).
+func (r *Registry) All2070() []Rule2070 {
+	out := make([]Rule2070, 0, len(r.rules2070))
+	for _, r := range r.rules2070 {
+		out = append(out, r)
+	}
+	return out
 }
 
 // Codes retorna todos os códigos registrados (tipadas + raw).

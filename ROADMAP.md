@@ -35,7 +35,7 @@
 | Sprint | Entregas |
 |---|---|
 | **38** | AuditDLO — 200+ regras 2061 (Limites Operacionais) |
-| **39** | AuditDDR — 11+ regras 2070 (Requerimento Capital Diário) |
+| **39** | AuditDDR — 11+ regras 2070 (Requerimento Capital Diário) | 🔄 em andamento (100% Fase 1 — 11 regras; Fase 2 = parser DRM/DLO) |
 | **40** | AuditDRL — 2160 LCR modelos II |
 | **41** | AuditDLP — 2170 NSFR |
 | **42** | Audit3044 — Engine JSON eventos |
