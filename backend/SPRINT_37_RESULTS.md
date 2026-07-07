@@ -22,17 +22,25 @@
 
 ### 49 regras novas em `internal/audit/rules/3040_sprint37.go`
 
-| Categoria | Códigos | Reais | Stubs I (V68) |
-|---|---|---|---|
-| Individualizadas | I06-I15 | 8 (I06-I10, I12-I14) | 1 (I15) |
-| Agregadas expandidas | A16-A30 | 15 (A16-A30) | 0 |
-| Semântica expandida | S71-S90 | 15 (S71-S77, S80-S83, S87-S89) | 5 (S78, S79, S84, S85, S86, S90) |
-| Destravadas (override stubs) | C44, C46, C57, C62, C68 | 5 (todas com lógica) | 0 |
-| **Total** | — | **43** | **6** |
+**Classificação V69 (recontagem honesta):**
+- **17 reais E** (severity "E" com body que retorna erro): I06, I07, I08, I10, I12, A19, A21, A24, A28, A29, S71, S72, S74, S76, S80, S83, S87.
+- **25 reais A** (severity "A" com body que retorna erro): I09, I13, I14, A16, A17, A18, A20, A22, A23, A25, A26, A27, A30, S73, S75, S77, S81, S82, S88, S89, C44Destravada, C46Destravada, C57Destravada, C62Destravada, C68Destravada.
+- **1 híbrida I** (severity "I" com body que retorna erro): S79 — formato YYYY-MM.
+- **6 stubs I puros**: I15, S78, S84, S85, S86, S90.
 
-**V68 (validação pós-ship) ajustou S79** — declarado como severity "A" no commit original, mas body retornava nil. Corrigido para severity "I" com lógica parcial (formato YYYY-MM).
+> **V68 corrigiu S79** (severity "A" → "I" com lógica de formato).
 
-> **Nota:** as 5 destravadas **sobrescrevem** as stubs originais com mesmo Code (Register indexa por Code). Total Registry final = 221 (5 raw + 216 tipadas), não 226.
+> **V69 corrigiu A25** (severity "A" stub disfarçado → real com lógica que detecta ClassOp agregado não presente em operações individuais).
+
+> **Nota:** as 5 destravadas (C44/C46/C57/C62/C68 *Destravada) sobrescrevem stubs originais com mesmo Code. Total Registry final = 221 (5 raw + 216 tipadas), não 226.
+
+| Categoria | Códigos | Reais E | Reais A | Híbridas I | Stubs I |
+|---|---|---|---|---|---|
+| Individualizadas | I06-I15 | 4 (I06-I08, I10, I12) | 4 (I09, I13, I14) | 0 | 1 (I15) |
+| Agregadas expandidas | A16-A30 | 4 (A19, A21, A24, A28, A29) | 11 (A16-A18, A20, A22-A23, A25-A27, A30) | 0 | 0 |
+| Semântica expandida | S71-S90 | 9 (S71-S72, S74, S76, S80, S83, S87) | 8 (S73, S75, S77, S81-S82, S88-S89) | 1 (S79) | 5 (S78, S84-S86, S90) |
+| Destravadas (override stubs) | C44, C46, C57, C62, C68 | 0 | 5 (todas com lógica real) | 0 | 0 |
+| **Total V69** | — | **17** | **25** | **1** | **6** |
 
 ### Helpers em `internal/audit/rules/3040_helpers.go`
 

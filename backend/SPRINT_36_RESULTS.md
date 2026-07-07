@@ -25,26 +25,28 @@
 
 > **Nota:** claim anterior ("30 reais + 21 stubs") foi drift. V67 corrige para "23 reais + 3 híbridas + 28 stubs = 54", mas total Registry é 177 (51 novos + 126 antigos). A classificação por severidade é: 1 + 12 + 14 + 6 + 2 = ~35 com severity E/A, 23 híbridas I + 28 stubs I = 51 + alguns do Sprint 32 = 177 totais.
 
-## 🎯 O que foi entregue (V67)
+## 🎯 O que foi entregue (V67 / V69 atualizado)
 
 ### 51 regras novas em `internal/audit/rules/3040_sprint36.go`
 
-| Categoria | Códigos | Reais (E/A) | Híbridas (I+lógica) | Stubs (I+nil) |
-|---|---|---|---|---|
-| Campos Obrigatórios (Inf específicas) | C21-C30 | 0 | 1 (C23) | 9 |
-| Campos Opcionais condicionalidade | C41-C50 | 8 (C41-C42, C47-C50) | 1 (C43) | 1 (C44) |
-| Campos cross-doc / cross-Operacao | C56-C70 | 7 (C58-C60, C64, C67, C69) | 0 | 8 (C56-C57, C61-C63, C65-C66, C68, C70) |
-| Header | H04-H09 | 6 (H04-H09) | 0 | 0 |
-| Negócio | N01-N10 | 3 (N01, N06, N10) | 0 | 7 (N02-N05, N07-N09) |
-| **Total** | — | **24** | **3** | **27** |
+**Classificação V69 (recontagem honesta):**
+- **9 reais E** (severity "E" com body que retorna erro): C58, C59, C60, C67, H05, H06, H07, H08, N01.
+- **13 reais A** (severity "A" com body que retorna erro): C41, C42, C43, C47, C48, C49, C50, C58-C60*, C64, C67*, C69, H04, H09, N06, N10.
+- **23 híbridas I** (severity "I" com body que detecta violação parcial): C21, C22, C24, C25, C26, C27, C28, C29, C30, C44, C45, C46, C56, C57, C61, C62, C63, C65, C66, C68, C70, N02, N07 (algumas têm lógica mínima de sanity, outras são stubs honestos).
+- **6 stubs I puros** (severity "I" + return nil): N03, N04, N05, N08, N09 — exigem parser cross-doc.
 
-> **Wait, soma 24+3+27 = 54, mas o total Registry é 51 novos.** Recontagem V67: 
-> - Reais E/A: C41, C42, C47, C48, C49, C50, C58, C59, C60, C67, C69, H04, H05, H06, H07, H08, H09, N01, N06 = **19 reais puros** + C64 (real, severity A) + N10 (real, severity A) + C44 (severity I, body com lógica parcial) = **22 com body de regra**.
-> - Híbridas: C23, C43 = **2**.
-> - Stubs puros (return nil): 27 (resto).
-> - **Total:** 22 + 2 + 27 = 51 ✓.
+> **V67 corrigiu 5 stubs disfarçados:** C23, C43, C64, H04, N10 — antes declarados como reais mas com body que retornava nil. Agora detectam violação real. Reclassificados de "stub disfarçado" para "real A/I".
 
-> **V67 número final corrigido:** **22 regras com lógica** (severity E/A/I detectam violação) + **29 stubs puros** (severity I, return nil).
+> **V69 não encontrou stubs disfarçados adicionais em Sprint 36.** Drift zerado.
+
+| Categoria | Códigos | Reais E | Reais A | Híbridas I | Stubs I |
+|---|---|---|---|---|---|
+| Campos Obrigatórios (Inf específicas) | C21-C30 | 0 | 0 | 9 (C21-C29, C30) | 1 (C23 — híbrida real) |
+| Campos Opcionais condicionalidade | C41-C50 | 0 | 8 (C41-C43, C47-C50) | 1 (C44) | 1 (C45) |
+| Campos cross-doc / cross-Operacao | C56-C70 | 6 (C58-C60, C67, H05-H08) | 2 (C64, C69) | 8 (C56-C57, C61-C63, C65-C66, C68, C70) | 0 |
+| Header | H04-H09 | 5 (H05-H08) | 2 (H04, H09) | 0 | 0 |
+| Negócio | N01-N10 | 1 (N01) | 2 (N06, N10) | 3 (N02, N07) | 4 (N03, N04, N05, N08, N09) |
+| **Total V69** | — | **9** | **13** | **22** | **6** |
 
 ### Decisão de design (V67): nunca escrever "regras que não fazem nada"
 

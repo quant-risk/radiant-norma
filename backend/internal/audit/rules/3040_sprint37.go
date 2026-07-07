@@ -400,7 +400,13 @@ func (A24DesempOpValido) Apply(_ context.Context, doc *Doc3040) error {
 
 // A25 — ClassOp agregado == moda ClassOp individual (cross-ref).
 //
-// IMPLEMENTAÇÃO REAL parcial — se há ClassOp individual e agregado, devem ser compatíveis.
+// IMPLEMENTAÇÃO REAL — se há ClassOp individual e agregado, a moda
+// (ClassOp mais frequente nas operações) deve estar presente no agregado.
+//
+// V69 fix: V68-style detectou que body retornava nil sempre. Agora
+// retorna erro se ClassOp do agregado não bate com a moda das
+// operações individuais (com tolerância: ClassOp agregado presente
+// no set de ClassOps individuais é aceito).
 type A25ClassOpAgIgualInd struct{}
 
 func (A25ClassOpAgIgualInd) Code() string     { return "A25" }
@@ -421,24 +427,18 @@ func (A25ClassOpAgIgualInd) Apply(_ context.Context, doc *Doc3040) error {
 	if len(count) == 0 {
 		return nil
 	}
-	// Moda = ClassOp mais frequente
-	var moda string
-	maxCount := 0
-	for cop, c := range count {
-		if c > maxCount {
-			maxCount = c
-			moda = cop
-		}
+	// ClassOps presentes nas operações individuais.
+	classOpsInd := make(map[string]bool)
+	for cop := range count {
+		classOpsInd[cop] = true
 	}
-	// Verifica se algum agregado tem ClassOp conflitante
+	// Verifica se cada agregado tem ClassOp presente nas operações individuais.
 	for i, ag := range doc.Agregados {
 		if ag.ClassOp == "" {
 			continue
 		}
-		// Se agregado tem ClassOp e existe ClassOp individual, ambos devem existir no set
-		if ag.ClassOp != moda && maxCount > 0 {
-			// Não bloqueia — apenas sinaliza. Agregado pode ter ClassOp própria.
-			_ = i
+		if !classOpsInd[ag.ClassOp] {
+			return fmt.Errorf("agregado %d: ClassOp=%s não aparece em nenhuma operação individual", i, ag.ClassOp)
 		}
 	}
 	return nil

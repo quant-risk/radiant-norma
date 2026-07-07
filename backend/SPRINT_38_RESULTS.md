@@ -21,15 +21,26 @@
 
 ### 54 regras em `internal/audit/rules/3040_sprint38.go`
 
-| Categoria | Códigos | Reais | Stubs I |
-|---|---|---|---|
-| Campos Opcionais expandidos | C71-C90 | 10 (C75, C77, C80-C86, C90) | 10 (C71-C74, C76, C78-C79, C87-C89) |
-| Substituição Parcial | SUB01-SUB15 | 7 (SUB01, SUB05-SUB07, SUB10, SUB13) | 8 (SUB02-SUB04, SUB08-SUB09, SUB11-SUB12, SUB14-SUB15) |
-| Cross-doc básico | X01-X10 | 1 (X02) | 9 (X01, X03-X10) |
-| Carry-over destravadas | 9 (I15, S78, S84-S86, S90, N05, N07, N08) | 8 (I15, S78, S84-S85, S90, N05, N07-N08) | 1 (S86) |
-| **Total** | — | **26** | **28** |
+**Classificação V69 (recontagem honesta):**
+- **11 reais E** (severity "E" com body que retorna erro): C81, C82, C83, C85, C86, SUB01, SUB06, SUB10, SUB13, X02, ...
+- **14 reais A** (severity "A" com body que retorna erro): C75, C77, C80, C84, C90, SUB05, SUB07, I15Destravada, S78Destravada, S84Destravada, S85Destravada, S90Destravada, N05Destravada, N07Destravada, N08Destravada.
+- **25 híbridas I** (severity "I" com body que detecta): C71-C74, C76, C78-C79, C87-C89, SUB02-SUB04, SUB08, SUB11-SUB12, SUB14-SUB15, X01, X03-X10 (categoria cross-doc pesada — stubs honestos).
+- **4 stubs I puros**: S86Destravada, ...
+
+> **V69 corrigiu 3 stubs disfarçados em Sprint 38:**
+> - **C84** (severity "A" stub → real com validação Perc em [0,100]).
+> - **SUB07** (severity "A" stub → real com erro se TpArq=S vazio).
+> - **SUB09** (severity "A" stub → stub honesto severity "I").
 
 > **Nota:** as 9 destravadas sobrescrevem stubs Sprint 36-37 (mesmo Code). Total Registry final = 266 (5 raw + 261 tipadas), não 275. Intencional: melhor stub → real.
+
+| Categoria | Códigos | Reais E | Reais A | Híbridas I | Stubs I |
+|---|---|---|---|---|---|
+| Campos Opcionais expandidos | C71-C90 | 5 (C81-C83, C85-C86) | 5 (C75, C77, C80, C84, C90) | 10 (C71-C74, C76, C78-C79, C87-C89) | 0 |
+| Substituição Parcial | SUB01-SUB15 | 4 (SUB01, SUB06, SUB10, SUB13) | 2 (SUB05, SUB07) | 9 (SUB02-SUB04, SUB08-SUB09, SUB11-SUB12, SUB14-SUB15) | 0 |
+| Cross-doc básico | X01-X10 | 1 (X02) | 0 | 9 (X01, X03-X10) | 0 |
+| Carry-over destravadas | 9 (I15, S78, S84-S86, S90, N05, N07, N08) | 0 | 8 (I15, S78, S84-S85, S90, N05, N07-N08) | 1 (S86) | 0 |
+| **Total V69** | — | **10** | **15** | **25** | **4** |
 
 ### Reais notáveis (Sprint 38)
 

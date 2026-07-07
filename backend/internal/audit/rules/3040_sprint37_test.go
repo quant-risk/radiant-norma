@@ -166,6 +166,29 @@ func TestSprint37_ReaisDetectamViolacoes(t *testing.T) {
 			t.Errorf("esperava erro BNDES sem OrigemRec, got %v", err)
 		}
 	})
+
+	// V69 — testes para regras consertadas (stubs disfarçados).
+	t.Run("A25_ClassOpAgNaoEmIndividual", func(t *testing.T) {
+		doc := sampleDoc3040V2()
+		// Operações têm ClassOp "A", agregado declara "E" (não aparece em nenhuma operação).
+		doc.Operacoes[0].ClassOp = "A"
+		doc.Agregados[0].ClassOp = "E"
+		err := A25ClassOpAgIgualInd{}.Apply(ctx, doc)
+		if err == nil || !strings.Contains(err.Error(), "ClassOp=E") {
+			t.Errorf("esperava erro ClassOp agregado não presente em operações, got %v", err)
+		}
+	})
+
+	t.Run("A25_ClassOpAgEmIndividual_OK", func(t *testing.T) {
+		doc := sampleDoc3040V2()
+		// Operações e agregado têm ClassOp "A".
+		doc.Operacoes[0].ClassOp = "A"
+		doc.Agregados[0].ClassOp = "A"
+		err := A25ClassOpAgIgualInd{}.Apply(ctx, doc)
+		if err != nil {
+			t.Errorf("ClassOp=A em ambos OK, got %v", err)
+		}
+	})
 }
 
 func TestSprint37_StubsReturnNil(t *testing.T) {

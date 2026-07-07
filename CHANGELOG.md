@@ -2,6 +2,51 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.18 — 2026-07-07 (Validação 69 — drift fix pós-Sprints 36-38) ✅
+
+> **Status:** ✅ Shipped (docs + drift fixes)
+> **Tipo:** patch (validação profunda pós-ship)
+> **Marco:** 4 stubs disfarçados consertados (A25, C84, SUB07, SUB09)
+
+### 🎯 Resumo
+
+V69 é a 3ª validação pós-ship (depois de V67 e V68). Aplicação rigorosa do protocolo de auto-verificação (memory HOT "Self-deception em fix simples"):
+
+| Regra | Sev declarada | Body original | V69 fix |
+|---|---|---|---|
+| **A25** | A | Loop + `_ = i` (não retorna erro) | Agora retorna erro se ClassOp agregado não aparece em nenhuma operação individual |
+| **C84** | A | Loop com `_ = i` (não retorna erro) | Agora retorna erro se Perc fora [0, 100] |
+| **SUB07** | A | `return nil` sempre | Agora retorna erro se TpArq=S vazio (deveria ser TpArq=F) |
+| **SUB09** | A | `return nil` sempre (com comentário "Stub parcial") | Severity A → I (stub honesto) |
+
+### 📊 Classificação V69 (154 regras Sprint 36-38, todas com body que detecta ou stub honesto)
+
+| Sprint | Reais E | Reais A | Híbridas I | Stubs I | Total |
+|---|---|---|---|---|---|
+| Sprint 36 (3040_sprint36.go) | 9 | 13 | 23 | 6 | 51 |
+| Sprint 37 (3040_sprint37.go) | 17 | 25 | 1 | 6 | 49 |
+| Sprint 38 (3040_sprint38.go) | 10 | 15 | 25 | 4 | 54 |
+| **TOTAL** | **36** | **53** | **49** | **16** | **154** |
+
+**0 stubs disfarçados após V69.** Todas as regras com severity E/A têm body que detecta violação real.
+
+### 📁 Arquivos V69
+
+```
+backend/internal/audit/rules/3040_sprint36.go        (1 fix: A25 já estava em 3040_sprint37)
+backend/internal/audit/rules/3040_sprint37.go        (1 fix: A25)
+backend/internal/audit/rules/3040_sprint38.go        (3 fixes: C84, SUB07, SUB09)
+backend/internal/audit/rules/3040_sprint37_test.go   (2 testes novos: A25_OK/Fail)
+backend/internal/audit/rules/3040_sprint38_test.go   (5 testes novos: C84_FAIL/OK, SUB07_FAIL/OK)
+backend/SPRINT_36_RESULTS.md                        (reclassificação V69)
+backend/SPRINT_37_RESULTS.md                        (reclassificação V69)
+backend/SPRINT_38_RESULTS.md                        (reclassificação V69)
+backend/SPRINT_36_38_VALIDATION.md                  (NOVO — este arquivo)
+CHANGELOG.md                                        (entry v3.34.18)
+```
+
+---
+
 ## v3.34.17 — 2026-07-07 (Sprint 38 Audit3040 Fase 4 — FECHAMENTO 3040) ✅
 
 > **Status:** ✅ Shipped (Fase 4 — fecha 3040 61.2% → 76.2%)

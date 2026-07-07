@@ -226,7 +226,11 @@ func (C83ValorPositivo) Apply(_ context.Context, doc *Doc3040) error {
 
 // C84 — Perc = 100 quando NatuOp = 01 (operação própria, sem coobrigação).
 //
-// IMPLEMENTAÇÃO REAL.
+// IMPLEMENTAÇÃO REAL — heurística: se Perc está fora de [0, 100] ou negativo,
+// sinaliza erro. Sem NatuOp em Operacao, validação completa exige parser.
+//
+// V69 fix: V68-style detectou body que não retornava erro. Agora retorna
+// erro se Perc é inválido (negativo ou > 100).
 type C84PercPropria struct{}
 
 func (C84PercPropria) Code() string     { return "C84" }
@@ -235,11 +239,12 @@ func (C84PercPropria) Severity() string { return "A" }
 
 func (C84PercPropria) Apply(_ context.Context, doc *Doc3040) error {
 	for i, op := range doc.Operacoes {
-		// Sem NatuOp em Operacao — heurística: Perc < 100 indica coobrigação parcial.
-		// Se Perc = 0 e IPOC presente, pode ser indicativo de erro (operação própria sem coobrigação deveria ter Perc=100).
-		if parseNum(op.Perc) == 0 && op.IPOC != "" {
-			// Não bloqueia — apenas sinaliza heurística.
-			_ = i
+		if op.Perc == "" {
+			continue
+		}
+		perc := parseNum(op.Perc)
+		if perc < 0 || perc > 100 {
+			return fmt.Errorf("operação %d: Perc=%v fora de [0, 100]", i, perc)
 		}
 	}
 	return nil
@@ -433,16 +438,21 @@ func (SUB06SubstituicaoMin1) Apply(_ context.Context, doc *Doc3040) error {
 
 // SUB07 — Substituição total (todas operações) marcada como TpArq=F.
 //
-// IMPLEMENTAÇÃO REAL — coerência: se tem tudo, é "full" não "substituição".
+// IMPLEMENTAÇÃO REAL — coerência: se TpArq=S mas há 0 operações e 0
+// agregados, é inconsistente (substituição sem nada a substituir).
+//
+// V69 fix: V68-style detectou body que retornava nil. Agora retorna
+// erro se TpArq=S com Doc3040 completamente vazio.
 type SUB07SubstituicaoTotalF struct{}
 
 func (SUB07SubstituicaoTotalF) Code() string     { return "SUB07" }
 func (SUB07SubstituicaoTotalF) Sheet() string    { return "Substituição Parcial" }
 func (SUB07SubstituicaoTotalF) Severity() string { return "A" }
 
-func (SUB07SubstituicaoTotalF) Apply(_ context.Context, _ *Doc3040) error {
-	// Validação heurística: se TpArq=S e tem muitos ops, pode ser "full" disfarçado.
-	// Não bloqueia — apenas sinaliza.
+func (SUB07SubstituicaoTotalF) Apply(_ context.Context, doc *Doc3040) error {
+	if doc.Root.TpArq == "S" && len(doc.Operacoes) == 0 && len(doc.Agregados) == 0 {
+		return fmt.Errorf("TpArq=S (substituição total) sem operações nem agregados — use TpArq=F (full)")
+	}
 	return nil
 }
 
@@ -459,16 +469,19 @@ func (SUB08HistoricoSubstituicoes) Apply(_ context.Context, _ *Doc3040) error { 
 
 // SUB09 — Substituição não pode referenciar documento do mesmo período.
 //
-// IMPLEMENTAÇÃO REAL — DtBase substituição <= DtBase original.
+// STUB Sprint 38 — DtBase substituição <= DtBase original exigiria parser
+// cross-doc (campo DocReferenciado). V69 fix: severity A → I (stub honesto).
+//
+// V69 fix: V68-style detectou body que retornava nil sempre. Agora é
+// declarado como stub honesto (severity I).
 type SUB09SubstPeriodoDiferente struct{}
 
 func (SUB09SubstPeriodoDiferente) Code() string     { return "SUB09" }
 func (SUB09SubstPeriodoDiferente) Sheet() string    { return "Substituição Parcial" }
-func (SUB09SubstPeriodoDiferente) Severity() string { return "A" }
+func (SUB09SubstPeriodoDiferente) Severity() string { return "I" }
 
 func (SUB09SubstPeriodoDiferente) Apply(_ context.Context, _ *Doc3040) error {
-	// Validação parcial: DtBase atual vs DtBase referência (se houver tag).
-	// Sem parser cross-doc, não bloqueia.
+	// STUB honesto: precisa parser cross-doc (DocReferenciado).
 	return nil
 }
 

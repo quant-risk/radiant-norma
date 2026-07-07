@@ -125,6 +125,51 @@ func TestSprint38_ReaisDetectamViolacoes(t *testing.T) {
 			t.Errorf("esperava erro prazo > max, got %v", err)
 		}
 	})
+
+	// V69 — testes para regras consertadas (stubs disfarçados).
+	t.Run("C84_PercForaRange", func(t *testing.T) {
+		doc := sampleDoc3040V2()
+		doc.Operacoes[0].Perc = "150"
+		err := C84PercPropria{}.Apply(ctx, doc)
+		if err == nil || !strings.Contains(err.Error(), "[0, 100]") {
+			t.Errorf("esperava erro Perc fora de range, got %v", err)
+		}
+	})
+
+	t.Run("C84_PercNegativo", func(t *testing.T) {
+		doc := sampleDoc3040V2()
+		doc.Operacoes[0].Perc = "-10"
+		err := C84PercPropria{}.Apply(ctx, doc)
+		if err == nil || !strings.Contains(err.Error(), "[0, 100]") {
+			t.Errorf("esperava erro Perc negativo, got %v", err)
+		}
+	})
+
+	t.Run("C84_PercOK", func(t *testing.T) {
+		doc := sampleDoc3040V2()
+		doc.Operacoes[0].Perc = "100"
+		err := C84PercPropria{}.Apply(ctx, doc)
+		if err != nil {
+			t.Errorf("Perc=100 OK, got %v", err)
+		}
+	})
+
+	t.Run("SUB07_TpArqS_Vazio", func(t *testing.T) {
+		doc := &Doc3040{Root: Doc3040Root{TpArq: "S"}}
+		err := SUB07SubstituicaoTotalF{}.Apply(ctx, doc)
+		if err == nil || !strings.Contains(err.Error(), "substituição total") {
+			t.Errorf("esperava erro TpArq=S vazio, got %v", err)
+		}
+	})
+
+	t.Run("SUB07_TpArqS_ComOps_OK", func(t *testing.T) {
+		doc := sampleDoc3040V2()
+		doc.Root.TpArq = "S"
+		err := SUB07SubstituicaoTotalF{}.Apply(ctx, doc)
+		if err != nil {
+			t.Errorf("TpArq=S com ops OK, got %v", err)
+		}
+	})
 }
 
 func TestSprint38_StubsReturnNil(t *testing.T) {
