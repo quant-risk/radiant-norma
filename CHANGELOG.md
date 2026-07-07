@@ -2,6 +2,27 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.32 — 2026-07-07 (Sprint 51 Audit4111 — Parser Genérico 4111) ✅
+
+> **Status:** ✅ Shipped (parser parcial — aguardando spec oficial)
+> **Sprint:** 51 (Audit4111)
+> **Tipo:** minor (novo package doc4111)
+> **Marco:** Parser genérico 4111 + validações estruturais (5 regras)
+
+### 🎯 Resumo
+
+Sprint 51 adiciona o package `doc4111` com parser genérico para o CADOC 4111. O spec completo (XSD + críticas oficiais) **não está disponível** no repositório — as 30+ regras reais dependem do documento de críticas do BACEN.
+
+**Arquivos novos:**
+- `internal/doc4111/parser.go` — structs (Documento4111, Cliente, Modalidade) + parser XML
+- `internal/doc4111/parser_test.go` — 6 testes
+- `SPRINT_51_RESEARCH.md` — RESEARCH completo
+
+**Aviso:** as 30+ regras de validação reais dependem do spec oficial do BACEN.
+Este package implementa apenas validações estruturais genéricas.
+
+---
+
 ## v3.34.31 — 2026-07-07 (Sprint 50 DRSAC_v2 — Cross-Doc DRSAC↔SCR) ✅
 
 > **Status:** ✅ Shipped (cross-doc rules)
