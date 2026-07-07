@@ -99,9 +99,10 @@ func scrDataFrom3040(xml3040 string) map[string]drsac.SCRData {
 }
 
 // extractTVMTotal3040 extrai o saldo total de TVM do 3040.
+// Usa xml.Decoder para encontrar todos os <Saldo> dentro de <TVM> e
+// retorna o ÚLTIMO (normalmente o totalizador).
 func extractTVMTotal3040(xml3040 string) string {
-	// Procura tag <Saldo> dentro de <Agreg type="TVM"> ou similar
-	// Usa pattern simples baseado em texto
+	// Procura bloco <TVM>...</TVM>
 	openTag := "<TVM>"
 	closeTag := "</TVM>"
 	idx := strings.Index(xml3040, openTag)
@@ -113,9 +114,24 @@ func extractTVMTotal3040(xml3040 string) string {
 		return ""
 	}
 	content := xml3040[idx+len(openTag) : idx+end]
-	// Extrai último Saldo encontrado
-	saldo := crossdoc.ExtractTextBetween(content, "Saldo")
-	return saldo
+
+	// Extrai TODOS os <Saldo> e retorna o último
+	var lastSaldo string
+	decoder := xml.NewDecoder(strings.NewReader(content))
+	for {
+		tok, err := decoder.Token()
+		if err != nil || tok == nil {
+			break
+		}
+		if se, ok := tok.(xml.StartElement); ok && se.Name.Local == "Saldo" {
+			if t2, _ := decoder.Token(); t2 != nil {
+				if cd, ok := t2.(xml.CharData); ok {
+					lastSaldo = strings.TrimSpace(string(cd))
+				}
+			}
+		}
+	}
+	return lastSaldo
 }
 
 // ============================================================
@@ -176,7 +192,7 @@ func (XDDR02SaldoConsistente) Apply(ctx context.Context, docs *crossdoc.DocSet) 
 
 	doc, err := drsac.ParseFromBytes([]byte(xml2030))
 	if err != nil {
-		return nil
+		return crossdoc.NewError("XD-DR02", "E", "falha ao parsear 2030: "+err.Error())
 	}
 
 	scrData := scrDataFrom3040(xml3040)
@@ -214,7 +230,7 @@ func (XDDR03ClienteExisteNoSCR) Apply(ctx context.Context, docs *crossdoc.DocSet
 
 	doc, err := drsac.ParseFromBytes([]byte(xml2030))
 	if err != nil {
-		return nil
+		return crossdoc.NewError("XD-DR03", "E", "falha ao parsear 2030: "+err.Error())
 	}
 
 	scrData := scrDataFrom3040(xml3040)
@@ -248,7 +264,7 @@ func (XDDR04SetorCNAEConsistente) Apply(ctx context.Context, docs *crossdoc.DocS
 
 	doc, err := drsac.ParseFromBytes([]byte(xml2030))
 	if err != nil {
-		return nil
+		return crossdoc.NewError("XD-DR04", "E", "falha ao parsear 2030: "+err.Error())
 	}
 
 	scrData := scrDataFrom3040(xml3040)
@@ -286,7 +302,7 @@ func (XDDR05RiscoSocialAlto) Apply(ctx context.Context, docs *crossdoc.DocSet) e
 
 	doc, err := drsac.ParseFromBytes([]byte(xml2030))
 	if err != nil {
-		return nil
+		return crossdoc.NewError("XD-DR05", "E", "falha ao parsear 2030: "+err.Error())
 	}
 
 	scrData := scrDataFrom3040(xml3040)
@@ -324,7 +340,7 @@ func (XDDR06RiscoAmbiental) Apply(ctx context.Context, docs *crossdoc.DocSet) er
 
 	doc, err := drsac.ParseFromBytes([]byte(xml2030))
 	if err != nil {
-		return nil
+		return crossdoc.NewError("XD-DR06", "E", "falha ao parsear 2030: "+err.Error())
 	}
 
 	scrData := scrDataFrom3040(xml3040)
@@ -362,7 +378,7 @@ func (XDDR07TotalTVMConsistente) Apply(ctx context.Context, docs *crossdoc.DocSe
 
 	doc, err := drsac.ParseFromBytes([]byte(xml2030))
 	if err != nil {
-		return nil
+		return crossdoc.NewError("XD-DR07", "E", "falha ao parsear 2030: "+err.Error())
 	}
 
 	scrData := scrDataFrom3040(xml3040)
@@ -396,7 +412,7 @@ func (XDDR08ContribPositivaGreen) Apply(ctx context.Context, docs *crossdoc.DocS
 
 	doc, err := drsac.ParseFromBytes([]byte(xml2030))
 	if err != nil {
-		return nil
+		return crossdoc.NewError("XD-DR08", "E", "falha ao parsear 2030: "+err.Error())
 	}
 
 	scrData := scrDataFrom3040(xml3040)
@@ -436,7 +452,8 @@ func (XD4111CNPJConsistente) Apply(_ context.Context, docs *crossdoc.DocSet) err
 		return nil
 	}
 
-	cnpj4111 := crossdoc.ExtractTextBetween(xml4111, "cnpj")
+	// CNPJ é atributo do root element (não child element)
+	cnpj4111 := extractRootAttr(xml4111, "cnpj")
 	if cnpj4111 == "" {
 		return nil
 	}
@@ -459,6 +476,17 @@ func extractCNPJ3040(xml3040 string) string {
 	// <Documento3040 cnpj="12345678" ...
 	re := regexp.MustCompile(`cnpj="(\d{8,14})"`)
 	m := re.FindStringSubmatch(xml3040)
+	if len(m) >= 2 {
+		return m[1]
+	}
+	return ""
+}
+
+// extractRootAttr extrai atributo do elemento root de um XML.
+// Use para atributos como cnpj e dataBase no root element.
+func extractRootAttr(xmlContent, attrName string) string {
+	re := regexp.MustCompile(`<[\w:]+[^>]*\s` + attrName + `="([^"]*)"`)
+	m := re.FindStringSubmatch(xmlContent)
 	if len(m) >= 2 {
 		return m[1]
 	}
@@ -606,12 +634,13 @@ func (XD4111DataBaseConsistente) Apply(_ context.Context, docs *crossdoc.DocSet)
 		return nil
 	}
 
-	db4111 := crossdoc.ExtractTextBetween(xml4111, "dataBase")
+	// dataBase é atributo do root element (não child element)
+	db4111 := extractRootAttr(xml4111, "dataBase")
 	if db4111 == "" {
 		return nil
 	}
 
-	db3040 := crossdoc.ExtractTextBetween(xml3040, "dataBase")
+	db3040 := extractRootAttr(xml3040, "dataBase")
 	if db3040 == "" {
 		return nil
 	}
