@@ -2246,17 +2246,15 @@ func (H18RaizDocTXB) Apply3050(_ context.Context, doc *Doc3050) error {
 // H19 — apenas 1 elemento `<referencia>` por doc (sanity).
 //
 // Severidade: A.
+// Stub honesto: parser atual processa Diario+Mensal implicitamente como 1
+// referencia. Validação real (contar <referencia> no XML bruto) precisa de
+// parser change. Carry-over para Fase 5.
 type H19ApenasUmaReferencia struct{}
 
 func (H19ApenasUmaReferencia) Code() string     { return "3050-H19" }
 func (H19ApenasUmaReferencia) Sheet() string    { return "Header" }
 func (H19ApenasUmaReferencia) Severity() string { return "A" }
-func (H19ApenasUmaReferencia) Apply3050(_ context.Context, doc *Doc3050) error {
-	// Parser atual processa Diario+Mensal implicitamente como 1 referencia.
-	// Validamos que não há sinal de duplicidade: se Diario E Mensal estão vazios E
-	// Root vazio, mas doc foi declarado não-vazio antes → suspeito.
-	// Carry-over para Fase 5: contar elementos <referencia> no XML bruto.
-	_ = doc
+func (H19ApenasUmaReferencia) Apply3050(_ context.Context, _ *Doc3050) error {
 	return nil
 }
 

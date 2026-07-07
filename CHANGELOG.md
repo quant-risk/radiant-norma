@@ -2,6 +2,28 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.7 — 2026-07-07 (Validação 64 — drift comentário Fase 4 + doc validação) ✅
+
+> **Status:** ✅ Shipped (validação retroativa)
+> **Tipo:** fix (drift cleanup + doc validação)
+
+Auditoria retroativa da Fase 4 (commit 2cd997e) detectou 2 drifts entre comentário e código:
+
+- **Drift #1 (BAIXA):** `3050_helpers.go` header dizia "Sprint 33 Fase 3 helpers" mas arquivo foi editado na Fase 4 (edge case fix). Corrigido.
+- **Drift #2 (BAIXA):** `H19ApenasUmaReferencia` comentário mencionava validação condicional não implementada. Corrigido pra descrever no-op honesto (carry-over Fase 5).
+
+**SPRINT_33_FASE4_VALIDATION.md novo:** auditoria profunda de:
+- 13 claims verificados contra código real (todos OK): 97 Register3050, 20 tests, 72.2% coverage, 23/23 packages -race, DT-31 aplicada.
+- 17 regras Fase 4 auditadas individualmente (1:1 regra → test).
+- Edge case IsUltimoDiaUtilMes corrigido (sábado último dia → sexta anterior).
+- DT-31 parser change aplicado sem regressão.
+- Decisões D-24/D-25/D-26/D-27 mantidas.
+- 4 edge cases identificados para próxima sprint.
+
+Sem mudanças de regras — apenas drift cleanup + documentação.
+
+---
+
 ## v3.34.6 — 2026-07-07 (Sprint 33 Fase 4 — Audit3050 Header avançado + Sistema + Individuais + edge case fix) ✅
 
 > **Status:** ✅ Shipped (Fase 4 — fecha workstream 3050 em 57.06%)

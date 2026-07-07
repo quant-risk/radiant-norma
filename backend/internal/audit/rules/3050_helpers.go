@@ -1,7 +1,8 @@
-// Package rules — Sprint 33 Fase 3 helpers.
+// Package rules — Sprint 33 Fase 3+4 helpers.
 //
-// Helpers compartilhados por S09/S13 (DiasUteis, ÚltimoDiaUtilMes) e
-// validações de dataBase em geral.
+// Helpers compartilhados por S09 (DiasUteis) + S13 (ÚltimoDiaUtilMes,
+// com edge case fix Fase 4 para último dia do mês em sábado) + validações
+// de dataBase em geral.
 package rules
 
 import "time"
