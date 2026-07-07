@@ -2,6 +2,61 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.22 — 2026-07-07 (Sprint 41 AuditDLP 2170 — NSFR Net Stable Funding Ratio) ✅
+
+> **Status:** ✅ Shipped (parser DLP + 8 regras NSFR)
+> **Sprint:** 41 (AuditDLP — NSFR — Net Stable Funding Ratio)
+> **Tipo:** minor (parser DLP + 8 regras NSFR)
+> **Marco:** DLP parser + 8 regras (100% catálogo NSFR básico)
+
+### 🎯 Resumo
+
+Sprint 41 adiciona parser DLP (Demonstrativo de Liquidez de Longo Prazo) + 8 regras NSFR (Net Stable Funding Ratio) conforme BACEN Res. 4.542.
+
+**NSFR Ratio = ASF / RSF × 100 >= 100%**
+
+**Arquivos novos:**
+- `dlp.go` — DocDLP + ParseDocDLP (best-effort XML).
+- `2170.go` — 8 regras NSFR (NSFR01-NSFR08).
+- `2170_test.go` — 13 subtests (parser + regras).
+- `SPRINT_41_RESEARCH.md` — RESEARCH completo.
+
+### Regras NSFR
+
+| Cod | Sev | Regra |
+|---|---|---|
+| **NSFR01** | E | NSFR Ratio >= 100% (mínimo regulatório) |
+| **NSFR02** | E | ASF Total >= 0 |
+| **NSFR03** | E | RSF Total >= 0 |
+| **NSFR04** | E | ASF >= RSF (equivalente a NSFR >= 100%) |
+| **NSFR05** | A | NSFR declarado == calculado (tolerância 1%) |
+| **NSFR06** | E | Cenário 1 (ASF) >= 0 |
+| **NSFR07** | E | Cenário 1 (RSF) >= 0 |
+| **NSFR08** | A | DtBase formato YYYY-MM-DD |
+
+### Métricas v3.34.21 → v3.34.22
+
+| Métrica | v3.34.21 | v3.34.22 |
+|---|---|---|
+| Regras Registry 3040 | 274 | **282** (+8 NSFR) |
+| Test functions Sprint 41 | 0 | **3 (13 subtests)** |
+| Packages PASS -race | 23/23 | **23/23** |
+| Build / vet / gofmt | clean | **clean** |
+
+### 📁 Arquivos Sprint 41
+
+```
+backend/internal/audit/rules/dlp.go         (NOVO — DocDLP + parser)
+backend/internal/audit/rules/2170.go         (NOVO — 8 regras NSFR)
+backend/internal/audit/rules/2170_test.go    (NOVO — 13 subtests)
+backend/internal/audit/rules/registry.go     (atualizar Builtin3040 — +8 NSFR)
+backend/internal/audit/rules/3040_test.go   (atualizar expectedCodigos)
+backend/internal/audit/rules/raw_rules_test.go (atualizar total = 282)
+backend/SPRINT_41_RESEARCH.md               (NOVO)
+```
+
+---
+
 ## v3.34.21 — 2026-07-07 (Sprint 40 AuditDRL 2160 — LCR Liquidity Coverage Ratio) ✅
 
 > **Status:** ✅ Shipped (parser DRL + 8 regras LCR)

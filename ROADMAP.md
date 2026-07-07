@@ -40,7 +40,7 @@
 | **38** | AuditDLO — 200+ regras 2061 (Limites Operacionais) |
 | **39** | AuditDDR — 11+ regras 2070 (Requerimento Capital Diário) | ✅ Fase 1+2 fechada (100% Fase 1 — 11 regras; Fase 2 — parser DRM/DLO + 7 cross-doc) |
 | **40** | AuditDRL — 2160 LCR modelos II | ✅ fechada (100% catálogo LCR básico — 8 regras) |
-| **41** | AuditDLP — 2170 NSFR |
+| **41** | AuditDLP — 2170 NSFR | ✅ fechada (100% — 8 regras NSFR) |
 | **42** | Audit3044 — Engine JSON eventos |
 | **43** | CrossDoc_v2 — 5+ regras cross-doc |
 | **44** | Radar_v2 — Diff semântico + auto-PR |

@@ -442,6 +442,8 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 		// 9 destravadas Sprint 36-37 (I15, S78, S84, S85, S86, S90, N05, N07, N08) sobrescrevem stubs.
 		// Sprint 40 DRL — LCR (LCR01-LCR08)
 		"LCR01", "LCR02", "LCR03", "LCR04", "LCR05", "LCR06", "LCR07", "LCR08",
+		// Sprint 41 DLP — NSFR (NSFR01-NSFR08)
+		"NSFR01", "NSFR02", "NSFR03", "NSFR04", "NSFR05", "NSFR06", "NSFR07", "NSFR08",
 	}
 
 	if len(codes) != len(expectedCodigos) {

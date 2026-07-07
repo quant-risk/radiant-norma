@@ -653,5 +653,16 @@ func Builtin3040() *Registry {
 	r.Register(LCR07{})
 	r.Register(LCR08{})
 
+	// Sprint 41 / v3.34.22 — AuditDLP 2170 (NSFR — Net Stable Funding Ratio)
+	// 8 regras: NSFR01-NSFR08 (E/A com lógica real).
+	r.Register(NSFR01{})
+	r.Register(NSFR02{})
+	r.Register(NSFR03{})
+	r.Register(NSFR04{})
+	r.Register(NSFR05{})
+	r.Register(NSFR06{})
+	r.Register(NSFR07{})
+	r.Register(NSFR08{})
+
 	return r
 }

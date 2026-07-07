@@ -214,8 +214,9 @@ func TestBuiltin3040_TotalRulesIs(t *testing.T) {
 	// Sprint 37 / v3.34.15 Fase 3: +44 (I06-I15/A16-A30/S71-S90) + 5 destravadas sobrescrevem stubs (C44/46/57/62/68).
 	// Sprint 38 / v3.34.17 Fase 4: +54 (C71-C90/SUB01-15/X01-10) + 9 destravadas sobrescrevem stubs (Sprint 36-37).
 	// Sprint 40 / v3.34.21 DRL: +8 (LCR01-LCR08).
-	// Total Registry: 5 raw + 269 tipadas = 274.
-	if total != 274 {
-		t.Errorf("Total regras = %d, want 274 (Sprint 40 DRL: 266 + 8 LCR)", total)
+	// Sprint 41 / v3.34.22 DLP: +8 (NSFR01-NSFR08).
+	// Total Registry: 5 raw + 277 tipadas = 282.
+	if total != 282 {
+		t.Errorf("Total regras = %d, want 282 (Sprint 41 DLP: 274 + 8 NSFR)", total)
 	}
 }
