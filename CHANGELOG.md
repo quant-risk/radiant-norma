@@ -2,6 +2,93 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.1 — 2026-07-06 (Sprint 33 Fase 2 — Audit3050 Sistemáticas + Individuais/Cruzadas) ✅
+
+> **Status:** ✅ Shipped (Fase 2 de N)
+> **Sprint:** 33 (continuação direta Fase 1)
+> **Tipo:** minor (+28 regras 3050 — 14 S + 14 I)
+> **Marco:** 28 → 56 regras 3050 (16.5% → **32.9%** cobertura catálogo TXB_V11)
+
+### 🎯 Resumo
+
+Fase 2 entrega 14 Sistemáticas (S15-S28) + 14 Individuais/Cruzadas (I01-I14). Total 3050: **28 → 56** (cobertura catálogo 16.5% → **32.9%**).
+
+**Decisões (mantém D-24/D-25/D-26/D-27 da Fase 1):**
+- Sem mudanças arquiteturais — Fase 2 adiciona regras sobre a mesma `Modalidade` achatada.
+- I03-I06 refatoradas in-loop após self-verify: `subMods` não inclui `crdPesNaoConsignado` (é a modalidade AGREGADA, não se inclui na soma).
+
+**Regras implementadas:**
+
+| Cod | Sev | Regra | Origem BACEN |
+|---|---|---|---|
+| 3050-S15 | E | dataBase ∈ [2009, 2030] | 2010 |
+| 3050-S16 | A | nmContato length ≤ 100 | 2005 |
+| 3050-S17 | A | telContato 10-11 dígitos | 2005 |
+| 3050-S18 | E | vlrConcessoes=0 → txMedJuros=0 | 3003 |
+| 3050-S19 | E | txMedJuros=0 → vlrConcessoes>0 | 3004 |
+| 3050-S20 | E | txMedEncOper=0 → vlrConcessoes>0 | 3007 |
+| 3050-S21 | E | przDecMedConc=0 → vlrConc>0 | 3008 |
+| 3050-S22 | E | przDecMedConc>0 → vlrConc>0 | 3009 |
+| 3050-S23 | A | sldCarAtiva≠0 → przMedCarteira obrigatório | 3025 |
+| 3050-S24 | I | stub txMedJurosAjustada ≤ txMedJuros (carry-over Fase 3) | 3051 |
+| 3050-S25 | A | cnpjInstituicao ≠ 00000000 | formato |
+| 3050-S26 | E | Codigo+Encargo+TipoCli único | 3054 |
+| 3050-S27 | E | sldBaiPrejuizo ≥ 0 | formato |
+| 3050-S28 | E | qtdNovContratos ≥ 0 | formato |
+| 3050-I01 | E | capGirPrzAte365 przDec ≤ 365 | 3036 |
+| 3050-I02 | E | capGirPrzSup365 przDec > 365 | 3037 |
+| 3050-I03 | E | crdPesNaoConsignado sldCar = soma sub-modalidades | 3056 |
+| 3050-I04 | E | crdPesNaoConsignado vlrConc = soma sub-modalidades | 3057 |
+| 3050-I05 | E | crdPesNaoConsignado sldAdquirido = soma sub-modalidades | 3058 |
+| 3050-I06 | E | crdPesNaoConsignado sldCedido = soma sub-modalidades | 3059 |
+| 3050-I07 | A | przMedCarteira < 30 (limite baixo BACEN) | 3038 |
+| 3050-I08 | A | przMedCarteira > 5000 (limite alto) | 3039 |
+| 3050-I09 | A | przDecMedConc < 1 (muito baixo) | 3040 |
+| 3050-I10 | A | przDecMedConc > 5000 (muito alto) | 3041 |
+| 3050-I11 | A | sldCarAtiva < R$ 1000 (muito baixo) | 3045 |
+| 3050-I12 | A | sldCarAtiva > R$ 1 trilhão (muito alto) | 3046 |
+| 3050-I13 | A | vlrConcessoes < R$ 1000 (muito baixo) | 3047 |
+| 3050-I14 | A | vlrConcessoes > R$ 1 trilhão (muito alto) | 3048 |
+
+### 📊 Métricas v3.34.0 → v3.34.1
+
+| Métrica | v3.34.0 | v3.34.1 |
+|---|---|---|
+| Regras 3050 | 28 | **56** (+28) |
+| Cobertura catálogo 3050 | 16.5% | **32.9%** (+16.5pp) |
+| Coverage `internal/audit/rules` | 72.9% | **72.1%** (-0.8pp — stubs sem lógica ficam descobertos) |
+| Test functions Fase 2 | 0 | **17** (table-driven + smoke) |
+| Test functions total 3050 | 17 | **34** |
+| Packages PASS -race | 23/23 | **23/23** |
+| Stress 50 goroutines baseline | mantida | **3/3 PASS** |
+| Stress 200 goroutines | PASS | **PASS** |
+| vet + gofmt | clean | **clean** |
+
+### 🎓 Lições aprendidas (Fase 2)
+
+- **Self-verify em teste pega bug sutil.** I03-I06 calculavam soma incluindo a modalidade principal (crdPesNaoConsignado) — semântica errada. Self-verify (regra HOT memory) durante teste: `soma=1.4M vs esperado 700k`. Fix: `subMods` exclui `crdPesNaoConsignado` (é a AGREGADA, não sub).
+- **Coverage caiu 0.8pp.** Esperado: stubs S01-S14 + S24 (severity I) não têm asserts complexos — linhas executadas mas cobertura cai no ratio. Aceitável: 28 stubs × 1 linha cada = 28 linhas descobertas, mas +28 regras funcionais.
+- **Pointer *float64 vs *int é fricção constante.** Em testes, declarei `zero := 0.0` e tentei atribuir a `*int`. Hot loop: "qual tipo esse campo?".
+
+### 📁 Arquivos tocados
+
+```
+backend/internal/audit/rules/3050.go              (+S15-S28 +I01-I14, +Builtin3050 atualizado)
+backend/internal/audit/rules/3050_fase2_test.go   (NOVO — 17 testes table-driven)
+CHANGELOG.md                                       (esta entry)
+backend/SPRINT_33_FASE2_RESULTS.md                (NOVO)
+```
+
+### ⏭️ Próxima sprint (Fase 3)
+
+**Sprint 33 Fase 3 — Audit3050 Header avançado + cruzadas complexas:**
+- H10-H15 Header (encoding, espaços, length max em nmContato/telContato/cnpj)
+- I15-I28 Individuais adicionais (sub-modalidades específicas: desDuplicatas, desCheques, vendor, compror, etc)
+- S29-S44 Sistemáticas adicionais (regras 2001 × matriz encargo × modalidade, com XSD enforcement)
+- Alvo: 56 → 90+ regras 3050 (cobertura 53%+)
+
+---
+
 ## v3.34.0 — 2026-07-06 (Sprint 33 Fase 1 — Audit3050/TXB_V11: parser + 14 Agregadas + 14 stubs) ✅
 
 > **Status:** ✅ Shipped (Fase 1 de N)

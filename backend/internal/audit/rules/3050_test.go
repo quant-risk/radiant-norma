@@ -478,8 +478,8 @@ func TestS01_S14_StubsReturnNil(t *testing.T) {
 
 func TestBuiltin3050_TotalRulesIs(t *testing.T) {
 	r := Builtin3050()
-	if got := len(r.All3050()); got != 28 {
-		t.Fatalf("Builtin3050 deveria ter 28 regras (14 A + 14 S), got %d", got)
+	if got := len(r.All3050()); got != 56 {
+		t.Fatalf("Builtin3050 deveria ter 56 regras (Fase 1 28 + Fase 2 28), got %d", got)
 	}
 
 	codes := r.Codes3050()
