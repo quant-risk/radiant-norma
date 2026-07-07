@@ -2,6 +2,34 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.30 — 2026-07-07 (Sprint 49 DRSAC_v1 — 35 Regras DRSAC 2030) ✅
+
+> **Status:** ✅ Shipped (DRSAC rules)
+> **Sprint:** 49 (DRSAC_v1)
+> **Tipo:** minor (regras DRSAC)
+> **Marco:** 35 regras DRSAC (D01-D35) cobrindo estrutura, domínios, GEE, localização, TVM, setores
+
+### 🎯 Resumo
+
+Sprint 49 implementa o catálogo inicial de 35 regras de validação para o CADOC 2030 (DRSAC), cobrindo estrutura do documento, domínios dos anexos 01-20, validações GEE, localização geográfica e setores CNAE.
+
+**Arquivos novos:**
+- `internal/drsac/rules.go` — 35 regras (D01-D35) com interface Rule e método Apply
+
+**Regras por categoria:**
+| Categoria | Regras | Descrição |
+|---|---|---|
+| Estrutura | D01-D10 | CNPJ, dataBase, tipoEnvio, contato, clientes, CNAE, IPOC, saldo |
+| Riscos | D11-D16 | Tipos válidos (anexos 06-09, 18), consistência av/tipo |
+| Consistência | D17-D18 | Regras 98/99, SICOR |
+| GEE | D19-D20 | Valor condicional, situação válida (anexo 15) |
+| Localização | D21-D25 | Latitude/longitude Brasil, CEP, índice, mitigador |
+| TVM | D26-D28 | Sistema registro, tipo TVM, formato valor |
+| Setores | D29-D31 | CNAE válido, restrição econômica |
+| AgrMit | D32-D35 | Fator agravante/mitigador, contribuição positiva |
+
+---
+
 ## v3.34.29 — 2026-07-07 (Sprint 48 Pilot2 — Tenant Lifecycle Service) ✅
 
 > **Status:** ✅ Shipped (Tenant service)

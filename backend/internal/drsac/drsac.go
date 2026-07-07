@@ -23,6 +23,14 @@ type Result struct {
 	Doc      *DocumentoDRSAC
 }
 
+// Rule é a interface implementada por todas as regras DRSAC.
+type Rule interface {
+	Code() string
+	Severity() string
+	Message() string
+	Apply(context.Context, *DocumentoDRSAC) error
+}
+
 // ValidateDocument é o entry point principal para validar um documento DRSAC.
 // Parsing + validação de domínio + validação de regras de negócio.
 func ValidateDocument(ctx context.Context, data []byte) (*Result, error) {
@@ -35,7 +43,6 @@ func ValidateDocument(ctx context.Context, data []byte) (*Result, error) {
 
 	// Validação de domínio (anexos 01-20)
 	if err := Validate(doc); err != nil {
-		// Coleta todos os erros como críticas
 		if ve, ok := err.(interface{ Unwrap() []error }); ok {
 			for _, e := range ve.Unwrap() {
 				if ve, ok := e.(*ValidationError); ok {
@@ -56,7 +63,10 @@ func ValidateDocument(ctx context.Context, data []byte) (*Result, error) {
 		}
 	}
 
-	// Regras cross-field (disponíveis mesmo sem XSD oficial)
+	// Regras de catálogo (D01-D35)
+	criticas = append(criticas, ValidateRules(ctx, doc)...)
+
+	// Regras cross-field
 	criticas = append(criticas, crossFieldRules(doc)...)
 
 	return &Result{
@@ -64,6 +74,41 @@ func ValidateDocument(ctx context.Context, data []byte) (*Result, error) {
 		Criticas: criticas,
 		Doc:      doc,
 	}, nil
+}
+
+// ValidateRules executa todas as regras D01-D35 contra o documento.
+// Retorna lista de Critica.
+func ValidateRules(ctx context.Context, doc *DocumentoDRSAC) []Critica {
+	rules := []Rule{
+		// Estrutura (D01-D10)
+		D01{}, D02{}, D03{}, D04{}, D05{}, D06{}, D07{}, D08{}, D09{}, D10{},
+		// Riscos (D11-D16)
+		D11{}, D12{}, D13{}, D14{}, D15{}, D16{},
+		// Consistência 98/99 (D17-D18)
+		D17{}, D18{},
+		// GEE (D19-D20)
+		D19{}, D20{},
+		// Localização (D21-D25)
+		D21{}, D22{}, D23{}, D24{}, D25{},
+		// TVM (D26-D28)
+		D26{}, D27{}, D28{},
+		// Setores (D29-D31)
+		D29{}, D30{}, D31{},
+		// AgrMit / ContribPositiva (D32-D35)
+		D32{}, D33{}, D34{}, D35{},
+	}
+
+	var criticas []Critica
+	for _, rule := range rules {
+		if err := rule.Apply(ctx, doc); err != nil {
+			criticas = append(criticas, Critica{
+				Code:     rule.Code(),
+				Severity: rule.Severity(),
+				Message:  fmt.Sprintf("%s: %v", rule.Message(), err),
+			})
+		}
+	}
+	return criticas
 }
 
 // crossFieldRules valida regras que dependem de múltiplos campos.
@@ -112,16 +157,6 @@ func crossFieldRules(doc *DocumentoDRSAC) []Critica {
 					Message:  "ContribPositiva preenchido mas saldo da operação é zero",
 					Path:     opPath + "/ContribPositiva",
 				})
-			}
-		}
-	}
-
-	// Regra: IPOC de operação deve existir em algum registro (cross-cliente)
-	seenIPOCs := make(map[string]bool)
-	for _, cl := range doc.Clientes {
-		for _, op := range cl.ExpAtivos.ExpOperCred {
-			if op.IPOC != "" {
-				seenIPOCs[op.IPOC] = true
 			}
 		}
 	}
