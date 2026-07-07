@@ -538,6 +538,9 @@ func TestIsUltimoDiaUtilMes(t *testing.T) {
 		{"2024-04-26", false, "26/abr (sexta) não é último"},
 		{"2024-02-29", true, "Fev/2024 bissexto, último dia 29"},
 		{"2023-02-28", true, "Fev/2023 não-bissexto, último dia 28"},
+		// Fase 4 edge case fix: último dia do mês em sábado → volta até sexta anterior.
+		{"2025-05-31", false, "Mai/2025 termina sábado 31 → último útil é sexta 30"},
+		{"2025-05-30", true, "Mai/2025: sexta 30 é último dia útil"},
 	}
 
 	for _, tt := range tests {
@@ -553,35 +556,8 @@ func TestIsUltimoDiaUtilMes(t *testing.T) {
 // ========== Integração ==========
 
 func TestBuiltin3050_Fase3TotalRulesIs80(t *testing.T) {
-	r := Builtin3050()
-	got := len(r.All3050())
-	if got != 80 {
-		t.Fatalf("Builtin3050 deveria ter 80 regras após Fase 3, got %d", got)
-	}
-	// Confere Fase 3: H10-H15 (6) + S29-S32 (4) + I15-I28 (14) = 24.
-	fase3Count := 0
-	for _, code := range r.Codes3050() {
-		if len(code) < 7 {
-			continue
-		}
-		prefix := code[:6]
-		num := code[6:]
-		switch prefix {
-		case "3050-H":
-			if num >= "10" && num <= "15" {
-				fase3Count++
-			}
-		case "3050-S":
-			if num >= "29" && num <= "32" {
-				fase3Count++
-			}
-		case "3050-I":
-			if num >= "15" && num <= "28" {
-				fase3Count++
-			}
-		}
-	}
-	if fase3Count != 24 {
-		t.Errorf("esperado 24 regras Fase 3 (H10-H15 + S29-S32 + I15-I28), got %d", fase3Count)
-	}
+	// REMOVIDO na Fase 4: contagem mudou de 80 (Fase 3) para 97 (Fase 4).
+	// Teste obsoleto — deixado apenas como sentinel. Verificação real em
+	// TestBuiltin3050_TotalRulesIs (3050_test.go).
+	t.Skip("contagem mudou pós-Fase 4 (97 regras); ver TestBuiltin3050_TotalRulesIs em 3050_test.go")
 }

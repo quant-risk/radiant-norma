@@ -84,24 +84,27 @@ func IsDiaUtilBACEN(data time.Time) bool {
 // IsUltimoDiaUtilMes retorna true se data for o último dia útil do mês
 // no calendário BACEN.
 //
-// Comportamento atual:
-//   - data == último dia do mês E data é dia útil → true
-//   - data == último dia do mês E data NÃO é útil (sábado/domingo/feriado) → false
-//   - data != último dia do mês → false
+// Comportamento:
+//   - Calcula último dia calendário do mês
+//   - Se for dia útil, retorna true se data == último dia
+//   - Se NÃO for útil, varre pra trás até achar o último dia útil do mês;
+//     retorna true se data == esse dia
 //
-// Edge case conhecido: se o último dia do mês cai em sábado (ex: 2025-05-31),
-// o "último dia útil" BACEN real seria a sexta anterior. Esta implementação
-// retorna false nesse caso — semântica não-bacen. Carry-over para Fase 4.
+// Edge case coberto (Fase 4): se último dia do mês cai em sábado (ex: 2025-05-31),
+// BACEN real considera a sexta anterior (2025-05-30) como último dia útil.
 //
-// Placeholder consciente: a SCD raramente erra nesse caso (próximo a zero).
-// Evolução futura = checagem que volta dias até encontrar último dia útil.
+// Exemplo: 2025-05-31 (sábado) → último dia útil = 2025-05-30 (sexta).
+// IsUltimoDiaUtilMes(2025-05-30) = true; IsUltimoDiaUtilMes(2025-05-31) = false.
 func IsUltimoDiaUtilMes(data time.Time) bool {
 	ano, mes, _ := data.Date()
-	// Último dia do mês: dia 1 do mês seguinte - 1 dia
 	primeiroProximo := time.Date(ano, mes+1, 1, 0, 0, 0, 0, time.UTC)
 	ultimo := primeiroProximo.AddDate(0, 0, -1)
-	if !data.Equal(ultimo) {
-		return false
+	primeiro := time.Date(ano, mes, 1, 0, 0, 0, 0, time.UTC)
+	// Varre do último dia do mês pra trás até achar dia útil (ou chegar a dia 1).
+	for d := ultimo; !d.Before(primeiro); d = d.AddDate(0, 0, -1) {
+		if IsDiaUtilBACEN(d) {
+			return data.Equal(d)
+		}
 	}
-	return IsDiaUtilBACEN(data)
+	return false // não deveria acontecer (todo mês tem ≥1 dia útil)
 }
