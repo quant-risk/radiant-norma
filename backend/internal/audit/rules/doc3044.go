@@ -13,57 +13,62 @@ import (
 )
 
 // Doc3044 é o documento 3044 parseado (JSON).
+//
+// Os tags `json:` nos campos string (CNPJ, Envia3050, etc.) são usados pelo
+// json.Unmarshal no ParseDoc3044 (via struct raw intermediária). Os campos
+// time.Time NÃO têm tags json — o parsing é feito manualmente com time.Parse
+// para suportar o formato customizado "YYYY-MM-DD HH:mm:ss".
 type Doc3044 struct {
-	CNPJ            string         `json:"cnpjIF"`
-	DataHoraRemessa time.Time      `json:"dataHoraRemessa"`
-	Envia3050       string         `json:"envia3050"`
-	Operacoes       []Operacao3044 `json:"operacoes"`
+	CNPJ            string
+	DataHoraRemessa time.Time
+	Envia3050       string
+	Operacoes       []Operacao3044
 }
 
 // Operacao3044 representa uma operação individual no 3044.
 type Operacao3044 struct {
-	Acao             int             `json:"acao"`
-	IPOC             string          `json:"ipoc"`
-	Class3050        string          `json:"class3050"`
-	SaldoDevedor     float64         `json:"saldoDevedor"`
-	DataSaldoDevedor time.Time       `json:"dataSaldoDevedor"`
-	Atraso           string          `json:"atraso"`
-	Pagamentos       []Pagamento3044 `json:"pagamentos"`
-	Concessoes       []Concessao3044 `json:"concessoes"`
-	Cessoes          []Cessao3044    `json:"cessoes"`
-	Aquisicoes       []Aquisicao3044 `json:"aquisicoes"`
+	Acao             int
+	IPOC             string
+	Class3050        string
+	SaldoDevedor     float64
+	DataSaldoDevedor time.Time
+	Atraso           string
+	Pagamentos       []Pagamento3044
+	Concessoes       []Concessao3044
+	Cessoes          []Cessao3044
+	Aquisicoes       []Aquisicao3044
 }
 
 // Pagamento3044 representa um evento de pagamento.
 type Pagamento3044 struct {
-	Acao     int       `json:"acao"`
-	TpMotivo string    `json:"tpMotivo,omitempty"`
-	Data     time.Time `json:"data"`
-	Valor    float64   `json:"valor"`
+	Acao     int
+	TpMotivo string
+	Data     time.Time
+	Valor    float64
 }
 
 // Concessao3044 representa um evento de concessão de crédito.
 type Concessao3044 struct {
-	Acao     int       `json:"acao"`
-	TpMotivo string    `json:"tpMotivo,omitempty"`
-	Data     time.Time `json:"data"`
-	Valor    float64   `json:"valor"`
+	Acao     int
+	TpMotivo string
+	Data     time.Time
+	Valor    float64
 }
 
 // Cessao3044 representa um evento de cessão de operação.
 type Cessao3044 struct {
-	Acao          int       `json:"acao"`
-	Data          time.Time `json:"data"`
-	CdCessionario string    `json:"cdCessionario"`
-	Valor         float64   `json:"valor"`
+	Acao          int
+	Data          time.Time
+	CdCessionario string
+	Valor         float64
 }
 
 // Aquisicao3044 representa um evento de aquisição de operação.
 type Aquisicao3044 struct {
-	Acao      int       `json:"acao"`
-	Data      time.Time `json:"data"`
-	CdCedente string    `json:"cdCedente"`
-	Valor     float64   `json:"valor"`
+	Acao      int
+	Data      time.Time
+	CdCedente string
+	Valor     float64
 }
 
 // PartialParseError3044 indica parse parcial bem-sucedido (D-26 pattern).
