@@ -2,6 +2,56 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.25 — 2026-07-07 (Sprint 44 Radar_v2 — Diff Semantic + Auto-PR) ✅
+
+> **Status:** ✅ Shipped (diff semântico + GitHub Auto-PR)
+> **Sprint:** 44 (Radar_v2 — Diff Semantic + Auto-PR)
+> **Tipo:** minor (novo service + 2 subpackages)
+> **Marco:** Radar v2 com diff semântico XLSX + criação automática de PR GitHub
+
+### 🎯 Resumo
+
+Sprint 44 adiciona o Radar v2 com diff semântico (parseia XLSX e detecta regras específicas que mudaram) e Auto-PR (cria GitHub Pull Request automaticamente quando mudanças regulatórias afetam regras).
+
+**Arquivos novos:**
+- `internal/radar/diff/diff.go` — DiffEntry, DiffResult, Differ, BuildSummary, CompareRowMaps.
+- `internal/radar/diff/xlsx.go` — ParseXLSX usando excelize/v2 (map de regras por código).
+- `internal/radar/autopr/github.go` — GitHub REST API v3 client (cria branch, commit, PR).
+- `internal/radar/radar_v2.go` — RadarV2 service (ScanOnceXLSX, ScanAndCreatePR).
+- `internal/radar/radar_v2_test.go` — 12 testes para RadarV2 + diff + autopr.
+- `SPRINT_44_RESEARCH.md` — RESEARCH completo.
+
+**Dependência nova:**
+- `github.com/xuri/excelize/v2` — parse de XLSX.
+
+### Arquitetura
+
+```
+radar_v2.go
+  ├── ScanOnceXLSX       → hash diff (baseline)
+  └── ScanAndCreatePR    → diff + GitHub Auto-PR
+        ├── diff/         (parse XLSX, compare rules)
+        └── autopr/       (GitHub REST API v3)
+```
+
+### Componentes
+
+| Componente | Descrição |
+|---|---|
+| `DiffEntry` | Representa uma mudança (added/removed/changed) em uma regra |
+| `DiffResult` | Resultado completo com summary legível ("2 adicionadas, 1 alterada") |
+| `Differ.CompareRowMaps` | Compara old vs new XLSX parsed, gera DiffEntries |
+| `ParseXLSX` | Parseia XLSX → map["codigo_regra"] → map["campo"] → valor |
+| `autopr.Client` | Client GitHub REST API v3 |
+| `CreateRuleUpdatePR` | Cria branch + commita + PR com regras afetadas |
+
+### Limitações MVP
+
+- Diff estruturado requer old body (não disponível na baseline MVP — só hash). TODO: implementar cache de snapshots.
+- PR creation é dry-run se token GitHub não configurado.
+
+---
+
 ## v3.34.24 — 2026-07-07 (Sprint 43 CrossDoc_v2 — DRL/DLP × 3044) ✅
 
 > **Status:** ✅ Shipped (cross-doc DRL/DLP × 3044)
