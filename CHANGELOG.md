@@ -2,6 +2,41 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.28 — 2026-07-07 (Sprint 47 DRSACResearch — Parser DRSAC 2030) ✅
+
+> **Status:** ✅ Shipped (DRSAC parsing + validação)
+> **Sprint:** 47 (DRSACResearch)
+> **Tipo:** minor (novo package drsac)
+> **Marco:** DRSAC parsing funcional + domínios dos anexos 01-20
+
+### 🎯 Resumo
+
+Sprint 47 implementa o parser completo do CADOC 2030 (Documento de Riscos Social, Ambiental e Climático) com structs de parsing, validadores de domínio (anexos 01-20) e parser XML funcional. XSD oficial e regras completas aguardando resposta do BACEN.
+
+**Arquivos novos:**
+- `internal/drsac/types.go` — structs de parsing (DocumentoDRSAC, Cliente, ExpOperCred, ExpTVM, etc.)
+- `internal/drsac/annexes.go` — domínios válidos para todos os 20 anexos do DRSAC
+- `internal/drsac/parser.go` — XML parser com suporte a múltiplos encodings (UTF-8, ISO-8859-1)
+- `internal/drsac/validator.go` — validadores de domínio e regras cross-field
+- `internal/drsac/drsac.go` — entry point ValidateDocument
+- `internal/drsac/drsac_test.go` — testes unitários (parsers, annexes, validação)
+- `internal/db/migrations/017_drsac_research.sql` — placeholder de migração
+- `SPRINT_47_RESEARCH.md` — RESEARCH completo do DRSAC
+
+**Estrutura do documento suportada:**
+- Root `<DocumentoDRSAC>` com 3 níveis de análise (Setor/Cliente/Operação)
+- 4 dimensões de risco: Social, Ambiental, Climático Físico, Climático Transição
+- TVM (CPR, CDCA, CRA, DEB)
+- GEE (absorção/emissão/compensação)
+- Localização (coordenadas, CEP, município, país)
+
+**Pendentes (requer XSD do BACEN):**
+- XSD oficial do DRSAC
+- Documento de críticas e validações (análogo ao SCR3040_Criticas)
+- Regras de consistência 98/99 completas
+
+---
+
 ## v3.34.27 — 2026-07-07 (Sprint 46 WhiteLabel — Branding por Tenant) ✅
 
 > **Status:** ✅ Shipped (WhiteLabel branding)

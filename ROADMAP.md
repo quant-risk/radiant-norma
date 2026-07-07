@@ -46,7 +46,7 @@
 | **44** | Radar_v2 — Diff semântico + auto-PR | ✅ fechada (v3.34.25 — diff XLSX + GitHub Auto-PR) |
 | **45** | StripeBilling — Lite/Pro/Scale/Enterprise + self-service | ✅ fechada (v3.34.26 — Stripe billing + webhooks) |
 | **46** | WhiteLabel — Tema customizável pra Fintech BaaS | ✅ fechada (v3.34.27 — branding por tenant + 4 endpoints API) |
-| **47** | DRSACResearch — Solicitação formal BACEN |
+| **47** | DRSACResearch — Solicitação formal BACEN | ✅ fechada (v3.34.28 — parser DRSAC 2030 + 20 anexos) |
 | **48** | Pilot2 — Segundo cliente (IP médio) |
 
 **Saída:** "Radiant Norma Pro" vendável pra IP média.

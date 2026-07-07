@@ -1,0 +1,21 @@
+-- Migration 017: DRSAC Research
+-- Sprint 47 — DRSACResearch
+--
+-- Esta migration não altera o schema do banco.
+-- DRSAC (CADOC 2030) é um documento XML processado via package drsac.
+--
+-- O parsing DRSAC foi implementado em:
+--   - internal/drsac/types.go      — structs de parsing
+--   - internal/drsac/annexes.go    — domínios dos anexos 01-20
+--   - internal/drsac/parser.go     — XML parsing
+--   - internal/drsac/validator.go  — validações de domínio e regras
+--   - internal/drsac/drsac.go      — entry point ValidateDocument
+--
+-- XSD oficial e regras completas: PENDENTES — solicitar ao BACEN (Sprint 47).
+-- Schema version para 2030: será inserido via migration futura quando XSD for obtido.
+--
+-- Rollback: N/A (sem alteração de schema).
+
+-- No-op: DRSAC parsing não requer colunas ou tabelas novas.
+-- Apenas registra que o package drsac foi introduzido nesta sprint.
+SELECT 1;
