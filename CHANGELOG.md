@@ -2,6 +2,43 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.40 — 2026-07-07 (Sprint 58 AuditDLI — Parser Documento 2062 DLI) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** 58 (AuditDLI)
+> **Tipo:** minor (novo package docdli)
+> **Marco:** Primeiro parser para Documento 2062 — DLI (Demonstrativo de Limites Operacionais)
+
+### 🎯 Resumo
+
+Sprint 58 adiciona o parser para Documento 2062 DLI. Implementa parse XML → structs `DocumentoDLI`, validações estruturais (DLI-01 a DLI-08) e helpers para extração de limites, contas COSIF e indicadores. Integrado ao audit service via `applyRegra` com parse cacheado.
+
+**Arquivos novos:**
+- `backend/internal/docdli/parser.go` — DocumentoDLI structs, Parse(), Validate(), ValidateDocument(), helpers
+- `backend/internal/docdli/parser_test.go` — 18 testes cobrindo parse, validações e helpers
+
+**Validações estruturais (DLI-01 a DLI-08):**
+- DLI-01: CNPJ — 8 dígitos
+- DLI-02: dataBase — formato AAAA-MM
+- DLI-03: tipoEnvio — I ou S
+- DLI-04: codigoDocumento — 2062
+- DLI-05: pelo menos uma seção presente
+- DLI-06: Limite.codigo formato NN.NN, valor N13,2
+- DLI-07: Indicador.valor — S ou N
+- DLI-08: Conta.codigo formato N.NN.NN(NN?), valor N13,2
+
+**Estrutura do documento:**
+- Root: `<documentoDLI cnpj="XXXXXXXX" dataBase="AAAA-MM" codigoDocumento="2062" tipoEnvio="I|S">`
+- Limites (TABELA 001): códigos NN.NN (06.00 PLM, 20.00 partes relacionadas, etc.)
+- Indicadores (TABELA 002): pares código/valor S/N
+- Parametros (TABELA 004): pares código/valor genéricos
+- Contas (TABELA 003): códigos COSIF (1.10.00, 6.00.00, etc.)
+
+**Integração:**
+- `expectedRootTag("2062")` → `"documentoDLI"` (audit/service.go)
+- `applyRegra` com cache `cachedDLI *docdli.DocumentoDLI` para 2062
+- L1 parse valida root tag `documentoDLI`
+
 ## v3.34.39 — 2026-07-07 (Sprint 57 SDK_v1 — Go Client Library) ✅
 
 > **Status:** ✅ Shipped

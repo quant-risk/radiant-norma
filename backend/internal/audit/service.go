@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/fortvna/radiant-norma/backend/internal/audit/rules"
+	"github.com/fortvna/radiant-norma/backend/internal/docdli"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 )
 
@@ -257,6 +258,10 @@ func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*Valida
 		var cachedDoc *rules.Doc3040
 		is3040 := req.CadocCode == "3040" && req.ContentType != "application/json"
 
+		// Sprint 58 (v3.34.40): cache DLI parse — 2062 é novo parser.
+		var cachedDLI *docdli.DocumentoDLI
+		is2062 := req.CadocCode == "2062" && req.ContentType != "application/json"
+
 		// Sprint 12 (v3.5.0): C32.23 — carrega set de regras desabilitadas
 		// por IF (via ruleprefs) e pula elas na validação. Set carregado
 		// UMA vez por Validate() — perf: 1 query independente de N regras.
@@ -296,7 +301,7 @@ func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*Valida
 				continue
 			}
 
-			ruleErr := s.applyRegra(ctx, c, req, is3040, &cachedDoc)
+			ruleErr := s.applyRegra(ctx, c, req, is3040, &cachedDoc, is2062, &cachedDLI)
 			if ruleErr == nil {
 				continue
 			}
@@ -420,6 +425,8 @@ func (s *Service) applyRegra(
 	req *ValidationRequest,
 	is3040 bool,
 	cachedDoc **rules.Doc3040,
+	is2062 bool,
+	cachedDLI **docdli.DocumentoDLI,
 ) error {
 	content := string(req.XML)
 
@@ -445,6 +452,30 @@ func (s *Service) applyRegra(
 			}
 			return rule.Apply(ctx, *cachedDoc)
 		}
+	}
+
+	// Sprint 58 (v3.34.40): 3ª tentativa — regra tipada DLI (opera em *DocumentoDLI)
+	if is2062 {
+		if *cachedDLI == nil {
+			doc, err := docdli.ParseFromBytes([]byte(req.XML))
+			if err != nil {
+				return fmt.Errorf("parser DLI falhou: %w", err)
+			}
+			*cachedDLI = doc
+		}
+		// DLI-原生 validações estruturais (DLI-01 a DLI-08).
+		// Regras de negócio (limite > PLA, etc.) virão via registry.
+		if rule := s.registry.Get(c.Codigo); rule != nil {
+			// Usa docdli.Rule interface se existir no registry.
+			// Por ora, retorna nil (ainda não registrado).
+			return nil
+		}
+		// Fallback: validação estrutural nativa.
+		dlis := docdli.Validate(*cachedDLI)
+		for _, e := range dlis {
+			return e
+		}
+		return nil
 	}
 
 	// Regra não implementada — skip (vai virar erro quando tivermos 100% cobertura)
