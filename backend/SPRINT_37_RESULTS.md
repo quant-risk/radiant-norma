@@ -22,13 +22,15 @@
 
 ### 49 regras novas em `internal/audit/rules/3040_sprint37.go`
 
-| Categoria | Códigos | Reais | Híbridas | Stubs I |
-|---|---|---|---|---|
-| Individualizadas | I06-I15 | 8 (I06-I10, I12-I14) | 0 | 1 (I15) |
-| Agregadas expandidas | A16-A30 | 14 (A16-A18, A19-A30) | 0 | 0 |
-| Semântica expandida | S71-S90 | 16 (S71-S77, S80-S83, S87-S89) | 1 (S79) | 3 (S78, S84-S86, S90) |
-| Destravadas (override stubs) | C44, C46, C57, C62, C68 | 5 (todas com lógica) | 0 | 0 |
-| **Total** | — | **43** | **1** | **5** |
+| Categoria | Códigos | Reais | Stubs I (V68) |
+|---|---|---|---|
+| Individualizadas | I06-I15 | 8 (I06-I10, I12-I14) | 1 (I15) |
+| Agregadas expandidas | A16-A30 | 15 (A16-A30) | 0 |
+| Semântica expandida | S71-S90 | 15 (S71-S77, S80-S83, S87-S89) | 5 (S78, S79, S84, S85, S86, S90) |
+| Destravadas (override stubs) | C44, C46, C57, C62, C68 | 5 (todas com lógica) | 0 |
+| **Total** | — | **43** | **6** |
+
+**V68 (validação pós-ship) ajustou S79** — declarado como severity "A" no commit original, mas body retornava nil. Corrigido para severity "I" com lógica parcial (formato YYYY-MM).
 
 > **Nota:** as 5 destravadas **sobrescrevem** as stubs originais com mesmo Code (Register indexa por Code). Total Registry final = 221 (5 raw + 216 tipadas), não 226.
 

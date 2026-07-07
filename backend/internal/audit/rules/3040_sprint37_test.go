@@ -175,6 +175,7 @@ func TestSprint37_StubsReturnNil(t *testing.T) {
 	stubs := []Rule{
 		I15LimitePF{},
 		S78ClassOpPorModValido{},
+		S79DtBaseAtual{},
 		S84CNPJCliConsolidado{},
 		S85CessaoCedente{},
 		S86DtVencCalc{},

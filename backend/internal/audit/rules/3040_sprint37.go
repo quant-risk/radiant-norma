@@ -739,16 +739,25 @@ func (S78ClassOpPorModValido) Apply(_ context.Context, _ *Doc3040) error {
 
 // S79 — DtBase não pode ser > 2 meses no passado (atraso envio).
 //
-// IMPLEMENTAÇÃO REAL — DtBase muito antigo indica atraso.
+// STUB Sprint 37 — DtBase muito antigo indica atraso. Validação completa
+// exigiria data atual (não temos na struct). Carry-over: adicionar campo
+// DataAtual ou injetar clock no Apply.
+//
+// V68 (validação pós-Sprint 37): este stub foi originalmente declarado com
+// severity "A" mas tinha body que retornava nil — drift. Corrigido para
+// severity "I" (info) honesta.
 type S79DtBaseAtual struct{}
 
 func (S79DtBaseAtual) Code() string     { return "S79" }
 func (S79DtBaseAtual) Sheet() string    { return "Semântica" }
-func (S79DtBaseAtual) Severity() string { return "A" }
+func (S79DtBaseAtual) Severity() string { return "I" }
 
 func (S79DtBaseAtual) Apply(_ context.Context, doc *Doc3040) error {
-	// Validação parcial: DtBase formato YYYY-MM. Verificação de atraso
-	// exigiria data atual (não temos na struct). Stub parcial.
+	// STUB honesto (V68): validação parcial de formato YYYY-MM. Verificação
+	// de atraso (> 2 meses no passado) exigiria data atual — Carry-over.
+	if len(doc.Root.DtBase) != 7 || doc.Root.DtBase[4] != '-' {
+		return fmt.Errorf("DtBase=%q não está em formato YYYY-MM", doc.Root.DtBase)
+	}
 	return nil
 }
 
