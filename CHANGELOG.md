@@ -2,6 +2,70 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.23 — 2026-07-07 (Sprint 42 Audit3044 — Engine JSON Eventos) ✅
+
+> **Status:** ✅ Shipped (parser JSON + 17 regras T01-T19)
+> **Sprint:** 42 (Audit3044 — Engine JSON — Eventos de Operações de Crédito)
+> **Tipo:** minor (parser JSON + 17 regras T01-T19)
+> **Marco:** CADOC 3044 (JSON) engine + 17 regras (15 reais + 2 carry-over)
+
+### 🎯 Resumo
+
+Sprint 42 adiciona parser JSON para o CADOC 3044 (eventos de operações de crédito) + 17 regras de validação (T01-T19). Primeiro CADOC JSON do Radiant Norma (não XML).
+
+**Formato:** JSON (IN BCB 530/2024, vigência nov/2025)
+
+**Arquivos novos:**
+- `doc3044.go` — Doc3044 + ParseDoc3044 (encoding/json).
+- `rule3044.go` — 17 regras T01-T19 (Rule3044 interface).
+- `rule3044_test.go` — 14 subtests (parser + regras).
+- `SPRINT_42_RESEARCH.md` — RESEARCH completo.
+
+### Regras 3044
+
+| Cod | Sev | Descrição |
+|---|---|---|
+| **T01** | E | dataHoraRemessa >= dataSaldoDevedor |
+| **T02** | E | Pagamentos: data <= dataSaldoDevedor |
+| **T03** | E | Concessões: data <= dataSaldoDevedor |
+| **T04** | E | dataHoraRemessa não futura, não >21 dias antiga |
+| **T05** | E | Sem pagamentos duplicados (mesmo IPOC + data) |
+| **T06** | E | Sem concessões duplicadas (mesmo IPOC + data) |
+| **T07** | E | class3050 proibido se envia3050='N' |
+| **T08** | A | class3050 domínio válido se envia3050='S' |
+| **T11** | E | Data pagamento dentro dos últimos 6 meses |
+| **T12** | E | Data concessão dentro dos últimos 6 meses |
+| **T13** | E | Data cessão dentro dos últimos 6 meses |
+| **T14** | E | Data aquisição dentro dos últimos 6 meses |
+| **T15** | E | Valores não podem ser negativos |
+| **T16** | E | saldoDevedor não negativo |
+| **T17** | E | IPOC não pode repetir no mesmo documento |
+| **T18** | E | acao=2 requer IPOC existente na base (carry-over) |
+| **T19** | E | acao=3 requer IPOC existente na base (carry-over) |
+
+### Métricas v3.34.22 → v3.34.23
+
+| Métrica | v3.34.22 | v3.34.23 |
+|---|---|---|
+| Regras Registry 3040 | 282 | **282** (=) |
+| Regras Registry 3044 (T01-T19) | 0 | **17** |
+| Test functions Sprint 42 | 0 | **14 subtests** |
+| Packages PASS -race | 23/23 | **23/23** |
+| Build / vet / gofmt | clean | **clean** |
+
+### 📁 Arquivos Sprint 42
+
+```
+backend/internal/audit/rules/doc3044.go        (NOVO — Doc3044 + parser JSON)
+backend/internal/audit/rules/rule3044.go      (NOVO — 17 regras T01-T19)
+backend/internal/audit/rules/rule3044_test.go   (NOVO — 14 subtests)
+backend/internal/audit/rules/registry.go       (+ rules3044 map + Register3044)
+backend/internal/audit/rules/3044_helpers.go  (TBD — carry-over)
+backend/SPRINT_42_RESEARCH.md                 (NOVO)
+```
+
+---
+
 ## v3.34.22 — 2026-07-07 (Sprint 41 AuditDLP 2170 — NSFR Net Stable Funding Ratio) ✅
 
 > **Status:** ✅ Shipped (parser DLP + 8 regras NSFR)

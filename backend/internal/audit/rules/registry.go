@@ -157,6 +157,7 @@ type Registry struct {
 	rawRules  map[string]RawRule
 	rules3050 map[string]Rule3050 // Sprint 33 Fase 1 — regras CADOC 3050
 	rules2070 map[string]Rule2070 // Sprint 35 Fase 1 — regras CADOC 2070 (DDR)
+	rules3044 map[string]Rule3044 // Sprint 42 — regras CADOC 3044 (JSON)
 }
 
 // NewRegistry cria um registry vazio.
@@ -166,6 +167,7 @@ func NewRegistry() *Registry {
 		rawRules:  make(map[string]RawRule),
 		rules3050: make(map[string]Rule3050),
 		rules2070: make(map[string]Rule2070),
+		rules3044: make(map[string]Rule3044),
 	}
 }
 
@@ -250,6 +252,36 @@ func (r *Registry) Codes2070() []string {
 func (r *Registry) All2070() []Rule2070 {
 	out := make([]Rule2070, 0, len(r.rules2070))
 	for _, r := range r.rules2070 {
+		out = append(out, r)
+	}
+	return out
+}
+
+// Register3044 adiciona uma regra tipada para CADOC 3044 (JSON).
+//
+// Sprint 42: interface Rule3044 para regras de eventos (T01-T19).
+func (r *Registry) Register3044(rule Rule3044) {
+	r.rules3044[rule.Code()] = rule
+}
+
+// Get3044 retorna a regra 3044 por código.
+func (r *Registry) Get3044(code string) Rule3044 {
+	return r.rules3044[code]
+}
+
+// Codes3044 retorna todos os códigos 3044 registrados.
+func (r *Registry) Codes3044() []string {
+	out := make([]string, 0, len(r.rules3044))
+	for k := range r.rules3044 {
+		out = append(out, k)
+	}
+	return out
+}
+
+// All3044 retorna todas as regras 3044 (útil para inventário).
+func (r *Registry) All3044() []Rule3044 {
+	out := make([]Rule3044, 0, len(r.rules3044))
+	for _, r := range r.rules3044 {
 		out = append(out, r)
 	}
 	return out
@@ -663,6 +695,27 @@ func Builtin3040() *Registry {
 	r.Register(NSFR06{})
 	r.Register(NSFR07{})
 	r.Register(NSFR08{})
+
+	// Sprint 42 / v3.34.23 — Audit3044 (Engine JSON — Eventos de Operações)
+	// 17 regras: T01-T19 (T18/T19 carry-over: dependem de DB lookup).
+	r.Register3044(T01{})
+	r.Register3044(T02{})
+	r.Register3044(T03{})
+	r.Register3044(T04{})
+	r.Register3044(T05{})
+	r.Register3044(T06{})
+	r.Register3044(T07{})
+	r.Register3044(T08{})
+	r.Register3044(T11{})
+	r.Register3044(T12{})
+	r.Register3044(T13{})
+	r.Register3044(T14{})
+	r.Register3044(T15{})
+	r.Register3044(T16{})
+	r.Register3044(T17{})
+	// T18, T19: carry-over (DB lookup — implementar quando DB layer pronto)
+	r.Register3044(T18{})
+	r.Register3044(T19{})
 
 	return r
 }

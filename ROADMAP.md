@@ -41,7 +41,7 @@
 | **39** | AuditDDR — 11+ regras 2070 (Requerimento Capital Diário) | ✅ Fase 1+2 fechada (100% Fase 1 — 11 regras; Fase 2 — parser DRM/DLO + 7 cross-doc) |
 | **40** | AuditDRL — 2160 LCR modelos II | ✅ fechada (100% catálogo LCR básico — 8 regras) |
 | **41** | AuditDLP — 2170 NSFR | ✅ fechada (100% — 8 regras NSFR) |
-| **42** | Audit3044 — Engine JSON eventos |
+| **42** | Audit3044 — Engine JSON eventos | ✅ fechada (17 regras T01-T19 — 15 reais + 2 carry-over) |
 | **43** | CrossDoc_v2 — 5+ regras cross-doc |
 | **44** | Radar_v2 — Diff semântico + auto-PR |
 | **45** | StripeBilling — Lite/Pro/Scale/Enterprise + self-service |
