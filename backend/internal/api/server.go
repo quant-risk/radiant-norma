@@ -1192,6 +1192,10 @@ func (s *Server) createPilotProgram(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
 		return
 	}
+	if req.Name == "" {
+		http.Error(w, `{"error":"name requerido"}`, http.StatusBadRequest)
+		return
+	}
 	prog, err := s.Pilot.CreateProgram(r.Context(), req.Name, req.Description, nil, nil)
 	if err != nil {
 		s.userError(w, http.StatusBadRequest, "pilot.createProgram", err)
@@ -1229,14 +1233,20 @@ func (s *Server) enrollPilotParticipant(w http.ResponseWriter, r *http.Request) 
 		s.userError(w, http.StatusBadRequest, "pilot.enroll", err)
 		return
 	}
-	p, _ := s.Pilot.GetParticipant(r.Context(), programID, ifID)
+	p, err := s.Pilot.GetParticipant(r.Context(), programID, ifID)
+	if err != nil {
+		// Enroll succeeded but GetParticipant failed — return minimal response.
+		writeJSON(w, http.StatusCreated, map[string]string{
+			"program_id": programID, "if_id": ifID, "status": "onboarding"})
+		return
+	}
 	writeJSON(w, http.StatusCreated, p)
 }
 
 func (s *Server) getPilotSteps(w http.ResponseWriter, r *http.Request) {
-	ifID := chi.URLParam(r, "ifID")
+	ifID := getIfID(r)
 	if ifID == "" {
-		http.Error(w, `{"error":"if_id requerido"}`, http.StatusBadRequest)
+		http.Error(w, "authentication required", http.StatusUnauthorized)
 		return
 	}
 	steps, err := s.Pilot.GetOnboardingProgress(r.Context(), ifID)
@@ -1248,7 +1258,7 @@ func (s *Server) getPilotSteps(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) completePilotStep(w http.ResponseWriter, r *http.Request) {
-	ifID := chi.URLParam(r, "ifID")
+	ifID := getIfID(r)
 	stepKey := chi.URLParam(r, "stepKey")
 	if ifID == "" || stepKey == "" {
 		http.Error(w, `{"error":"if_id e step_key requeridos"}`, http.StatusBadRequest)
@@ -1262,9 +1272,9 @@ func (s *Server) completePilotStep(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getESGonboardingProgress(w http.ResponseWriter, r *http.Request) {
-	ifID := chi.URLParam(r, "ifID")
+	ifID := getIfID(r)
 	if ifID == "" {
-		http.Error(w, `{"error":"if_id requerido"}`, http.StatusBadRequest)
+		http.Error(w, "authentication required", http.StatusUnauthorized)
 		return
 	}
 	progress, steps, err := s.Pilot.GetESGProgress(r.Context(), ifID)
