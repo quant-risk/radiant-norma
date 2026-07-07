@@ -2,6 +2,30 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.16 — 2026-07-07 (Validação 68 — drift fix pós-Sprint 37) ✅
+
+> **Status:** ✅ Shipped (docs + drift fixes)
+> **Tipo:** patch (validação profunda pós-ship)
+> **Marco:** S79DtBaseAtual corrigida (severity A → I, body com lógica parcial)
+
+### 🎯 Resumo
+
+V68 encontrou drift em S79DtBaseAtual: declarada com severity "A" no commit v3.34.15, mas body retornava `nil` sempre — stub disfarçado de regra real. Corrigido:
+- Severity "A" → "I" (info honesta).
+- Body agora valida formato YYYY-MM (lógica parcial).
+- Comentário explica carry-over: validação completa exige data atual.
+
+### 📊 Métricas v3.34.15 → v3.34.16
+
+| Métrica | v3.34.15 | v3.34.16 |
+|---|---|---|
+| Regras Sprint 37 stubs (I) | 5 | **6** (S79 adicionada) |
+| Coverage `internal/audit/rules` | 68.2% | **68.2%** |
+| Packages PASS -race | 23/23 | **23/23** |
+| Drift docs vs código | sim | **corrigido** |
+
+---
+
 ## v3.34.15 — 2026-07-07 (Sprint 37 Audit3040 Fase 3 — 49 regras) ✅
 
 > **Status:** ✅ Shipped (Fase 3 — fecha 3040 49.0% → 61.2%)
