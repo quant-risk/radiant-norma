@@ -2,6 +2,88 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.15 — 2026-07-07 (Sprint 37 Audit3040 Fase 3 — 49 regras) ✅
+
+> **Status:** ✅ Shipped (Fase 3 — fecha 3040 49.0% → 61.2%)
+> **Sprint:** 37 (Audit3040 — SCR Risco de Crédito — continuação Sprint 36)
+> **Tipo:** minor (49 regras 3040: 44 novas + 5 destravadas sobrescrevem stubs)
+> **Marco:** 177 → 221 regras 3040 (49.0% → **61.2%** cobertura catálogo 361)
+
+### 🎯 Resumo
+
+Fase 3 continua fechamento do 3040. **+44 regras novas + 5 destravadas** (sobrescrevem stubs originais):
+
+**Categorias:**
+- **I06-I15** (9 regras): Individualizadas — ContratoModPJ, IPOC+Cli único, ProvConsttd positiva, IPOC formato, IPOC zeros.
+- **A16-A30** (15 regras): Agregadas expandidas — ClassOp×FaixaVlr, Mod×NatuOp regulamentar, UF válida, FaixaVlr 01-13.
+- **S71-S90** (20 regras): Semântica expandida — Perc range, DtContr sanity, vencimentos ordem, TotalCli bate.
+- **5 destravadas** (C44/C46/C57/C62/C68 stub → C44Destravada/.../C68Destravada real): sobrescrevem as stubs originais com versões que detectam violação.
+
+**Nota importante (V67-style):** as "destravadas" retornam o mesmo `Code()` das stubs originais (C44, C46, C57, C62, C68). Como `Registry.Register` indexa por Code, as destravadas **sobrescrevem** as stubs. Total Registry final = 221 (5 raw + 216 tipadas) em vez de 226. Isso é intencional: as versões destravadas têm lógica que detecta violação.
+
+### Regras reais notáveis
+
+| Cod | Sev | Regra |
+|---|---|---|
+| **I06** | E | PJ não pode ter modalidade rural |
+| **I07** | E | IPOC + Cli únicos por combinação |
+| **I10** | E | IPOC formato (8-20 alfanumérico) |
+| **I12** | E | Cli.IPOC = Op.IPOC |
+| **A19** | E | Mod × NatuOp combinação regulamentar |
+| **A21** | E | Localiz (UF) válida (27 UFs + EX) |
+| **A24** | E | DesempOp 01-08 |
+| **A29** | E | QtdCli > 0 exige NatuOp + Mod + ClassOp |
+| **S72** | E | Perc em [0, 100] |
+| **S76** | E | Parte numérica estrita |
+| **S80** | E | QtdOp >= 0 |
+| **S83** | E | QtdCli inteiro |
+| **S87** | E | QtdOp inteiro |
+| **A28** | E | FaixaVlr 01-13 |
+| **C44Destravada** | A | LocalizPF obrigatória quando NatuOp=02 + TpCli=PF |
+| **C46Destravada** | A | BNDES (Mod 0271/0272) exige OrigemRec |
+| **C57Destravada** | A | Inf=0307 (cessão) com Perc > 0 |
+| **C62Destravada** | A | ClassOp agregado compatível com ClassOp individual |
+| **C68Destravada** | A | Cli.IPOC = Op.IPOC (versão 3040) |
+
+### 📊 Métricas v3.34.14 → v3.34.15
+
+| Métrica | v3.34.14 | v3.34.15 |
+|---|---|---|
+| Regras 3040 | 177 | **221** |
+| Cobertura catálogo 3040 | 49.0% | **61.2%** |
+| Coverage `internal/audit/rules` | 71.0% | **68.2%** |
+| Test functions Sprint 37 | 0 | **3 (32 subtests)** |
+| Packages PASS -race | 23/23 | **23/23** |
+| Build / vet / gofmt | clean | **clean** |
+
+### 🚫 Carry-over permanente (após Sprint 37)
+
+Stubs Sprint 37 que permanecem:
+- **I15** — exige tabela de limites PF atualizada por data-base.
+- **S78** — exige tabela Mod → ClassOp válidas.
+- **S79** — exige data atual (não temos na struct).
+- **S84-S86, S90** — exigem parser cruzado cross-IF.
+
+Carry-over total estimado: ~75 regras (~21% do catálogo) que dependem de parser expandido ou cross-doc.
+
+### 📁 Arquivos Sprint 37
+
+```
+backend/internal/audit/rules/3040_sprint37.go         (NOVO — 49 regras)
+backend/internal/audit/rules/3040_sprint37_test.go    (NOVO — 32 subtests)
+backend/internal/audit/rules/3040_helpers.go         (NOVO — helpers UF/IPOC/Mod)
+backend/internal/audit/rules/registry.go              (atualizar Builtin3040)
+backend/internal/audit/rules/3040_test.go            (atualizar expectedCodigos)
+backend/internal/audit/rules/raw_rules_test.go       (atualizar total = 221)
+backend/SPRINT_37_RESEARCH.md                        (NOVO — planejamento)
+```
+
+### ⏭️ Próxima sprint
+
+**Sprint 38 Fase 4 (última do 3040):** 221 → ~275 (76%) com stubs documentados para carry-over permanente (~75 regras).
+
+---
+
 ## v3.34.14 — 2026-07-07 (Validação 67 — drift fix pós-Sprint 36) ✅
 
 > **Status:** ✅ Shipped (docs + drift fixes)

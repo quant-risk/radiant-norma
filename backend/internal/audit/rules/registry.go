@@ -293,6 +293,10 @@ func (r *Registry) All() []Rule {
 // Sprint 36 Fase 2: +51 regras (C21-C30/C41-C50/C56-C70/H04-H09/N01-N10 — 23 completas + 28 stubs I) → 177 regras.
 // V67: recontagem — 23 reais (severity E/A detectam violação) + 28 stubs (severity I retornam nil).
 // Híbridas (severity I com lógica parcial): C23, C43, C64.
+// Sprint 37 Fase 3: +44 novas (I06-I15/A16-A30/S71-S90) + 5 destravadas sobrescrevem stubs originais
+// (C44/C46/C57/C62/C68 stub → C44Destravada/.../C68Destravada real). Total Registry: 221.
+//
+// Cobertura catálogo: 221/361 = 61.2%.
 //
 // Cobertura catálogo: 177/361 = 49.0%.
 func Builtin3040() *Registry {
@@ -520,6 +524,61 @@ func Builtin3040() *Registry {
 	r.Register(N08CarenciaMin{})
 	r.Register(N09IdadeCli{})
 	r.Register(N10ConsolidacaoConglomerado{})
+
+	// Sprint 37 / v3.34.15 Fase 3 — Expansão 3040 (50 regras: 41 reais + 9 stubs I)
+	// I06-I15: Individualizadas (9 reais + 1 stub I15)
+	r.Register(I06ContratoModPJ{})
+	r.Register(I07IPOCCliUnico{})
+	r.Register(I08ProvIndPositiva{})
+	r.Register(I09VencIndClassA{})
+	r.Register(I10IPOCFormato{})
+	r.Register(I12CliIPOCIgualOpIPOC{})
+	r.Register(I13DtVencJanela5Anos{})
+	r.Register(I14IPOCBemFormado{})
+	r.Register(I15LimitePF{}) // stub
+	// A16-A30: Agregadas expandidas (15 reais)
+	r.Register(A16ClassOpFaixaVlr{})
+	r.Register(A17QtdOpSomaInd{})
+	r.Register(A18QtdCliSomaInd{})
+	r.Register(A19ModNatuOpValido{})
+	r.Register(A20PrzProvmClassOp{})
+	r.Register(A21LocalizUFValida{})
+	r.Register(A22TpCliPFTemLocaliz{})
+	r.Register(A23TpCliPJTemLocaliz{})
+	r.Register(A24DesempOpValido{})
+	r.Register(A25ClassOpAgIgualInd{})
+	r.Register(A26NatuOp02OrigemRec{})
+	r.Register(A27VincMEModME{})
+	r.Register(A28FaixaVlrSeq{})
+	r.Register(A29QtdCliExigeCampos{})
+	r.Register(A30ProvAgSomaInd{})
+	// S71-S90: Semântica expandida (16 reais + 4 stubs)
+	r.Register(S71ValorPositivoQtdOp{})
+	r.Register(S72PercRange{})
+	r.Register(S73DtContrDentroAno{})
+	r.Register(S74VencimentosNaoNegativos{})
+	r.Register(S75TotalCliConsistente{})
+	r.Register(S76ParteNumericaSeq{})
+	r.Register(S77SubstituicaoRemessa{})
+	r.Register(S78ClassOpPorModValido{}) // stub
+	r.Register(S79DtBaseAtual{})         // stub parcial
+	r.Register(S80QtdOpNaoNegativo{})
+	r.Register(S81VencimentosOrdem{})
+	r.Register(S82ValorMaiorVencimentos{})
+	r.Register(S83QtdCliInteiro{})
+	r.Register(S84CNPJCliConsolidado{}) // stub
+	r.Register(S85CessaoCedente{})      // stub
+	r.Register(S86DtVencCalc{})         // stub
+	r.Register(S87QtdOpInteiro{})
+	r.Register(S88VencimentosSoma{})
+	r.Register(S89ClassOpVincME{})
+	r.Register(S90RemessaUnicaDtBase{}) // stub
+	// Carry-over destravadas (5 stubs Sprint 36 → reais Sprint 37)
+	r.Register(C44LocalizPFDestravada{})
+	r.Register(C46OrigemRecBNDESDestravada{})
+	r.Register(C57Inf0307Rel1201Destravada{})
+	r.Register(C62ClassOpIndAgDestravada{})
+	r.Register(C68CliIPOCEqualDestravada{})
 
 	return r
 }

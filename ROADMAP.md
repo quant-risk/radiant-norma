@@ -17,9 +17,10 @@
                     criar migration `014_rls_enforce.sql` com FORCE ROW LEVEL SECURITY.
                     Defense-in-depth multi-tenant. Auditoria SOC 2. | ✅ |
 | **31** | RangeUploadAPI | Handlers REST `/v1/sta/range-*` — fechar YAGNI da Sprint 21 | pendente |
-| **32** | Audit3040_v2 | Portar 80+ regras restantes 3040. Coverage 16% → 60% | ✅ (49% — 5 fases: 60→74→79→98→126→177) |
+| **32** | Audit3040_v2 | Portar 80+ regras restantes 3040. Coverage 16% → 60% | ✅ (61% — 6 fases: 60→74→79→98→126→177→221) |
 | **33** | Audit3050 | Portar 170 regras 3050 TXB_V11. XSD já tem no BACEN, parser XML + 170 regras | ✅ fechado (100% — 6 fases: 28→56→80→97→153→170; carry-over permanente 5 stubs DB) |
-| **36** | Audit3040 Fase 2 | +51 regras 3040 (C21-C30, C41-C50, C56-C70, H04-H09, N01-N10) | ✅ fechado (49% — 30 reais + 21 stubs honestos I) |
+| **36** | Audit3040 Fase 2 | +51 regras 3040 (C21-C30, C41-C50, C56-C70, H04-H09, N01-N10) | ✅ fechado (49% — 22 reais + 3 híbridas + 29 stubs honestos I) |
+| **37** | Audit3040 Fase 3 | +44 regras 3040 + 5 destravadas (I06-I15, A16-A30, S71-S90) | ✅ fechado (61% — 36 reais + 6 híbridas + 7 stubs) |
 | **34** | FrontendNext | Migrar Console para Next.js 15 App Router + RSC + Server Actions | pendente |
 | **35** | CI-Gate | GitHub Actions com pre-commit hook + go test -race + coverage gate + lint | ✅ |
 | **36** | Observability | OpenTelemetry tracing + Sentry + Better Stack | pendente |

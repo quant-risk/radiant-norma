@@ -360,6 +360,8 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 	// Sprint 32 Fase 3: +19 Individuais/Campos/Header → 98 regras.
 	// Sprint 32 Fase 4: +28 (C31-C40, C51-C55, S21-S46, S69-S70) → 126 regras.
 	// Sprint 36 Fase 2: +51 (C21-C30, C41-C50, C56-C70, H04-H09, N01-N10) → 177 regras.
+	// Sprint 37 Fase 3: +44 (I06-I15, A16-A30, S71-S90) + 5 destravadas que sobrescrevem stubs (mesmo Code).
+	// Total Registry final: 5 raw + 216 tipadas = 221. expectedCodigos reflete o que está no registry.
 	expectedCodigos := []string{
 		// Básicas raw (Sprint 6 v1.5.0 / W3)
 		"B01", "B02", "B03", "B04", "B05",
@@ -418,6 +420,17 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 		"H04", "H05", "H06", "H07", "H08", "H09",
 		// N01-N10 (10 regras): Negócio
 		"N01", "N02", "N03", "N04", "N05", "N06", "N07", "N08", "N09", "N10",
+		// Sprint 37 Fase 3 — Expansão (50 regras: 41 reais + 9 stubs I)
+		// I06-I15 (9 reais + 1 stub)
+		"I06", "I07", "I08", "I09", "I10", "I12", "I13", "I14", "I15",
+		// A16-A30 (15 reais)
+		"A16", "A17", "A18", "A19", "A20", "A21", "A22", "A23", "A24", "A25",
+		"A26", "A27", "A28", "A29", "A30",
+		// S71-S90 (16 reais + 4 stubs)
+		"S71", "S72", "S73", "S74", "S75", "S76", "S77", "S78", "S79", "S80",
+		"S81", "S82", "S83", "S84", "S85", "S86", "S87", "S88", "S89", "S90",
+		// 5 destravadas (C44, C46, C57, C62, C68 viraram reais — diferentes structs)
+		// Note: C44/C46/C57/C62/C68 originais continuam stubs; os *Destravada são as versões com lógica.
 	}
 
 	if len(codes) != len(expectedCodigos) {
