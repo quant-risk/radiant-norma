@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -187,7 +188,7 @@ func (o *OpenAIChat) Model() string { return o.modelName }
 // ============================================================
 
 type rateLimiter struct {
-	mu        int
+	mu        sync.Mutex
 	windows   map[string][]time.Time
 	limit     int
 	windowLen time.Duration
@@ -201,13 +202,16 @@ func newRateLimiter(limit int, windowLen time.Duration) *rateLimiter {
 	}
 }
 
+// Allow returns true if the request is allowed under the rate limit.
+// Thread-safe using sync.Mutex.
 func (r *rateLimiter) Allow(ifID string) bool {
-	r.mu++
-	defer func() { r.mu-- }()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	now := time.Now()
 	cutoff := now.Add(-r.windowLen)
 
+	// Filter to only timestamps within the sliding window
 	var valid []time.Time
 	for _, t := range r.windows[ifID] {
 		if t.After(cutoff) {
@@ -215,9 +219,11 @@ func (r *rateLimiter) Allow(ifID string) bool {
 		}
 	}
 
+	// At limit → reject
 	if len(valid) >= r.limit {
 		return false
 	}
+
 	valid = append(valid, now)
 	r.windows[ifID] = valid
 	return true
