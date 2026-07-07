@@ -26,40 +26,57 @@ Shipped. 56 regras 3050 totais (28 A/S Fase 1 + 28 S/I Fase 2). Cobertura 32.9%.
 | Regras 3050 | 28 | **56** |
 | Cobertura catálogo 3050 | 16.5% | **32.9%** |
 | Coverage `internal/audit/rules` | 72.9% | **72.1%** (-0.8pp) |
-| Test functions total 3050 | 17 | **34** |
+| Test functions Fase 2 | 0 | **29** (13 S + 1 stub + 14 I + 1 integração) |
+| Test functions total 3050 | 17 | **46** (17 Fase 1 + 29 Fase 2) |
 | Files novos | 0 | **1** (3050_fase2_test.go) |
 | LOC Go adicionados | 0 | ~470 (3050.go delta + 3050_fase2_test.go) |
 | Packages PASS -race | 23/23 | **23/23** |
 | Stress 50 goroutines | mantida | **3/3 PASS** |
 | vet + gofmt | clean | **clean** |
 
-## 🧪 Testes (17 funções novas, ~50 sub-tests)
+## 🧪 Testes (29 funções novas no arquivo Fase 2, ~50 sub-tests)
 
-### Sistemáticas (8)
+### Sistemáticas (13 funções no arquivo, 8 regras-conceito testadas)
+
+Cada regra tem seu próprio `TestXXX_NomeRegra` — não há agrupamento "8 vs 13":
 
 - TestS15_DataBaseValida (5 cases: 2009-2030 range)
 - TestS16_NmContatoLength (3 cases: ≤100 chars)
 - TestS17_TelContatoFormato (5 cases: 10-11 dígitos)
 - TestS18_VlrConcessoesZeroTxJurosZero (3 cases: ambos zero OU ambos preenchidos)
 - TestS19_TxJurosZeroVlrConcessoesPos (2 cases)
-- TestS20-22_TxEncOperZeroVlrConcessoesPos / PrzDecZero / PrzDecPos (smoke)
+- TestS20_TxEncOperZeroVlrConcessoesPos (smoke)
+- TestS21_PrzDecZeroVlrConcessoesPos (smoke)
+- TestS22_PrzDecPosVlrConcessoesPos (smoke)
 - TestS23_PrzMedCondicional (3 cases: condicional sldCarAtiva)
 - TestS25_CNPJNaoZero (smoke: 00000000 placeholder)
 - TestS26_CodigoEncargoTipoCliUnico (2 cases: dedup)
-- TestS27-28_NaoNeg (smoke: sldBaiPrejuizo, qtdNovContratos)
+- TestS27_SldBaiPrejuizoNaoNeg (smoke)
+- TestS28_QtdNovContratosNaoNeg (smoke)
 
-### Individuais/Cruzadas (6)
+### Individuais/Cruzadas (14 funções, 1:1 com regras)
 
-- TestI01-02_CapGir (6 cases: ≤365, >365 boundaries)
-- TestI03-06_CredPesNaoConsignado (helper doc3050ComCredPes, 4 regras)
-- TestI07-10_PrzLimites (smoke: <30, >5000, <1)
-- TestI11-14_SldVlrLimites (smoke: <R$1000, >R$1T)
+- TestI01_CapGirAte365 (3 cases: 180/365/366 boundaries)
+- TestI02_CapGirSup365 (3 cases: 400/365/180 — complement of I01)
+- TestI03_CredPesNaoConsignadoSldCar (2 cases: helper `doc3050ComCredPes`)
+- TestI04_CredPesNaoConsignadoVlrConcessoes (1 case: helper)
+- TestI05_CredPesNaoConsignadoSldAdquirido (1 case: helper)
+- TestI06_CredPesNaoConsignadoSldCedido (1 case: helper)
+- TestI07_PrzMedCarteiraBaixo (1 case: <30)
+- TestI08_PrzMedCarteiraAlto (1 case: >5000)
+- TestI09_PrzDecMedConcessoesBaixo (1 case: <1)
+- TestI10_PrzDecMedConcessoesAlto (1 case: >5000)
+- TestI11_SldCarAtivaMuitoBaixo (1 case: <R$1000)
+- TestI12_SldCarAtivaMuitoAlto (1 case: >R$1T)
+- TestI13_VlrConcessoesMuitoBaixo (1 case: <R$1000)
+- TestI14_VlrConcessoesMuitoAlto (1 case: >R$1T)
 
-### Stubs + Integration (3)
+### Stubs + Integration (2)
 
-- TestS24_StubReturnsNil (severity "I" check)
-- TestBuiltin3050_Fase2TotalRulesIs (56 regras)
-- (Fase 1 TestBuiltin3050_TotalRulesIs atualizado para 56)
+- TestS24_StubReturnsNil (severity "I" check + Apply retorna nil)
+- TestBuiltin3050_Fase2TotalRulesIs (assert: Builtin3050() tem exatamente 56 regras)
+
+**Total:** 13 S + 14 I + 1 stub + 1 integration = **29 funções** no arquivo 3050_fase2_test.go.
 
 ## 🐛 Bugs encontrados pelos próprios tests (2, ambos fechados in-loop)
 

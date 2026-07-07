@@ -57,8 +57,8 @@ Fase 2 entrega 14 Sistemáticas (S15-S28) + 14 Individuais/Cruzadas (I01-I14). T
 | Regras 3050 | 28 | **56** (+28) |
 | Cobertura catálogo 3050 | 16.5% | **32.9%** (+16.5pp) |
 | Coverage `internal/audit/rules` | 72.9% | **72.1%** (-0.8pp — stubs sem lógica ficam descobertos) |
-| Test functions Fase 2 | 0 | **17** (table-driven + smoke) |
-| Test functions total 3050 | 17 | **34** |
+| Test functions Fase 2 | 0 | **29** (13 S + 1 stub + 14 I + 1 integração = 29 funções, ~50 sub-tests) |
+| Test functions total 3050 | 17 | **46** (17 Fase 1 + 29 Fase 2) |
 | Packages PASS -race | 23/23 | **23/23** |
 | Stress 50 goroutines baseline | mantida | **3/3 PASS** |
 | Stress 200 goroutines | PASS | **PASS** |
