@@ -22,6 +22,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 	"github.com/fortvna/radiant-norma/backend/internal/insights"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
+	"github.com/fortvna/radiant-norma/backend/internal/marketplace"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/realtime"
 	"github.com/fortvna/radiant-norma/backend/internal/ruleprefs"
@@ -101,6 +102,9 @@ type Server struct {
 
 	// Sprint 61 — v3.34.43: Webhooks outbound.
 	Webhook *webhook.Service
+
+	// Sprint 62 — v3.34.44: Marketplace de regras customizadas.
+	Marketplace *marketplace.Service
 }
 
 // auditLogAPI é interface mínima que *auditlog.Logger e *realtime.HubAwareLogger
@@ -252,6 +256,15 @@ func (s *Server) Router() http.Handler {
 			r.Post("/", s.registerWebhook)
 			r.Delete("/{id}", s.deleteWebhook)
 			r.Get("/{id}/deliveries", s.listDeliveries)
+		})
+
+		// Sprint 62 v3.34.44: Marketplace de regras customizadas.
+		r.Route("/v1/marketplace", func(r chi.Router) {
+			r.Get("/", s.listMarketplaceRules)
+			r.Post("/", s.publishRule)
+			r.Post("/{id}/install", s.installRule)
+			r.Post("/{id}/rate", s.rateRule)
+			r.Get("/installed", s.listInstalledRules)
 		})
 
 		// Sprint 56 v3.34.38: SOC 2 Type I readiness + evidence.

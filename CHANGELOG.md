@@ -2,6 +2,29 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.44 — 2026-07-07 (Sprint 62 Marketplace — Catálogo de regras customizadas) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** 62 (Marketplace)
+> **Tipo:** minor (novo package marketplace)
+> **Marco:** Marketplace de regras compartilháveis + instalação por tenant
+
+### 🎯 Resumo
+
+Sprint 62 adiciona o marketplace de regras customizadas — permite que IFs publiquem regras de validação compartilháveis e que outros IFs as instalem.
+
+**Arquivos novos:**
+- `backend/internal/marketplace/service.go` — Service: List, Publish, Install, Rate, GetInstalled
+- `backend/internal/api/marketplace_handlers.go` — REST handlers
+- `backend/internal/db/migrations/020_marketplace_rules.sql` — marketplace_rules, marketplace_installs, marketplace_ratings
+
+**Endpoints:**
+- `GET /v1/marketplace` — lista regras (com filtros cadoc/tag/paginação)
+- `POST /v1/marketplace` — publica nova regra
+- `POST /v1/marketplace/{id}/install` — instala regra
+- `POST /v1/marketplace/{id}/rate` — avalia regra (1-5 estrelas)
+- `GET /v1/marketplace/installed` — regras instaladas
+
 ## v3.34.43 — 2026-07-07 (Sprint 61 Webhooks Outbound) ✅
 
 > **Status:** ✅ Shipped
