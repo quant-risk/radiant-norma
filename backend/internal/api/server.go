@@ -612,6 +612,13 @@ func (s *Server) validate(w http.ResponseWriter, r *http.Request) {
 		"duration_ms": resp.DurationMs,
 	})
 
+	// Sprint 61 v3.34.43: dispara webhook validation.completed.
+	// Fire-and-forget — não bloqueia resposta nem afecta a validação.
+	if s.Webhook != nil {
+		DispatchValidationCompleted(s.Webhook, ifID, req.CadocCode, req.DataBase, resp.XMLHash,
+			resp.Passed, len(resp.Errors), len(resp.Warnings))
+	}
+
 	writeJSON(w, http.StatusOK, resp)
 }
 

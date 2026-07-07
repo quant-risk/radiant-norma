@@ -77,6 +77,9 @@ func (d *Dispatcher) processJob(job deliveryJob) {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			d.markDone(job.ID, "failed", 0, "webhook not found")
+		} else {
+			// Real DB error — mark failed so delivery isn't stuck in pending.
+			d.markDone(job.ID, "failed", 0, err.Error())
 		}
 		return
 	}
@@ -121,11 +124,11 @@ func (d *Dispatcher) scheduleRetry(job deliveryJob, httpStatus int, respBody str
 	}
 
 	backoffs := []time.Duration{1, 5, 15, 30, 60}
-	delay := backoffs[attempt]
-	if delay > 60 {
-		delay = 60
+	delay := time.Minute
+	if attempt < len(backoffs) {
+		delay = backoffs[attempt]
 	}
-	nextRetry := time.Now().Add(delay * time.Minute)
+	nextRetry := time.Now().Add(delay)
 
 	_, _ = d.db.ExecContext(context.Background(),
 		`UPDATE webhook_deliveries SET status='retrying', attempt=?, http_status=?,

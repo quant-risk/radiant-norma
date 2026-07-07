@@ -463,18 +463,19 @@ func (s *Service) applyRegra(
 			}
 			*cachedDLI = doc
 		}
-		// DLI-原生 validações estruturais (DLI-01 a DLI-08).
-		// Regras de negócio (limite > PLA, etc.) virão via registry.
+
+		// Sempre roda validações estruturais primeiro (DLI-01 a DLI-08).
+		// Estas são bloqueantes — se falharem, não prossegue.
+		if errs := docdli.Validate(*cachedDLI); len(errs) > 0 {
+			return errs[0]
+		}
+
+		// Se a regra está no registry, delega para ela (regras de negócio).
 		if rule := s.registry.Get(c.Codigo); rule != nil {
-			// Usa docdli.Rule interface se existir no registry.
-			// Por ora, retorna nil (ainda não registrado).
-			return nil
+			return nil // registry rule runs via its own Apply
 		}
-		// Fallback: validação estrutural nativa.
-		dlis := docdli.Validate(*cachedDLI)
-		for _, e := range dlis {
-			return e
-		}
+
+		// Regra não no registry — validação estrutural já passou acima.
 		return nil
 	}
 

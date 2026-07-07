@@ -155,7 +155,7 @@ func (s *Service) Dispatch(ctx context.Context, ifID, event string, payload any)
 }
 
 // Deliver enqueues a delivery for processing by the background worker.
-func (s *Service) Deliver(ctx context.Context, webhookID, event, payload string) string {
+func (s *Service) Deliver(webhookID, event, payload string) string {
 	id := newID()
 	s.ds.Enqueue(id, webhookID, event, payload)
 	return id

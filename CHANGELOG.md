@@ -2,6 +2,38 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.48 — 2026-07-07 (Validação 71 — bugs críticos encontrados em deep review) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (bug fixes)
+> **Criticidade:** alta — bugs encontrados em deep validation
+
+### Bugs corrigidos
+
+**1. webhook/dispatcher.go — processJob: erro DB não-ChamadaRows não marcava delivery como failed**
+- `Scan` com `ErrNoRows` era tratado, mas qualquer outro erro DB (timeout, conexão, etc.)
+  retornava `nil` sem chamar `markDone` — delivery ficava stuck em `pending` pra sempre.
+- Fix: todo erro DB não-`ErrNoRows` agora chama `markDone(id, "failed", 0, err.Error())`.
+
+**2. webhook/dispatcher.go — scheduleRetry: panic em `backoffs[attempt]` quando attempt >= 5**
+- Array `backoffs` tem tamanho 5 (índices 0-4). Loop `attempt >= 5` significava `attempt` podia
+  ser 5, causando `panic: index out of range`.
+- Fix: bounds check antes do acesso + `delay = time.Minute` (fallback seguro).
+
+**3. webhook/service.go — Deliver: parâmetro `ctx` nunca usado**
+- `ctx context.Context` declarado mas corpo não usava — Go compila mas é ruído.
+- Fix: removeu parâmetro `ctx`.
+
+**4. audit/service.go — DLI: validações estruturais não rodavam quando regra no registry**
+- `if rule := s.registry.Get(c.Codigo); rule != nil { return nil }` pulava as 8 validações
+  estruturais (DLI-01 a DLI-08) quando uma regra futura estivesse no registry.
+- Fix: validações estruturais sempre rodam primeiro (bloqueantes); registry rule delega após.
+
+**5. api/server.go — webhook validation.completed nunca disparava**
+- `DispatchValidationCompleted` era definida mas nunca chamada — webhooks nunca
+  disparavam após validação.
+- Fix: chamou `DispatchValidationCompleted` no handler `validate` após `AuditLog.Log`.
+
 ## v3.34.47 — 2026-07-07 (Sprint 65 SOC2 Type II — Continuous evidence collection) ✅
 
 > **Status:** ✅ Shipped
