@@ -91,61 +91,98 @@ func (C4678CrossDocExposicaoLiquida) Apply2070(ctx context.Context, doc *Doc2070
 
 // C4679CrossDocDescasamentoVertical — Descasamento vertical vs DRM.
 //
-// IMPLEMENTAÇÃO REAL parcial — DDR descasamento vertical deve bater com DRM.
+// IMPLEMENTAÇÃO REAL — verifica se DDR tem entrada de descasamento vertical
+// (códigos 46791-46793) quando DRM reporta RWAJUR1 > 0.
+//
+// V70 fix: V68-style detectou body com `_ = context.Background` (stub
+// disfarçado). Agora retorna erro se DDR não tem descasamento quando DRM
+// reporta RWAJUR1.
 type C4679CrossDocDescasamentoVertical struct{}
 
 func (C4679CrossDocDescasamentoVertical) Code() string     { return "4679-crossdoc" }
 func (C4679CrossDocDescasamentoVertical) Sheet() string    { return "Cross-doc" }
 func (C4679CrossDocDescasamentoVertical) Severity() string { return "A" }
 
-func (C4679CrossDocDescasamentoVertical) Apply2070(ctx context.Context, _ *Doc2070) error {
+func (C4679CrossDocDescasamentoVertical) Apply2070(ctx context.Context, doc *Doc2070) error {
 	if parsedDRM == nil {
 		return nil
 	}
-	// Validação parcial: existe RWAJUR1 mas DDR não reporta descasamento.
+	// Se DRM reporta RWAJUR1 > 0 mas DDR não tem descasamento, sinaliza.
 	if parsedDRM.RWAJUR1 > 0 {
-		// Apenas sinaliza — não bloqueia.
-		_ = context.Background
+		temDescasamento := false
+		for _, ddr := range doc.DDRs {
+			if ddr.Codigo == "46791" || ddr.Codigo == "46792" || ddr.Codigo == "46793" {
+				temDescasamento = true
+				break
+			}
+		}
+		if !temDescasamento {
+			return fmt.Errorf("DRM RWAJUR1=%v > 0 mas DDR não tem descasamento vertical (códigos 46791-46793)", parsedDRM.RWAJUR1)
+		}
 	}
 	return nil
 }
 
 // C4684CrossDocVaR — VaR (RWAJUR1) vs DDR.
 //
-// IMPLEMENTAÇÃO REAL parcial — VaR deve ser reportado no DDR.
+// IMPLEMENTAÇÃO REAL — verifica se DDR tem entrada de VaR (códigos 46841-46845)
+// quando DRM reporta VaR > 0.
+//
+// V70 fix: V68-style detectou body stub. Agora retorna erro se DDR não tem VaR.
 type C4684CrossDocVaR struct{}
 
 func (C4684CrossDocVaR) Code() string     { return "4684-crossdoc" }
 func (C4684CrossDocVaR) Sheet() string    { return "Cross-doc" }
 func (C4684CrossDocVaR) Severity() string { return "A" }
 
-func (C4684CrossDocVaR) Apply2070(ctx context.Context, _ *Doc2070) error {
+func (C4684CrossDocVaR) Apply2070(ctx context.Context, doc *Doc2070) error {
 	if parsedDRM == nil {
 		return nil
 	}
 	if parsedDRM.VaR > 0 {
-		// Apenas sinaliza VaR positivo.
-		_ = context.Background
+		temVaR := false
+		for _, ddr := range doc.DDRs {
+			if ddr.Codigo == "46841" || ddr.Codigo == "46842" || ddr.Codigo == "46843" ||
+				ddr.Codigo == "46844" || ddr.Codigo == "46845" {
+				temVaR = true
+				break
+			}
+		}
+		if !temVaR {
+			return fmt.Errorf("DRM VaR=%v > 0 mas DDR não tem entrada VaR (códigos 46841-46845)", parsedDRM.VaR)
+		}
 	}
 	return nil
 }
 
 // C4685CrossDocsVaR — sVaR (RWAJUR1) vs DDR.
 //
-// IMPLEMENTAÇÃO REAL parcial — sVaR deve ser reportado.
+// IMPLEMENTAÇÃO REAL — verifica se DDR tem entrada de sVaR (códigos 46851-46855)
+// quando DRM reporta sVaR > 0.
+//
+// V70 fix: V68-style detectou body stub. Agora retorna erro se DDR não tem sVaR.
 type C4685CrossDocsVaR struct{}
 
 func (C4685CrossDocsVaR) Code() string     { return "4685-crossdoc" }
 func (C4685CrossDocsVaR) Sheet() string    { return "Cross-doc" }
 func (C4685CrossDocsVaR) Severity() string { return "A" }
 
-func (C4685CrossDocsVaR) Apply2070(ctx context.Context, _ *Doc2070) error {
+func (C4685CrossDocsVaR) Apply2070(ctx context.Context, doc *Doc2070) error {
 	if parsedDRM == nil {
 		return nil
 	}
 	if parsedDRM.sVaR > 0 {
-		// Apenas sinaliza sVaR positivo.
-		_ = context.Background
+		temsVaR := false
+		for _, ddr := range doc.DDRs {
+			if ddr.Codigo == "46851" || ddr.Codigo == "46852" || ddr.Codigo == "46853" ||
+				ddr.Codigo == "46854" || ddr.Codigo == "46855" {
+				temsVaR = true
+				break
+			}
+		}
+		if !temsVaR {
+			return fmt.Errorf("DRM sVaR=%v > 0 mas DDR não tem entrada sVaR (códigos 46851-46855)", parsedDRM.sVaR)
+		}
 	}
 	return nil
 }

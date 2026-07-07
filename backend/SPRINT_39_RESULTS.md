@@ -32,12 +32,14 @@ Ambos com `PartialParseError*` (D-26 pattern).
 
 - **C4693-crossdoc** (E): Patrimônio DDR (161000+181000) vs DLO.Patrimonio.
 - **C4678-crossdoc** (A): RWAJUR2+3+4 DDR vs DRM.
-- **C4679-crossdoc** (A): Descasamento vertical vs DRM.
-- **C4684-crossdoc** (A): VaR (RWAJUR1) vs DDR.
-- **C4685-crossdoc** (A): sVaR vs DDR.
+- **C4679-crossdoc** (A): Descasamento vertical vs DRM — **V70 consertado** (era stub com `_ = context.Background`).
+- **C4684-crossdoc** (A): VaR (RWAJUR1) vs DDR — **V70 consertado**.
+- **C4685-crossdoc** (A): sVaR vs DDR — **V70 consertado**.
 - **C4686-crossdoc** (E): Posições moedas DRM têm contraparte DDR.
 - **C4763-crossdoc** (A): Saldo conta 770 DLO vs DDR.
 - **drm-strict** (I): Helper ValidadorDRMStrict.
+
+> **V70 (validação pós-Sprint 39):** 3 stubs disfarçados encontrados e consertados. As 3 regras (C4679, C4684, C4685) tinham `_ = context.Background` (stub disfarçado) — agora retornam erro se DRM reporta valor positivo mas DDR não tem entrada correspondente (códigos 46791-93, 46841-45, 46851-55).
 
 ### Helpers
 

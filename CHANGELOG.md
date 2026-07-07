@@ -2,6 +2,47 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.20 — 2026-07-07 (Validação 70 — drift fix pós-Sprint 39) ✅
+
+> **Status:** ✅ Shipped (docs + drift fixes)
+> **Tipo:** patch (validação profunda pós-ship)
+> **Marco:** 3 stubs disfarçados Sprint 39 consertados (C4679, C4684, C4685)
+
+### 🎯 Resumo
+
+V70 é a 4ª validação pós-ship (depois de V67, V68, V69). Foco: Sprint 39 cross-doc.
+
+| Regra | Sev declarado | Body original | V70 fix |
+|---|---|---|---|
+| **C4679-crossdoc** | A | `_ = context.Background` (stub disfarçado) | Erro se RWAJUR1 > 0 mas DDR sem descasamento (códigos 46791-93) |
+| **C4684-crossdoc** | A | `_ = context.Background` (stub disfarçado) | Erro se VaR > 0 mas DDR sem entrada VaR (códigos 46841-45) |
+| **C4685-crossdoc** | A | `_ = context.Background` (stub disfarçado) | Erro se sVaR > 0 mas DDR sem entrada sVaR (códigos 46851-55) |
+
+### Padrão emergente V67→V70
+
+| Validação | Regras adicionadas | Stubs disfarçados encontrados | % stubs disfarçados |
+|---|---|---|---|
+| V67 (Sprint 36) | 51 | 5 | 9.8% |
+| V68 (Sprint 37) | 49 | 1 | 1.9% |
+| V69 (Sprints 36-38) | 154 | 4 | 2.6% |
+| **V70 (Sprint 39)** | 8 (7 cross-doc + 1 helper) | **3** | **37.5%** |
+
+V70 encontrou uma **alta taxa de stubs disfarçados** porque o pattern `_ = context.Background` é similar ao `_ = i` de V69. Protocolo de auto-verificação agora reconhece 2 patterns:
+- `for ... { _ = i } return nil` (V69)
+- `_ = context.Background` (V70)
+
+### Métricas v3.34.19 → v3.34.20
+
+| Métrica | v3.34.19 | v3.34.20 |
+|---|---|---|
+| Stubs disfarçados Sprint 39 | 3 | **0** (consertados) |
+| Coverage audit/rules | 67.6% | **~67.6%** |
+| Subtests Sprint 39 | 11 | **17** (+6 V70) |
+| Packages PASS -race | 23/23 | **23/23** |
+| Drift docs vs código | sim | **corrigido** |
+
+---
+
 ## v3.34.19 — 2026-07-07 (Sprint 39 AuditDDR Fase 2 — parser DRM/DLO + cross-doc) ✅
 
 > **Status:** ✅ Shipped (Fase 2 — DDR parser + DRM/DLO + 7 regras cross-doc)

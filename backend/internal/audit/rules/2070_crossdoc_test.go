@@ -167,3 +167,64 @@ func TestSprint39_CrossDocRegras(t *testing.T) {
 func floatPtr(v float64) *float64 {
 	return &v
 }
+
+// V70 — testes para regras Sprint 39 consertadas (stubs disfarçados).
+func TestSprint39_V70_CrossDocReais(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("C4679_Descasamento_Fail", func(t *testing.T) {
+		// DRM reporta RWAJUR1 mas DDR não tem descasamento vertical.
+		doc2070 := &Doc2070{DDRs: []DDR{}}
+		parsedDRM = &DocDRM{RWAJUR1: 100}
+		err := C4679CrossDocDescasamentoVertical{}.Apply2070(ctx, doc2070)
+		if err == nil || !strings.Contains(err.Error(), "descasamento vertical") {
+			t.Errorf("esperava erro descasamento, got %v", err)
+		}
+	})
+
+	t.Run("C4679_Descasamento_OK", func(t *testing.T) {
+		// DDR tem 46791.
+		doc2070 := &Doc2070{DDRs: []DDR{{Codigo: "46791", Moeda: "BRL", Valor: floatPtr(100)}}}
+		parsedDRM = &DocDRM{RWAJUR1: 100}
+		err := C4679CrossDocDescasamentoVertical{}.Apply2070(ctx, doc2070)
+		if err != nil {
+			t.Errorf("DDR 46791 presente OK, got %v", err)
+		}
+	})
+
+	t.Run("C4684_VaR_Fail", func(t *testing.T) {
+		doc2070 := &Doc2070{DDRs: []DDR{}}
+		parsedDRM = &DocDRM{VaR: 50}
+		err := C4684CrossDocVaR{}.Apply2070(ctx, doc2070)
+		if err == nil || !strings.Contains(err.Error(), "VaR") {
+			t.Errorf("esperava erro VaR, got %v", err)
+		}
+	})
+
+	t.Run("C4684_VaR_OK", func(t *testing.T) {
+		doc2070 := &Doc2070{DDRs: []DDR{{Codigo: "46841", Moeda: "BRL", Valor: floatPtr(50)}}}
+		parsedDRM = &DocDRM{VaR: 50}
+		err := C4684CrossDocVaR{}.Apply2070(ctx, doc2070)
+		if err != nil {
+			t.Errorf("DDR 46841 presente OK, got %v", err)
+		}
+	})
+
+	t.Run("C4685_sVaR_Fail", func(t *testing.T) {
+		doc2070 := &Doc2070{DDRs: []DDR{}}
+		parsedDRM = &DocDRM{sVaR: 80}
+		err := C4685CrossDocsVaR{}.Apply2070(ctx, doc2070)
+		if err == nil || !strings.Contains(err.Error(), "sVaR") {
+			t.Errorf("esperava erro sVaR, got %v", err)
+		}
+	})
+
+	t.Run("C4685_sVaR_OK", func(t *testing.T) {
+		doc2070 := &Doc2070{DDRs: []DDR{{Codigo: "46851", Moeda: "BRL", Valor: floatPtr(80)}}}
+		parsedDRM = &DocDRM{sVaR: 80}
+		err := C4685CrossDocsVaR{}.Apply2070(ctx, doc2070)
+		if err != nil {
+			t.Errorf("DDR 46851 presente OK, got %v", err)
+		}
+	})
+}
