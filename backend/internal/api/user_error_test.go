@@ -23,7 +23,7 @@ func TestUserError_SanitizesErrAt400(t *testing.T) {
 	// err.Error() com fragmento SQL real (vetor comum).
 	rawErr := errors.New("sql: SELECT * FROM secrets WHERE token='abc123'")
 
-	srv := api.NewServer(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	srv := api.NewServer(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	w := httptest.NewRecorder()
 	srv.UserError(w, http.StatusBadRequest, "test", rawErr)
@@ -54,7 +54,7 @@ func TestUserError_SanitizesJSONDetail(t *testing.T) {
 	// err.Error() típico de json.Unmarshal com field names.
 	rawErr := errors.New("invalid character 'x' looking for beginning of value (offset 42, field cadoc_internal_secret)")
 
-	srv := api.NewServer(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	srv := api.NewServer(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	w := httptest.NewRecorder()
 	srv.UserError(w, http.StatusBadRequest, "test", rawErr)
@@ -73,7 +73,7 @@ func TestUserError_DSNAt500(t *testing.T) {
 	// err.Error() típico de pgx com DSN canônica.
 	rawErr := errors.New("failed to connect to `user=app database=secretdb`: hostname resolving")
 
-	srv := api.NewServer(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	srv := api.NewServer(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	w := httptest.NewRecorder()
 	srv.UserError(w, http.StatusInternalServerError, "test", rawErr)
@@ -99,7 +99,7 @@ func TestUserError_AllStatusCodes(t *testing.T) {
 		http.StatusTooManyRequests, http.StatusInternalServerError,
 		http.StatusServiceUnavailable,
 	}
-	srv := api.NewServer(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	srv := api.NewServer(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	for _, code := range codes {
 		w := httptest.NewRecorder()
 		srv.UserError(w, code, "test", errors.New("vetor x"))
@@ -115,7 +115,7 @@ func TestUserError_AllStatusCodes(t *testing.T) {
 
 // Garantir que JSON encoding é válido (não panic em Unicode, etc).
 func TestUserError_JsonEncodingValid(t *testing.T) {
-	srv := api.NewServer(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	srv := api.NewServer(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	w := httptest.NewRecorder()
 	srv.UserError(w, http.StatusInternalServerError, "test",
 		errors.New("java.sql.SQLException: unicode ãõ ç"))

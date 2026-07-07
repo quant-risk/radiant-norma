@@ -94,6 +94,9 @@ type Server struct {
 
 	// Sprint 46 — v3.34.27: WhiteLabel branding por tenant.
 	Branding *branding.BrandingService
+
+	// Sprint 53 — v3.34.35: AI Insights via LLM (opt-in).
+	InsightsLLM *insights.LLMService
 }
 
 // auditLogAPI é interface mínima que *auditlog.Logger e *realtime.HubAwareLogger
@@ -104,11 +107,12 @@ type auditLogAPI interface {
 }
 
 // NewServer cria um Server.
-func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences, tl *ruleprefs.ToggleLimiter, ack *insights.Acknowledgments, br *branding.BrandingService) *Server {
+func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences, tl *ruleprefs.ToggleLimiter, ack *insights.Acknowledgments, br *branding.BrandingService, insightsLLM *insights.LLMService) *Server {
 	return &Server{
 		DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient,
 		Radar: rad, RulePrefs: rp, ToggleLimiter: tl, Insights: ack,
 		Branding:    br,
+		InsightsLLM: insightsLLM,
 		startedAt:   time.Now(),
 		RateLimiter: newMemoryRateLimiter(),
 	}
@@ -215,6 +219,8 @@ func (s *Server) Router() http.Handler {
 			// Sprint 12 (v3.5.0) — drill-down de recommendation.
 			r.Post("/recommendations/{id}/acknowledge", s.acknowledgeRecommendation)
 			r.Delete("/recommendations/{id}/acknowledge", s.unacknowledgeRecommendation)
+			// Sprint 53 (v3.34.35) — AI Insights via LLM.
+			r.Post("/ask", s.AskLLM)
 		})
 
 		// Sprint 10 — SSE real-time stream.

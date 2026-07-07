@@ -77,7 +77,32 @@ func main() {
 	radarSvc := radar.New(d, 6*time.Hour)
 	brandingSvc := branding.NewBrandingService(d)
 
-	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, ruleprefs.NewPreferences(d), ruleprefs.NewToggleLimiter(10, time.Minute), insights.NewAcknowledgments(d), brandingSvc)
+	// Sprint 53 — v3.34.35: AI Insights via LLM (opt-in).
+	// Configurado via env vars: LLM_PROVIDER, LLM_API_KEY, LLM_MODEL.
+	var insightsLLM *insights.LLMService
+	if apiKey := os.Getenv("LLM_API_KEY"); apiKey != "" {
+		var llmClient insights.LLMClient
+		switch os.Getenv("LLM_PROVIDER") {
+		case "openai":
+			llmClient = insights.NewOpenAIChat(apiKey,
+				envOr("LLM_MODEL", "gpt-4o-mini"),
+				envOr("LLM_BASE_URL", "https://api.openai.com/v1"))
+		default: // minimax (default)
+			llmClient = insights.NewMiniMaxChat(insights.MiniMaxConfig{
+				APIKey:  apiKey,
+				Model:   envOr("LLM_MODEL", "MiniMax-Text-01"),
+				BaseURL: envOr("LLM_BASE_URL", "https://api.minimax.chat/v1"),
+			})
+		}
+		insightsLLM = insights.NewLLMService(insights.LLMConfig{
+			LLMClient: llmClient,
+			DB:        d,
+			Logger:    logger,
+		})
+		logger.Info("insights LLM initialized", "provider", os.Getenv("LLM_PROVIDER"))
+	}
+
+	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, ruleprefs.NewPreferences(d), ruleprefs.NewToggleLimiter(10, time.Minute), insights.NewAcknowledgments(d), brandingSvc, insightsLLM)
 
 	// Sprint 10 — Hub SSE + wrap audit logger pra publicar eventos em
 	// real-time. Em produção, hub pode ser substituído por Kafka/Redis
