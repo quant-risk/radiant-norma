@@ -2,6 +2,26 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.45 — 2026-07-07 (Sprint 63 MultiRegion — BR-SP1/SP2 replication) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** 63 (MultiRegion)
+> **Tipo:** minor (novo package multiregion)
+> **Marco:** Replicação entre regiões BR-SP1 e BR-SP2 para DR e baixa latência
+
+### 🎯 Resumo
+
+Sprint 63 adiciona suporte a MultiRegion — permite que tenants sejam atribuídos a uma região e que dados sejam replicados entre BR-SP1 e BR-SP2.
+
+**Arquivos novos:**
+- `backend/internal/multiregion/service.go` — Service: AssignRegion, GetRegion, IsLocal, ShouldReplicate, EmitEvent, GetStatus, MarkSynced, MarkFailed, PendingEvents, UpdateReplicationStatus
+- `backend/internal/db/migrations/021_multiregion.sql` — ifs.region, region_events, replication_status
+
+**Modelo:**
+- `ifs.region`: br-sp1 (default) | br-sp2
+- `region_events`: log de eventos pendentes de replicação
+- `replication_status`: status de DR (healthy | degraded | offline)
+
 ## v3.34.44 — 2026-07-07 (Sprint 62 Marketplace — Catálogo de regras customizadas) ✅
 
 > **Status:** ✅ Shipped
