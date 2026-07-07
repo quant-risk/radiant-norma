@@ -60,7 +60,7 @@
 | Sprint | Entregas |
 |---|---|
 | **49** | DRSAC_v1 — Catálogo + XSD + 50+ regras iniciais | ✅ fechada (v3.34.30 — 35 regras D01-D35) |
-| **50** | DRSAC_v2 — Regras IPOC × setor × risco climático |
+| **50** | DRSAC_v2 — Regras IPOC × setor × risco climático | ✅ fechada (v3.34.31 — 8 regras cross-doc DRSAC↔SCR) |
 | **51** | Audit4111 — 30+ regras iniciais |
 | **52** | CrossDoc_DRSAC — 3040 ↔ DRSAC ↔ 4111 |
 | **53** | AIInsights_v1 — LLM interpreta audit_log (opt-in) |

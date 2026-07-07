@@ -2,6 +2,37 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.31 — 2026-07-07 (Sprint 50 DRSAC_v2 — Cross-Doc DRSAC↔SCR) ✅
+
+> **Status:** ✅ Shipped (cross-doc rules)
+> **Sprint:** 50 (DRSAC_v2)
+> **Tipo:** minor (cross-doc DRSAC↔SCR)
+> **Marco:** 8 regras cross-doc (XD-DR01 a XD-DR08) linking DRSAC IPOC/Saldo/CNAE/TVM ao SCR
+
+### 🎯 Resumo
+
+Sprint 50 adiciona regras cross-document entre DRSAC (2030) e SCR (3040), validando consistência de IPOC, saldo, CNAE, TVM e flags de risco entre os dois documentos.
+
+**Arquivos novos:**
+- `internal/drsac/rules_crossdoc.go` — 8 regras cross-doc + helpers
+
+**Regras cross-doc:**
+| Código | Severidade | Descrição |
+|---|---|---|
+| XD-DR01 | E | IPOC no DRSAC deve existir no SCR |
+| XD-DR02 | A | Saldo DRSAC vs SCR (tolerância 10%) |
+| XD-DR03 | E | Cliente DRSAC deve existir no SCR |
+| XD-DR04 | A | CNAE setor DRSAC vs SCR |
+| XD-DR05 | A | Risco social alto DRSAC → flag no SCR |
+| XD-DR06 | A | Risco ambiental DRSAC → menção no SCR |
+| XD-DR07 | A | Total TVM DRSAC vs SCR (tolerância 15%) |
+| XD-DR08 | I | Contribuição positiva → instrumento verde no SCR |
+
+**SCRData struct** para interface com SCR (3040):
+- Saldo, CNAE, HasCliente, HasHighRiskFlag, HasCollateral, IsGreenInstrument
+
+---
+
 ## v3.34.30 — 2026-07-07 (Sprint 49 DRSAC_v1 — 35 Regras DRSAC 2030) ✅
 
 > **Status:** ✅ Shipped (DRSAC rules)
