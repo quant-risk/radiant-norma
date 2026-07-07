@@ -295,8 +295,10 @@ func (r *Registry) All() []Rule {
 // Híbridas (severity I com lógica parcial): C23, C43, C64.
 // Sprint 37 Fase 3: +44 novas (I06-I15/A16-A30/S71-S90) + 5 destravadas sobrescrevem stubs originais
 // (C44/C46/C57/C62/C68 stub → C44Destravada/.../C68Destravada real). Total Registry: 221.
+// Sprint 38 Fase 4: +45 novas (C71-C90/SUB01-SUB15/X01-X10) + 9 destravadas sobrescrevem stubs (Sprint 36-37).
+// Total Registry: 275 (última sprint de expansão do 3040).
 //
-// Cobertura catálogo: 221/361 = 61.2%.
+// Cobertura catálogo: 275/361 = 76.2%.
 //
 // Cobertura catálogo: 177/361 = 49.0%.
 func Builtin3040() *Registry {
@@ -579,6 +581,66 @@ func Builtin3040() *Registry {
 	r.Register(C57Inf0307Rel1201Destravada{})
 	r.Register(C62ClassOpIndAgDestravada{})
 	r.Register(C68CliIPOCEqualDestravada{})
+
+	// Sprint 38 / v3.34.17 Fase 4 — FECHAMENTO do 3040 (45 novas + 9 destravadas)
+	// C71-C90: Campos Opcionais expandidos (10 reais + 10 stubs I)
+	r.Register(C71Inf1301Comissao{})
+	r.Register(C72Inf1302Tarifa{})
+	r.Register(C73Inf1401Seguro{})
+	r.Register(C74Inf1501IOF{})
+	r.Register(C75Inf1601CustoAquisicao{})
+	r.Register(C76Inf17XXGarantia{})
+	r.Register(C77Inf18XXCoobrig{})
+	r.Register(C78Inf19XXReestrut{})
+	r.Register(C79Inf20XXXNovos{})
+	r.Register(C80InfCrossRef03071201{})
+	r.Register(C81DtContrNaoFuturo{})
+	r.Register(C82DtVencAposContr{})
+	r.Register(C83ValorPositivo{})
+	r.Register(C84PercPropria{})
+	r.Register(C85QtdParcelasPositivo{})
+	r.Register(C86PercCoobrig{})
+	r.Register(C87DtVencCalc{})
+	r.Register(C88ValorPrincipalJuros{})
+	r.Register(C89GarantiaFidej{})
+	r.Register(C90CessaoCedenteCd{})
+	// SUB01-SUB15: Substituição Parcial (7 reais + 8 stubs I)
+	r.Register(SUB01SubstituicaoRemessa{})
+	r.Register(SUB02SubstituicaoParte{})
+	r.Register(SUB03DocumentosReferenciados{})
+	r.Register(SUB04PreservaOperacoes{})
+	r.Register(SUB05SubstituicaoInf{})
+	r.Register(SUB06SubstituicaoMin1{})
+	r.Register(SUB07SubstituicaoTotalF{})
+	r.Register(SUB08HistoricoSubstituicoes{})
+	r.Register(SUB09SubstPeriodoDiferente{})
+	r.Register(SUB10SubstCNPJConsistente{})
+	r.Register(SUB11PreservaCli{})
+	r.Register(SUB12SubstDataLimite{})
+	r.Register(SUB13SubstMultiplaOrdem{})
+	r.Register(SUB14SubstAgregados{})
+	r.Register(SUB15SubstCrossIF{})
+	// X01-X10: Cross-doc básico (1 real + 9 stubs I)
+	r.Register(X01CNPJCrossDoc{})
+	r.Register(X02DtBaseCoerente{})
+	r.Register(X03Ops30402042{})
+	r.Register(X04Ops30402042Ag{})
+	r.Register(X05CliUnicoCross{})
+	r.Register(X06IPOCUnicoCross{})
+	r.Register(X07VencimentosCross{})
+	r.Register(X08ProvConsttdCross{})
+	r.Register(X09Consolidacao3050{})
+	r.Register(X10ModalidadeCross{})
+	// Carry-over destravadas (9 stubs Sprint 36-37 → reais Sprint 38)
+	r.Register(I15LimitePFDestravada{})
+	r.Register(S78ClassOpPorModDestravada{})
+	r.Register(S84CNPJCliConsolidadoDestravada{})
+	r.Register(S85CessaoCedenteDestravada{})
+	r.Register(S86DtVencCalcDestravada{})
+	r.Register(S90RemessaUnicaDtBaseDestravada{})
+	r.Register(N05LimiteBasileiaDestravada{})
+	r.Register(N07PrazoMaxDestravada{})
+	r.Register(N08CarenciaMinDestravada{})
 
 	return r
 }

@@ -2,6 +2,76 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.17 — 2026-07-07 (Sprint 38 Audit3040 Fase 4 — FECHAMENTO 3040) ✅
+
+> **Status:** ✅ Shipped (Fase 4 — fecha 3040 61.2% → 76.2%)
+> **Sprint:** 38 (Audit3040 — SCR Risco de Crédito — ÚLTIMA sprint de expansão)
+> **Tipo:** minor (45 regras 3040 + 9 destravadas sobrescrevem stubs)
+> **Marco:** 221 → 266 regras 3040 (61.2% → **76.2%** cobertura catálogo 361)
+
+### 🎯 Resumo
+
+**Esta é a ÚLTIMA sprint de expansão do CADOC 3040.** Após Sprint 38, 3040 entra em manutenção. Cobertura final: **266/361 = 76.2%**. Carry-over permanente: ~50 regras (~14%) que dependem de cross-doc DRM/DLO ou parser de catálogos específicos.
+
+**54 regras em 3040_sprint38.go:**
+- **C71-C90** (20): Campos Opcionais expandidos — Inf cross-ref 0307↔1201 (C80), cessão cedente (C90), DtContr ≤ DtBase (C81), DtVencOp ≥ DtContr (C82), Valor positivo (C83), Perc range (C86).
+- **SUB01-SUB15** (15): Substituição Parcial — TpArq=S Remessa>0 (SUB01), Min 1 op (SUB06), Inf=I03XX (SUB05), CNPJ consistente (SUB10).
+- **X01-X10** (10): Cross-doc básico — DtBase coerente (X02), stubs cross-IF (X01, X03-X10).
+- **9 destravadas** (I15, S78, S84, S85, S86, S90, N05, N07, N08): stubs Sprint 36-37 com tabelas default conservadoras (Limite PF R$500k, Prazo Max 60 meses, Carência 30 dias, Basileia R$10MM).
+
+### Decisões técnicas
+
+**DT-44 — Tabelas default conservadoras para destravadas:**
+- Limite PF: R$ 500k (default CMN 4.966).
+- Prazo Max: 60 meses (5 anos).
+- Carência: 30 dias.
+- Basileia: R$ 10MM.
+- ClassOp × Mod: Mod 02XX aceita A-H; outros A-D.
+
+**DT-45 — SUB-prefix para Substituição Parcial:** alinhado com catálogo BACEN (seção própria).
+
+**DT-46 — X-prefix para Cross-doc:** distingue de C-level. Sprint 38 adiciona cross-doc 3040-3042/3050.
+
+### Métricas v3.34.16 → v3.34.17
+
+| Métrica | v3.34.16 | v3.34.17 |
+|---|---|---|
+| Regras 3040 | 221 | **266** |
+| Cobertura catálogo 3040 | 61.2% | **76.2%** |
+| Coverage `internal/audit/rules` | 68.2% | **~67%** |
+| Test functions Sprint 38 | 0 | **2 (40 subtests)** |
+| Packages PASS -race | 23/23 | **23/23** |
+| Build / vet / gofmt | clean | **clean** |
+
+### 🏁 Status 3040 (FECHADO)
+
+**3040 entra em manutenção após Sprint 38.** Carry-over permanente documentado (~50 regras):
+- Cross-doc DRM/DLO (X01, X03-X10 cross-IF).
+- Catálogo modalidades específicas (Rural, Habitacional, Leasing — C73, C76, C78).
+- Tabelas regulatórias dinâmicas (Basileia, CMN 4.966 — N05, N07, N08 com tabela dinâmica).
+- Parser histórico (substituição, preservações — SUB02-SUB04, SUB08, SUB11-SUB15).
+
+### Próximas workstreams (3040 fechado)
+
+- **Sprint 39:** AuditDDR Fase 2 (parser DRM/DLO).
+- **Sprint 40:** AuditDRL (2160 LCR modelos II).
+- **Sprint 41:** AuditDLP (2170 NSFR).
+- **Sprint 42:** Audit3044 (engine JSON eventos).
+
+### 📁 Arquivos Sprint 38
+
+```
+backend/internal/audit/rules/3040_sprint38.go         (NOVO — 54 regras)
+backend/internal/audit/rules/3040_sprint38_test.go    (NOVO — 40 subtests)
+backend/internal/audit/rules/registry.go              (atualizar Builtin3040)
+backend/internal/audit/rules/3040_test.go            (atualizar expectedCodigos)
+backend/internal/audit/rules/raw_rules_test.go       (atualizar total = 266)
+backend/SPRINT_38_RESEARCH.md                        (NOVO — planejamento)
+backend/SPRINT_38_RESULTS.md                         (NOVO — após implementação)
+```
+
+---
+
 ## v3.34.16 — 2026-07-07 (Validação 68 — drift fix pós-Sprint 37) ✅
 
 > **Status:** ✅ Shipped (docs + drift fixes)

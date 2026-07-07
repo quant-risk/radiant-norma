@@ -40,4 +40,4 @@ package version
 //	v3.2.0             → v3.3.0 (Sprint 10, real-time SSE)
 //	v3.3.0             → v3.4.0 (Sprint 11, drill-down server actions)
 //	v3.4.0             → v3.5.0 (Sprint 12, production hardening + engine integration)
-const Version = "3.34.16"
+const Version = "3.34.17"

@@ -361,7 +361,8 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 	// Sprint 32 Fase 4: +28 (C31-C40, C51-C55, S21-S46, S69-S70) → 126 regras.
 	// Sprint 36 Fase 2: +51 (C21-C30, C41-C50, C56-C70, H04-H09, N01-N10) → 177 regras.
 	// Sprint 37 Fase 3: +44 (I06-I15, A16-A30, S71-S90) + 5 destravadas que sobrescrevem stubs (mesmo Code).
-	// Total Registry final: 5 raw + 216 tipadas = 221. expectedCodigos reflete o que está no registry.
+	// Sprint 38 Fase 4: +45 (C71-C90, SUB01-15, X01-10) + 9 destravadas override stubs (I15, S78, S84, S85, S86, S90, N05, N07, N08).
+	// Total Registry final: 5 raw + 261 tipadas = 266. expectedCodigos reflete o que está no registry.
 	expectedCodigos := []string{
 		// Básicas raw (Sprint 6 v1.5.0 / W3)
 		"B01", "B02", "B03", "B04", "B05",
@@ -429,8 +430,16 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 		// S71-S90 (16 reais + 4 stubs)
 		"S71", "S72", "S73", "S74", "S75", "S76", "S77", "S78", "S79", "S80",
 		"S81", "S82", "S83", "S84", "S85", "S86", "S87", "S88", "S89", "S90",
-		// 5 destravadas (C44, C46, C57, C62, C68 viraram reais — diferentes structs)
-		// Note: C44/C46/C57/C62/C68 originais continuam stubs; os *Destravada são as versões com lógica.
+		// Sprint 38 Fase 4 — FECHAMENTO 3040 (45 novas)
+		// C71-C90: Campos Opcionais expandidos (10 reais + 10 stubs)
+		"C71", "C72", "C73", "C74", "C75", "C76", "C77", "C78", "C79", "C80",
+		"C81", "C82", "C83", "C84", "C85", "C86", "C87", "C88", "C89", "C90",
+		// SUB01-SUB15: Substituição Parcial (7 reais + 8 stubs)
+		"SUB01", "SUB02", "SUB03", "SUB04", "SUB05", "SUB06", "SUB07", "SUB08", "SUB09", "SUB10",
+		"SUB11", "SUB12", "SUB13", "SUB14", "SUB15",
+		// X01-X10: Cross-doc básico (1 real + 9 stubs)
+		"X01", "X02", "X03", "X04", "X05", "X06", "X07", "X08", "X09", "X10",
+		// 9 destravadas Sprint 36-37 (I15, S78, S84, S85, S86, S90, N05, N07, N08) sobrescrevem stubs.
 	}
 
 	if len(codes) != len(expectedCodigos) {
