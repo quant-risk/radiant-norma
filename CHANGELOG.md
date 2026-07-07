@@ -2,6 +2,63 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.19 — 2026-07-07 (Sprint 39 AuditDDR Fase 2 — parser DRM/DLO + cross-doc) ✅
+
+> **Status:** ✅ Shipped (Fase 2 — DDR parser + DRM/DLO + 7 regras cross-doc)
+> **Sprint:** 39 (AuditDDR — Requerimento Capital Diário cross-doc)
+> **Tipo:** minor (parser DRM + parser DLO + 7 regras cross-doc 2070)
+> **Marco:** 11 → 18 regras DDR (0% → cross-doc básico)
+
+### 🎯 Resumo
+
+Fase 2 adiciona parsers para DRM (Demonstrativo de Risco de Mercado) e DLO (Demonstrativo de Limites Operacionais) + 7 regras cross-doc entre DDR + DRM + DLO.
+
+**Arquivos novos:**
+- `drm.go` — DocDRM + ParseDocDRM (best-effort XML).
+- `dlo.go` — DocDLO + ParseDocDLO (best-effort XML).
+- `2070_crossdoc.go` — 7 regras cross-doc + 1 helper (ValidadorDRMStrict).
+- `2070_crossdoc_test.go` — 11 subtests.
+
+**Decisões técnicas:**
+- **DRM subset:** RWAJUR1-4, VaR, sVaR, RWACOM, Posicoes (codigo + moeda + valor).
+- **DLO subset:** Conta770, LimiteTotal, Patrimonio.
+- **Cross-doc via globais:** `parsedDRM` e `parsedDLO` configurados via service layer (SetDRM/SetDLO).
+- **Tolerância 10%** para discrepâncias (não exige match exato entre DDR e DRM/DLO).
+
+### Regras cross-doc
+
+| Cod | Sev | Regra |
+|---|---|---|
+| **C4693-crossdoc** | E | Patrimônio Líquido Exterior DDR (161000+181000) vs DLO.Patrimonio |
+| **C4678-crossdoc** | A | RWAJUR2+3+4 DDR vs DRM |
+| **C4679-crossdoc** | A | Descasamento vertical vs DRM |
+| **C4684-crossdoc** | A | VaR (RWAJUR1) vs DDR |
+| **C4685-crossdoc** | A | sVaR vs DDR |
+| **C4686-crossdoc** | E | Posições moedas DRM têm contraparte DDR |
+| **C4763-crossdoc** | A | Saldo conta 770 DLO vs DDR |
+| **drm-strict** | I | ValidadorDRMStrict (helper para Sprint 39+) |
+
+### 📊 Métricas v3.34.18 → v3.34.19
+
+| Métrica | v3.34.18 | v3.34.19 |
+|---|---|---|
+| Regras DDR (2070) | 11 | **18** (+7 cross-doc) |
+| Parsers cross-doc | 0 | **2** (DRM + DLO) |
+| Test functions Sprint 39 | 0 | **4 (11 subtests)** |
+| Packages PASS -race | 23/23 | **23/23** |
+| Build / vet / gofmt | clean | **clean** |
+
+### 📁 Arquivos Sprint 39
+
+```
+backend/internal/audit/rules/drm.go                       (NOVO — DocDRM + parser)
+backend/internal/audit/rules/dlo.go                       (NOVO — DocDLO + parser)
+backend/internal/audit/rules/2070_crossdoc.go             (NOVO — 7 regras + helper)
+backend/internal/audit/rules/2070_crossdoc_test.go        (NOVO — 11 subtests)
+```
+
+---
+
 ## v3.34.18 — 2026-07-07 (Validação 69 — drift fix pós-Sprints 36-38) ✅
 
 > **Status:** ✅ Shipped (docs + drift fixes)
