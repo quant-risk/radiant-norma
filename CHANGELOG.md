@@ -2,6 +2,30 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.38 — 2026-07-07 (Sprint 56 SOC2 Type I — Readiness + Evidence Collection) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** 56 (SOC2 Type I)
+> **Tipo:** minor (novo package soc2)
+> **Marco:** Ferramentas de suporte à auditoria SOC 2 — readiness report + coleta de evidências
+
+### 🎯 Resumo
+
+Sprint 56 adiciona tooling de suporte à auditoria SOC 2 Type I. Fornece controls registry mapeado para AICPA Trust Services Criteria, evidence collector que consulta dados reais do sistema, e readiness report com gaps identificados.
+
+**Endpoints admin (JWT, admin role):**
+- `GET /v1/admin/soc2/readiness` — relatório de readiness SOC 2
+- `GET /v1/admin/soc2/controls` — lista de controles e status
+- `GET /v1/admin/soc2/controls/{id}/evidence` — coleta evidências para 1 controle
+
+**Arquivos novos:**
+- `internal/soc2/controls.go` — Trust Services Criteria (CC1-CC9, A1, PI1, C1) + 27 controles mapeados
+- `internal/soc2/evidence.go` — EvidenceCollector (CC6.6 audit log chain, CC6.1/2/3 access, CC6.4/5 encryption, CC2 policy, CC8 change management, CC7 monitoring, CC3 risk)
+- `internal/soc2/soc2_test.go` — testes de controles e constants
+- `internal/api/soc2_handlers.go` — 3 handlers admin
+
+**Nota:** Este package é ferramenta de suporte. A auditoria SOC 2 real deve ser conduzida por CPA/AICPA-certified auditor.
+
 ## v3.34.37 — 2026-07-07 (Sprint 54 SchemaRegistry_v2 — Auto-changelog + Endpoint Público) ✅
 
 > **Status:** ✅ Shipped

@@ -241,6 +241,13 @@ func (s *Server) Router() http.Handler {
 			r.Get("/public/{slug}", s.getBrandingBySlug)
 		})
 		r.Put("/admin/tenant/{id}/branding", s.adminUpdateBranding)
+
+		// Sprint 56 v3.34.38: SOC 2 Type I readiness + evidence.
+		r.Route("/admin/soc2", func(r chi.Router) {
+			r.Get("/readiness", s.getSOC2Readiness)
+			r.Get("/controls", s.listSOC2Controls)
+			r.Get("/controls/{id}/evidence", s.getSOC2ControlEvidence)
+		})
 	})
 
 	// Sprint 8a (v2.1.0): dev-token endpoint (FRENTE do middleware JWT).
