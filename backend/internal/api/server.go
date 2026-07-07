@@ -18,6 +18,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
+	"github.com/fortvna/radiant-norma/backend/internal/branding"
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 	"github.com/fortvna/radiant-norma/backend/internal/insights"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
@@ -90,6 +91,9 @@ type Server struct {
 	// Wire via Server.Metrics = api.NewMetrics() antes de Router().
 	// Endpoint /metrics (top-level, sem auth) consome via Render().
 	Metrics *Metrics
+
+	// Sprint 46 — v3.34.27: WhiteLabel branding por tenant.
+	Branding *branding.BrandingService
 }
 
 // auditLogAPI é interface mínima que *auditlog.Logger e *realtime.HubAwareLogger
@@ -100,10 +104,11 @@ type auditLogAPI interface {
 }
 
 // NewServer cria um Server.
-func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences, tl *ruleprefs.ToggleLimiter, ack *insights.Acknowledgments) *Server {
+func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences, tl *ruleprefs.ToggleLimiter, ack *insights.Acknowledgments, br *branding.BrandingService) *Server {
 	return &Server{
 		DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient,
 		Radar: rad, RulePrefs: rp, ToggleLimiter: tl, Insights: ack,
+		Branding:    br,
 		startedAt:   time.Now(),
 		RateLimiter: newMemoryRateLimiter(),
 	}
@@ -216,6 +221,17 @@ func (s *Server) Router() http.Handler {
 		// Auth vem do middleware JWT global (acima).
 		// Stream filtra por IF automaticamente (atrás de IF=auth).
 		r.Get("/events/stream", s.eventsStreamHandler)
+
+		// Sprint 46 (v3.34.27): WhiteLabel branding.
+		// GET /tenant/branding: branding do tenant autenticado.
+		// PUT /admin/tenant/:id/branding: admin atualiza branding de qualquer tenant.
+		// GET /tenant/branding/public/:slug: público por tenant_slug.
+		r.Route("/tenant/branding", func(r chi.Router) {
+			r.Get("/", s.getBranding)
+			r.Put("/", s.updateBranding)
+			r.Get("/public/{slug}", s.getBrandingBySlug)
+		})
+		r.Put("/admin/tenant/{id}/branding", s.adminUpdateBranding)
 	})
 
 	// Sprint 8a (v2.1.0): dev-token endpoint (FRENTE do middleware JWT).
@@ -1007,6 +1023,80 @@ func (s *Server) enforceSameIF(w http.ResponseWriter, r *http.Request, providedI
 		return false
 	}
 	return true
+}
+
+// Sprint 46 (v3.34.27): WhiteLabel branding handlers.
+
+func (s *Server) getBranding(w http.ResponseWriter, r *http.Request) {
+	tenantID := getIfID(r)
+	if tenantID == "" {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+	b, err := s.Branding.GetBranding(r.Context(), tenantID)
+	if err != nil {
+		s.userError(w, http.StatusInternalServerError, "branding.get", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, b)
+}
+
+func (s *Server) updateBranding(w http.ResponseWriter, r *http.Request) {
+	tenantID := getIfID(r)
+	if tenantID == "" {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+	var req branding.UpdateBrandingRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
+		return
+	}
+	b, err := s.Branding.UpdateBranding(r.Context(), tenantID, req)
+	if err != nil {
+		s.userError(w, http.StatusBadRequest, "branding.update", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, b)
+}
+
+func (s *Server) getBrandingBySlug(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	if slug == "" {
+		http.Error(w, `{"error":"slug requerido"}`, http.StatusBadRequest)
+		return
+	}
+	b, err := s.Branding.GetBrandingBySlug(r.Context(), slug)
+	if err != nil {
+		s.userError(w, http.StatusNotFound, "branding.slug", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, b)
+}
+
+func (s *Server) adminUpdateBranding(w http.ResponseWriter, r *http.Request) {
+	tenantID := chi.URLParam(r, "id")
+	if tenantID == "" {
+		http.Error(w, `{"error":"tenant id requerido"}`, http.StatusBadRequest)
+		return
+	}
+	// Admin role check via claims.
+	claims, err := auth.ClaimsFromContext(r.Context())
+	if err != nil || claims == nil || !claims.HasRole(auth.RoleAdmin) {
+		http.Error(w, `{"error":"admin required"}`, http.StatusForbidden)
+		return
+	}
+	var req branding.UpdateBrandingRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
+		return
+	}
+	b, err := s.Branding.UpdateBranding(r.Context(), tenantID, req)
+	if err != nil {
+		s.userError(w, http.StatusBadRequest, "branding.admin.update", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, b)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

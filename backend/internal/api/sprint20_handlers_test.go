@@ -23,6 +23,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/api"
 	"github.com/fortvna/radiant-norma/backend/internal/audit"
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
+	"github.com/fortvna/radiant-norma/backend/internal/branding"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
@@ -71,7 +72,7 @@ func newTestServerWithWS(t *testing.T, mockHandler http.Handler) (*api.Server, *
 	audLog := auditlog.New(d)
 	radarSvc := radar.New(d, 1)
 
-	srv := api.NewServer(d, schReg, audSvc, audLog, wsClient, radarSvc, nil, nil, nil)
+	srv := api.NewServer(d, schReg, audSvc, audLog, wsClient, radarSvc, nil, nil, nil, branding.NewBrandingService(d))
 	srv.ScanLimiter = radar.NewScanLimiter(1 * time.Minute)
 	srv.ScanCache = radar.NewScanCache(5 * time.Minute)
 	srv.AdminAuth = &radar.AdminAuth{Token: "test-admin-token"}

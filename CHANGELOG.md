@@ -1,6 +1,42 @@
 # Changelog — cadocs (Radiant Norma)
 
-> **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
+> **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
+
+## v3.34.27 — 2026-07-07 (Sprint 46 WhiteLabel — Branding por Tenant) ✅
+
+> **Status:** ✅ Shipped (WhiteLabel branding)
+> **Sprint:** 46 (WhiteLabel)
+> **Tipo:** minor (novo package branding)
+> **Marco:** WhiteLabel — cada tenant pode customizar logo, cores e domínio
+
+### 🎯 Resumo
+
+Sprint 46 adiciona branding WhiteLabel para tenants BaaS que revendem o Radiant Norma com sua própria marca.
+
+**Arquivos novos:**
+- `internal/branding/branding.go` — BrandingService (GetBranding, GetBrandingBySlug, UpdateBranding).
+- `internal/branding/branding_test.go` — 17 testes unitários.
+- `internal/db/migrations/016_white_label.sql` — Colunas logo_url, primary_color, secondary_color, custom_domain, tenant_slug.
+- `SPRINT_46_RESEARCH.md` — RESEARCH completo.
+
+**Handlers API (novas rotas em server.go):**
+- `GET /v1/tenant/branding` — Branding do tenant autenticado.
+- `PUT /v1/tenant/branding` — Atualiza branding do tenant autenticado.
+- `GET /v1/tenant/branding/public/{slug}` — Branding público por tenant_slug.
+- `PUT /v1/admin/tenant/{id}/branding` — Admin atualiza branding de qualquer tenant.
+
+**Campos de branding:**
+| Campo | Tipo | Validação |
+|---|---|---|
+| `logo_url` | string | URL válida (http:// ou https://), opcional |
+| `primary_color` | string | Hex color #RRGGBB, default #3b6ef5 |
+| `secondary_color` | string | Hex color #RRGGBB, default #1a2a5e |
+| `custom_domain` | string | Livre, via CNAME |
+| `tenant_slug` | string | URL-safe (a-z, 0-9, hífens), único entre tenants, 2-63 chars |
+
+**Segurança:** Validação de hex color com regex, validação de URL para logo, slug único com index parcial, admin-only para update de outros tenants.
+
+---
 
 ## v3.34.26 — 2026-07-07 (Sprint 45 StripeBilling — Integração Stripe) ✅
 
