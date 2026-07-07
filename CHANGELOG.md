@@ -2,6 +2,29 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.33 — 2026-07-07 (Sprint 52 CrossDoc_DRSAC — Integração DRSAC+4111 no CrossDoc Engine) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** 52 (CrossDoc_DRSAC)
+> **Tipo:** minor (novas regras cross-doc)
+> **Marco:** DRSAC (2030) e 4111 integrados ao cross-doc engine — 16 regras totais
+
+### 🎯 Resumo
+
+Sprint 52 integra DRSAC (2030) e 4111 ao cross-doc engine, completando a camada L3 (Layer 3 differential). Agora o engine valida consistência entre 3040↔4111↔DRSAC de forma unificada.
+
+**Cross-doc rules (16 total):**
+- Originais (3): XD-001, XD-002, XD-003
+- DRSAC↔SCR (8): XD-DR01~08 — IPOC, saldo, CNAE, riscos, TVM, contribuição verde
+- 4111↔3040 (5): XD-4111-01~05 — CNPJ, dataBase, total clientes, inadimplentes, zerado
+
+**Arquivos novos:**
+- `internal/crossdoc/rules/drsac_4111.go` — adapters DRSAC + regras 4111
+- `internal/crossdoc/rules/registry.go` — `RegisterDRSACCrossDocRules()` + `Register4111CrossDocRules()`
+
+**Arquivos alterados:**
+- `internal/crossdoc/crossdoc_test.go` — atualizado para 16 regras (era 3)
+
 ## v3.34.32 — 2026-07-07 (Sprint 51 Audit4111 — Parser Genérico 4111) ✅
 
 > **Status:** ✅ Shipped (parser parcial — aguardando spec oficial)

@@ -96,26 +96,29 @@ func TestEngine_Validate_Basic(t *testing.T) {
 
 	// 3040+4111: totalOps 15 vs qtdCli 11 — diff 4 (> 5% de 11) → warning XD-001
 	// XD-002 (Mod 0213) também roda mas matches (Mod existe no valid3040XML).
-	// Sem 2030, XD-003 fica skipped.
+	// Sem 2030, regras DRSAC (XD-DR01~08) ficam skipped.
+	// 4111 rules (XD-4111-01~05) rodam (RequiredDocs 3040+4111).
+	// Rules run: XD-001, XD-002, XD-4111-01~05 → 7
+	// Rules skip: XD-003, XD-DR01~08 → 9
 	if !resp.Passed {
 		t.Errorf("sem erros 'E', deveria passar. Warnings: %d", len(resp.Warnings))
 	}
-	// Com 3040+4111: XD-001 e XD-002 rodam (XD-003 skipped por falta de 2030)
-	if len(resp.RulesRun) != 2 {
-		t.Errorf("Esperado 2 regras run (XD-001+XD-002), got %d (%v)",
+	if len(resp.RulesRun) != 7 {
+		t.Errorf("Esperado 7 regras run (XD-001, XD-002, XD-4111-01~05), got %d (%v)",
 			len(resp.RulesRun), resp.RulesRun)
 	}
-	if len(resp.RulesSkip) != 1 {
-		t.Errorf("Esperado 1 regra skip (XD-003), got %d", len(resp.RulesSkip))
+	if len(resp.RulesSkip) != 9 {
+		t.Errorf("Esperado 9 regras skip (XD-003 + XD-DR01~08), got %d", len(resp.RulesSkip))
 	}
 }
 
 func TestEngine_Validate_RequiredDocsMissing(t *testing.T) {
 	engine := crossdoc.NewEngine(crossrules.BuiltinRegistry())
-	// Sem 4111 nem 2030 — TODAS as 3 regras devem ser skipped:
-	//   - XD-001 precisa 3040+4111
-	//   - XD-002 precisa 3040+4111
+	// Com apenas 3040 — TODAS as 16 regras devem ser skipped:
+	//   - XD-001, XD-002 precisam 3040+4111
 	//   - XD-003 precisa 3040+2030
+	//   - XD-DR01~08 precisam 2030+3040
+	//   - XD-4111-01~05 precisam 4111+3040
 	req := &crossdoc.ValidationRequest{
 		Cadocs: map[string]string{
 			"3040": valid3040XML(10),
@@ -127,8 +130,8 @@ func TestEngine_Validate_RequiredDocsMissing(t *testing.T) {
 		t.Errorf("Nenhuma regra deveria rodar (faltam docs obrigatórios), got %d run",
 			len(resp.RulesRun))
 	}
-	if len(resp.RulesSkip) != 3 {
-		t.Errorf("3 regras deveriam ser skipped, got %d", len(resp.RulesSkip))
+	if len(resp.RulesSkip) != 16 {
+		t.Errorf("16 regras deveriam ser skipped, got %d", len(resp.RulesSkip))
 	}
 }
 
@@ -234,12 +237,21 @@ func TestExtractSumOfTag(t *testing.T) {
 func TestBuiltinRegistry(t *testing.T) {
 	r := crossrules.BuiltinRegistry()
 	codes := r.Codes()
-	if len(codes) != 3 {
-		t.Errorf("Builtin deveria ter 3 regras, got %d", len(codes))
+	// Sprint 52 v3.34.33: 3 originais + 8 DRSAC + 5 4111 = 16
+	if len(codes) != 16 {
+		t.Errorf("Builtin deveria ter 16 regras, got %d", len(codes))
 	}
 
-	// Confirma que as 3 regras estão lá
-	expected := map[string]bool{"XD-001": true, "XD-002": true, "XD-003": true}
+	// Confirma que todas as 16 regras estão lá
+	// 3 originais + 8 DRSAC + 5 4111
+	expected := map[string]bool{
+		"XD-001": true, "XD-002": true, "XD-003": true, // originais
+		"XD-DR01": true, "XD-DR02": true, "XD-DR03": true, // DRSAC 1-3
+		"XD-DR04": true, "XD-DR05": true, "XD-DR06": true, // DRSAC 4-6
+		"XD-DR07": true, "XD-DR08": true, // DRSAC 7-8
+		"XD-4111-01": true, "XD-4111-02": true, "XD-4111-03": true, // 4111 1-3
+		"XD-4111-04": true, "XD-4111-05": true, // 4111 4-5
+	}
 	for _, c := range codes {
 		if !expected[c] {
 			t.Errorf("Código inesperado: %s", c)
