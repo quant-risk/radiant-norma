@@ -290,8 +290,9 @@ func (r *Registry) All() []Rule {
 // Sprint 32 Fase 2: +5 regras Sistemáticas (S12 stub, S15, S17, S19, S20) → 79 regras.
 // Sprint 32 Fase 3: +19 regras Individuais/Campos Op/Header (C11-C20, S13, S14, I01-I05, I11, H01-H03) → 98 regras.
 // Sprint 32 Fase 4: +28 regras (C31-C40/C51-C55/S21-S46/S69-S70 — 14 completas + 14 stubs) → 126 regras.
+// Sprint 36 Fase 2: +51 regras (C21-C30/C41-C50/C56-C70/H04-H09/N01-N10 — 30 completas + 21 stubs) → 177 regras.
 //
-// Cobertura catálogo: 126/361 = 34.9%.
+// Cobertura catálogo: 177/361 = 49.0%.
 func Builtin3040() *Registry {
 	r := NewRegistry()
 
@@ -459,6 +460,64 @@ func Builtin3040() *Registry {
 	// S69-S70 (Fechamento)
 	r.Register(S69ClassOpHHProvZero{})
 	r.Register(S70IntramesDtContr{}) // stub — requer DtIntrames
+
+	// Sprint 36 / v3.34.13 Fase 2 — Expansão 3040 (51 regras: 30 reais + 21 stubs I)
+	// C21-C30: Campos Obrigatórios adicionais (Inf 0101, 0308, 0313, 0501, 0703-1101)
+	r.Register(C21Inf0101NatuOp01{})
+	r.Register(C22Inf0308Garantia{})
+	r.Register(C23Inf0313Perc{})
+	r.Register(C24Inf0501Reneg{})
+	r.Register(C25Inf0703DtLib{})
+	r.Register(C26Inf0704Refin{})
+	r.Register(C27Inf0801Vinculo{})
+	r.Register(C28Inf0901Rural{})
+	r.Register(C29Inf1001Habit{})
+	r.Register(C30Inf1101Leasing{})
+	// C41-C50: Campos Opcionais com condicionalidade (10 regras; 9 reais, 1 stub)
+	r.Register(C41ClassOpPorMod{})
+	r.Register(C42ProvConsttdClassOp{})
+	r.Register(C43VencimentosPrazo{})
+	r.Register(C44LocalizPF{})
+	r.Register(C45VincMEMod{})
+	r.Register(C46OrigemRecBNDES{})
+	r.Register(C47FaixaVlrClassOp{})
+	r.Register(C48PrzProvmClassOp{})
+	r.Register(C49TpCliQtdCli{})
+	r.Register(C50DesempOpVenc{})
+	// C56-C70: Campos cross-doc / cross-Operacao (15 regras; 4 reais, 11 stubs)
+	r.Register(C56Inf0213Rel0307{})
+	r.Register(C57Inf0307Rel1201{})
+	r.Register(C58IPOCUnicoRemessa{})
+	r.Register(C59ContratoUnicoIPOCDt{})
+	r.Register(C60DtContrSaneamento{})
+	r.Register(C61DtVencPosContr{})
+	r.Register(C62ClassOpIndAg{})
+	r.Register(C63ProvIndAg{})
+	r.Register(C64VencIndSomaAg{})
+	r.Register(C65QtdCliIndAg{})
+	r.Register(C66CliObrigInfI03{})
+	r.Register(C67CliCdFormato{})
+	r.Register(C68CliIPOCEqual{})
+	r.Register(C69ParcelaDtVencOp{})
+	r.Register(C70GarantidorFidej{})
+	// H04-H09: Header (6 regras; 5 reais, 1 stub)
+	r.Register(H04DtBasePeriodo{})
+	r.Register(H05CNPJRaiz8Dig{})
+	r.Register(H06RemessaNumerica{})
+	r.Register(H07ParteNumerica{})
+	r.Register(H08TpArqHeader{})
+	r.Register(H09TotalCliSomaAg{})
+	// N01-N10: Regras de Negócio (10 regras; 2 reais, 8 stubs)
+	r.Register(N01CliUnicoRemessa{})
+	r.Register(N02CliMesmoClassOp{})
+	r.Register(N03LimitePorCli{})
+	r.Register(N04ConcentracaoMod{})
+	r.Register(N05LimiteBasileia{})
+	r.Register(N06ProvMinClassOp{})
+	r.Register(N07PrazoMax{})
+	r.Register(N08CarenciaMin{})
+	r.Register(N09IdadeCli{})
+	r.Register(N10ConsolidacaoConglomerado{})
 
 	return r
 }

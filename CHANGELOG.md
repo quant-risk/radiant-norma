@@ -2,6 +2,83 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.13 — 2026-07-07 (Sprint 36 Audit3040 Fase 2 — 51 regras) ✅
+
+> **Status:** ✅ Shipped (Fase 2 — fecha 3040 34.9% → 49.0%)
+> **Sprint:** 36 (Audit3040 — SCR Risco de Crédito — continuação Sprint 32)
+> **Tipo:** minor (51 regras 3040 — 30 reais + 21 stubs)
+> **Marco:** 126 → 177 regras 3040 (34.9% → **49.0%** cobertura catálogo 361)
+
+### 🎯 Resumo
+
+Fase 2 fecha o gap deixado por Sprint 32. **+51 regras** em 3040 cobrindo:
+- **C21-C30** (10) — Campos Obrigatórios para Inf específicas (0101, 0308, 0313, 0501, 0703-1101).
+- **C41-C50** (10) — Campos Opcionais com condicionalidade (ClassOp × Modalidade × ProvConsttd).
+- **C56-C70** (15) — Campos cross-doc / cross-Operacao (IPOC único, formato CPF/CNPJ, parcelas).
+- **H04-H09** (6) — Header (CNPJ raiz 8 dígitos, numéricos, TpArq F/S, TotalCli soma).
+- **N01-N10** (10) — Regras de Negócio (cliente único, provisão mínima CMN 4.966).
+
+**Filosofia D-26:** stub honesto > teatro. 21 dos 51 são `severity "I"` (retornam nil por design) — cada stub documenta **o que** validar e **por que** ainda é stub (parser não tem o campo necessário).
+
+### Regras reais notáveis (severity "E" ou "A")
+
+| Cod | Sev | Regra |
+|---|---|---|
+| **C58** | E | IPOC único na remessa |
+| **C59** | E | IPOC + DtContr únicos (combinação) |
+| **C60** | E | DtContr >= 1900 (saneamento) |
+| **C67** | E | Cli.Cd formato (PF=11, PJ=8/14) por TpCli |
+| **C69** | A | Parcela.DtVenc <= Operacao.DtVencOp |
+| **H05** | E | CNPJ raiz 8 dígitos |
+| **H06** | E | Remessa numérica estrita |
+| **H07** | E | Parte numérica estrita |
+| **H08** | E | TpArq F ou S |
+| **H09** | A | TotalCli header = soma QtdCli agregados |
+| **N01** | E | Cli único por CNPJ/CPF na remessa |
+| **N06** | A | ProvConsttd > 0 quando ClassOp E-H (CMN 4.966) |
+| **C41-C43, C47-C50** | A | ClassOp × Modalidade × ProvConsttd × FaixaVlr × DesempOp (9 regras) |
+
+### 📊 Métricas v3.34.12 → v3.34.13
+
+| Métrica | v3.34.12 | v3.34.13 |
+|---|---|---|
+| Regras 3040 | 126 | **177** |
+| Cobertura catálogo 3040 | 34.9% | **49.0%** |
+| Coverage `internal/audit/rules` | 70.9% | **70.2%** |
+| Test functions Sprint 36 | 0 | **3 (44 subtests)** |
+| Packages PASS -race | 23/23 | **23/23** |
+| Build / vet / gofmt | clean | **clean** |
+
+### 🚫 Carry-over permanente (21 stubs documentados)
+
+Cada stub tem comentário com caminho de resolução:
+- **Operacao.NatuOp** — destrava C21, S26, S33.
+- **Cli.DtNascimento** — destrava N09.
+- **Cli.IPOC cross-ref** — destrava C68.
+- **Cross-doc 0307 ↔ 1201** — destrava C57.
+- **Catálogo modalidades (BNDES, ME, Rural, Habitacional)** — destrava C28, C29, C45, C46.
+- **VencOriginal, CaractEsp, DiaAtraso, PCLD tables, Porte** — destrava carry-over original (S38, S44, S37-S40, S47-S68).
+
+Estimativa Sprint 37: destravar ~15 stubs com parser expandido.
+
+### 📁 Arquivos
+
+```
+backend/internal/audit/rules/3040_sprint36.go        (NOVO — 51 regras)
+backend/internal/audit/rules/3040_sprint36_test.go   (NOVO — 44 subtests)
+backend/internal/audit/rules/registry.go             (modificado — +51 Register, comentário cobertura 177/361)
+backend/internal/audit/rules/3040_test.go           (modificado — expectedCodigos 177)
+backend/internal/audit/rules/raw_rules_test.go      (modificado — total = 177)
+backend/SPRINT_36_RESEARCH.md                       (NOVO — planejamento)
+backend/SPRINT_36_RESULTS.md                        (NOVO — este resultado)
+```
+
+### ⏭️ Próxima sprint
+
+**Sprint 37 Fase 3:** 177 → ~227 (62.6%). Foco em Semântica expandida (S71-S90), Individualizadas (I06-I15) com parser expandido, e destrava ~15 stubs via Operacao.NatuOp.
+
+---
+
 ## v3.34.12 — 2026-07-07 (Sprint 35 AuditDDR 2070 Fase 1 — DDR parser + 11 regras) ✅
 
 > **Status:** ✅ Shipped (Fase 1 — fecha DDR 2070 em 100% catálogo)

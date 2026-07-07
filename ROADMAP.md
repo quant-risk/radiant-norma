@@ -17,8 +17,9 @@
                     criar migration `014_rls_enforce.sql` com FORCE ROW LEVEL SECURITY.
                     Defense-in-depth multi-tenant. Auditoria SOC 2. | ✅ |
 | **31** | RangeUploadAPI | Handlers REST `/v1/sta/range-*` — fechar YAGNI da Sprint 21 | pendente |
-| **32** | Audit3040_v2 | Portar 80+ regras restantes 3040. Coverage 16% → 60% | ✅ (35% — 4 fases incrementais) |
+| **32** | Audit3040_v2 | Portar 80+ regras restantes 3040. Coverage 16% → 60% | ✅ (49% — 5 fases: 60→74→79→98→126→177) |
 | **33** | Audit3050 | Portar 170 regras 3050 TXB_V11. XSD já tem no BACEN, parser XML + 170 regras | ✅ fechado (100% — 6 fases: 28→56→80→97→153→170; carry-over permanente 5 stubs DB) |
+| **36** | Audit3040 Fase 2 | +51 regras 3040 (C21-C30, C41-C50, C56-C70, H04-H09, N01-N10) | ✅ fechado (49% — 30 reais + 21 stubs honestos I) |
 | **34** | FrontendNext | Migrar Console para Next.js 15 App Router + RSC + Server Actions | pendente |
 | **35** | CI-Gate | GitHub Actions com pre-commit hook + go test -race + coverage gate + lint | ✅ |
 | **36** | Observability | OpenTelemetry tracing + Sentry + Better Stack | pendente |
@@ -35,7 +36,7 @@
 | Sprint | Entregas |
 |---|---|
 | **38** | AuditDLO — 200+ regras 2061 (Limites Operacionais) |
-| **39** | AuditDDR — 11+ regras 2070 (Requerimento Capital Diário) | 🔄 em andamento (100% Fase 1 — 11 regras; Fase 2 = parser DRM/DLO) |
+| **39** | AuditDDR — 11+ regras 2070 (Requerimento Capital Diário) | ✅ Fase 1 fechada (100% — 11 regras) |
 | **40** | AuditDRL — 2160 LCR modelos II |
 | **41** | AuditDLP — 2170 NSFR |
 | **42** | Audit3044 — Engine JSON eventos |

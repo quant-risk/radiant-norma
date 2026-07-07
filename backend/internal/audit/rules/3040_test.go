@@ -359,6 +359,7 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 	// Sprint 32 Fase 2: +5 Sistemáticas → 79 regras.
 	// Sprint 32 Fase 3: +19 Individuais/Campos/Header → 98 regras.
 	// Sprint 32 Fase 4: +28 (C31-C40, C51-C55, S21-S46, S69-S70) → 126 regras.
+	// Sprint 36 Fase 2: +51 (C21-C30, C41-C50, C56-C70, H04-H09, N01-N10) → 177 regras.
 	expectedCodigos := []string{
 		// Básicas raw (Sprint 6 v1.5.0 / W3)
 		"B01", "B02", "B03", "B04", "B05",
@@ -405,6 +406,18 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 		"S21", "S22", "S25", "S26", "S33", "S34",
 		"S41", "S42", "S43", "S44", "S45", "S46",
 		"S69", "S70",
+		// Sprint 36 Fase 2 — Expansão (51 regras: 30 reais + 21 stubs I)
+		// C21-C30 (10 regras): Inf 0101, 0308, 0313, 0501, 0703-1101
+		"C21", "C22", "C23", "C24", "C25", "C26", "C27", "C28", "C29", "C30",
+		// C41-C50 (10 regras): Campos Opcionais com condicionalidade
+		"C41", "C42", "C43", "C44", "C45", "C46", "C47", "C48", "C49", "C50",
+		// C56-C70 (15 regras): Campos cross-doc / cross-Operacao
+		"C56", "C57", "C58", "C59", "C60", "C61", "C62", "C63", "C64",
+		"C65", "C66", "C67", "C68", "C69", "C70",
+		// H04-H09 (6 regras): Header
+		"H04", "H05", "H06", "H07", "H08", "H09",
+		// N01-N10 (10 regras): Negócio
+		"N01", "N02", "N03", "N04", "N05", "N06", "N07", "N08", "N09", "N10",
 	}
 
 	if len(codes) != len(expectedCodigos) {
