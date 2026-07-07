@@ -71,11 +71,11 @@ func TestSprint36_StubsReturnNil(t *testing.T) {
 	doc := sampleDoc3040V2()
 	ctx := context.Background()
 
-	// Lista completa de stubs Sprint 36 (severity "I" — retornam nil).
+	// Lista completa de stubs Sprint 36 (severity "I" — retornam nil em doc OK).
+	// Atualizada V67: N10 virou regra real (severity A).
 	stubs := []Rule{
 		C21Inf0101NatuOp01{},
 		C22Inf0308Garantia{},
-		C23Inf0313Perc{},
 		C24Inf0501Reneg{},
 		C25Inf0703DtLib{},
 		C26Inf0704Refin{},
@@ -102,7 +102,6 @@ func TestSprint36_StubsReturnNil(t *testing.T) {
 		N07PrazoMax{},
 		N08CarenciaMin{},
 		N09IdadeCli{},
-		N10ConsolidacaoConglomerado{},
 	}
 
 	for _, s := range stubs {
@@ -258,15 +257,114 @@ func TestSprint36_ReaisDetectamViolacoes(t *testing.T) {
 			t.Errorf("esperava erro de ClassOp, got %v", err)
 		}
 	})
+
+	// V67 — testes para regras que viraram reais durante validação.
+	t.Run("C23_Inf0313_PercInvalido", func(t *testing.T) {
+		doc := sampleDoc3040V2()
+		doc.Operacoes[0].Inf = "0313"
+		doc.Operacoes[0].Perc = "150"
+		err := C23Inf0313Perc{}.Apply(ctx, doc)
+		if err == nil || !strings.Contains(err.Error(), "0313") {
+			t.Errorf("esperava erro de Perc inválido para 0313, got %v", err)
+		}
+	})
+
+	t.Run("C23_Inf0313_OK", func(t *testing.T) {
+		doc := sampleDoc3040V2()
+		doc.Operacoes[0].Inf = "0313"
+		doc.Operacoes[0].Perc = "50"
+		err := C23Inf0313Perc{}.Apply(ctx, doc)
+		if err != nil {
+			t.Errorf("Perc=50 OK, got %v", err)
+		}
+	})
+
+	t.Run("C43_ClassOpE_VencimentosZero", func(t *testing.T) {
+		doc := sampleDoc3040V2()
+		doc.Agregados[0].ClassOp = "E"
+		doc.Agregados[0].QtdOp = "10"
+		doc.Agregados[0].Vencimentos = Vencimentos{} // tudo zero
+		err := C43VencimentosPrazo{}.Apply(ctx, doc)
+		if err == nil || !strings.Contains(err.Error(), "ClassOp=E") {
+			t.Errorf("esperava erro ClassOp=E sem vencimentos, got %v", err)
+		}
+	})
+
+	t.Run("C43_ClassOpA_ZeroOK", func(t *testing.T) {
+		doc := sampleDoc3040V2()
+		doc.Agregados[0].ClassOp = "A"
+		doc.Agregados[0].QtdOp = "10"
+		err := C43VencimentosPrazo{}.Apply(ctx, doc)
+		if err != nil {
+			t.Errorf("ClassOp=A permite zero, got %v", err)
+		}
+	})
+
+	t.Run("C64_VencNegativo", func(t *testing.T) {
+		doc := sampleDoc3040V2()
+		doc.Operacoes[0].Vencimentos.V110 = "-100"
+		err := C64VencIndSomaAg{}.Apply(ctx, doc)
+		if err == nil || !strings.Contains(err.Error(), "negativa") {
+			t.Errorf("esperava erro de vencimento negativo, got %v", err)
+		}
+	})
+
+	t.Run("H04_DtBaseAntiga", func(t *testing.T) {
+		doc := sampleDoc3040V2()
+		doc.Root.DtBase = "2005-01"
+		err := H04DtBasePeriodo{}.Apply(ctx, doc)
+		if err == nil || !strings.Contains(err.Error(), "2010-01") {
+			t.Errorf("esperava erro de DtBase antiga, got %v", err)
+		}
+	})
+
+	t.Run("H04_DtBaseFutura", func(t *testing.T) {
+		doc := sampleDoc3040V2()
+		doc.Root.DtBase = "2099-01"
+		err := H04DtBasePeriodo{}.Apply(ctx, doc)
+		if err == nil || !strings.Contains(err.Error(), "2030-12") {
+			t.Errorf("esperava erro de DtBase futura, got %v", err)
+		}
+	})
+
+	t.Run("H04_DtBase_OK", func(t *testing.T) {
+		doc := sampleDoc3040V2()
+		// 2024-12 é OK
+		err := H04DtBasePeriodo{}.Apply(ctx, doc)
+		if err != nil {
+			t.Errorf("DtBase=2024-12 OK, got %v", err)
+		}
+	})
+
+	t.Run("N10_SemOperacoesSemAgregados", func(t *testing.T) {
+		doc := &Doc3040{Root: Doc3040Root{}}
+		err := N10ConsolidacaoConglomerado{}.Apply(ctx, doc)
+		if err == nil || !strings.Contains(err.Error(), "operações individuais nem agregados") {
+			t.Errorf("esperava erro doc vazio, got %v", err)
+		}
+	})
+
+	t.Run("N10_ComAgregados_OK", func(t *testing.T) {
+		doc := sampleDoc3040V2()
+		err := N10ConsolidacaoConglomerado{}.Apply(ctx, doc)
+		if err != nil {
+			t.Errorf("doc com agregados OK, got %v", err)
+		}
+	})
 }
 
 func TestSprint36_SeverityCorrectness(t *testing.T) {
-	// Regras reais devem ter severity "E" (erro) ou "A" (aviso).
-	// Stubs devem ter "I" (info).
+	// Stubs puros: severity "I" e body que retorna nil sempre.
 	stubs := []Rule{
-		C21Inf0101NatuOp01{}, C22Inf0308Garantia{}, C23Inf0313Perc{},
-		C44LocalizPF{}, C45VincMEMod{}, C56Inf0213Rel0307{},
-		N02CliMesmoClassOp{}, N07PrazoMax{}, N09IdadeCli{},
+		C21Inf0101NatuOp01{}, C22Inf0308Garantia{}, C24Inf0501Reneg{},
+		C25Inf0703DtLib{}, C26Inf0704Refin{}, C27Inf0801Vinculo{},
+		C28Inf0901Rural{}, C29Inf1001Habit{}, C30Inf1101Leasing{},
+		C44LocalizPF{}, C45VincMEMod{}, C46OrigemRecBNDES{},
+		C56Inf0213Rel0307{}, C57Inf0307Rel1201{}, C61DtVencPosContr{},
+		C62ClassOpIndAg{}, C63ProvIndAg{}, C65QtdCliIndAg{},
+		C66CliObrigInfI03{}, C68CliIPOCEqual{}, C70GarantidorFidej{},
+		N02CliMesmoClassOp{}, N03LimitePorCli{}, N04ConcentracaoMod{},
+		N05LimiteBasileia{}, N07PrazoMax{}, N08CarenciaMin{}, N09IdadeCli{},
 	}
 	for _, s := range stubs {
 		if s.Severity() != "I" {
@@ -274,16 +372,33 @@ func TestSprint36_SeverityCorrectness(t *testing.T) {
 		}
 	}
 
+	// Reais com lógica: severity "E" ou "A", podem detectar violação.
 	reais := []Rule{
+		// Campos Opcionais / cross-doc / cross-Operacao (severity E ou A)
+		C41ClassOpPorMod{}, C42ProvConsttdClassOp{}, C43VencimentosPrazo{},
+		C47FaixaVlrClassOp{}, C48PrzProvmClassOp{}, C49TpCliQtdCli{},
+		C50DesempOpVenc{},
 		C58IPOCUnicoRemessa{}, C59ContratoUnicoIPOCDt{}, C60DtContrSaneamento{},
-		C67CliCdFormato{}, C69ParcelaDtVencOp{}, H05CNPJRaiz8Dig{},
-		H06RemessaNumerica{}, H07ParteNumerica{}, H08TpArqHeader{},
-		N01CliUnicoRemessa{},
+		C64VencIndSomaAg{}, C67CliCdFormato{}, C69ParcelaDtVencOp{},
+		H04DtBasePeriodo{}, H05CNPJRaiz8Dig{}, H06RemessaNumerica{},
+		H07ParteNumerica{}, H08TpArqHeader{}, H09TotalCliSomaAg{},
+		N01CliUnicoRemessa{}, N06ProvMinClassOp{}, N10ConsolidacaoConglomerado{},
 	}
 	for _, r := range reais {
 		sev := r.Severity()
 		if sev != "E" && sev != "A" {
 			t.Errorf("%s: regra real deveria ter severity E/A, tem %q", r.Code(), sev)
+		}
+	}
+
+	// Híbridas: severity "I" mas com lógica que detecta violação parcial.
+	// C23 (Inf 0313), C64 (já contado), C43 (já contado) — não re-contar.
+	hibridas := []Rule{
+		C23Inf0313Perc{},
+	}
+	for _, h := range hibridas {
+		if h.Severity() != "I" {
+			t.Errorf("%s: híbrida deveria ter severity I, tem %q", h.Code(), h.Severity())
 		}
 	}
 }

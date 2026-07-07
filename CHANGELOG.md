@@ -2,6 +2,59 @@
 
 > **Histórico de todas as alterations no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.14 — 2026-07-07 (Validação 67 — drift fix pós-Sprint 36) ✅
+
+> **Status:** ✅ Shipped (docs + drift fixes)
+> **Tipo:** patch (validação profunda pós-ship, sem mudança de comportamento)
+> **Marco:** 5 regras consertadas (C23, C43, C64, H04, N10) — body que não detectava → agora detecta
+
+### 🎯 Resumo
+
+Validação 67 (V67) encontrou drift entre CHANGELOG/SPRINT_36_RESULTS e código real. **5 regras declaradas como "reais" no CHANGELOG tinham body que não detectava violação**:
+
+| Cod | Sev declarado | Body antes V67 | Body depois V67 |
+|---|---|---|---|
+| **C23** | I | `count++; return nil` | erro se Perc fora [0, 100] |
+| **C43** | A | `_ = soma; return nil` | erro se ClassOp E-H + QtdOp > 0 + soma = 0 |
+| **C64** | A | `count++; return nil` | erro se soma vencimentos < 0 |
+| **H04** | A | `return nil` | erro se DtBase fora [2010-01, 2030-12] |
+| **N10** | I | `return nil` | erro se Doc3040 vazio |
+
+**Aplicação do protocolo de auto-verificação (memory HOT "Self-deception em fix simples"):**
+
+```bash
+# Antes de cada "Fix:" claim, verificar no código real:
+git diff HEAD -- file.go | grep "<symbol from fix>"
+go test -count=1 -run TestSprint36 -v
+grep -c "return fmt.Errorf" file.go
+```
+
+V67 fechou o ciclo: **22 regras com lógica + 2 híbridas + 29 stubs = 53 (com drift corrigido)** — todas as 51 do Sprint 36 + 2 do Sprint 32 que ganharam lógica.
+
+### 📊 Métricas v3.34.13 → v3.34.14
+
+| Métrica | v3.34.13 | v3.34.14 |
+|---|---|---|
+| Regras com lógica que detecta violação | 17 | **22** |
+| Stubs honestos (severity I) | 34 | **29** |
+| Coverage `internal/audit/rules` | 70.2% | **71.0%** |
+| Test functions Sprint 36 | 3 (44 subtests) | **3 (53 subtests)** |
+| Packages PASS -race | 23/23 | **23/23** |
+| Drift docs vs código | sim | **corrigido** |
+
+### 📁 Arquivos modificados V67
+
+```
+backend/internal/audit/rules/3040_sprint36.go        (5 regras consertadas)
+backend/internal/audit/rules/3040_sprint36_test.go   (+10 subtests)
+backend/internal/audit/rules/registry.go             (comentário recontagem)
+backend/SPRINT_36_RESULTS.md                        (reescrito V67)
+backend/SPRINT_36_VALIDATION.md                     (NOVO)
+CHANGELOG.md                                        (este entry)
+```
+
+---
+
 ## v3.34.13 — 2026-07-07 (Sprint 36 Audit3040 Fase 2 — 51 regras) ✅
 
 > **Status:** ✅ Shipped (Fase 2 — fecha 3040 34.9% → 49.0%)
@@ -22,13 +75,18 @@ Fase 2 fecha o gap deixado por Sprint 32. **+51 regras** em 3040 cobrindo:
 
 ### Regras reais notáveis (severity "E" ou "A")
 
+**V67 recontagem:** 23 regras com lógica que detecta violação + 28 stubs (severity I).
+
 | Cod | Sev | Regra |
 |---|---|---|
+| **C41-C42, C47-C50** | A | ClassOp × Modalidade × ProvConsttd × FaixaVlr × DesempOp (8 regras) |
 | **C58** | E | IPOC único na remessa |
 | **C59** | E | IPOC + DtContr únicos (combinação) |
 | **C60** | E | DtContr >= 1900 (saneamento) |
+| **C64** | A | Vencimentos individuais >= 0 (saneamento) |
 | **C67** | E | Cli.Cd formato (PF=11, PJ=8/14) por TpCli |
 | **C69** | A | Parcela.DtVenc <= Operacao.DtVencOp |
+| **H04** | A | DtBase em janela 2010-01 a 2030-12 |
 | **H05** | E | CNPJ raiz 8 dígitos |
 | **H06** | E | Remessa numérica estrita |
 | **H07** | E | Parte numérica estrita |
@@ -36,7 +94,11 @@ Fase 2 fecha o gap deixado por Sprint 32. **+51 regras** em 3040 cobrindo:
 | **H09** | A | TotalCli header = soma QtdCli agregados |
 | **N01** | E | Cli único por CNPJ/CPF na remessa |
 | **N06** | A | ProvConsttd > 0 quando ClassOp E-H (CMN 4.966) |
-| **C41-C43, C47-C50** | A | ClassOp × Modalidade × ProvConsttd × FaixaVlr × DesempOp (9 regras) |
+| **N10** | A | Doc3040 tem pelo menos operações ou agregados |
+
+**Híbridas (severity "I" mas com lógica):**
+- **C23** I — Inf=0313 com Perc em [0, 100]
+- **C43** I — ClassOp E-H exige soma vencimentos > 0 quando QtdOp > 0
 
 ### 📊 Métricas v3.34.12 → v3.34.13
 

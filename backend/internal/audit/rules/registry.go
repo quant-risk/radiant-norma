@@ -290,7 +290,9 @@ func (r *Registry) All() []Rule {
 // Sprint 32 Fase 2: +5 regras Sistemáticas (S12 stub, S15, S17, S19, S20) → 79 regras.
 // Sprint 32 Fase 3: +19 regras Individuais/Campos Op/Header (C11-C20, S13, S14, I01-I05, I11, H01-H03) → 98 regras.
 // Sprint 32 Fase 4: +28 regras (C31-C40/C51-C55/S21-S46/S69-S70 — 14 completas + 14 stubs) → 126 regras.
-// Sprint 36 Fase 2: +51 regras (C21-C30/C41-C50/C56-C70/H04-H09/N01-N10 — 30 completas + 21 stubs) → 177 regras.
+// Sprint 36 Fase 2: +51 regras (C21-C30/C41-C50/C56-C70/H04-H09/N01-N10 — 23 completas + 28 stubs I) → 177 regras.
+// V67: recontagem — 23 reais (severity E/A detectam violação) + 28 stubs (severity I retornam nil).
+// Híbridas (severity I com lógica parcial): C23, C43, C64.
 //
 // Cobertura catálogo: 177/361 = 49.0%.
 func Builtin3040() *Registry {
