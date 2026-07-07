@@ -2,6 +2,32 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.34.39 — 2026-07-07 (Sprint 57 SDK_v1 — Go Client Library) ✅
+
+> **Status:** ✅ Shipped
+> **Sprint:** 57 (SDK_v1)
+> **Tipo:** minor (novo módulo Go)
+> **Marco:** Primeiro SDK Go oficial — cliente para Radiant Norma API
+
+### 🎯 Resumo
+
+Sprint 57 adiciona o SDK Go oficial para a Radiant Norma API. Permite que desenvolvedores integrem validação CADOC, radar scans, insights LLM e schema registry em seus próprios sistemas.
+
+**Arquivos novos:**
+- `backend/radiant/go.mod` — módulo Go `github.com/fortvna/radiant-norma/backend/radiant`
+- `backend/radiant/client.go` — cliente HTTP + 5 sub-services (Cadocs, Audit, Radar, Insights, Schemas)
+- `backend/radiant/types.go` — tipos compartilhados (ValidationResult, CrossDocResult, ScanResult, etc.)
+- `backend/radiant/README.md` — documentação de uso
+
+**API exposta pelo SDK:**
+- `c.Cadocs.Validate(cadoc, xml)` → ValidationResult
+- `c.Cadocs.ValidateCrossDoc(docs)` → CrossDocResult
+- `c.Audit.ListRules(cadoc)` → []RuleDef
+- `c.Radar.Scan(cadoc)` → ScanResult
+- `c.Insights.Ask(question)` → LLMAnswer
+- `c.Schemas.ListVersions(cadoc)` → []SchemaVersion
+- `c.Schemas.GetChangelog(cadoc)` → []SchemaVersion
+
 ## v3.34.38 — 2026-07-07 (Sprint 56 SOC2 Type I — Readiness + Evidence Collection) ✅
 
 > **Status:** ✅ Shipped
