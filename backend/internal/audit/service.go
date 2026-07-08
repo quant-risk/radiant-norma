@@ -463,6 +463,7 @@ func (s *Service) applyRegra(
 	}
 
 	// Sprint 58 (v3.34.40): 3ª tentativa — regra tipada DLI (opera em *DocumentoDLI)
+	// Sprint 55: reescrito — agora também despacha regras semânticas DLI-09 a DLI-18.
 	if is2062 {
 		if *cachedDLI == nil {
 			doc, err := docdli.ParseFromBytes([]byte(req.XML))
@@ -478,9 +479,16 @@ func (s *Service) applyRegra(
 			return errs[0]
 		}
 
-		// Se a regra está no registry, delega para ela (regras de negócio).
-		if rule := s.registry.Get(c.Codigo); rule != nil {
-			return nil // registry rule runs via its own Apply
+		// Sprint 55 fix: regras semânticas DLI-09 a DLI-18 estão em
+		// rules2062 registry (via Register2062). Despacha via Get2062.
+		// Usa rules.ParseDocDLI para o tipo DocDLI que as regras esperan.
+		if rule2062 := s.registry.Get2062(c.Codigo); rule2062 != nil {
+			// ParseDocDLIextrai fields que as regras semânticas precisam.
+			docDLI, err := rules.ParseDocDLI([]byte(req.XML))
+			if err != nil {
+				return fmt.Errorf("parse DLI para regra %s falhou: %w", c.Codigo, err)
+			}
+			return rule2062.Apply(ctx, docDLI)
 		}
 
 		// Regra não no registry — validação estrutural já passou acima.
