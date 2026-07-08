@@ -2,6 +2,96 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.35.4 — 2026-07-08 (Sprint 56 follow-up — Code review fixes) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (correções pós-auditoria)
+
+### Correções aplicadas após auditoria profunda (code-reviewer)
+
+**Críticas:**
+
+- **C2 — FK violation quebraria setup**: `cmd/seed-demo` hardcodeava `if_id="9999901"` em 4 eventos de audit, mas só criava essa IF se `cmd/seed-sprint8c` rodasse antes. Se rodasse só `cmd/seed-demo`, falhava com `FOREIGN KEY constraint failed`. Corrigido: seed-demo agora faz `INSERT OR IGNORE INTO ifs (id, cnpj, nome, tipo)` para garantir a IF antes de usar.
+
+- **C3 — `period` gerado como DD/YYYY**: layout Go `"02"` significa **DIA** com zero-pad, não mês. Resultado: `data_base=2026-07-01` virava `period=01/2026` (janeiro!) — dashboards que agrupam por período mostravam meses errados. Corrigido: `"02/2006"` → `"01/2006"` (mês zero-padded).
+
+**Melhorias:**
+
+- **M1 — Dead code removido**: bloco `errors.Is(err, context.DeadlineExceeded)` após `tx.Commit()` + `log.Fatalf` era inalcançável. Removido.
+- **M3 — Cast hack removido**: `href={{ pathname: '/', hash: 'features' } as unknown as Route}` substituído por `href="/#features"` (string simples que Next aceita e tipa como Route).
+- **M4 — Version drift**: footer `v3.35.0` → `v3.35.4`; login `v2.1` → `v3.35.4`.
+
+### Validação
+
+- `tsc -p tsconfig.json --noEmit` → 0 erros
+- `go build ./cmd/seed-demo` → 0 erros
+- `seed-demo` re-rodado: 80 envios com period coerente (`period=07/2026` ↔ `data_base=2026-07-XX`)
+- `/v1/audit_log` → `chain_valid: true` (140 eventos)
+- Frontend: `/console`, `/envios`, `/insights` retornam 200 com dados reais
+
+---
+
+## v3.35.3 — 2026-07-08 (Sprint 56 follow-up — cmd/seed-demo) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** minor (backend: seeder de demo)
+
+### Seeder de dados realistas
+
+Novo binário `backend/cmd/seed-demo` que popula SQLite com dados consistentes pra testar todas as 6 páginas do console:
+
+- **80 envios STA** (60 dias) — distribuição 70% accepted, 15% rejected, 10% pending, 5% error. `data_base` em `YYYY-MM-DD`, `period` em `MM/YYYY`, `rules_passed`/`failed`, `duration_ms`, `protocol_sta`, `error_code` realistas (F23, B12, S05, etc).
+- **400 rule_failures** distribuídas em 14 dias (10 regras: F23 liderando com 28% de share).
+- **140 audit_events** com **SHA-256 chain válida** (timestamp `RFC3339Nano`, igual ao formato que `auditlog.Logger.Log()` usa). `chain_valid: true` no endpoint.
+- **12 radar_alerts** (2 critical, 5 warn, 5 info) com sources BACEN realistas.
+- **1 acknowledgement** em `acknowledged_recommendations`.
+
+### Bug encontrado (corrigido em v3.35.4)
+
+`cmd/seed-sprint8c` existente tinha bug onde `data_base` esperava `YYYY-MM-DD` (CHECK constraint) mas o seed gerava valor no formato errado, causando todas as inserções falharem silenciosamente (log warn). `cmd/seed-demo` corrige isso.
+
+### Como rodar
+
+```bash
+cd backend
+go build -o bin/seed-demo ./cmd/seed-demo
+./bin/seed-demo -db=radiant.db
+RADIANT_DEV_AUTH=1 go run ./cmd/api -db=radiant.db
+```
+
+---
+
+## v3.35.2 — 2026-07-08 (Sprint 56 follow-up — Separa landing de console) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** minor (frontend: rotas separadas)
+
+### Problema
+
+`/` detectava sessão e renderizava landing OU dashboard condicionalmente. Cookies `rn_jwt` antigos de sessões anteriores faziam usuário logado cair direto no dashboard em `/`, sem ver a landing institucional. UX confusa pra demos a prospects.
+
+### Solução
+
+Padrão SaaS premium (Linear, Vercel, Stripe):
+
+- **`/`** → sempre landing institucional (visitante)
+- **`/console`** → dashboard executivo (autenticado, redirect para `/login?next=/console` se deslogado)
+- **`/login`** → após login, redireciona pra `/console` (ou `?next=`)
+- CTA do hero/footer/cta-final: "Abrir Console" → `/console`
+
+### Bridge dev mode
+
+`frontend/src/lib/api-fetch.ts`: quando cookie `rn_jwt` começa com `dev:<if_id>:<role>` (dev mode), adiciona header `X-IF-ID` além de `Authorization`. Backend (`RADIANT_DEV_AUTH=1`) usa o header como fallback quando JWT parsing falha.
+
+### Validação
+
+- `/` sem cookie → landing 200 (53KB)
+- `/console` sem cookie → 307 → `/login?next=/console`
+- `/console` com cookie → 200 dashboard (71KB)
+- Login flow completo: `/` → click "Abrir Console" → `/console` → `/login` → submit → `/console` (com dados)
+
+---
+
 ## v3.35.1 — 2026-07-08 (Sprint 56 follow-up — Landing page pública) ✅
 
 > **Status:** ✅ Shipped

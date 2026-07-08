@@ -9,7 +9,6 @@
  */
 
 import Link from 'next/link'
-import type { Route } from 'next'
 import {
   ArrowRight,
   Sparkles,
@@ -120,7 +119,7 @@ export function LandingHero() {
               Abrir Console
             </Button>
           </Link>
-          <Link href={{ pathname: '/', hash: 'features' } as unknown as Route} passHref legacyBehavior={false}>
+          <Link href="/#features" passHref legacyBehavior={false}>
             <Button asChild variant="secondary" size="lg">
               Ver features
             </Button>

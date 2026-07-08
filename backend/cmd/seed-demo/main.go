@@ -15,7 +15,6 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -65,6 +64,25 @@ func main() {
 		log.Fatal("nenhuma IF encontrada — rode cmd/seed primeiro")
 	}
 	fmt.Printf("✓ %d IFs carregadas: %v\n", len(ifs), ifs)
+
+	// Garante IFs de demo necessárias (idempotente). cmd/seed cria só
+	// "demo" e "demo-banco"; eventos de audit de sistema usam "9999901".
+	// Defense-in-depth: INSERT OR IGNORE evita FK violation se seed-demo
+	// rodar antes de cmd/seed-sprint8c.
+	for _, demoIF := range []struct {
+		id, cnpj, nome, tipo string
+	}{
+		{"9999901", "99999010", "IF Demo Admin", "BC"},
+	} {
+		_, err := db.ExecContext(ctx,
+			"INSERT OR IGNORE INTO ifs (id, cnpj, nome, tipo) VALUES (?, ?, ?, ?)",
+			demoIF.id, demoIF.cnpj, demoIF.nome, demoIF.tipo)
+		if err != nil {
+			fmt.Printf("  (warn: IF %s não pôde ser criada: %v)\n", demoIF.id, err)
+		}
+	}
+	ifs, _ = loadIFs(ctx, db) // reload com 9999901
+	fmt.Printf("✓ IFs após garantir: %v\n", ifs)
 
 	cadocs := []string{"3040", "3050", "3060", "3070", "4020", "4030"}
 	rng := rand.New(rand.NewSource(42))
@@ -124,9 +142,10 @@ func main() {
 			dur = rng.Intn(pick.Duration[1]-pick.Duration[0]+1) + pick.Duration[0]
 		}
 
-		// FIX BUG: data_base em YYYY-MM-DD, period em MM/YYYY (separados!)
+		// FIX BUG (code review v3.35.4): layout Go "02" = DIA, não mês!
+		// data_base em YYYY-MM-DD (CHECK constraint), period em MM/YYYY.
 		dataBase := envTime.Format("2006-01-02")
-		period := envTime.Format("02/2006")
+		period := envTime.Format("01/2006") // "01" = mês zero-padded
 		envioID := "ENV-" + randString(rng, 12)
 
 		var protocol, errorCode, errorMsg string
@@ -347,10 +366,6 @@ func main() {
 		}
 		prevHash = entryHash
 		inserted++
-
-		if errors.Is(err, context.DeadlineExceeded) {
-			log.Fatalf("timeout — encurtar ou ajustar busy_timeout")
-		}
 	}
 	fmt.Printf("✓ %d audit_events importados (SHA-256 chain válida)\n", inserted)
 
