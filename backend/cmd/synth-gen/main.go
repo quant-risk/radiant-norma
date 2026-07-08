@@ -57,40 +57,45 @@ func main() {
 	}
 	defer d.Close()
 
+	// Garante schema
+	if err := db.Migrate(d); err != nil {
+		logger.Error("db migrate", "err", err)
+		os.Exit(1)
+	}
+
 	// Services
 	auditSvc := audit.New(d)
 
-	// LLM client
+	// LLM client — required
 	apiKey := os.Getenv("LLM_API_KEY")
 	if apiKey == "" {
-		fmt.Println("AVISO: LLM_API_KEY não setada — usando stub (casos não serão validados pelo judge)")
+		fmt.Println("ERRO: LLM_API_KEY não setada. Usage: LLM_API_KEY=... synth-gen --cadoc 3040 --count 50")
+		os.Exit(1)
 	}
 	provider := os.Getenv("LLM_PROVIDER")
 	model := os.Getenv("LLM_MODEL")
 
 	var llm insights.LLMClient
-	if apiKey != "" {
-		switch provider {
-		case "openai":
-			m := model
-			if m == "" {
-				m = "gpt-4o-mini"
-			}
-			baseURL := os.Getenv("LLM_BASE_URL")
-			if baseURL == "" {
-				baseURL = "https://api.openai.com/v1"
-			}
-			llm = insights.NewOpenAIChat(apiKey, m, baseURL)
-		default: // minimax
-			cfg := insights.MiniMaxConfig{APIKey: apiKey}
-			if model != "" {
-				cfg.Model = model
-			}
-			if baseURL := os.Getenv("LLM_BASE_URL"); baseURL != "" {
-				cfg.BaseURL = baseURL
-			}
-			llm = insights.NewMiniMaxChat(cfg)
+	switch provider {
+	case "openai":
+		m := model
+		if m == "" {
+			m = "gpt-4o-mini"
 		}
+		baseURL := os.Getenv("LLM_BASE_URL")
+		if baseURL == "" {
+			baseURL = "https://api.openai.com/v1"
+		}
+		llm = insights.NewOpenAIChat(apiKey, m, baseURL)
+	default: // minimax
+		cfg := insights.MiniMaxConfig{APIKey: apiKey}
+		if model != "" {
+			cfg.Model = model
+		}
+		if baseURL := os.Getenv("LLM_BASE_URL"); baseURL != "" {
+			cfg.BaseURL = baseURL
+		}
+		llm = insights.NewMiniMaxChat(cfg)
 	}
 
 	// Forge
@@ -114,18 +119,39 @@ func main() {
 	}
 
 	// all_cases.json
-	allBytes, _ := synth.ExportJSON(cases)
-	os.WriteFile(filepath.Join(*outputDir, "all_cases.json"), allBytes, 0644)
+	allBytes, err := synth.ExportJSON(cases)
+	if err != nil {
+		logger.Error("export all_cases", "err", err)
+		os.Exit(1)
+	}
+	if err := os.WriteFile(filepath.Join(*outputDir, "all_cases.json"), allBytes, 0644); err != nil {
+		logger.Error("write all_cases.json", "err", err)
+		os.Exit(1)
+	}
 
 	// failures.json
 	failures := synth.ExportFailures(cases)
-	failBytes, _ := json.MarshalIndent(failures, "", "  ")
-	os.WriteFile(filepath.Join(*outputDir, "failures.json"), failBytes, 0644)
+	failBytes, err := json.MarshalIndent(failures, "", "  ")
+	if err != nil {
+		logger.Error("marshal failures", "err", err)
+		os.Exit(1)
+	}
+	if err := os.WriteFile(filepath.Join(*outputDir, "failures.json"), failBytes, 0644); err != nil {
+		logger.Error("write failures.json", "err", err)
+		os.Exit(1)
+	}
 
 	// stats.json
 	stats := buildStats(cases, failures)
-	statsBytes, _ := json.MarshalIndent(stats, "", "  ")
-	os.WriteFile(filepath.Join(*outputDir, "stats.json"), statsBytes, 0644)
+	statsBytes, err := json.MarshalIndent(stats, "", "  ")
+	if err != nil {
+		logger.Error("marshal stats", "err", err)
+		os.Exit(1)
+	}
+	if err := os.WriteFile(filepath.Join(*outputDir, "stats.json"), statsBytes, 0644); err != nil {
+		logger.Error("write stats.json", "err", err)
+		os.Exit(1)
+	}
 
 	logger.Info("done",
 		"output", *outputDir,
