@@ -1,9 +1,7 @@
 'use client'
 
 /**
- * Tooltip — implementação leve (sem Radix) com positioning nativo.
- * Usado pra hints em ícones/badges. Para tooltips com positioning
- * complexo, usar Radix Tooltip no futuro.
+ * Tooltip — implementação leve com glass background.
  */
 import * as React from 'react'
 import { cn } from '@/lib/utils'
@@ -19,7 +17,7 @@ export function Tooltip({
   content,
   children,
   side = 'top',
-  delay = 300,
+  delay = 240,
 }: TooltipProps) {
   const [open, setOpen] = React.useState(false)
   const timeoutRef = React.useRef<NodeJS.Timeout>()
@@ -52,9 +50,8 @@ export function Tooltip({
         <span
           role="tooltip"
           className={cn(
-            'absolute z-50 px-2 py-1 rounded-md text-2xs font-medium',
-            'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900',
-            'shadow-lg whitespace-nowrap pointer-events-none',
+            'absolute z-50 px-2.5 py-1.5 rounded-md text-2xs font-medium tracking-tight',
+            'bg-ink text-ink-inverse shadow-lg whitespace-nowrap pointer-events-none',
             'animate-fade-in-fast',
             positions[side],
           )}

@@ -1,15 +1,18 @@
 /**
  * / — Dashboard executivo.
  *
- * Sprint 8c: dados reais dos endpoints /v1/envios, /v1/insights/kpis,
- * /v1/audit_log. Sem mais fallback hardcoded.
+ * Layout editorial:
+ *   1. Hero strip (status operacional + métricas primárias)
+ *   2. KPIs comparativos (4 stat cards)
+ *   3. O que precisa de atenção (alertas priorizados)
+ *   4. Atividade recente (timeline)
+ *   5. Cobertura por CADOC
  */
 
 import Link from 'next/link'
 import {
   Send,
   AlertTriangle,
-  BookCheck,
   Database,
   ArrowUpRight,
   Activity,
@@ -22,9 +25,11 @@ import { StatCard } from '@/components/domain/stat-card'
 import { AlertCard } from '@/components/domain/alert-card'
 import { DashboardLiveRefresh } from '@/components/domain/dashboard-live-refresh'
 import { ActivityFeed, type ActivityItem } from '@/components/domain/activity-feed'
-import { Card } from '@/components/ui/card'
+import { Card, CardTitle, CardEyebrow } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { SectionHeader } from '@/components/ui/section-header'
+import { Divider } from '@/components/ui/divider'
 
 export const dynamic = 'force-dynamic'
 
@@ -95,7 +100,6 @@ interface AuditEvent {
   created_at: string
 }
 
-// Validação 29 (C7 fix): coverage determinístico por hash do cadoc.
 function stableCoverage(cadoc: string): number {
   let hash = 0
   for (let i = 0; i < cadoc.length; i++) {
@@ -160,14 +164,15 @@ export default async function DashboardPage() {
   const data = await getDashboardData()
   if (!data) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-surface">
         <Card padding="lg" className="max-w-md text-center">
-          <h2 className="text-lg font-semibold mb-2">Sessão expirada</h2>
-          <p className="text-sm text-ink-muted mb-4">
+          <CardEyebrow>Sessão</CardEyebrow>
+          <CardTitle className="mb-3">Sessão expirada</CardTitle>
+          <p className="text-sm text-ink-muted mb-5">
             Faça login para acessar o console.
           </p>
-          <Link href="/login">
-            <Button variant="primary" fullWidth>
+          <Link href="/login" passHref legacyBehavior={false}>
+            <Button asChild variant="primary" fullWidth rightIcon={<ArrowUpRight className="size-4" />}>
               Ir para login
             </Button>
           </Link>
@@ -181,7 +186,6 @@ export default async function DashboardPage() {
   const criticalAlerts = alerts.filter((a) => a.severity === 'critical').length
   const warnAlerts = alerts.filter((a) => a.severity === 'warn').length
 
-  // Top 3 alertas priorizados
   const topAlerts = [...alerts]
     .sort((a, b) => {
       const sev: Record<Alert['severity'], number> = { critical: 0, warn: 1, info: 2 }
@@ -191,8 +195,6 @@ export default async function DashboardPage() {
     })
     .slice(0, 3)
 
-  // Activity feed: combina eventos reais do audit_log com os alertas
-  // (que não viram audit events por não terem sido criados pelo seed).
   const auditActivity: ActivityItem[] = auditEvents.map((e) => ({
     id: `audit-${e.id}`,
     kind: normalizeAction(e.action),
@@ -202,7 +204,6 @@ export default async function DashboardPage() {
     payload: e.payload,
   }))
 
-  // Hero copy: dinâmico baseado em alertas críticos + stats
   const totalSent = stats?.total ?? 0
   const approvalRate = kpis?.current.approval_rate ?? 0
   const heroCopy = (() => {
@@ -218,8 +219,6 @@ export default async function DashboardPage() {
     return 'Tudo em ordem · aguardando primeiro envio'
   })()
 
-  // Sparkline: deriva do histórico de audit (eventos de envio por dia)
-  // Simplificado — usa período atual vs anterior pra dar contexto.
   const sentSparkline = stats && stats.total > 0
     ? sparklineFromEnvios(stats, kpis)
     : undefined
@@ -251,38 +250,41 @@ export default async function DashboardPage() {
         })),
       }}
     >
-      <div className="space-y-8 max-w-7xl">
+      <div className="space-y-10 max-w-7xl">
         {/* Hero strip */}
-        <section className="space-y-4">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-2xs uppercase tracking-wider text-ink-subtle font-semibold mb-1">
-                Status operacional
-              </p>
-              <h2 className="text-2xl font-semibold text-ink tracking-tight">
-                {heroCopy}
-              </h2>
-            </div>
-            {criticalAlerts > 0 ? (
-              <Badge tone="critical" variant="soft" dot className="text-sm py-1">
-                ação imediata
-              </Badge>
-            ) : warnAlerts > 0 ? (
-              <Badge tone="warning" variant="soft" dot className="text-sm py-1">
-                monitorar
-              </Badge>
-            ) : stats && stats.total > 0 ? (
-              <Badge tone="success" variant="soft" dot className="text-sm py-1">
-                {approvalRate.toFixed(1)}% aprovação
-              </Badge>
-            ) : (
-              <Badge tone="neutral" variant="soft" dot className="text-sm py-1">
-                aguardando dados
-              </Badge>
-            )}
-          </div>
+        <section>
+          <SectionHeader
+            eyebrow="Status operacional"
+            title={heroCopy}
+            description={
+              criticalAlerts > 0
+                ? 'Resposta imediata necessária para garantir conformidade.'
+                : warnAlerts > 0
+                  ? 'Monitore a evolução nas próximas 24h.'
+                  : 'Operação dentro dos parâmetros regulatórios.'
+            }
+            actions={
+              criticalAlerts > 0 ? (
+                <Badge tone="critical" variant="soft" dot size="md">
+                  ação imediata
+                </Badge>
+              ) : warnAlerts > 0 ? (
+                <Badge tone="warning" variant="soft" dot size="md">
+                  monitorar
+                </Badge>
+              ) : stats && stats.total > 0 ? (
+                <Badge tone="success" variant="soft" dot size="md">
+                  {approvalRate.toFixed(1)}% aprovação
+                </Badge>
+              ) : (
+                <Badge tone="neutral" variant="soft" dot size="md">
+                  aguardando dados
+                </Badge>
+              )
+            }
+          />
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               label="Envios (30d)"
               value={stats?.total ?? 0}
@@ -298,7 +300,7 @@ export default async function DashboardPage() {
               }
               sparkline={sentSparkline}
               tone="accent"
-              icon={<Send className="size-4" />}
+              icon={<Send className="size-4" strokeWidth={2.25} />}
               helpText={
                 stats
                   ? `${stats.accepted} aprovados · ${stats.rejected} rejeitados · ${stats.pending} pendentes`
@@ -309,7 +311,7 @@ export default async function DashboardPage() {
               label="Alertas ativos"
               value={alerts.length}
               tone={criticalAlerts > 0 ? 'critical' : warnAlerts > 0 ? 'warning' : 'success'}
-              icon={<AlertTriangle className="size-4" />}
+              icon={<AlertTriangle className="size-4" strokeWidth={2.25} />}
               helpText={`${criticalAlerts} crítico${criticalAlerts !== 1 ? 's' : ''} · ${warnAlerts} atenção`}
             />
             <StatCard
@@ -326,42 +328,41 @@ export default async function DashboardPage() {
                   : undefined
               }
               tone={approvalRate >= 90 ? 'success' : approvalRate >= 70 ? 'warning' : 'critical'}
-              icon={<TrendingUp className="size-4" />}
+              icon={<TrendingUp className="size-4" strokeWidth={2.25} />}
             />
             <StatCard
               label="CADOCs monitorados"
               value={schemas.length || '—'}
               tone="neutral"
-              icon={<Database className="size-4" />}
+              icon={<Database className="size-4" strokeWidth={2.25} />}
               helpText="schemas BACEN ativos"
             />
           </div>
         </section>
 
+        <Divider />
+
         {/* O que precisa de atenção */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-md font-semibold text-ink">
-                O que precisa de atenção
-              </h3>
-              <p className="text-xs text-ink-muted">
-                Priorizado por severidade e recência
-              </p>
-            </div>
-            <Link href="/radar">
-              <Button variant="ghost" size="sm" rightIcon={<ArrowUpRight className="size-3.5" />}>
-                Ver radar completo
-              </Button>
-            </Link>
-          </div>
+        <section className="space-y-5">
+          <SectionHeader
+            eyebrow="Fila de atenção"
+            title="O que precisa de ação"
+            description="Priorizado por severidade e recência. Resolva os críticos para restaurar a conformidade."
+            actions={
+              <Link href="/radar" passHref legacyBehavior={false}>
+                <Button asChild variant="secondary" size="sm" rightIcon={<ArrowUpRight className="size-3.5" strokeWidth={2.25} />}>
+                  Ver radar completo
+                </Button>
+              </Link>
+            }
+          />
 
           {topAlerts.length === 0 ? (
             <Card padding="lg" className="text-center">
-              <div className="size-10 mx-auto mb-3 rounded-full bg-success-50 dark:bg-success-950 text-success-600 dark:text-success-400 flex items-center justify-center">
-                <TrendingUp className="size-5" />
+              <div className="size-12 mx-auto mb-4 rounded-full bg-success-50 dark:bg-success-950/30 text-success-600 dark:text-success-300 flex items-center justify-center ring-1 ring-inset ring-success-200/60 dark:ring-success-800/40">
+                <TrendingUp className="size-5" strokeWidth={2.25} />
               </div>
-              <h4 className="text-sm font-semibold text-ink mb-1">
+              <h4 className="font-serif text-base font-medium text-ink mb-1 tracking-tight">
                 Nenhum alerta aberto
               </h4>
               <p className="text-xs text-ink-muted">
@@ -377,22 +378,29 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        {/* Atividade recente (Sprint 8c: dados reais do /v1/audit_log) */}
-        <section className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Activity className="size-4 text-ink-muted" />
-            <h3 className="text-md font-semibold text-ink">Atividade recente</h3>
-            <Link href="/auditoria" className="ml-auto">
-              <Button variant="ghost" size="sm" rightIcon={<ArrowUpRight className="size-3.5" />}>
-                Ver auditoria
-              </Button>
-            </Link>
-          </div>
+        {/* Atividade recente */}
+        <section className="space-y-5">
+          <SectionHeader
+            eyebrow="Trilha de auditoria"
+            title="Atividade recente"
+            description="Eventos imutáveis do audit_log. Cada item referencia o SHA-256 do anterior."
+            actions={
+              <Link href="/auditoria" passHref legacyBehavior={false}>
+                <Button asChild variant="ghost" size="sm" rightIcon={<ArrowUpRight className="size-3.5" strokeWidth={2.25} />}>
+                  Ver auditoria
+                </Button>
+              </Link>
+            }
+          />
+
           <Card padding="md">
             {auditActivity.length === 0 ? (
-              <p className="text-xs text-ink-subtle text-center py-6">
-                Nenhum evento registrado ainda
-              </p>
+              <div className="py-12 text-center">
+                <Activity className="size-5 mx-auto mb-3 text-ink-subtle" />
+                <p className="text-xs text-ink-subtle font-mono uppercase tracking-wider">
+                  Nenhum evento registrado ainda
+                </p>
+              </div>
             ) : (
               <ActivityFeed items={auditActivity} />
             )}
@@ -401,35 +409,34 @@ export default async function DashboardPage() {
 
         {/* Cobertura por CADOC */}
         {schemas.length > 0 && (
-          <section className="space-y-4">
-            <div>
-              <h3 className="text-md font-semibold text-ink">Cobertura por CADOC</h3>
-              <p className="text-xs text-ink-muted">
-                {schemas.length} schemas monitorados · varredura a cada 6h
-              </p>
-            </div>
+          <section className="space-y-5">
+            <SectionHeader
+              eyebrow="Cobertura de schemas"
+              title="CADOCs monitorados"
+              description={`${schemas.length} schemas ativos · varredura automática a cada 6h`}
+            />
             <Card padding="md">
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
                 {schemas.map((s) => {
                   const coverage = stableCoverage(s.cadoc)
                   return (
-                    <div key={s.cadoc} className="space-y-2">
+                    <div key={s.cadoc} className="space-y-2.5">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-semibold text-accent-600 dark:text-accent-400">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-mono text-xs font-medium text-accent-600 dark:text-accent-400">
                             {s.cadoc}
                           </span>
                           <span className="text-xs text-ink-muted truncate">
                             {s.description}
                           </span>
                         </div>
-                        <span className="text-2xs font-medium text-ink-muted nums">
+                        <span className="text-2xs font-mono font-medium text-ink-muted nums shrink-0 ml-2">
                           {coverage}%
                         </span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-surface-sunken overflow-hidden">
+                      <div className="h-1 rounded-full bg-surface-sunken overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-accent-500 to-accent-600 transition-all duration-500"
+                          className="h-full rounded-full bg-gradient-to-r from-accent-500 to-magenta-500 transition-all duration-500 ease-out-expo"
                           style={{ width: `${coverage}%` }}
                         />
                       </div>
@@ -445,10 +452,7 @@ export default async function DashboardPage() {
   )
 }
 
-// --- helpers ---
-
 function normalizeAction(action: string): ActivityItem['kind'] {
-  // Mapeia audit_events.action pra ActivityKind
   switch (action) {
     case 'envio.approved':
     case 'envio.created':
@@ -482,12 +486,8 @@ function sparklineFromEnvios(
   stats: EnvioStats,
   kpis: InsightsKPIs | null,
 ): number[] {
-  // Sparkline simples: distribuição baseada no total atual.
-  // Em produção, /v1/insights retornaria série histórica.
-  // Aqui derivamos algo plausível: 5 pontos crescentes até o total.
   const total = stats.total
   if (total === 0) return []
-  // Aproximação: weekly buckets
   const weekAvg = total / 4
   return [
     Math.floor(weekAvg * 0.7),

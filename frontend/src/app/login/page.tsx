@@ -1,12 +1,11 @@
 'use client'
 
 /**
- * /login — escolha de IF para dev (Sprint 7c v2.0.0 MVP).
+ * /login — capa editorial split-panel.
  *
- * Visual: card central sobre fundo com pattern grid sutil + gradient
- * accent. Apresenta 3 demo IFs como cards selecionáveis (não select
- * nativo), cada um com role badge. Empty space generoso (whitespace
- * pesado tipo Linear).
+ * Inspiração: capa de revista de negócios + terminal institucional.
+ * Lado esquerdo: hero editorial com wordmark Fraunces + headline + manifesto.
+ * Lado direito: form minimalista com cards selecionáveis (sem select nativo).
  *
  * Em produção: integrado com IdP (Keycloak/Okta).
  */
@@ -18,8 +17,9 @@ import {
   Landmark,
   ShieldCheck,
   ArrowRight,
-  Sparkles,
-  AlertCircle,
+  ArrowUpRight,
+  Shield,
+  Lock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -30,7 +30,8 @@ interface DemoIF {
   role: 'if' | 'admin' | 'auditor'
   label: string
   description: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }>
+  cif: string
 }
 
 const DEMO_IFS: DemoIF[] = [
@@ -40,6 +41,7 @@ const DEMO_IFS: DemoIF[] = [
     label: 'Demo IF',
     description: 'Sociedade de Crédito Direto (SCD)',
     icon: Building2,
+    cif: 'SCD-001',
   },
   {
     id: 'demo-banco',
@@ -47,6 +49,7 @@ const DEMO_IFS: DemoIF[] = [
     label: 'Demo Banco',
     description: 'Instituição bancária multi-propósito',
     icon: Landmark,
+    cif: 'BCO-014',
   },
   {
     id: 'demo-admin',
@@ -54,6 +57,7 @@ const DEMO_IFS: DemoIF[] = [
     label: 'Demo Admin',
     description: 'Acesso administrativo (regulador interno)',
     icon: ShieldCheck,
+    cif: 'REG-099',
   },
 ]
 
@@ -89,102 +93,133 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-surface">
-      {/* Left: brand panel */}
-      <aside className="relative lg:w-1/2 xl:w-[55%] bg-slate-950 text-white overflow-hidden flex flex-col">
-        {/* Subtle grid + glow */}
-        <div className="absolute inset-0 pattern-grid opacity-30" aria-hidden />
+      {/* Left: brand panel — editorial hero */}
+      <aside className="relative lg:w-[58%] xl:w-[60%] bg-ink text-ink-inverse overflow-hidden flex flex-col">
+        {/* Pattern grid sutil + glows de accent */}
+        <div className="absolute inset-0 pattern-grid opacity-[0.06]" aria-hidden />
         <div
-          className="absolute -top-32 -left-32 size-96 rounded-full bg-accent-600/20 blur-3xl"
+          className="absolute -top-40 -left-40 size-[28rem] rounded-full bg-accent-600/30 blur-3xl animate-gradient-pan"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(124,58,237,0.4) 0%, rgba(217,70,239,0.1) 50%, transparent 70%)' }}
           aria-hidden
         />
         <div
-          className="absolute -bottom-32 -right-32 size-96 rounded-full bg-accent-400/10 blur-3xl"
+          className="absolute -bottom-40 -right-40 size-[32rem] rounded-full blur-3xl"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(217,70,239,0.18) 0%, transparent 70%)' }}
           aria-hidden
         />
 
-        <div className="relative flex flex-col h-full p-10 lg:p-16">
-          {/* Logo */}
-          <div className="flex items-center gap-3 mb-16">
+        {/* Hairline accent diagonal */}
+        <div
+          className="absolute top-0 right-0 w-px h-full bg-gradient-to-b from-transparent via-accent-500/40 to-transparent"
+          aria-hidden
+        />
+
+        <div className="relative flex flex-col h-full p-10 lg:p-14 xl:p-20">
+          {/* Wordmark */}
+          <div className="flex items-center gap-3">
             <div
-              className="size-10 rounded-xl bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center shadow-lg"
+              className="size-11 rounded-md bg-gradient-to-br from-accent-500 to-magenta-500 flex items-center justify-center text-white font-serif text-lg font-medium shadow-glow-accent"
               aria-hidden
             >
-              <svg
-                viewBox="0 0 24 24"
-                className="size-6 text-white"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
+              R
             </div>
-            <div>
-              <div className="text-base font-semibold">Radiant Norma</div>
-              <div className="text-2xs text-slate-400 uppercase tracking-wider">
-                Console regulatório
-              </div>
+            <div className="flex flex-col leading-none">
+              <span className="font-serif text-lg font-medium tracking-tight">
+                Radiant Norma
+              </span>
+              <span className="text-2xs uppercase tracking-[0.22em] text-ink-subtle font-mono mt-1">
+                Console Regulatório
+              </span>
             </div>
           </div>
 
-          {/* Hero copy */}
-          <div className="flex-1 flex flex-col justify-center max-w-md">
-            <Badge tone="accent" variant="soft" className="self-start mb-6">
-              <Sparkles className="size-3" />
-              v2.1 · Sprint 8
-            </Badge>
-            <h1 className="text-4xl lg:text-5xl font-semibold leading-[1.1] tracking-tight mb-6">
-              Validação CADOC que <span className="text-gradient-accent">pensa junto</span> com você.
+          {/* Eyebrow */}
+          <div className="mt-auto pt-20">
+            <div className="inline-flex items-center gap-2 mb-7">
+              <span className="size-1.5 rounded-full bg-accent-400 animate-pulse-soft" />
+              <span className="text-2xs uppercase tracking-[0.22em] font-mono text-accent-300">
+                v2.1 · Em conformidade com BACEN / CMN 4.966
+              </span>
+            </div>
+
+            {/* Hero copy */}
+            <h1 className="font-serif text-[3rem] lg:text-[3.75rem] xl:text-[4.5rem] leading-[0.98] tracking-[-0.035em] font-medium max-w-2xl mb-8">
+              Validação CADOC que{' '}
+              <span className="text-gradient-accent italic">pensa junto</span>
+              {' '}com você.
             </h1>
-            <p className="text-base text-slate-300 leading-relaxed mb-10">
+            <p className="text-base lg:text-lg text-ink-muted leading-relaxed max-w-xl mb-12">
               Radar regulatório, catálogo de regras tipadas e auditoria LGPD
               em uma plataforma desenhada para o ciclo regulatório brasileiro:
               CMN 4.966, IFRS 9, Basileia.
             </p>
 
-            <ul className="space-y-3 text-sm text-slate-300">
+            {/* Manifest — features */}
+            <ul className="space-y-3.5 text-sm text-ink-inverse">
               {[
                 '60 regras tipadas para CADOC 3040',
                 'Detecção automática de mudanças BACEN',
                 'Insights de risco baseados nos seus envios',
               ].map((item, i) => (
-                <li key={i} className="flex items-center gap-2.5">
-                  <span
-                    className="size-1.5 rounded-full bg-accent-400"
-                    aria-hidden
-                  />
-                  {item}
+                <li key={i} className="flex items-center gap-3">
+                  <span className="size-5 rounded-md bg-gradient-to-br from-accent-500 to-magenta-500 flex items-center justify-center shrink-0">
+                    <ArrowRight className="size-3 text-white" strokeWidth={2.5} />
+                  </span>
+                  <span className="tracking-tight">{item}</span>
                 </li>
               ))}
             </ul>
+
+            {/* Trust badges */}
+            <div className="mt-12 flex items-center gap-3 flex-wrap">
+              <Badge tone="neutral" variant="outline" size="sm" className="bg-transparent border-border-strong text-ink-muted">
+                <Lock className="size-3" />
+                SOC 2
+              </Badge>
+              <Badge tone="neutral" variant="outline" size="sm" className="bg-transparent border-border-strong text-ink-muted">
+                <Shield className="size-3" />
+                LGPD
+              </Badge>
+              <Badge tone="neutral" variant="outline" size="sm" className="bg-transparent border-border-strong text-ink-muted">
+                BACEN Ready
+              </Badge>
+            </div>
           </div>
 
-          <footer className="text-2xs text-slate-500 mt-10">
-            Dev mode · RADIANT_DEV_TOKEN=1 ativo
+          <footer className="mt-16 flex items-center justify-between text-2xs text-ink-subtle font-mono">
+            <span>© 2026 Radiant Norma</span>
+            <span className="uppercase tracking-[0.18em]">
+              Dev mode · RADIANT_DEV_TOKEN=1
+            </span>
           </footer>
         </div>
       </aside>
 
-      {/* Right: form */}
-      <main className="flex-1 flex items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-md animate-fade-in">
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-ink mb-2 tracking-tight">
+      {/* Right: form panel */}
+      <main className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-16 bg-surface">
+        <div className="w-full max-w-md animate-fade-up">
+          <div className="mb-10">
+            <p className="eyebrow mb-3">Acesso seguro</p>
+            <h2 className="font-serif text-3xl lg:text-4xl font-medium text-ink mb-2 tracking-tight">
               Entrar no console
             </h2>
-            <p className="text-sm text-ink-muted">
+            <p className="text-sm text-ink-muted leading-relaxed">
               Selecione a IF para entrar no ambiente de demonstração.
+              Em produção, autenticação via Keycloak / Okta com MFA.
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-ink-muted uppercase tracking-wider">
-                Instituição
-              </label>
-              <div className="space-y-2">
+            <div>
+              <div className="flex items-baseline justify-between mb-3">
+                <label className="text-xs font-medium text-ink-muted uppercase tracking-[0.14em] font-mono">
+                  Instituição
+                </label>
+                <span className="text-2xs text-ink-subtle font-mono">
+                  {DEMO_IFS.length} disponíveis
+                </span>
+              </div>
+              <div className="space-y-2.5">
                 {DEMO_IFS.map((demo) => {
                   const Icon = demo.icon
                   const isSelected = selected.id === demo.id
@@ -194,47 +229,53 @@ export default function LoginPage() {
                       type="button"
                       onClick={() => setSelected(demo)}
                       className={cn(
-                        'w-full flex items-center gap-3 p-3 rounded-lg border text-left',
-                        'transition-all duration-150',
+                        'group relative w-full flex items-center gap-4 p-4 rounded-xl text-left',
+                        'border bg-surface-raised',
+                        'transition-all duration-240 ease-out-expo',
                         isSelected
-                          ? 'border-accent-400 bg-accent-50 dark:bg-accent-950 ring-2 ring-accent-400/30'
-                          : 'border-border bg-surface-raised hover:border-border-strong hover:bg-surface-sunken',
+                          ? 'border-accent-500 bg-accent-50/50 dark:bg-accent-950/20 ring-1 ring-accent-500/30 shadow-sm'
+                          : 'border-border hover:border-border-strong hover:bg-surface-sunken/40',
                       )}
                     >
+                      {/* Selected indicator rail */}
+                      {isSelected && (
+                        <span
+                          className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full bg-gradient-to-b from-accent-500 to-magenta-500"
+                          aria-hidden
+                        />
+                      )}
+
                       <div
                         className={cn(
-                          'size-10 rounded-lg flex items-center justify-center shrink-0',
+                          'size-11 rounded-lg flex items-center justify-center shrink-0 transition-all duration-240',
                           isSelected
-                            ? 'bg-accent-600 text-white'
-                            : 'bg-surface-sunken text-ink-muted',
+                            ? 'bg-gradient-to-br from-accent-600 to-magenta-500 text-white shadow-glow-accent-sm'
+                            : 'bg-surface-sunken text-ink-muted ring-1 ring-inset ring-border',
                         )}
                       >
-                        <Icon className="size-5" />
+                        <Icon className="size-5" strokeWidth={isSelected ? 2.25 : 1.75} />
                       </div>
+
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-ink">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-sm font-medium text-ink tracking-tight">
                             {demo.label}
                           </span>
-                          <Badge
-                            tone={
-                              demo.role === 'admin' ? 'accent' : 'neutral'
-                            }
-                            variant="soft"
-                          >
-                            {demo.role}
-                          </Badge>
+                          <span className="text-2xs font-mono text-ink-subtle uppercase tracking-wider">
+                            {demo.cif}
+                          </span>
                         </div>
                         <p className="text-xs text-ink-muted truncate">
                           {demo.description}
                         </p>
                       </div>
+
                       <div
                         className={cn(
-                          'size-4 rounded-full border-2 transition-all shrink-0',
+                          'size-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-240',
                           isSelected
-                            ? 'border-accent-600 bg-accent-600'
-                            : 'border-border-strong',
+                            ? 'border-accent-600 bg-accent-600 scale-100'
+                            : 'border-border-strong scale-90 group-hover:scale-100',
                         )}
                         aria-hidden
                       >
@@ -244,9 +285,13 @@ export default function LoginPage() {
                             className="size-full text-white"
                             fill="none"
                             stroke="currentColor"
-                            strokeWidth="2"
+                            strokeWidth="2.5"
                           >
-                            <path d="M3 6l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                            <path
+                              d="M3 6l2 2 4-4"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
                           </svg>
                         )}
                       </div>
@@ -257,8 +302,18 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 p-3 rounded-md bg-critical-50 dark:bg-critical-950 border border-critical-200 dark:border-critical-800 text-critical-700 dark:text-critical-300 text-xs">
-                <AlertCircle className="size-3.5 mt-0.5 shrink-0" />
+              <div className="flex items-start gap-2.5 p-3.5 rounded-lg bg-critical-50 dark:bg-critical-950/30 border border-critical-200/60 dark:border-critical-800/40 text-critical-700 dark:text-critical-300 text-xs animate-fade-in">
+                <svg
+                  className="size-3.5 mt-0.5 shrink-0"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.25"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
                 <span>{error}</span>
               </div>
             )}
@@ -268,18 +323,31 @@ export default function LoginPage() {
               loading={loading}
               fullWidth
               size="lg"
-              rightIcon={<ArrowRight className="size-4" />}
+              rightIcon={<ArrowRight className="size-4" strokeWidth={2.25} />}
             >
               Entrar como {selected.label}
             </Button>
 
-            <div className="text-center pt-2">
-              <p className="text-2xs text-ink-subtle">
-                Em produção, autenticação via Keycloak / Okta
-                <br />
-                com MFA e rotação automática de chaves
-              </p>
+            <div className="flex items-center gap-3 pt-2">
+              <span className="flex-1 h-px bg-border" />
+              <span className="text-2xs uppercase tracking-[0.18em] text-ink-subtle font-mono">
+                Em produção
+              </span>
+              <span className="flex-1 h-px bg-border" />
             </div>
+
+            <p className="text-center text-xs text-ink-subtle leading-relaxed">
+              Autenticação federada via Keycloak / Okta
+              <br />
+              com MFA e rotação automática de chaves.
+              <a
+                href="#"
+                className="inline-flex items-center gap-1 mt-2 text-accent-600 dark:text-accent-400 hover:underline font-medium"
+              >
+                Documentação
+                <ArrowUpRight className="size-3" />
+              </a>
+            </p>
           </form>
         </div>
       </main>

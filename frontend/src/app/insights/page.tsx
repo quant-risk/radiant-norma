@@ -1,21 +1,19 @@
 /**
  * /insights — inteligência operacional.
- *
- * Sprint 8c: dados reais de /v1/insights/* (kpis, heatmap, top-failing,
- * recommendations). Heurística no backend gera recommendations baseadas
- * nos dados reais do IF logado.
  */
 
 import { Calendar, Sparkles, AlertTriangle, TrendingUp } from 'lucide-react'
 import { getServerSession } from '@/lib/session'
 import { apiFetch } from '@/lib/api-fetch'
 import { AppShell } from '@/components/layout/app-shell'
-import { Card, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardTitle, CardEyebrow, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { StatCard } from '@/components/domain/stat-card'
 import { Heatmap } from '@/components/domain/heatmap'
 import { InsightCard } from '@/components/domain/insight-card'
+import { SectionHeader } from '@/components/ui/section-header'
+import { Divider } from '@/components/ui/divider'
 
 export const dynamic = 'force-dynamic'
 
@@ -114,7 +112,7 @@ export default async function InsightsPage() {
   if (!data) {
     return (
       <div className="p-12 text-center">
-        <p>Sessão expirada.</p>
+        <p className="text-ink-muted">Sessão expirada.</p>
       </div>
     )
   }
@@ -132,18 +130,22 @@ export default async function InsightsPage() {
           { label: 'Insights' },
         ],
         actions: (
-          <Button variant="outline" size="sm" leftIcon={<Calendar className="size-3.5" />}>
+          <Button variant="secondary" size="sm" leftIcon={<Calendar className="size-3.5" strokeWidth={2.25} />}>
             Últimos 30 dias
           </Button>
         ),
       }}
     >
-      <div className="space-y-8 max-w-7xl">
+      <div className="space-y-10 max-w-7xl">
         {/* KPIs comparativos */}
-        <section className="space-y-4">
-          <h2 className="text-md font-semibold text-ink">Comparativo temporal</h2>
+        <section>
+          <SectionHeader
+            eyebrow="Comparativo temporal"
+            title="Indicadores-chave"
+            description="Análise comparativa dos últimos 30 dias vs. período anterior."
+          />
           {kpis ? (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard
                 label="Taxa de aprovação"
                 value={`${kpis.current.approval_rate.toFixed(1)}%`}
@@ -163,7 +165,7 @@ export default async function InsightsPage() {
                       ? 'warning'
                       : 'critical'
                 }
-                icon={<TrendingUp className="size-4" />}
+                icon={<TrendingUp className="size-4" strokeWidth={2.25} />}
                 helpText={`${kpis.current.accepted}/${kpis.current.sent_total} envios`}
               />
               <StatCard
@@ -179,7 +181,7 @@ export default async function InsightsPage() {
                     : undefined
                 }
                 tone="warning"
-                icon={<AlertTriangle className="size-4" />}
+                icon={<AlertTriangle className="size-4" strokeWidth={2.25} />}
               />
               <StatCard
                 label="Regras acionadas"
@@ -203,50 +205,38 @@ export default async function InsightsPage() {
               />
             </div>
           ) : (
-            <Card padding="lg">
-              <p className="text-sm text-ink-muted text-center py-6">
+            <Card padding="lg" className="mt-6 text-center">
+              <p className="text-sm text-ink-muted">
                 Sem dados de KPIs disponíveis
               </p>
             </Card>
           )}
         </section>
 
+        <Divider />
+
         {/* Heatmap */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-md font-semibold text-ink">
-                Mapa de calor — falhas por CADOC × dia
-              </h2>
-              <p className="text-xs text-ink-muted">
-                Concentração de falhas nos últimos {heatmap?.days ?? 14} dias
-              </p>
-            </div>
-            <div className="flex items-center gap-3 text-2xs text-ink-muted">
-              <span>Menos</span>
-              <div className="flex gap-0.5">
-                {[100, 300, 500, 700, 900].map((g) => (
-                  <div
-                    key={g}
-                    className="size-3 rounded-sm"
-                    style={{
-                      background:
-                        g === 100
-                          ? 'rgb(220 252 231)'
-                          : g === 300
-                            ? 'rgb(187 247 208)'
-                            : g === 500
-                              ? 'rgb(134 239 172)'
-                              : g === 700
-                                ? 'rgb(74 222 128)'
-                                : 'rgb(22 163 74)',
-                    }}
-                  />
-                ))}
+        <section className="space-y-5">
+          <SectionHeader
+            eyebrow="Mapa de calor"
+            title="Falhas por CADOC × dia"
+            description={`Concentração de falhas nos últimos ${heatmap?.days ?? 14} dias`}
+            actions={
+              <div className="flex items-center gap-2.5 text-2xs text-ink-subtle font-mono">
+                <span>Menos</span>
+                <div className="flex gap-0.5">
+                  {['#ede9fe', '#c4b5fd', '#a78bfa', '#7c3aed', '#5b21b6'].map((c) => (
+                    <div
+                      key={c}
+                      className="size-3.5 rounded-sm"
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+                <span>Mais</span>
               </div>
-              <span>Mais</span>
-            </div>
-          </div>
+            }
+          />
 
           <Card padding="md">
             {heatmap && heatmap.data.length > 0 ? (
@@ -257,22 +247,26 @@ export default async function InsightsPage() {
                 max={Math.max(...heatmap.data.map((c) => c.value), 1)}
               />
             ) : (
-              <p className="text-sm text-ink-muted text-center py-8">
-                Sem falhas detectadas nos últimos 14 dias · tudo limpo
-              </p>
+              <div className="py-12 text-center">
+                <p className="font-serif text-base text-ink mb-1">
+                  Tudo limpo
+                </p>
+                <p className="text-xs text-ink-muted">
+                  Sem falhas detectadas nos últimos 14 dias
+                </p>
+              </div>
             )}
           </Card>
         </section>
 
         {/* Top regras + Recomendações */}
         <section className="grid lg:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <div>
-              <h2 className="text-md font-semibold text-ink">Top regras falhando</h2>
-              <p className="text-xs text-ink-muted">
-                Ranking por impacto · últimos 30 dias
-              </p>
-            </div>
+          <div className="space-y-5">
+            <SectionHeader
+              eyebrow="Ranking"
+              title="Top regras falhando"
+              description="Por impacto · últimos 30 dias"
+            />
             <Card padding="none">
               {topFailing.length === 0 ? (
                 <div className="py-12 text-center text-sm text-ink-muted">
@@ -290,17 +284,17 @@ export default async function InsightsPage() {
                     return (
                       <div
                         key={rule.code}
-                        className="px-5 py-4 flex items-center gap-4 hover:bg-surface-sunken/50 transition-colors"
+                        className="px-6 py-4 flex items-center gap-4 hover:bg-surface-sunken/40 transition-colors"
                       >
-                        <span className="size-7 rounded-full bg-surface-sunken text-ink-muted flex items-center justify-center text-2xs font-semibold shrink-0">
-                          {i + 1}
+                        <span className="size-8 rounded-md bg-surface-sunken text-ink-muted flex items-center justify-center text-xs font-mono font-medium shrink-0">
+                          {String(i + 1).padStart(2, '0')}
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
-                            <span className="font-mono text-xs font-semibold text-accent-600 dark:text-accent-400">
+                            <span className="font-mono text-xs font-medium text-accent-600 dark:text-accent-400">
                               {rule.code}
                             </span>
-                            <Badge tone={sevTone} variant="soft">
+                            <Badge tone={sevTone} variant="soft" size="sm">
                               {rule.severity}
                             </Badge>
                           </div>
@@ -313,12 +307,12 @@ export default async function InsightsPage() {
                           </p>
                         </div>
                         <div className="text-right shrink-0">
-                          <div className="text-lg font-semibold text-ink nums">
+                          <div className="text-lg font-medium text-ink nums font-serif tracking-tight">
                             {rule.count}
                           </div>
                           {rule.delta_pct !== 0 && (
                             <div
-                              className={`text-2xs font-medium ${
+                              className={`text-2xs font-mono font-medium ${
                                 rule.delta_pct > 0
                                   ? 'text-critical-600 dark:text-critical-400'
                                   : 'text-success-600 dark:text-success-400'
@@ -337,17 +331,23 @@ export default async function InsightsPage() {
             </Card>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="size-4 text-accent-600 dark:text-accent-400" />
-              <h2 className="text-md font-semibold text-ink">Recomendações</h2>
-            </div>
+          <div className="space-y-5">
+            <SectionHeader
+              eyebrow={
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="size-3" strokeWidth={2.25} />
+                  Motor de IA
+                </span>
+              }
+              title="Recomendações"
+              description="Geradas pela heurística do backend sobre seus dados reais."
+            />
             {recommendations.length === 0 ? (
               <Card padding="lg" className="text-center">
-                <div className="size-10 mx-auto mb-3 rounded-full bg-success-50 dark:bg-success-950 text-success-600 dark:text-success-400 flex items-center justify-center">
-                  <Sparkles className="size-5" />
+                <div className="size-12 mx-auto mb-4 rounded-full bg-success-50 dark:bg-success-950/30 text-success-600 dark:text-success-300 flex items-center justify-center ring-1 ring-inset ring-success-200/60 dark:ring-success-800/40">
+                  <Sparkles className="size-5" strokeWidth={2.25} />
                 </div>
-                <h4 className="text-sm font-semibold text-ink mb-1">
+                <h4 className="font-serif text-base font-medium text-ink mb-1 tracking-tight">
                   Tudo otimizado
                 </h4>
                 <p className="text-xs text-ink-muted">

@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * InsightCard — cartão de inteligência / recomendação.
+ * InsightCard — cartão de inteligência / recomendação, editorial.
  *
- * Padrão: 1 ícone (estado), 1 headline (curta), 1 narrativa (o que tá
- * acontecendo), 1 CTA (ação). Sem exceções. Sem insights sem ação.
+ * Visual: glyph com ring colorido · eyebrow (kind + impact) ·
+ * headline serif · narrative · CTA.
  */
 import {
   TrendingUp,
@@ -15,6 +15,7 @@ import {
   ShieldAlert,
   ArrowRight,
 } from 'lucide-react'
+import * as React from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -31,7 +32,7 @@ type InsightKind =
 const kindMeta: Record<
   InsightKind,
   {
-    icon: React.ComponentType<{ className?: string }>
+    icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }>
     tone: 'critical' | 'warning' | 'accent' | 'success' | 'info'
     label: string
   }
@@ -53,7 +54,7 @@ export interface InsightCardProps {
   kind: InsightKind
   headline: string
   narrative: string
-  confidence?: number // 0-100
+  confidence?: number
   impact?: 'low' | 'medium' | 'high'
   cta?: {
     label: string
@@ -82,58 +83,60 @@ export function InsightCard({
 
   const toneClasses: Record<typeof meta.tone, string> = {
     critical:
-      'bg-critical-50 dark:bg-critical-950 text-critical-600 dark:text-critical-400',
+      'bg-critical-50 text-critical-600 dark:bg-critical-950/40 dark:text-critical-300 ring-critical-200/60 dark:ring-critical-800/40',
     warning:
-      'bg-warning-50 dark:bg-warning-950 text-warning-600 dark:text-warning-400',
-    accent: 'bg-accent-50 dark:bg-accent-950 text-accent-600 dark:text-accent-400',
+      'bg-warning-50 text-warning-600 dark:bg-warning-950/40 dark:text-warning-300 ring-warning-200/60 dark:ring-warning-800/40',
+    accent:
+      'bg-accent-50 text-accent-600 dark:bg-accent-950/40 dark:text-accent-300 ring-accent-200/60 dark:ring-accent-800/40',
     success:
-      'bg-success-50 dark:bg-success-950 text-success-600 dark:text-success-400',
-    info: 'bg-info-50 dark:bg-info-950 text-info-600 dark:text-info-400',
+      'bg-success-50 text-success-600 dark:bg-success-950/40 dark:text-success-300 ring-success-200/60 dark:ring-success-800/40',
+    info: 'bg-info-50 text-info-600 dark:bg-info-950/40 dark:text-info-300 ring-info-200/60 dark:ring-info-800/40',
   }
 
   return (
-    <Card padding="md" className="group">
+    <Card padding="md" className="group hover:shadow-md transition-all duration-240 ease-out-expo">
       <div className="flex items-start gap-4">
         <div
           className={cn(
-            'shrink-0 size-9 rounded-lg flex items-center justify-center',
+            'shrink-0 size-10 rounded-lg flex items-center justify-center ring-1 ring-inset',
             toneClasses[meta.tone],
             '[&_svg]:size-4',
           )}
         >
-          <Icon />
+          <Icon strokeWidth={2.25} />
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <Badge tone={meta.tone} variant="soft">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <Badge tone={meta.tone} variant="soft" size="sm">
               {meta.label}
             </Badge>
             {impact && (
-              <Badge tone={impactMeta[impact].tone} variant="outline">
+              <Badge tone={impactMeta[impact].tone} variant="outline" size="sm">
                 Impacto {impactMeta[impact].label}
               </Badge>
             )}
             {confidence !== undefined && (
-              <span className="text-2xs text-ink-subtle ml-auto">
+              <span className="text-2xs text-ink-subtle ml-auto font-mono uppercase tracking-wider">
                 {confidence}% confiança
               </span>
             )}
           </div>
 
-          <h3 className="text-sm font-semibold text-ink mb-1 leading-snug">
+          <h3 className="font-serif text-base font-medium text-ink mb-1.5 leading-snug tracking-tight">
             {headline}
           </h3>
-          <p className="text-sm text-ink-muted leading-relaxed mb-3">
+          <p className="text-sm text-ink-muted leading-relaxed mb-4">
             {narrative}
           </p>
 
           {cta && (
             <Button
               size="sm"
-              variant="outline"
-              rightIcon={<ArrowRight className="size-3.5" />}
+              variant="ghost"
+              rightIcon={<ArrowRight className="size-3.5" strokeWidth={2.25} />}
               onClick={cta.onClick}
+              className="-ml-3"
             >
               {cta.label}
             </Button>

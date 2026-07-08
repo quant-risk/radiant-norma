@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatCard } from '@/components/domain/stat-card'
+import { NewEnvioButton } from '@/components/new-envio-button'
 import { ExportMenu } from '@/components/domain/export-menu'
 import { EnviosLiveRefresh } from '@/components/domain/envios-live-refresh'
 import { EnviosFilterBar } from './filter-bar'
@@ -132,7 +133,7 @@ export default async function EnviosPage({ searchParams }: PageProps) {
     schemasRes.status === 'fulfilled'
       ? Array.isArray(schemasRes.value)
         ? schemasRes.value
-        : schemasRes.value.schemas ?? []
+        : (schemasRes.value as { cadocs?: string[] }).cadocs?.map((c) => ({ cadoc: c, description: '', versions: 0, latest_version: '' })) ?? []
       : []
 
   return (
@@ -153,9 +154,10 @@ export default async function EnviosPage({ searchParams }: PageProps) {
               filters={filters}
               label="Exportar"
             />
-            <Button variant="primary" size="sm" leftIcon={<Upload className="size-3.5" />}>
-              Novo envio
-            </Button>
+            <NewEnvioButton
+              cadocs={schemas.map((s) => s.cadoc)}
+              token={session.token}
+            />
           </div>
         ),
       }}
@@ -234,8 +236,8 @@ export default async function EnviosPage({ searchParams }: PageProps) {
               }
               action={
                 Object.values(filters).some(Boolean) ? (
-                  <Link href="/envios">
-                    <Button variant="outline" size="sm">
+                  <Link href="/envios" passHref legacyBehavior={false}>
+                    <Button asChild variant="outline" size="sm">
                       Limpar filtros
                     </Button>
                   </Link>

@@ -3,78 +3,85 @@
 @tailwind utilities;
 
 /*
- * Radiant Norma — Semantic Design Tokens
+ * Radiant Norma — Semantic Design Tokens · "Institutional Premium Noir"
  *
- * Padrão: variáveis CSS em RGB (sem channels separados) pra permitir
- * `<alpha-value>` no Tailwind (ex: `bg-surface/50`). Light mode default;
- * `.dark` no <html> ativa o palette escuro.
+ * Paleta warm-neutral em ambos os modos (off-white coal + charcoal-noir).
+ * Foge do cinza slate genérico de SaaS e comunica produto high-ticket.
  *
- * Princípios:
- * - Light mode NÃO é branco puro — usa slate-50 pra reduzir fadiga
- *   visual em sessões longas (compliance officers passam horas olhando).
- * - Dark mode usa slate-950 (não preto puro) — profundidade + contraste
- *   confortável com cards raised.
- * - Surfaces em camadas (DEFAULT → raised → overlay) seguem convenção
- *   macOS/Linear: cada camada é ligeiramente mais clara/escura.
- * - Borders sempre com alpha pra não competir com texto.
+ * Light: off-white quente #F7F5F0 → coal-ink #0F0E0C
+ * Dark:  noir #0A0A0B → warm-paper #F2EFE8
+ *
+ * Accent: violet → magenta gradient (#7C3AED → #D946EF)
+ *         usado com parcimônia — só onde carrega hierarquia.
  */
 
 @layer base {
   :root {
-    /* Surfaces */
-    --surface: 248 250 252;          /* slate-50 */
-    --surface-raised: 255 255 255;   /* white */
-    --surface-sunken: 241 245 249;   /* slate-100 */
-    --surface-overlay: 255 255 255;  /* white, mais opaco */
+    /* Surfaces — warm off-white */
+    --surface: 247 245 240;            /* warm off-white */
+    --surface-raised: 252 250 245;     /* warmer paper */
+    --surface-sunken: 240 237 230;     /* sunk warm */
+    --surface-overlay: 255 253 248;    /* overlay paper */
+    --surface-inverse: 15 14 12;       /* coal */
 
-    /* Borders */
-    --border: 226 232 240;           /* slate-200 */
-    --border-subtle: 241 245 249;    /* slate-100 */
-    --border-strong: 203 213 225;    /* slate-300 */
+    /* Borders — coal-tinted */
+    --border: 224 218 207;             /* warm slate-200 */
+    --border-subtle: 235 230 220;      /* warm slate-100 */
+    --border-strong: 199 191 175;      /* warm slate-300 */
+    --border-accent: 124 58 237;       /* violet-600 */
 
-    /* Ink (text) */
-    --ink: 15 23 42;                 /* slate-900 */
-    --ink-muted: 71 85 105;          /* slate-600 */
-    --ink-subtle: 148 163 184;       /* slate-400 */
-    --ink-inverse: 248 250 252;      /* slate-50 */
+    /* Ink — coal tones */
+    --ink: 15 14 12;                   /* coal-900 */
+    --ink-muted: 82 75 65;             /* warm slate-600 */
+    --ink-subtle: 140 131 117;         /* warm slate-400 */
+    --ink-inverse: 242 239 232;        /* warm paper */
 
-    /* Brand accent override (pra consistency em ambos modos) */
-    --accent: 124 58 237;            /* violet-600 */
+    /* Brand accent */
+    --accent: 124 58 237;              /* violet-600 */
     --accent-fg: 255 255 255;
+    --accent-magenta: 217 70 239;      /* magenta-500 */
 
-    /* Pattern de gradient sutil pra hero/empty states */
+    /* Pattern grid — coal hairlines */
     --pattern-grid: linear-gradient(
       to right,
-      rgb(0 0 0 / 0.03) 1px,
+      rgb(15 14 12 / 0.04) 1px,
       transparent 1px
     ),
-    linear-gradient(to bottom, rgb(0 0 0 / 0.03) 1px, transparent 1px);
+    linear-gradient(to bottom, rgb(15 14 12 / 0.04) 1px, transparent 1px);
   }
 
   .dark {
-    --surface: 2 6 23;               /* slate-950 */
-    --surface-raised: 15 23 42;      /* slate-900 */
-    --surface-sunken: 2 6 23;        /* slate-950 */
-    --surface-overlay: 30 41 59;     /* slate-800 */
+    /* Surfaces — deep noir */
+    --surface: 10 10 11;               /* noir-950 */
+    --surface-raised: 18 17 19;        /* noir-900 */
+    --surface-sunken: 6 6 7;           /* noir-1000 */
+    --surface-overlay: 26 25 28;       /* noir-850 */
+    --surface-inverse: 247 245 240;    /* warm paper */
 
-    --border: 30 41 59;              /* slate-800 */
-    --border-subtle: 15 23 42;       /* slate-900 */
-    --border-strong: 51 65 85;       /* slate-700 */
+    /* Borders — subtle on dark */
+    --border: 30 29 33;                /* noir-800 */
+    --border-subtle: 22 21 24;         /* noir-900 */
+    --border-strong: 47 45 51;         /* noir-700 */
+    --border-accent: 167 139 250;      /* violet-400 */
 
-    --ink: 248 250 252;              /* slate-50 */
-    --ink-muted: 148 163 184;        /* slate-400 */
-    --ink-subtle: 100 116 139;       /* slate-500 */
-    --ink-inverse: 15 23 42;         /* slate-900 */
+    /* Ink — warm paper */
+    --ink: 242 239 232;                /* warm paper */
+    --ink-muted: 161 154 142;          /* warm slate-400 */
+    --ink-subtle: 110 104 95;          /* warm slate-500 */
+    --ink-inverse: 15 14 12;           /* coal */
 
-    --accent: 167 139 250;           /* violet-400 — mais claro pra contraste */
-    --accent-fg: 15 23 42;
+    /* Accent — brighter for dark contrast */
+    --accent: 167 139 250;             /* violet-400 */
+    --accent-fg: 15 14 12;
+    --accent-magenta: 232 121 249;     /* magenta-400 */
 
+    /* Pattern grid — paper hairlines */
     --pattern-grid: linear-gradient(
       to right,
-      rgb(255 255 255 / 0.04) 1px,
+      rgb(242 239 232 / 0.05) 1px,
       transparent 1px
     ),
-    linear-gradient(to bottom, rgb(255 255 255 / 0.04) 1px, transparent 1px);
+    linear-gradient(to bottom, rgb(242 239 232 / 0.05) 1px, transparent 1px);
   }
 
   * {
@@ -96,15 +103,25 @@
     font-family:
       var(--font-sans), 'Inter', -apple-system, BlinkMacSystemFont,
       'Segoe UI', system-ui, sans-serif;
+    /* Subtle paper texture for warmth */
+    background-image: var(--pattern-grid);
+    background-size: 48px 48px;
+    background-attachment: fixed;
   }
 
-  /* Selection */
+  /* Serif font with optical sizing */
+  .font-serif {
+    font-feature-settings: 'ss01', 'ss02', 'liga', 'dlig';
+    font-optical-sizing: auto;
+  }
+
+  /* Selection — accent tinted */
   ::selection {
-    background-color: rgb(var(--accent) / 0.20);
+    background-color: rgb(var(--accent) / 0.22);
     color: rgb(var(--ink));
   }
 
-  /* Scrollbars (webkit) — sutis, em slate, seguem tema */
+  /* Scrollbars — refined, slim, themed */
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -120,23 +137,67 @@
   ::-webkit-scrollbar-thumb:hover {
     background: rgb(var(--ink-subtle));
   }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 
-  /* Focus rings consistentes (acessibilidade — visíveis em ambos modos) */
+  /* Focus rings — always visible, accent-tinted, refined */
   *:focus-visible {
     outline: 2px solid rgb(var(--accent));
     outline-offset: 2px;
     border-radius: 4px;
   }
+
+  /* Smooth out-of-the-box font rendering for serifs in headings */
+  h1, h2, h3, h4, h5, h6 {
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'kern', 'liga', 'calt';
+  }
+
+  /* Reduce motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer components {
-  /* Pattern grid sutil pra hero backgrounds (login, empty states) */
+  /* Pattern grid sutil pra hero backgrounds */
   .pattern-grid {
     background-image: var(--pattern-grid);
     background-size: 32px 32px;
   }
 
-  /* Skeleton shimmer — usado em loading states */
+  /* Hairline divider — used as visual separator refinement */
+  .hairline {
+    background: linear-gradient(
+      to right,
+      transparent,
+      rgb(var(--border-strong) / 0.6) 20%,
+      rgb(var(--border-strong) / 0.6) 80%,
+      transparent
+    );
+    height: 1px;
+  }
+
+  /* Grain texture overlay — subtle paper feel */
+  .grain-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.4;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+
+  /* Skeleton shimmer — refined */
   .skeleton {
     background: linear-gradient(
       90deg,
@@ -145,29 +206,28 @@
       rgb(var(--surface-sunken)) 100%
     );
     background-size: 200% 100%;
-    animation: shimmer 1.6s linear infinite;
+    animation: shimmer 1.8s linear infinite;
   }
 
-  /* Card base — usado por todos os Card-like primitives */
+  /* Card base — used by all Card-like primitives */
   .card-base {
     @apply rounded-lg border bg-surface-raised shadow-xs;
   }
 
-  /* Text utilities semânticas (atalho pra combinações frequentes) */
-  .text-meta {
-    @apply text-xs uppercase tracking-wider font-medium text-ink-subtle;
+  /* Glass surface — premium frosted feel */
+  .glass {
+    background: rgb(var(--surface-raised) / 0.72);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
   }
 
-  /* Tabular nums em números (KPIs, tabelas) — alinha dígitos */
-  .nums {
-    font-variant-numeric: tabular-nums;
-  }
-}
-
-@layer utilities {
-  /* Gradient text (accent → violet/purple) */
+  /* Accent gradient text */
   .text-gradient-accent {
-    background: linear-gradient(135deg, rgb(var(--accent)) 0%, rgb(217 70 239) 100%);
+    background: linear-gradient(
+      135deg,
+      rgb(var(--accent)) 0%,
+      rgb(var(--accent-magenta)) 100%
+    );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -180,11 +240,42 @@
       0 1px 2px 0 rgb(0 0 0 / 0.04);
   }
 
+  /* Editorial eyebrow label — used above section titles */
+  .eyebrow {
+    @apply text-2xs uppercase tracking-[0.18em] font-medium text-ink-subtle;
+  }
+
+  /* Text utilities semânticas */
+  .text-meta {
+    @apply text-xs uppercase tracking-wider font-medium text-ink-subtle;
+  }
+
+  /* Tabular nums — alinha dígitos em números */
+  .nums {
+    font-variant-numeric: tabular-nums;
+  }
+
   /* Truncate multi-line (3 linhas) */
   .line-clamp-3 {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+}
+
+@layer utilities {
+  /* Mask gradient (fade out em bordas) */
+  .mask-fade-r {
+    mask-image: linear-gradient(to right, black 70%, transparent);
+    -webkit-mask-image: linear-gradient(to right, black 70%, transparent);
+  }
+  .mask-fade-b {
+    mask-image: linear-gradient(to bottom, black 70%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent);
+  }
+  .mask-fade-x {
+    mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
   }
 }

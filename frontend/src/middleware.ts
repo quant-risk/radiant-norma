@@ -33,6 +33,11 @@
 // Sprint 13 [S13.7]: cookie `dev:<if_id>:<role>` é aceito aqui
 // APENAS em NODE_ENV != production. Em prod, qualquer cookie que
 // comece com `dev:` é treated como missing (força redirect /login).
+//
+// CSP nonce (Sprint 55 follow-up): o themeScript inline do layout.tsx
+// (anti-FOUC dark mode) precisa de nonce em prod pra passar no CSP
+// `script-src 'self'`. Geramos um nonce por request, devolvemos via
+// header `x-nonce` e o layout.tsx aplica no <script>.
 
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -45,15 +50,48 @@ const isProd = process.env.NODE_ENV === 'production'
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
+  // CSP nonce — gerado por request (Edge Runtime: crypto.randomUUID())
+  const nonce = req.headers.get('x-nonce') ?? generateNonce()
+
+  // CSP dinâmico por request: nonce aplicado em script-src. O header
+  // CSP aqui SUBSTITUI o do next.config.js (não há conflito porque
+  // removemos CSP do next.config acima).
+  const apiUrl = process.env.RADIANT_API_URL || 'http://localhost:8080'
+  const csp = [
+    "default-src 'self'",
+    isProd
+      ? `script-src 'self' 'nonce-${nonce}'`
+      : "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    `connect-src 'self' ${apiUrl} ${apiUrl.replace('http', 'ws')} ${apiUrl.replace('http', 'wss')}`,
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+    "manifest-src 'self'",
+  ].join('; ')
+
+  // Helper: aplica nonce + CSP e retorna response
+  const passThrough = () => {
+    const res = NextResponse.next({
+      request: { headers: addNonceHeader(req, nonce) },
+    })
+    res.headers.set('x-nonce', nonce)
+    res.headers.set('Content-Security-Policy', csp)
+    return res
+  }
+
   // Páginas públicas: /login (e seus assets) passam direto.
   if (!PROTECTED_PATHS.test(pathname) && !PROTECTED_API.test(pathname)) {
-    return NextResponse.next()
+    return passThrough()
   }
 
   // Pega cookie rn_jwt
   const token = req.cookies.get('rn_jwt')?.value
   if (!token) {
-    return redirectToLogin(req, 'missing token')
+    return redirectToLogin(req, 'missing token', nonce, csp)
   }
 
   // Sprint 13 [S13.7 / C-FE-2 / C-FE-3]:
@@ -61,41 +99,53 @@ export function middleware(req: NextRequest) {
   // caminho oficial (backend emite via /v1/auth/dev-token).
   if (token.startsWith('dev:')) {
     if (isProd) {
-      return redirectToLogin(req, 'dev cookie in prod')
+      return redirectToLogin(req, 'dev cookie in prod', nonce, csp)
     }
-    // Em dev: passa direto (validação completa em getServerSession)
-    return NextResponse.next()
+    return passThrough()
   }
 
   // Cookie presente e não-dev: validar shape mínimo.
-  // JWT tem 3 segmentos base64 separados por '.'.
   if (token.split('.').length !== 3) {
-    return redirectToLogin(req, 'malformed token')
+    return redirectToLogin(req, 'malformed token', nonce, csp)
   }
 
-  return NextResponse.next()
+  return passThrough()
 }
 
-function redirectToLogin(req: NextRequest, reason: string) {
+function redirectToLogin(req: NextRequest, reason: string, nonce: string, csp: string) {
   const url = req.nextUrl.clone()
   url.pathname = '/login'
   url.searchParams.set('next', req.nextUrl.pathname + req.nextUrl.search)
-  // Log estruturado no servidor (Edge runtime tem console disponível)
   console.warn('[middleware] redirect', {
     path: req.nextUrl.pathname,
     reason,
     node_env: process.env.NODE_ENV,
   })
-  return NextResponse.redirect(url)
+  const res = NextResponse.redirect(url)
+  res.headers.set('x-nonce', nonce)
+  res.headers.set('Content-Security-Policy', csp)
+  return res
+}
+
+function generateNonce(): string {
+  // Edge Runtime tem crypto.randomUUID(). Fallback manual se não houver.
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID().replace(/-/g, '')
+  }
+  return Array.from({ length: 32 }, () =>
+    Math.floor(Math.random() * 16).toString(16),
+  ).join('')
+}
+
+function addNonceHeader(req: NextRequest, nonce: string): Headers {
+  const headers = new Headers(req.headers)
+  headers.set('x-nonce', nonce)
+  return headers
 }
 
 // Config: rodar middleware em todas as rotas exceto static assets.
 export const config = {
   matcher: [
-    // Match everything EXCEPT:
-    //   - _next/static (CSS, JS bundles)
-    //   - _next/image (image optimization)
-    //   - favicon
     '/((?!_next/static|_next/image|favicon\\.ico).*)',
   ],
 }

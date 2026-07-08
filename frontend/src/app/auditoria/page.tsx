@@ -1,7 +1,5 @@
 /**
  * /auditoria — audit log tamper-evident (LGPD/SOC 2 compliance).
- *
- * Sprint 8d: filtros URL-driven + ExportMenu (CSV/JSON).
  */
 
 import {
@@ -13,14 +11,15 @@ import {
 import { getServerSession } from '@/lib/session'
 import { apiFetch } from '@/lib/api-fetch'
 import { AppShell } from '@/components/layout/app-shell'
-import { Card, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardTitle, CardEyebrow, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatCard } from '@/components/domain/stat-card'
 import { ActivityFeed, type ActivityItem } from '@/components/domain/activity-feed'
 import { ExportMenu } from '@/components/domain/export-menu'
 import { AuditoriaLiveRefresh } from '@/components/domain/auditoria-live-refresh'
+import { SectionHeader } from '@/components/ui/section-header'
+import { Divider } from '@/components/ui/divider'
 import { AuditFilterBar } from './filter-bar'
 
 export const dynamic = 'force-dynamic'
@@ -59,7 +58,6 @@ function normalizeAction(action: string): ActivityItem['kind'] {
     case 'envio.rejected':
       return 'envio.rejected'
     case 'radar.detected':
-      return 'radar.detected'
     case 'radar.resolved':
       return 'radar.detected'
     case 'rule.disabled':
@@ -82,7 +80,7 @@ export default async function AuditoriaPage({ searchParams }: PageProps) {
   if (!session) {
     return (
       <div className="p-12 text-center">
-        <p>Sessão expirada.</p>
+        <p className="text-ink-muted">Sessão expirada.</p>
       </div>
     )
   }
@@ -135,147 +133,161 @@ export default async function AuditoriaPage({ searchParams }: PageProps) {
         ),
       }}
     >
-      <div className="space-y-6 max-w-6xl">
+      <div className="space-y-10 max-w-6xl">
         {/* Chain integrity stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <StatCard
-            label="Eventos"
-            value={events.length}
-            tone="neutral"
-            icon={<ActivityIcon className="size-4" />}
-            helpText="Eventos retornados pelo /v1/audit_log"
+        <section>
+          <SectionHeader
+            eyebrow="Integridade"
+            title="Audit log imutável"
+            description="Cada evento referencia o SHA-256 do anterior — qualquer adulteração quebra a chain."
           />
-          <StatCard
-            label="Integridade da chain"
-            value={chainValid ? 'OK' : 'QUEBRADA'}
-            tone={chainValid ? 'success' : 'critical'}
-            icon={<Shield className="size-4" />}
-            helpText="SHA-256 hash chain verificada pelo backend"
-          />
-          <StatCard
-            label="Última verificação"
-            value="agora"
-            tone="neutral"
-            icon={<Hash className="size-4" />}
-            helpText="Cada request valida o chain completo"
-          />
-        </div>
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <StatCard
+              label="Eventos"
+              value={events.length}
+              tone="neutral"
+              icon={<ActivityIcon className="size-4" strokeWidth={2.25} />}
+              helpText="Eventos retornados pelo /v1/audit_log"
+            />
+            <StatCard
+              label="Integridade da chain"
+              value={chainValid ? 'OK' : 'QUEBRADA'}
+              tone={chainValid ? 'success' : 'critical'}
+              icon={<Shield className="size-4" strokeWidth={2.25} />}
+              helpText="SHA-256 hash chain verificada pelo backend"
+            />
+            <StatCard
+              label="Última verificação"
+              value="agora"
+              tone="neutral"
+              icon={<Hash className="size-4" strokeWidth={2.25} />}
+              helpText="Cada request valida o chain completo"
+            />
+          </div>
+        </section>
 
-        {/* Filter bar (Sprint 8d) */}
-        <AuditFilterBar currentFilters={filters} />
+        <Divider />
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Activity feed */}
-          <div className="lg:col-span-2">
-            <Card padding="md">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <CardTitle>Eventos recentes</CardTitle>
-                  <CardDescription>
-                    Audit log imutável com SHA-256 hash chain
-                  </CardDescription>
+        {/* Filter bar */}
+        <section className="space-y-5">
+          <AuditFilterBar currentFilters={filters} />
+
+          <div className="grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <Card padding="md">
+                <div className="flex items-start justify-between mb-5">
+                  <div>
+                    <CardEyebrow>Eventos recentes</CardEyebrow>
+                    <CardTitle className="mt-1">Linha do tempo</CardTitle>
+                    <CardDescription>
+                      Audit log imutável com SHA-256 hash chain
+                    </CardDescription>
+                  </div>
+                  <Badge tone={chainValid ? 'success' : 'warning'} variant="soft" dot>
+                    {chainValid ? 'verificado' : 'aguardando'}
+                  </Badge>
                 </div>
-                <Badge tone={chainValid ? 'success' : 'warning'} variant="soft" dot>
-                  {chainValid ? 'verificado' : 'aguardando'}
-                </Badge>
-              </div>
-              {activity.length === 0 ? (
-                <EmptyState
-                  icon={<ActivityIcon className="size-6" />}
-                  title="Sem eventos no período"
-                  description={
-                    Object.values(filters).some(Boolean)
-                      ? 'Nenhum evento com esses filtros.'
-                      : 'Nenhum evento de auditoria registrado para esta IF ainda.'
-                  }
-                />
-              ) : (
-                <ActivityFeed items={activity} />
-              )}
-            </Card>
-          </div>
+                {activity.length === 0 ? (
+                  <EmptyState
+                    icon={<ActivityIcon className="size-5" strokeWidth={1.75} />}
+                    title="Sem eventos no período"
+                    description={
+                      Object.values(filters).some(Boolean)
+                        ? 'Nenhum evento com esses filtros.'
+                        : 'Nenhum evento de auditoria registrado para esta IF ainda.'
+                    }
+                  />
+                ) : (
+                  <ActivityFeed items={activity} />
+                )}
+              </Card>
+            </div>
 
-          {/* Como funciona */}
-          <div className="space-y-3">
-            <Card padding="md">
-              <div className="flex items-center gap-2 mb-3">
-                <Lock className="size-4 text-accent-600 dark:text-accent-400" />
-                <h3 className="text-md font-semibold text-ink">Como funciona</h3>
-              </div>
-              <ol className="space-y-3 text-sm text-ink-muted">
-                <li className="flex gap-3">
-                  <span className="size-5 rounded-full bg-accent-50 dark:bg-accent-950 text-accent-600 dark:text-accent-400 flex items-center justify-center text-2xs font-semibold shrink-0">
-                    1
-                  </span>
-                  <span>
-                    Toda mutação na API emite um entry no{' '}
-                    <code className="text-2xs font-mono bg-surface-sunken px-1 py-0.5 rounded">
-                      audit_log
-                    </code>
-                  </span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="size-5 rounded-full bg-accent-50 dark:bg-accent-950 text-accent-600 dark:text-accent-400 flex items-center justify-center text-2xs font-semibold shrink-0">
-                    2
-                  </span>
-                  <span>
-                    Cada entry referencia SHA-256 da entry anterior (chain)
-                  </span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="size-5 rounded-full bg-accent-50 dark:bg-accent-950 text-accent-600 dark:text-accent-400 flex items-center justify-center text-2xs font-semibold shrink-0">
-                    3
-                  </span>
-                  <span>
-                    Modify qualquer entry → chain quebrada →{' '}
-                    <code className="text-2xs font-mono bg-surface-sunken px-1 py-0.5 rounded">
-                      auditlog.Verify()
-                    </code>{' '}
-                    detecta
-                  </span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="size-5 rounded-full bg-accent-50 dark:bg-accent-950 text-accent-600 dark:text-accent-400 flex items-center justify-center text-2xs font-semibold shrink-0">
-                    4
-                  </span>
-                  <span>
-                    Storage: SQLite local ou Postgres (driver dual, validação 21)
-                  </span>
-                </li>
-              </ol>
-            </Card>
+            <div className="space-y-4">
+              <Card padding="md">
+                <div className="flex items-center gap-2 mb-4">
+                  <Lock className="size-4 text-accent-600 dark:text-accent-400" strokeWidth={2.25} />
+                  <h3 className="font-serif text-base font-medium text-ink tracking-tight">
+                    Como funciona
+                  </h3>
+                </div>
+                <ol className="space-y-3.5 text-sm text-ink-muted">
+                  <li className="flex gap-3">
+                    <span className="size-6 rounded-md bg-accent-50 dark:bg-accent-950/30 text-accent-600 dark:text-accent-300 flex items-center justify-center text-xs font-mono font-medium shrink-0 ring-1 ring-inset ring-accent-200/60 dark:ring-accent-800/40">
+                      1
+                    </span>
+                    <span>
+                      Toda mutação na API emite um entry no{' '}
+                      <code className="text-2xs font-mono bg-surface-sunken px-1.5 py-0.5 rounded">
+                        audit_log
+                      </code>
+                    </span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="size-6 rounded-md bg-accent-50 dark:bg-accent-950/30 text-accent-600 dark:text-accent-300 flex items-center justify-center text-xs font-mono font-medium shrink-0 ring-1 ring-inset ring-accent-200/60 dark:ring-accent-800/40">
+                      2
+                    </span>
+                    <span>
+                      Cada entry referencia SHA-256 da entry anterior (chain)
+                    </span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="size-6 rounded-md bg-accent-50 dark:bg-accent-950/30 text-accent-600 dark:text-accent-300 flex items-center justify-center text-xs font-mono font-medium shrink-0 ring-1 ring-inset ring-accent-200/60 dark:ring-accent-800/40">
+                      3
+                    </span>
+                    <span>
+                      Modify qualquer entry → chain quebrada →{' '}
+                      <code className="text-2xs font-mono bg-surface-sunken px-1.5 py-0.5 rounded">
+                        auditlog.Verify()
+                      </code>{' '}
+                      detecta
+                    </span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="size-6 rounded-md bg-accent-50 dark:bg-accent-950/30 text-accent-600 dark:text-accent-300 flex items-center justify-center text-xs font-mono font-medium shrink-0 ring-1 ring-inset ring-accent-200/60 dark:ring-accent-800/40">
+                      4
+                    </span>
+                    <span>
+                      Storage: SQLite local ou Postgres (driver dual)
+                    </span>
+                  </li>
+                </ol>
+              </Card>
 
-            <Card padding="md">
-              <h3 className="text-md font-semibold text-ink mb-2">Compliance</h3>
-              <ul className="space-y-2 text-sm text-ink-muted">
-                <li className="flex items-start gap-2">
-                  <Badge tone="success" variant="soft" className="shrink-0 mt-0.5">
-                    LGPD
-                  </Badge>
-                  <span>
-                    Logs não contêm dados pessoais sensíveis (Art. 5º II)
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Badge tone="success" variant="soft" className="shrink-0 mt-0.5">
-                    SOC 2
-                  </Badge>
-                  <span>
-                    Tamper-evident + retention configurável (default 5 anos)
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Badge tone="success" variant="soft" className="shrink-0 mt-0.5">
-                    BACEN
-                  </Badge>
-                  <span>
-                    Compatível com requisitos de auditoria regulatória
-                  </span>
-                </li>
-              </ul>
-            </Card>
+              <Card padding="md">
+                <h3 className="font-serif text-base font-medium text-ink mb-3 tracking-tight">
+                  Compliance
+                </h3>
+                <ul className="space-y-2.5 text-sm text-ink-muted">
+                  <li className="flex items-start gap-2.5">
+                    <Badge tone="success" variant="soft" className="shrink-0 mt-0.5" size="sm">
+                      LGPD
+                    </Badge>
+                    <span className="text-xs leading-relaxed">
+                      Logs não contêm dados pessoais sensíveis (Art. 5º II)
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <Badge tone="success" variant="soft" className="shrink-0 mt-0.5" size="sm">
+                      SOC 2
+                    </Badge>
+                    <span className="text-xs leading-relaxed">
+                      Tamper-evident + retention configurável (default 5 anos)
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <Badge tone="success" variant="soft" className="shrink-0 mt-0.5" size="sm">
+                      BACEN
+                    </Badge>
+                    <span className="text-xs leading-relaxed">
+                      Compatível com requisitos de auditoria regulatória
+                    </span>
+                  </li>
+                </ul>
+              </Card>
+            </div>
           </div>
-        </div>
+        </section>
       </div>
     </AppShell>
   )

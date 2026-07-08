@@ -1,15 +1,16 @@
 'use client'
 
 /**
- * EmptyState — usado quando lista/conteúdo está vazio.
+ * EmptyState — versão editorial.
  *
- * Sempre oferece 3 elementos: ícone visual, copy clara, ação primária
- * (quando aplicável). Sem exceção: empty state sem CTA = mau UX.
+ * Símbolo Fraunces + caption mono. Whitespace generoso. Sempre oferece
+ * CTA (empty state sem CTA = mau UX).
  */
 import { cn } from '@/lib/utils'
 
 export interface EmptyStateProps {
-  icon: React.ReactNode
+  icon?: React.ReactNode
+  symbol?: string
   title: string
   description?: string
   action?: React.ReactNode
@@ -18,6 +19,7 @@ export interface EmptyStateProps {
 
 export function EmptyState({
   icon,
+  symbol,
   title,
   description,
   action,
@@ -27,24 +29,37 @@ export function EmptyState({
     <div
       className={cn(
         'flex flex-col items-center justify-center text-center',
-        'py-16 px-6 rounded-lg border border-dashed border-border',
-        'bg-surface-sunken/40',
+        'py-20 px-8 rounded-xl border border-dashed border-border',
+        'bg-surface-sunken/30',
+        'animate-fade-in',
         className,
       )}
     >
-      <div
-        className={cn(
-          'size-12 rounded-full flex items-center justify-center mb-4',
-          'bg-surface-raised border border-border text-ink-muted',
-          '[&_svg]:size-6',
-        )}
-        aria-hidden
-      >
-        {icon}
-      </div>
-      <h3 className="text-md font-semibold text-ink mb-1">{title}</h3>
+      {symbol && (
+        <div
+          className="font-serif text-6xl text-ink-subtle mb-4 leading-none tracking-tight"
+          aria-hidden
+        >
+          {symbol}
+        </div>
+      )}
+      {icon && (
+        <div
+          className={cn(
+            'size-12 rounded-full flex items-center justify-center mb-5',
+            'bg-surface-raised border border-border text-ink-muted',
+            '[&_svg]:size-5',
+          )}
+          aria-hidden
+        >
+          {icon}
+        </div>
+      )}
+      <h3 className="font-serif text-lg font-medium text-ink mb-1.5 tracking-tight">
+        {title}
+      </h3>
       {description && (
-        <p className="text-sm text-ink-muted max-w-sm mb-4 leading-relaxed">
+        <p className="text-sm text-ink-muted max-w-sm mb-5 leading-relaxed">
           {description}
         </p>
       )}

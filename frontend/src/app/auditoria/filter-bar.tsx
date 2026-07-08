@@ -2,8 +2,6 @@
 
 /**
  * AuditFilterBar — filtros URL-driven para /auditoria.
- *
- * Sprint 8d: filtros por action (envio.approved, radar.detected, etc).
  */
 
 import { useRouter } from 'next/navigation'
@@ -54,7 +52,7 @@ export function AuditFilterBar({ currentFilters }: AuditFilterBarProps) {
     <div className="flex flex-wrap items-center gap-2">
       <div className="flex items-center gap-1.5">
         <Filter className="size-3.5 text-ink-subtle" />
-        <span className="text-2xs uppercase tracking-wider font-semibold text-ink-subtle">
+        <span className="text-2xs uppercase tracking-[0.14em] font-mono font-medium text-ink-subtle">
           Filtros
         </span>
       </div>
@@ -72,7 +70,7 @@ export function AuditFilterBar({ currentFilters }: AuditFilterBarProps) {
       {hasFilters && (
         <button
           onClick={clearAll}
-          className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-2xs font-medium bg-surface-raised border border-border text-ink-muted hover:text-ink hover:border-border-strong transition-colors"
+          className="inline-flex items-center gap-1 h-8 px-3.5 rounded-full text-xs font-medium bg-surface-raised border border-border text-ink-muted hover:text-ink hover:border-border-strong transition-colors"
         >
           <X className="size-3" />
           Limpar tudo
@@ -111,13 +109,13 @@ function FilterDropdown({ label, value, options, onChange }: FilterDropdownProps
       <button
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          'inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-2xs font-medium transition-colors border',
+          'inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-xs font-medium tracking-tight transition-all duration-180 border',
           value
-            ? 'bg-accent-50 dark:bg-accent-950 border-accent-300 dark:border-accent-700 text-accent-700 dark:text-accent-300'
-            : 'bg-surface-raised border-border text-ink-muted hover:text-ink hover:border-border-strong',
+            ? 'bg-gradient-to-br from-accent-50 to-magenta-500/10 dark:from-accent-950/50 dark:to-magenta-500/10 border-accent-300 dark:border-accent-700 text-accent-700 dark:text-accent-300 shadow-sm'
+            : 'bg-surface-raised border-border text-ink-muted hover:border-border-strong hover:text-ink',
         )}
       >
-        <span className="text-ink-subtle uppercase tracking-wider text-2xs">
+        <span className="text-ink-subtle uppercase tracking-[0.14em] font-mono text-2xs">
           {label}:
         </span>
         <span>{displayLabel}</span>
@@ -127,9 +125,9 @@ function FilterDropdown({ label, value, options, onChange }: FilterDropdownProps
       {open && (
         <div
           className={cn(
-            'absolute left-0 top-full mt-1 z-30 w-56 max-h-80 overflow-y-auto',
-            'bg-surface-raised border border-border rounded-lg shadow-lg overflow-hidden',
-            'animate-fade-in-fast',
+            'absolute left-0 top-full mt-2 z-30 w-60 max-h-80 overflow-y-auto',
+            'bg-surface-raised/95 backdrop-blur-xl border border-border rounded-lg shadow-xl overflow-hidden',
+            'animate-fade-in-fast py-1',
           )}
         >
           {options.map((opt) => {
@@ -144,7 +142,7 @@ function FilterDropdown({ label, value, options, onChange }: FilterDropdownProps
                 className={cn(
                   'w-full text-left px-3 py-1.5 text-xs transition-colors',
                   isActive
-                    ? 'bg-accent-50 dark:bg-accent-950 text-accent-700 dark:text-accent-300 font-medium'
+                    ? 'bg-accent-50 dark:bg-accent-950/40 text-accent-700 dark:text-accent-300 font-medium'
                     : 'text-ink hover:bg-surface-sunken',
                 )}
               >

@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * ActivityFeed — timeline vertical de eventos.
+ * ActivityFeed — timeline editorial.
  *
- * Cada item: timestamp relativo, ícone do tipo, ator (se houver),
- * descrição, payload colapsável. Usado em /auditoria.
+ * Cada item: glyph + label serif + actor mono + timestamp relative.
+ * Linha de timeline com gradiente sutil.
  */
 import * as React from 'react'
 import {
@@ -34,7 +34,7 @@ export type ActivityKind =
 const kindMeta: Record<
   ActivityKind,
   {
-    icon: React.ComponentType<{ className?: string }>
+    icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }>
     tone: 'neutral' | 'accent' | 'success' | 'warning' | 'critical' | 'info'
     label: string
   }
@@ -66,6 +66,17 @@ export interface ActivityFeedProps {
   emptyMessage?: string
 }
 
+// Módulo-level: classe por tone. Recriado 1x por import do módulo,
+// não por item renderizado (perf).
+const TONE_CLASSES: Record<ActivityKind extends never ? never : 'neutral' | 'accent' | 'success' | 'warning' | 'critical' | 'info', string> = {
+  neutral: 'bg-surface-raised text-ink-muted ring-border',
+  accent: 'bg-accent-50 text-accent-600 ring-accent-200/60 dark:bg-accent-950/50 dark:text-accent-300 dark:ring-accent-800/40',
+  success: 'bg-success-50 text-success-600 ring-success-200/60 dark:bg-success-950/50 dark:text-success-300 dark:ring-success-800/40',
+  warning: 'bg-warning-50 text-warning-600 ring-warning-200/60 dark:bg-warning-950/50 dark:text-warning-300 dark:ring-warning-800/40',
+  critical: 'bg-critical-50 text-critical-600 ring-critical-200/60 dark:bg-critical-950/50 dark:text-critical-300 dark:ring-critical-800/40',
+  info: 'bg-info-50 text-info-600 ring-info-200/60 dark:bg-info-950/50 dark:text-info-300 dark:ring-info-800/40',
+}
+
 export function ActivityFeed({
   items,
   loading,
@@ -73,10 +84,10 @@ export function ActivityFeed({
 }: ActivityFeedProps) {
   if (loading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex gap-3">
-            <div className="skeleton size-8 rounded-full shrink-0" />
+          <div key={i} className="flex gap-4">
+            <div className="skeleton size-8 rounded-md shrink-0" />
             <div className="flex-1 space-y-2">
               <div className="skeleton h-3 w-2/3 rounded" />
               <div className="skeleton h-3 w-1/3 rounded" />
@@ -96,65 +107,60 @@ export function ActivityFeed({
   }
 
   return (
-    <ol className="relative space-y-4">
-      {/* Timeline line */}
+    <ol className="relative">
+      {/* Timeline line — gradient sutil */}
       <div
-        className="absolute left-4 top-3 bottom-3 w-px bg-border"
+        className="absolute left-4 top-3 bottom-3 w-px bg-gradient-to-b from-border via-border to-transparent"
         aria-hidden
       />
-      {items.map((item) => {
+      {items.map((item, i) => {
         const meta = kindMeta[item.kind]
         const Icon = meta.icon
-        const toneClasses: Record<typeof meta.tone, string> = {
-          neutral: 'bg-surface-raised text-ink-muted border-border',
-          accent: 'bg-accent-50 text-accent-600 border-accent-200 dark:bg-accent-950 dark:text-accent-400 dark:border-accent-800',
-          success: 'bg-success-50 text-success-600 border-success-200 dark:bg-success-950 dark:text-success-400 dark:border-success-800',
-          warning: 'bg-warning-50 text-warning-600 border-warning-200 dark:bg-warning-950 dark:text-warning-400 dark:border-warning-800',
-          critical: 'bg-critical-50 text-critical-600 border-critical-200 dark:bg-critical-950 dark:text-critical-400 dark:border-critical-800',
-          info: 'bg-info-50 text-info-600 border-info-200 dark:bg-info-950 dark:text-info-400 dark:border-info-800',
-        }
         return (
           <li
             key={item.id}
-            className="relative flex gap-4 pl-0 animate-fade-in"
+            className={cn(
+              'relative flex gap-4 pb-5 last:pb-0 animate-fade-in',
+              i > 0 && 'pt-5',
+            )}
           >
             <div
               className={cn(
-                'relative z-10 size-8 rounded-full border-2 flex items-center justify-center shrink-0',
+                'relative z-10 size-8 rounded-md ring-1 ring-inset flex items-center justify-center shrink-0',
                 '[&_svg]:size-3.5',
-                toneClasses[meta.tone],
+                TONE_CLASSES[meta.tone],
               )}
             >
-              <Icon />
+              <Icon strokeWidth={2.25} />
             </div>
-            <div className="flex-1 min-w-0 pt-1">
-              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                <span className="text-sm font-medium text-ink">
+            <div className="flex-1 min-w-0 pt-0.5">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="font-serif text-sm font-medium text-ink tracking-tight">
                   {meta.label}
                 </span>
                 {item.actor && (
                   <span className="text-xs text-ink-muted">
-                    por <span className="font-mono">{item.actor}</span>
+                    por <span className="font-mono text-ink">{item.actor}</span>
                   </span>
                 )}
                 <span
-                  className="text-2xs text-ink-subtle ml-auto"
+                  className="text-2xs text-ink-subtle ml-auto font-mono"
                   title={formatDateTime(item.timestamp)}
                 >
                   {formatRelativeCompact(item.timestamp)}
                 </span>
               </div>
               {item.description && (
-                <p className="text-sm text-ink-muted leading-snug">
+                <p className="text-sm text-ink-muted leading-relaxed">
                   {item.description}
                 </p>
               )}
               {item.payload && Object.keys(item.payload).length > 0 && (
-                <details className="mt-2">
-                  <summary className="text-2xs text-ink-subtle cursor-pointer hover:text-ink-muted select-none">
+                <details className="mt-2 group">
+                  <summary className="text-2xs text-ink-subtle cursor-pointer hover:text-ink-muted select-none font-mono uppercase tracking-wider">
                     ver detalhes
                   </summary>
-                  <pre className="mt-2 text-2xs font-mono bg-surface-sunken border border-border rounded p-2 overflow-x-auto">
+                  <pre className="mt-2 text-2xs font-mono bg-surface-sunken border border-border-subtle rounded-md p-3 overflow-x-auto text-ink-muted">
                     {JSON.stringify(item.payload, null, 2)}
                   </pre>
                 </details>

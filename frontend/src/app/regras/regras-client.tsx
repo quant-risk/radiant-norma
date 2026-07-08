@@ -3,19 +3,8 @@
 /**
  * /regras — catálogo interativo de regras (60 regras 3040).
  *
- * Client component: filtros (categoria, severidade, status), busca
- * fuzzy, drill-down em modal. Toggle enable/disable persistido no
- * backend (Sprint 11) — antes era localStorage.
- *
- * Validação 29:
- *   - C8 fix: outer é <div role="button"> (não <button>) pra permitir
- *     toggle button interno sem HTML inválido.
- *   - H4 fix: modal tem ESC handler + click outside.
- *
- * Sprint 11 (v3.4.0):
- *   - Substituído localStorage por useRulePreferences hook (backend API).
- *   - Optimistic concurrency via expected_state (409 → refetch + aviso).
- *   - Audit events rule.disabled/enabled emitidos pelo backend.
+ * Refinado: cards maiores, typography editorial, modal com hairline header,
+ * filtros como pills com estilo premium.
  */
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
@@ -33,8 +22,8 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Separator } from '@/components/ui/separator'
 import { useRulePreferences } from '@/lib/use-rule-preferences'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 
 type Severity = 'E' | 'A' | 'I'
 type Category = 'B' | 'F' | 'C' | 'S'
@@ -75,11 +64,9 @@ export function RegrasClient({ rules }: RegrasClientProps) {
   const [enabledOnly, setEnabledOnly] = useState(false)
   const [focused, setFocused] = useState<Rule | null>(null)
 
-  // Sprint 11: source of truth é backend (audit + per-IF persistence).
   const { disabled, loading: prefsLoading, toggle: toggleRuleBackend } = useRulePreferences()
   const [togglePending, setTogglePending] = useState<Set<string>>(new Set())
 
-  // Deep-link via ?focus=CODE
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const focusCode = params.get('focus')
@@ -125,7 +112,6 @@ export function RegrasClient({ rules }: RegrasClientProps) {
       try {
         const result = await toggleRuleBackend(code)
         if ('error' in result) {
-          // 409 ou erro de rede — useRulePreferences já fez refetch
           console.warn(`[regras] toggle ${code}: ${result.error}`)
         }
       } finally {
@@ -139,7 +125,6 @@ export function RegrasClient({ rules }: RegrasClientProps) {
     [togglePending, toggleRuleBackend],
   )
 
-  // H4 fix: ESC handler para fechar modal
   useEffect(() => {
     if (!focused) return
     function onKey(e: KeyboardEvent) {
@@ -155,27 +140,27 @@ export function RegrasClient({ rules }: RegrasClientProps) {
   return (
     <>
       {/* Toolbar */}
-      <div className="space-y-3 mb-6">
+      <div className="space-y-4 mb-8">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-ink-subtle pointer-events-none" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-ink-subtle pointer-events-none" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar por código ou descrição…"
               className={cn(
-                'w-full h-10 pl-10 pr-10 rounded-lg',
+                'w-full h-11 pl-11 pr-10 rounded-lg',
                 'bg-surface-raised border border-border',
                 'text-sm placeholder:text-ink-subtle',
                 'focus:outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-400/20',
-                'transition-all',
+                'transition-all duration-180',
               )}
             />
             {query && (
               <button
                 onClick={() => setQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-subtle hover:text-ink"
+                className="absolute right-3 top-1/2 -translate-y-1/2 size-6 rounded text-ink-subtle hover:text-ink hover:bg-surface-sunken flex items-center justify-center transition-colors"
                 aria-label="Limpar busca"
               >
                 <X className="size-3.5" />
@@ -186,9 +171,9 @@ export function RegrasClient({ rules }: RegrasClientProps) {
 
         {/* Filter chips */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 pr-1">
             <Filter className="size-3.5 text-ink-subtle" />
-            <span className="text-2xs uppercase tracking-wider font-semibold text-ink-subtle">
+            <span className="text-2xs uppercase tracking-[0.14em] font-mono font-medium text-ink-subtle">
               Categoria
             </span>
           </div>
@@ -208,9 +193,9 @@ export function RegrasClient({ rules }: RegrasClientProps) {
             </FilterChip>
           ))}
 
-          <Separator orientation="vertical" className="h-5 mx-1" />
+          <span className="mx-1 h-5 w-px bg-border" />
 
-          <span className="text-2xs uppercase tracking-wider font-semibold text-ink-subtle">
+          <span className="text-2xs uppercase tracking-[0.14em] font-mono font-medium text-ink-subtle pr-1">
             Severidade
           </span>
           <FilterChip
@@ -230,13 +215,13 @@ export function RegrasClient({ rules }: RegrasClientProps) {
             </FilterChip>
           ))}
 
-          <Separator orientation="vertical" className="h-5 mx-1" />
+          <span className="mx-1 h-5 w-px bg-border" />
 
           <FilterChip
             active={enabledOnly}
             onClick={() => setEnabledOnly(!enabledOnly)}
           >
-            <CheckCircle2 className="size-3" />
+            <CheckCircle2 className="size-3" strokeWidth={2.25} />
             Apenas habilitadas
           </FilterChip>
         </div>
@@ -245,13 +230,13 @@ export function RegrasClient({ rules }: RegrasClientProps) {
       {/* Results */}
       {filtered.length === 0 ? (
         <EmptyState
-          icon={<Search className="size-6" />}
+          icon={<Search className="size-5" strokeWidth={1.75} />}
           title="Nenhuma regra encontrada"
           description={`Sem regras que correspondam aos filtros${query ? ` para "${query}"` : ''}.`}
           action={
             <Button
-              variant="outline"
-              size="sm"
+              variant="secondary"
+              size="md"
               onClick={() => {
                 setQuery('')
                 setCategoryFilter('ALL')
@@ -264,11 +249,10 @@ export function RegrasClient({ rules }: RegrasClientProps) {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((r) => {
             const sev = severityMeta[r.severity]
             const isDisabled = disabled.has(r.code)
-            // C8 fix: outer é <div role="button"> pra evitar <button> aninhado.
             return (
               <div
                 key={r.code}
@@ -282,21 +266,21 @@ export function RegrasClient({ rules }: RegrasClientProps) {
                   }
                 }}
                 className={cn(
-                  'text-left rounded-lg border bg-surface-raised p-4 cursor-pointer',
-                  'transition-all duration-150 hover:shadow-md hover:border-border-strong',
+                  'text-left rounded-lg border bg-surface-raised p-5 cursor-pointer',
+                  'transition-all duration-240 ease-out-expo hover:shadow-md hover:border-border-strong hover:-translate-y-px',
                   'group relative outline-none',
                   'focus-visible:ring-2 focus-visible:ring-accent-400/40',
                   isDisabled
-                    ? 'border-border opacity-50'
-                    : 'border-border hover:-translate-y-px',
+                    ? 'border-border opacity-60'
+                    : 'border-border',
                 )}
               >
-                <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-xs font-semibold text-accent-600 dark:text-accent-400">
+                    <span className="font-mono text-xs font-medium text-accent-600 dark:text-accent-400">
                       {r.code}
                     </span>
-                    <Badge tone={sev.tone} variant="soft" dot>
+                    <Badge tone={sev.tone} variant="soft" dot size="sm">
                       {sev.label}
                     </Badge>
                     {togglePending.has(r.code) && (
@@ -314,7 +298,7 @@ export function RegrasClient({ rules }: RegrasClientProps) {
                       'disabled:opacity-50 disabled:cursor-wait',
                       isDisabled
                         ? 'text-ink-subtle hover:text-ink'
-                        : 'text-success-600 dark:text-success-400 hover:bg-success-50 dark:hover:bg-success-950',
+                        : 'text-success-600 dark:text-success-400 hover:bg-success-50 dark:hover:bg-success-950/40',
                     )}
                     aria-label={
                       isDisabled ? 'Habilitar regra' : 'Desabilitar regra'
@@ -323,11 +307,11 @@ export function RegrasClient({ rules }: RegrasClientProps) {
                     {isDisabled ? (
                       <Circle className="size-3.5" />
                     ) : (
-                      <CheckCircle2 className="size-3.5" />
+                      <CheckCircle2 className="size-3.5" strokeWidth={2.25} />
                     )}
                   </button>
                 </div>
-                <p className="text-sm text-ink leading-snug line-clamp-2 mb-2">
+                <p className="font-serif text-sm font-medium text-ink leading-snug line-clamp-2 mb-2.5 tracking-tight">
                   {r.description}
                 </p>
                 {r.example && (
@@ -335,8 +319,8 @@ export function RegrasClient({ rules }: RegrasClientProps) {
                     {r.example}
                   </code>
                 )}
-                <div className="mt-2 flex items-center justify-end">
-                  <ChevronRight className="size-3.5 text-ink-subtle group-hover:text-accent-600 group-hover:translate-x-0.5 transition-all" />
+                <div className="mt-3 flex items-center justify-end">
+                  <ChevronRight className="size-3.5 text-ink-subtle group-hover:text-accent-600 group-hover:translate-x-0.5 transition-all" strokeWidth={2.25} />
                 </div>
               </div>
             )
@@ -344,7 +328,6 @@ export function RegrasClient({ rules }: RegrasClientProps) {
         </div>
       )}
 
-      {/* Drill-down modal */}
       {focused && (
         <RuleDetailModal
           rule={focused}
@@ -373,10 +356,10 @@ function FilterChip({
     <button
       onClick={onClick}
       className={cn(
-        'inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs font-medium',
-        'transition-colors border',
+        'inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-xs font-medium tracking-tight',
+        'transition-all duration-180 border',
         active
-          ? 'bg-accent-50 dark:bg-accent-950 border-accent-300 dark:border-accent-700 text-accent-700 dark:text-accent-300'
+          ? 'bg-gradient-to-br from-accent-50 to-magenta-500/10 dark:from-accent-950/50 dark:to-magenta-500/10 border-accent-300 dark:border-accent-700 text-accent-700 dark:text-accent-300 shadow-sm'
           : 'bg-surface-raised border-border text-ink-muted hover:border-border-strong hover:text-ink',
       )}
     >
@@ -401,6 +384,7 @@ function RuleDetailModal({
 }) {
   const sev = severityMeta[rule.severity]
   const cat = categoryMeta[rule.category]
+  const { ref: trapRef, onKeyDown: trapKeyDown } = useFocusTrap<HTMLDivElement>(true)
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -409,45 +393,55 @@ function RuleDetailModal({
       aria-labelledby="rule-modal-title"
     >
       <div
-        className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm animate-fade-in-fast"
+        className="absolute inset-0 bg-ink/40 backdrop-blur-sm animate-fade-in-fast"
         onClick={onClose}
         aria-hidden
       />
-      <div className="relative w-full max-w-xl bg-surface-raised border border-border rounded-xl shadow-xl overflow-hidden animate-scale-in">
-        <div className="px-6 py-5 border-b border-border flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="font-mono text-sm font-semibold text-accent-600 dark:text-accent-400">
-                {rule.code}
-              </span>
-              <Badge tone={sev.tone} variant="soft" dot>
-                {sev.label}
-              </Badge>
-              <Badge tone="neutral" variant="soft">
-                {cat.label}
-              </Badge>
-              {rule.sheet && (
-                <span className="text-2xs text-ink-subtle font-mono">
-                  {rule.sheet}
+      <div
+        ref={trapRef}
+        onKeyDown={trapKeyDown}
+        className="relative w-full max-w-xl bg-surface-raised border border-border rounded-xl shadow-2xl overflow-hidden animate-scale-in"
+      >
+        <div className="relative px-7 py-6 border-b border-border-subtle">
+          <div
+            className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-accent-500 to-magenta-500"
+            aria-hidden
+          />
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <span className="font-mono text-sm font-medium text-accent-600 dark:text-accent-400">
+                  {rule.code}
                 </span>
-              )}
+                <Badge tone={sev.tone} variant="soft" dot size="sm">
+                  {sev.label}
+                </Badge>
+                <Badge tone="neutral" variant="soft" size="sm">
+                  {cat.label}
+                </Badge>
+                {rule.sheet && (
+                  <span className="text-2xs text-ink-subtle font-mono">
+                    {rule.sheet}
+                  </span>
+                )}
+              </div>
+              <h2 id="rule-modal-title" className="font-serif text-xl font-medium text-ink tracking-tight">
+                {cat.description}
+              </h2>
             </div>
-            <h2 id="rule-modal-title" className="text-lg font-semibold text-ink">
-              {cat.description}
-            </h2>
+            <button
+              onClick={onClose}
+              className="size-8 rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink flex items-center justify-center transition-colors"
+              aria-label="Fechar modal (ESC)"
+            >
+              <X className="size-4" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="size-8 rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink flex items-center justify-center"
-            aria-label="Fechar modal (ESC)"
-          >
-            <X className="size-4" />
-          </button>
         </div>
 
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-7 py-6 space-y-5">
           <div>
-            <div className="text-2xs uppercase tracking-wider font-semibold text-ink-subtle mb-1.5">
+            <div className="text-2xs uppercase tracking-[0.14em] font-mono font-medium text-ink-subtle mb-2">
               Descrição
             </div>
             <p className="text-sm text-ink leading-relaxed">
@@ -457,23 +451,23 @@ function RuleDetailModal({
 
           {rule.example && (
             <div>
-              <div className="text-2xs uppercase tracking-wider font-semibold text-ink-subtle mb-1.5 flex items-center gap-1.5">
-                <Hash className="size-3" />
+              <div className="text-2xs uppercase tracking-[0.14em] font-mono font-medium text-ink-subtle mb-2 flex items-center gap-1.5">
+                <Hash className="size-3" strokeWidth={2.25} />
                 Exemplo
               </div>
-              <code className="block text-xs text-ink font-mono bg-surface-sunken border border-border rounded-md p-3 overflow-x-auto">
+              <code className="block text-xs text-ink font-mono bg-surface-sunken border border-border-subtle rounded-md p-3.5 overflow-x-auto">
                 {rule.example}
               </code>
             </div>
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-border bg-surface-sunken flex items-center justify-between gap-3">
+        <div className="px-7 py-4 border-t border-border-subtle bg-surface-sunken/60 flex items-center justify-between gap-3">
           <div className="text-xs text-ink-muted">
             {isDisabled ? 'Regra desabilitada' : 'Regra habilitada'} — afeta{' '}
             <span className="font-mono font-medium">todos os CADOCs 3040</span>
             {prefsLoading && (
-              <span className="ml-2 text-ink-subtle">· sincronizando…</span>
+              <span className="ml-2 text-ink-subtle font-mono">· sincronizando…</span>
             )}
           </div>
           <div className="flex items-center gap-2">

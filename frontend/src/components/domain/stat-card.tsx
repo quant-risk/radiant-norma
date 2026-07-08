@@ -1,11 +1,15 @@
 'use client'
 
 /**
- * StatCard — KPI card com 1 número primário + delta vs período anterior +
- * sparkline trend opcional.
+ * StatCard — KPI editorial.
  *
- * Padrão Linear/Stripe: 1 número grande, 1 delta contextual, 1 visual.
- * Nunca 3 visuais no mesmo card.
+ * Hierarquia:
+ *   1. Eyebrow (eyebrow mono)
+ *   2. Valor primário (mono, tabular nums, weight 500)
+ *   3. Delta (pill com arrow + sparkline opcional)
+ *   4. Help text (footnote serif italic)
+ *
+ * Padrão: 1 número, 1 delta, 1 sparkline. Nunca os 3 visuais juntos.
  */
 import * as React from 'react'
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react'
@@ -40,17 +44,17 @@ export function StatCard({
 }: StatCardProps) {
   if (loading) {
     return (
-      <div className="rounded-lg border border-border bg-surface-raised p-5 shadow-xs">
-        <div className="skeleton h-3 w-20 mb-3 rounded" />
-        <div className="skeleton h-8 w-24 mb-2 rounded" />
-        <div className="skeleton h-3 w-16 rounded" />
+      <div className="rounded-lg border border-border bg-surface-raised p-6 shadow-xs">
+        <div className="skeleton h-3 w-24 mb-4 rounded" />
+        <div className="skeleton h-10 w-32 mb-3 rounded" />
+        <div className="skeleton h-3 w-20 rounded" />
       </div>
     )
   }
 
-  const toneClasses: Record<NonNullable<StatCardProps['tone']>, string> = {
+  const valueColor: Record<NonNullable<StatCardProps['tone']>, string> = {
     neutral: 'text-ink',
-    accent: 'text-accent-600 dark:text-accent-400',
+    accent: 'text-gradient-accent',
     success: 'text-success-600 dark:text-success-400',
     warning: 'text-warning-600 dark:text-warning-400',
     critical: 'text-critical-600 dark:text-critical-400',
@@ -59,28 +63,20 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'group relative rounded-lg border border-border bg-surface-raised p-5 shadow-xs',
-        'transition-all duration-150 hover:shadow-md hover:border-border-strong',
+        'group relative rounded-lg border border-border bg-surface-raised p-6 shadow-xs',
+        'transition-all duration-240 ease-out-expo hover:shadow-md hover:border-border-strong',
       )}
     >
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <span className="text-xs font-medium text-ink-muted uppercase tracking-wider">
+      <div className="flex items-start justify-between gap-3 mb-5">
+        <span className="text-2xs uppercase tracking-[0.14em] font-mono font-medium text-ink-subtle">
           {label}
         </span>
         {icon && (
           <span
             className={cn(
-              'size-7 rounded-md flex items-center justify-center',
-              tone === 'neutral'
-                ? 'bg-surface-sunken text-ink-muted'
-                : tone === 'accent'
-                  ? 'bg-accent-50 text-accent-600 dark:bg-accent-950 dark:text-accent-400'
-                  : tone === 'success'
-                    ? 'bg-success-50 text-success-600 dark:bg-success-950 dark:text-success-400'
-                    : tone === 'warning'
-                      ? 'bg-warning-50 text-warning-600 dark:bg-warning-950 dark:text-warning-400'
-                      : 'bg-critical-50 text-critical-600 dark:bg-critical-950 dark:text-critical-400',
-              '[&_svg]:size-3.5',
+              'size-8 rounded-md flex items-center justify-center shrink-0',
+              'bg-surface-sunken text-ink-muted ring-1 ring-inset ring-border-subtle',
+              '[&_svg]:size-4',
             )}
           >
             {icon}
@@ -88,16 +84,23 @@ export function StatCard({
         )}
       </div>
 
-      <div className="flex items-baseline gap-1.5 mb-2">
-        <span className={cn('text-3xl font-semibold nums tracking-tight', toneClasses[tone])}>
+      <div className="flex items-baseline gap-1.5 mb-5">
+        <span
+          className={cn(
+            'text-[2rem] leading-none font-medium nums tracking-tight font-serif',
+            valueColor[tone],
+          )}
+        >
           {value}
         </span>
-        {unit && <span className="text-sm text-ink-muted">{unit}</span>}
+        {unit && (
+          <span className="text-sm text-ink-muted font-mono">{unit}</span>
+        )}
       </div>
 
-      <div className="flex items-center justify-between gap-3 min-h-5">
+      <div className="flex items-end justify-between gap-3 min-h-6">
         {delta ? (
-          <div className="flex items-center gap-1 text-xs">
+          <div className="flex items-center gap-1.5 text-xs">
             {delta.direction === 'up' && (
               <ArrowUpRight
                 className={cn(
@@ -106,6 +109,7 @@ export function StatCard({
                     ? 'text-success-600 dark:text-success-400'
                     : 'text-critical-600 dark:text-critical-400',
                 )}
+                strokeWidth={2.25}
               />
             )}
             {delta.direction === 'down' && (
@@ -116,14 +120,15 @@ export function StatCard({
                     ? 'text-success-600 dark:text-success-400'
                     : 'text-critical-600 dark:text-critical-400',
                 )}
+                strokeWidth={2.25}
               />
             )}
             {delta.direction === 'flat' && (
-              <Minus className="size-3.5 text-ink-muted" />
+              <Minus className="size-3.5 text-ink-muted" strokeWidth={2.25} />
             )}
             <span
               className={cn(
-                'font-medium nums',
+                'font-medium nums tracking-tight',
                 delta.direction === 'flat'
                   ? 'text-ink-muted'
                   : delta.value >= 0
@@ -135,19 +140,19 @@ export function StatCard({
               {delta.value.toFixed(1)}%
             </span>
             {delta.period && (
-              <span className="text-ink-subtle">{delta.period}</span>
+              <span className="text-ink-subtle ml-0.5">{delta.period}</span>
             )}
           </div>
         ) : (
           <span />
         )}
         {sparkline && sparkline.length > 0 && (
-          <Sparkline values={sparkline} tone={tone} className="w-20 h-6" />
+          <Sparkline values={sparkline} tone={tone} className="w-20 h-7" />
         )}
       </div>
 
       {helpText && (
-        <p className="text-xs text-ink-subtle mt-3 pt-3 border-t border-border-subtle">
+        <p className="text-xs text-ink-subtle mt-4 pt-4 border-t border-border-subtle font-mono">
           {helpText}
         </p>
       )}
@@ -166,6 +171,11 @@ function Sparkline({
   tone?: StatCardProps['tone']
   className?: string
 }) {
+  // useId: SSR-safe e único por instância — sem hydration mismatch nem
+  // colisão quando múltiplos sparklines dividem a mesma página.
+  const reactId = React.useId()
+  const gradientId = `sparkline-${reactId.replace(/:/g, '')}`
+
   if (!values.length) return null
 
   const min = Math.min(...values)
@@ -173,7 +183,7 @@ function Sparkline({
   const range = max - min || 1
 
   const w = 80
-  const h = 24
+  const h = 28
   const step = w / (values.length - 1 || 1)
 
   const points = values
@@ -190,10 +200,10 @@ function Sparkline({
       : tone === 'warning'
         ? 'rgb(245 158 11)'
         : tone === 'critical'
-          ? 'rgb(244 63 94)'
+          ? 'rgb(225 29 72)'
           : tone === 'accent'
-            ? 'rgb(124 58 237)'
-            : 'rgb(100 116 139)'
+            ? `url(#${gradientId})`
+            : 'rgb(140 131 117)'
 
   return (
     <svg
@@ -201,6 +211,20 @@ function Sparkline({
       preserveAspectRatio="none"
       className={cn('overflow-visible', className)}
     >
+      {tone === 'accent' && (
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#7C3AED" />
+            <stop offset="100%" stopColor="#D946EF" />
+          </linearGradient>
+        </defs>
+      )}
+      {/* Area fill muito sutil */}
+      <polygon
+        points={`0,${h} ${points} ${w},${h}`}
+        fill={tone === 'accent' ? `url(#${gradientId})` : stroke}
+        opacity="0.08"
+      />
       <polyline
         points={points}
         fill="none"
@@ -209,6 +233,15 @@ function Sparkline({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {/* End dot */}
+      {values.length > 0 && (
+        <circle
+          cx={(values.length - 1) * step}
+          cy={h - ((values[values.length - 1] - min) / range) * h}
+          r="2"
+          fill={stroke}
+        />
+      )}
     </svg>
   )
 }

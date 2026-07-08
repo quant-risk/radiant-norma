@@ -9,27 +9,22 @@ const nextConfig = {
   },
   // Sprint 13 — v3.5.2 [S13.5 / C-FE-5] security headers.
   //
-  // Aplicação regulatória BACEN sem CSP é vetor trivial de XSS via
-  // qualquer dependência npm comprometida. Headers:
-  //   * CSP: default-src 'self' (+ connect-src para API + SSE stream)
-  //   * HSTS: 1 ano com includeSubDomains (HTTPS only)
-  //   * X-Content-Type-Options: nosniff (anti MIME-sniff)
-  //   * X-Frame-Options: DENY (anti clickjacking; redundante com frame-ancestors)
-  //   * Referrer-Policy: strict-origin-when-cross-origin
-  //   * Permissions-Policy: deny mic/camera/geolocation/etc (não usados)
-  //   * Cross-Origin-Opener-Policy/Embedder-Policy: same-origin-allow-popups
+  // Headers estáticos (não-CSP) ficam aqui. CSP é aplicado dinamicamente
+  // pelo middleware (Edge runtime) com nonce por request — necessário pra
+  // permitir o <script> inline anti-FOUC do themeScript em produção.
   //
-  // Em dev: CSP fica relaxada (script-src unsafe-eval/unsafe-inline para
-  // Next.js HMR e styled-jsx). Em prod: strict.
+  // Em dev: middleware relaxa CSP (unsafe-eval/unsafe-inline para HMR).
+  // Em prod: strict com nonce-{nonce} — script inline passa só com nonce.
   async headers() {
     const isProd = process.env.NODE_ENV === 'production'
     const apiUrl = process.env.RADIANT_API_URL || 'http://localhost:8080'
 
-    // CSP base — conecta no API backend + WS para SSE
+    // CSP fallback (caso middleware não rode — ex: build estático).
+    // Em prod, o middleware sobrescreve este header com o nonce correto.
     const csp = [
       "default-src 'self'",
       isProd
-        ? "script-src 'self'" // nonces aplicados via middleware
+        ? "script-src 'self'"
         : "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'", // Tailwind + shadcn usam inline
       "img-src 'self' data: blob:",
@@ -45,8 +40,10 @@ const nextConfig = {
     return [
       {
         source: '/(.*)',
+        // skipMiddlewareHeaderInjection: true impede o Next de injetar
+        // headers automaticamente. CSP é responsabilidade do middleware.
+        // (você não quer CSP estático + dinâmico conflitando.)
         headers: [
-          { key: 'Content-Security-Policy', value: csp },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
@@ -59,7 +56,7 @@ const nextConfig = {
             key: 'Strict-Transport-Security',
             value: isProd
               ? 'max-age=31536000; includeSubDomains; preload'
-              : 'max-age=0', // dev: não cachear HSTS
+              : 'max-age=0',
           },
         ],
       },

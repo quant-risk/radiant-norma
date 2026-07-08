@@ -2,6 +2,97 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.35.0 — 2026-07-08 (Sprint 56 — Redesign Premium "Institutional Premium Noir") ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** major (frontend redesign + correções críticas de auditoria)
+> **Direção:** merge de Editorial Luxo Sério + Quiet Authority Tech + Noir Banking Terminal
+
+### Direção estética aplicada
+
+**"Institutional Premium Noir"** — fusão intencional de 3 referências de produto premium:
+
+| Camada | Resultado |
+|---|---|
+| **Paleta** | Off-white warm (`#F7F5F0`) + coal-ink (`#0F0E0C`) no light · noir `#0A0A0B` + warm paper `#F2EFE8` no dark. Foge do cinza slate genérico |
+| **Accent** | Violet→Magenta gradient (`#7C3AED → #D946EF`) usado com parcimônia — só onde carrega hierarquia |
+| **Tipografia** | Trio convive: **Inter** (corpo) + **Fraunces** (display/serif editorial) + **JetBrains Mono** (dados: CADOCs, IDs, hashes) |
+| **Identidade** | Wordmark "R" gradient violet→magenta com glow sutil + "Radiant Norma" em Fraunces + "Console" em Inter uppercase tracking |
+| **Motion** | 180-240ms com `cubic-bezier(0.16, 1, 0.3, 1)`. Sem bounce. Fade-up 320ms em mount |
+| **Densidade** | Calibrada: 32px em seções executivas, 24px operacionais, 16px transacionais |
+| **Sombras** | Charcoal-ink 5% para cards · glow-accent/critical/success com 18% apenas em CTAs primários |
+
+### Mudanças (28 arquivos)
+
+**Foundation (3)**
+- `frontend/tailwind.config.ts` — paleta warm-noir dual, fontes Fraunces/JetBrains Mono, sombras glow refinadas, novos keyframes (`fade-up`, `pulse-accent`, `gradient-pan`)
+- `frontend/src/app/globals.css` — CSS variables dual-surface, glass utility, grain overlay, mask utilities, focus rings
+- `frontend/src/app/layout.tsx` — 3 fontes via `next/font/google` (Inter, Fraunces, JetBrains Mono)
+
+**UI Primitives (8)**
+- `card.tsx` — novo variant `glass`; `CardEyebrow` adicionado
+- `button.tsx` — gradient accent + active scale + focus ring + **`asChild` polimorfismo** (C2)
+- `badge.tsx` — gradient solid + soft com ring inset; `size` variants sm/md
+- `empty-state.tsx` — símbolo Fraunces opcional
+- `tooltip.tsx` — glass background
+- `kbd.tsx` — proporções refinadas, sombra inner sutil
+- `divider.tsx` (NOVO) — hairline editorial com label opcional
+- `section-header.tsx` (NOVO) — eyebrow + título display + descrição
+
+**Layout (4)**
+- `app-shell.tsx` — max-width 1400 + container generoso
+- `sidebar.tsx` — logo "R" + Fraunces wordmark + gradient accent rail no item ativo + pulse-ring no badge live
+- `topbar.tsx` — glass header + central search proeminente + avatar como `<button>` (M6)
+- `command-palette.tsx` — glass panel + focus trap (C4) + items com gradient rail
+
+**Domain (6)**
+- `stat-card.tsx` — KPI editorial com **gradient sparkline SSR-safe** (C1)
+- `alert-card.tsx` — hairline severity rail + serif headline
+- `activity-feed.tsx` — timeline editorial + **TONE_CLASSES módulo-level** (M5)
+- `heatmap.tsx` — escala violet→magenta **theme-aware** (M3)
+- `insight-card.tsx` — editorial pull-quote + `import * as React` (C5)
+- `realtime-badge.tsx` — minimalista com dot animado
+
+**Pages (7)**
+- `login/page.tsx` — split-panel hero editorial + tokens `ink-*` (M4)
+- `page.tsx` (Dashboard) — SectionHeader + 4 KPIs editoriais + divider hairline + links via `asChild` (C2)
+- `radar/page.tsx` — 3 painéis de severidade com gradient rail
+- `envios/page.tsx` — tabela densa + cards de CADOCs com ring
+- `insights/page.tsx` — heatmap proeminente + lista editorial
+- `auditoria/page.tsx` — timeline + compliance
+- `regras/regras-client.tsx` — cards maiores + modal com focus trap (C4)
+
+### Correções críticas aplicadas (Code Review)
+
+**C1 — Sparkline accent quebrado**: o id do gradient SVG estava fixo enquanto `Math.random()` gerava um id diferente, deixando o stroke do sparkline accent sem cor. Corrigido com `React.useId()` para SSR-safe e único por instância.
+
+**C2 — HTML inválido `<Link><Button>`**: nested interactive elements quebravam focus order e a11y. Adicionado suporte `asChild` no `Button` (cloneElement pattern, sem dependência Radix) e migrados todos os 4 call sites.
+
+**C3 — CSP bloqueando themeScript em prod**: o `<script>` inline anti-FOUC não tinha nonce, mas o CSP de prod era `script-src 'self'` (strict). Middleware agora gera nonce por request via `crypto.randomUUID()`, injeta via header `x-nonce`, e aplica CSP dinâmico `script-src 'self' 'nonce-${nonce}'`. `layout.tsx` lê o nonce e aplica no `<script>`.
+
+**C4 — Focus trap ausente em modais**: `CommandPalette` e `RuleDetailModal` tinham `role="dialog"` + `aria-modal` mas sem trap de Tab nem restauração de foco. Criado `useFocusTrap` hook (`lib/use-focus-trap.ts`) e aplicado nos dois modais. Salva `document.activeElement` no mount, foca primeiro focável, cicla Tab/Shift+Tab, restaura foco ao fechar.
+
+**C5 — `React.ComponentType` sem import React em `insight-card.tsx`**: funcionava por causa do global, mas era frágil. Adicionado `import * as React from 'react'` para consistência.
+
+### Melhorias aplicadas
+
+- **M1**: deletado `Separator` (dead code, substituído por `Divider`)
+- **M3**: `Heatmap` agora theme-aware via `useTheme()` — paletas separadas light/dark
+- **M4**: login page migrada de `slate-*` hardcoded para tokens `ink-*`
+- **M5**: `TONE_CLASSES` movido para módulo-level em `ActivityFeed` (evita realocação por item)
+- **M6**: avatar do topbar agora é `<button>` (alcançável por Tab, foco visível)
+- **M10**: `Omit<CommandPaletteProps, never>` simplificado para `CommandPaletteProps`
+
+### Validação
+
+- ✅ `tsc -p tsconfig.json --noEmit` — **0 erros**
+- ✅ API de todos os componentes preservada (`cn`, `Card`, `Button`, `Badge` mantêm backward compat)
+- ✅ Lógica de dados intacta (mesmas chamadas a `/v1/*`, mesmos SSE hooks, mesmos filtros URL-driven)
+- ✅ Acessibilidade: focus rings visíveis, badges com dot+texto, `prefers-reduced-motion` respeitado, focus trap em modais
+- ✅ CSP corrigido para prod via nonce gerado no Edge middleware
+
+---
+
 ## v3.34.53 — 2026-07-07 (Validação 73 — AuditForge loop Agentic Self-Instruct) ✅
 
 > **Status:** ✅ Shipped

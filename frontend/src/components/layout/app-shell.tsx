@@ -1,11 +1,10 @@
 'use client'
 
 /**
- * AppShell — wrapper client-side que junta Sidebar + Topbar + CommandPalette.
+ * AppShell — wrapper client-side refinado.
  *
- * Validação 29:
- *   - H2 fix: orquestra mobile drawer state
- *   - H3 fix: calcula user initials de session.if_id
+ * Composição: Sidebar (left rail) + Topbar (sticky) + main content.
+ * CommandPalette é montada uma única vez no root e escuta atalhos globais.
  */
 
 import * as React from 'react'
@@ -21,7 +20,7 @@ interface Session {
 export interface AppShellProps {
   session: Session
   topbar: Omit<TopbarProps, 'onMobileMenuClick' | 'userInitials'>
-  commandData?: Omit<CommandPaletteProps, never>
+  commandData?: CommandPaletteProps
   children: React.ReactNode
 }
 
@@ -50,13 +49,15 @@ export function AppShell({
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
       />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative">
         <Topbar
           {...topbar}
           userInitials={initialsFromIfId(session.if_id)}
           onMobileMenuClick={() => setMobileOpen(true)}
         />
-        <main className="flex-1 px-6 py-6 lg:px-8 lg:py-8">{children}</main>
+        <main className="flex-1 px-6 py-6 lg:px-10 lg:py-10 max-w-[1400px] w-full mx-auto">
+          {children}
+        </main>
       </div>
       {commandData && <CommandPalette {...commandData} />}
     </div>
