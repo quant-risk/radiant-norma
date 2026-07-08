@@ -216,8 +216,9 @@ func TestBuiltin3040_TotalRulesIs(t *testing.T) {
 	// Sprint 40 / v3.34.21 DRL: +8 (LCR01-LCR08).
 	// Sprint 41 / v3.34.22 DLP: +8 (NSFR01-NSFR08).
 	// Sprint 51: LCR e NSFR movidos para Register2160/Register2170 (separados).
-	// Total Registry: 5 raw + 261 tipadas = 266.
-	if total != 266 {
-		t.Errorf("Total regras = %d, want 266 (LCR/NSFR em registries separados)", total)
+	// Sprint 52: +6 XD-DLI-01 a XD-DLI-06 (cross-doc DLI × DRL × DLP).
+	// Total Registry: 5 raw + 267 tipadas = 272.
+	if total != 272 {
+		t.Errorf("Total regras = %d, want 272 (Sprint 52: 266 + 6 XD-DLI)", total)
 	}
 }

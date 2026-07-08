@@ -442,6 +442,9 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 		// 9 destravadas Sprint 36-37 (I15, S78, S84, S85, S86, S90, N05, N07, N08) sobrescrevem stubs.
 		// Sprint 51 DRL — LCR (2160-LCR01-2160-LCR11): via Register2160, não no registry principal.
 		// Sprint 51 DLP — NSFR (2170-NSFR01-2170-NSFR10): via Register2170, não no registry principal.
+		// Sprint 52 DLI — XD-DLI-01 a XD-DLI-06 (cross-doc DLI × DRL × DLP): via Register (Rule interface).
+		"XD-DLI-01", "XD-DLI-02", "XD-DLI-03",
+		"XD-DLI-04", "XD-DLI-05", "XD-DLI-06",
 	}
 
 	if len(codes) != len(expectedCodigos) {

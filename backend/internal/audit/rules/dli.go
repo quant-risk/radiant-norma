@@ -652,7 +652,8 @@ func SetDLI(doc *DocDLI) { parsedDLI = doc }
 
 // BuiltinDLI registra todas as regras DLI/2062 no registry fornecido.
 func BuiltinDLI(r *Registry) {
-	rules := []Rule2062{
+	// DLI-01 a DLI-18 — regras do documento DLI.
+	dliRules := []Rule2062{
 		// Estruturais
 		DLI01CNPJValido{},
 		DLI02DataBaseValido{},
@@ -676,7 +677,21 @@ func BuiltinDLI(r *Registry) {
 		DLI17LimiteSCM{},
 		DLI18LimiteCooperativas{},
 	}
-	for _, rule := range rules {
+	for _, rule := range dliRules {
 		r.Register2062(rule)
+	}
+
+	// XD-DLI-01 a XD-DLI-06 — regras cross-doc DLI × DRL × DLP.
+	// Implementam a interface Rule (Apply recebe *Doc3040).
+	xddliRules := []Rule{
+		XDDLI01CNPJConsistente{},
+		XDDLI02DataBaseConsistente{},
+		XDDLI03PLAPositivo{},
+		XDDLI04MargemPLANaoNegativa{},
+		XDDLI05CapitalRealizadoMinimo{},
+		XDDLI06NSFRxLCRConsistente{},
+	}
+	for _, rule := range xddliRules {
+		r.Register(rule)
 	}
 }
