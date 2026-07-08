@@ -244,12 +244,23 @@ done:
 }
 
 func parseNumDRMLEIAUTE(s string) float64 {
-	s = strings.ReplaceAll(s, ".", "")
-	s = strings.ReplaceAll(s, ",", ".")
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return 0
 	}
+	// Detecta formato: se tem vírgula com dígitos depois, é brasileiro (1.234,56).
+	// Caso contrário, é formato padrão US/ISO (1000.00 ou 1000).
+	hasComma := strings.Contains(s, ",")
+	hasDot := strings.Contains(s, ".")
+	if hasComma && hasDot {
+		// Brasileiro: 1.234,56 → remove pontos → 1234,56 → vírgula → 1234.56
+		s = strings.ReplaceAll(s, ".", "")
+		s = strings.ReplaceAll(s, ",", ".")
+	} else if hasComma {
+		// Brasileiro sem ponto: 1234,56
+		s = strings.ReplaceAll(s, ",", ".")
+	}
+	// Caso contrário: formato padrão (1000.00 ou 1000) — usa direto
 	f, _ := strconv.ParseFloat(s, 64)
 	return f
 }
