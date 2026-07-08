@@ -99,7 +99,7 @@
 
 | Sprint | Codinome | Entregas | Status |
 |---|---|---|---|
-| **34-T** | **AuditForge POC** ([Autodata](https://arxiv.org/abs/2606.25996) sintético) | Gerador de envios CADOC 3040/3050 sintéticos via loop iterativo. **Challenger LLM** (gera XML) + **rule engine atual como Weak Solver** + **rule engine + ground truth humano como Strong Solver** + **Judge LLM** (avalia realismo/dificuldade). Output: dataset de envios edge-case que separam happy path vs regras-falhando. Custos: ~10 dias efetivo + LLM API ($50-100/dia POC). **Pré-requisito:** XSD BACEN 3040/3050 como grounding context. Quando todas as regras Audit3040/Audit3050 estão portadas, gera dataset sintético que cobre combinações ClassOp × Vencimento × Provisão × Montante inviáveis de anotar manualmente. Beneficia Q3 (Sprint 33/34) + Q4 (Sprints 38-41). | backlog |
+| **34-T** | **AuditForge POC** ([Autodata](https://arxiv.org/abs/2606.25996) sintético) | ✅ fechada (v3.34.51 — `cmd/synth-gen` CLI + `internal/synth/` package: Challenger LLM + Weak Solver + Judge LLM) |
 
 ### Por que Autodata-style para radiant-norma?
 
@@ -140,4 +140,4 @@ Output: `cmd/synth-gen` CLI que produz envios sintéticos para `cmd/seed` e test
 
 ---
 
-**Última atualização:** 2026-07-07 (Sprint 55 Pilot3 ESG-first ✅ + Validação 72 — 3 bugs auth) · Plano Ouro aprovado por Henrique.
+**Última atualização:** 2026-07-07 (Sprint 34-T AuditForge POC ✅ + v3.34.51) · Plano Ouro aprovado por Henrique.
