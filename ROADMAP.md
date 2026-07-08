@@ -140,4 +140,4 @@ Output: `cmd/synth-gen` CLI que produz envios sintéticos para `cmd/seed` e test
 
 ---
 
-**Última atualização:** 2026-07-07 (Sprint 34-T AuditForge POC ✅ + v3.34.51) · Plano Ouro aprovado por Henrique.
+**Última atualização:** 2026-07-07 (v3.34.53 — AuditForge Agentic Self-Instruct ✅) · Roadmap de engenharia COMPLETO · Waiting for M1-M4 (product-market fit)
