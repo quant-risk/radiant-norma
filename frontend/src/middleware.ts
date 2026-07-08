@@ -41,7 +41,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 
-const PROTECTED_PATHS = /^\/(?!login|api\/login|api\/logout|_next|favicon\.ico).*/
+const PROTECTED_PATHS = /^\/(?!$|login|api\/login|api\/logout|_next|favicon\.ico).*/
 // API routes que precisam de auth (proxy interno + SSE)
 const PROTECTED_API = /^\/(v1-api|v1)\//
 

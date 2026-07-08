@@ -2,6 +2,10 @@
 //
 // Difere de api.ts (client): usa next/headers para ler cookie
 // durante SSR e adiciona Authorization header automaticamente.
+//
+// Dev mode: quando o cookie tem prefixo `dev:<if_id>:<role>`, o
+// backend (com RADIANT_DEV_AUTH=1) aceita `X-IF-ID: <if_id>` em vez
+// de JWT. Enviamos ambos para cobrir os dois caminhos de auth.
 
 import { cookies } from 'next/headers'
 
@@ -20,6 +24,11 @@ export async function apiFetch<T>(
   }
   if (tokenToUse) {
     headers.Authorization = `Bearer ${tokenToUse}`
+    // Dev bridge: cookie sintético dev:<if_id>:<role> → X-IF-ID.
+    if (tokenToUse.startsWith('dev:')) {
+      const [, ifId] = tokenToUse.split(':')
+      if (ifId) headers['X-IF-ID'] = ifId
+    }
   }
 
   const response = await fetch(url, { ...init, headers })

@@ -12,6 +12,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   Building2,
   Landmark,
@@ -20,6 +21,7 @@ import {
   ArrowUpRight,
   Shield,
   Lock,
+  ArrowLeft,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -196,7 +198,16 @@ export default function LoginPage() {
       </aside>
 
       {/* Right: form panel */}
-      <main className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-16 bg-surface">
+      <main className="flex-1 flex items-center justify-center p-8 lg:p-12 xl:p-16 bg-surface relative">
+        {/* Link "Voltar" no canto */}
+        <Link
+          href="/"
+          className="absolute top-6 left-6 lg:top-8 lg:left-10 inline-flex items-center gap-1.5 text-2xs text-ink-subtle hover:text-ink-muted font-mono uppercase tracking-[0.14em] transition-colors"
+        >
+          <ArrowLeft className="size-3" strokeWidth={2.25} />
+          Voltar
+        </Link>
+
         <div className="w-full max-w-md animate-fade-up">
           <div className="mb-10">
             <p className="eyebrow mb-3">Acesso seguro</p>

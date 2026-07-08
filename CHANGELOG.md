@@ -2,6 +2,54 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.35.1 — 2026-07-08 (Sprint 56 follow-up — Landing page pública) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** minor (frontend: landing + flow marketing)
+
+### Landing page institucional
+
+`/` agora detecta sessão via `getServerSession()` e renderiza condicionalmente:
+- **Deslogado:** landing pública (Hero + Features + HowItWorks + CTA + Footer)
+- **Logado:** dashboard executivo existente (zero mudança)
+
+Componentes novos em `frontend/src/components/landing/`:
+- `hero.tsx` — Top nav + hero editorial com manifesto Fraunces + product preview mockup (mini sidebar + KPIs + alert card). Glow gradient animado no background.
+- `features.tsx` — Grid 3×2 de 6 features com micro-visuais (Radar items, regras heatmap, envio flow, insights bars, SHA-256 chain, audit timeline).
+- `how-it-works.tsx` — 3 passos numerados (Conectar → Validar → Enviar) com linha conectora gradient entre ícones.
+- `cta-final.tsx` — Bloco final com manifesto + CTA duplo (Solicitar acesso / Falar com vendas).
+- `footer.tsx` — 4 colunas (Brand + Produto + Recursos + Empresa) com trust badges.
+
+### Mudanças auxiliares
+
+- `frontend/src/middleware.ts` — `/` removido do regex `PROTECTED_PATHS` (landing pública).
+- `frontend/src/lib/api-fetch.ts` — Dev bridge: cookie `dev:<if_id>:<role>` → header `X-IF-ID: <if_id>` quando `RADIANT_DEV_AUTH=1` no backend.
+- `frontend/src/app/login/page.tsx` — Link "Voltar" no canto superior para retorno à landing.
+
+### Como rodar local
+
+```bash
+# Terminal 1 — backend
+cd backend
+RADIANT_DEV_AUTH=1 go run ./cmd/api -db=radiant.db
+# → http://localhost:8080
+
+# Terminal 2 — frontend
+cd frontend
+npm run dev
+# → http://localhost:3000
+```
+
+Abrir `http://localhost:3000` mostra a landing. Clicar em "Solicitar acesso" ou "Entrar" leva ao `/login`. Após selecionar uma IF demo, dashboard consome dados reais via `/v1/*`.
+
+### Validação
+
+- `tsc -p tsconfig.json --noEmit` → 0 erros
+- Smoke-test curl: `/` (200, landing) · `/login` (200) · `/` autenticado (200 dashboard) · 5 páginas internas (200)
+- Backend logs confirmam chamadas `/v1/envios/stats`, `/v1/radar/alerts`, `/v1/audit_log` retornando 200
+
+---
+
 ## v3.35.0 — 2026-07-08 (Sprint 56 — Redesign Premium "Institutional Premium Noir") ✅
 
 > **Status:** ✅ Shipped

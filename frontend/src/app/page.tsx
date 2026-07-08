@@ -1,12 +1,8 @@
 /**
- * / — Dashboard executivo.
+ * / — Root: landing pública (deslogado) ou dashboard executivo (logado).
  *
- * Layout editorial:
- *   1. Hero strip (status operacional + métricas primárias)
- *   2. KPIs comparativos (4 stat cards)
- *   3. O que precisa de atenção (alertas priorizados)
- *   4. Atividade recente (timeline)
- *   5. Cobertura por CADOC
+ * Server component: detecta sessão via getServerSession() e escolhe
+ * qual árvore renderizar. Zero JS extra — o dashboard já é server-rendered.
  */
 
 import Link from 'next/link'
@@ -30,6 +26,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Divider } from '@/components/ui/divider'
+import { LandingHero } from '@/components/landing/hero'
+import { LandingFeatures } from '@/components/landing/features'
+import { LandingHowItWorks } from '@/components/landing/how-it-works'
+import { LandingCTAFinal } from '@/components/landing/cta-final'
+import { LandingFooter } from '@/components/landing/footer'
 
 export const dynamic = 'force-dynamic'
 
@@ -161,6 +162,21 @@ async function getDashboardData() {
 }
 
 export default async function DashboardPage() {
+  // Switch contextual: landing pública (sem sessão) ou dashboard (logado).
+  // Server component — zero JS extra, decisão no SSR.
+  const session = await getServerSession()
+  if (!session) {
+    return (
+      <>
+        <LandingHero />
+        <LandingFeatures />
+        <LandingHowItWorks />
+        <LandingCTAFinal />
+        <LandingFooter />
+      </>
+    )
+  }
+
   const data = await getDashboardData()
   if (!data) {
     return (
@@ -181,7 +197,7 @@ export default async function DashboardPage() {
     )
   }
 
-  const { session, alerts, rules, schemas, stats, kpis, auditEvents } = data
+  const { alerts, rules, schemas, stats, kpis, auditEvents } = data
 
   const criticalAlerts = alerts.filter((a) => a.severity === 'critical').length
   const warnAlerts = alerts.filter((a) => a.severity === 'warn').length
