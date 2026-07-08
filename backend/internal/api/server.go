@@ -222,6 +222,9 @@ func (s *Server) Router() http.Handler {
 		// Valida ecossistema inteiro (3040 ↔ 4111 ↔ DRSAC) em paralelo.
 		r.Post("/crossdoc/validate", s.crossdocValidate)
 
+		// L4 Histórico (Sprint 55) — diff vs envio anterior.
+		r.Get("/l4/compare", s.l4Compare)
+
 		// Sprint 8c (v3.1.0) — endpoints de inteligência que destravam
 		// o frontend v3.0.0 (estava em empty states por falta de dados).
 		r.Get("/envios", s.listEnvios)
@@ -991,6 +994,36 @@ func keysOf(m map[string]string) []string {
 		out = append(out, k)
 	}
 	return out
+}
+
+// l4Compare compara um envio com seu anteior (L4 Histórico).
+//
+// GET /v1/l4/compare?envio_id=UUID
+//
+// Resposta:
+//
+//	{
+//	  "current": { "envio_id": "...", "cadoc_code": "2061", "data_base": "2024-03" },
+//	  "previous": { "envio_id": "...", "cadoc_code": "2061", "data_base": "2024-02" },
+//	  "new_failures": [...],
+//	  "fixed_rules": [...],
+//	  "changed_fields": [...],
+//	  "alerts": [...]
+//	}
+func (s *Server) l4Compare(w http.ResponseWriter, r *http.Request) {
+	envioID := r.URL.Query().Get("envio_id")
+	if envioID == "" {
+		http.Error(w, `{"error":"envio_id query parameter required"}`, http.StatusBadRequest)
+		return
+	}
+
+	comp, err := s.Audit.CompareWithPrevious(r.Context(), envioID)
+	if err != nil {
+		s.userError(w, http.StatusInternalServerError, "l4Compare", err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, comp)
 }
 
 // --- Middleware ---

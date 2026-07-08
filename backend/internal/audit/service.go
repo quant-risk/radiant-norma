@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fortvna/radiant-norma/backend/internal/audit/l4"
 	"github.com/fortvna/radiant-norma/backend/internal/audit/rules"
 	"github.com/fortvna/radiant-norma/backend/internal/docdli"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
@@ -134,6 +135,13 @@ func (s *Service) SetRegistry(r *rules.Registry) {
 // Se não setado, validação roda sem filtrar disabled rules.
 func (s *Service) SetRulePrefs(p RulePrefs) {
 	s.prefs = p
+}
+
+// CompareWithPrevious compara um envio com seu anteior (L4 Histórico).
+// Sprint 55: implementação inicial do L4.
+func (s *Service) CompareWithPrevious(ctx context.Context, envioID string) (*l4.Comparison, error) {
+	engine := l4.NewEngine(s.db)
+	return engine.Compare(ctx, envioID)
 }
 
 // Registry retorna o registry atual.
