@@ -433,9 +433,15 @@ type I11CliNaoNatuOp32 struct{}
 func (I11CliNaoNatuOp32) Code() string  { return "I11" }
 func (I11CliNaoNatuOp32) Sheet() string { return "Individualizadas" }
 
-// Severity "I" — stub. Carry-over Fase 5: requer Operacao.NatuOp.
+// IMPLEMENTAÇÃO REAL — Sprint 39: parser agora extrai NatuOp.
+// NatuOp=32 indica coobrigação sem residência — não pode ter Cli.IPOC.
 func (I11CliNaoNatuOp32) Severity() string { return "I" }
-func (I11CliNaoNatuOp32) Apply(_ context.Context, _ *Doc3040) error {
+func (I11CliNaoNatuOp32) Apply(_ context.Context, doc *Doc3040) error {
+	for i, op := range doc.Operacoes {
+		if op.NatuOp == "32" && op.Cli != nil && op.Cli.IPOC != "" {
+			return fmt.Errorf("operação %d: NatuOp=32 (coobrig.sem residência) com IPOC=%q (não deve ter)", i, op.Cli.IPOC)
+		}
+	}
 	return nil
 }
 

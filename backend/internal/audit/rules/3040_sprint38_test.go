@@ -31,8 +31,7 @@ func TestSprint38_ReaisDetectamViolacoes(t *testing.T) {
 
 	t.Run("C75_Inf0307_ValorZero", func(t *testing.T) {
 		doc := sampleDoc3040V2()
-		doc.Operacoes[0].Inf = "0307"
-		doc.Operacoes[0].Valor = "0"
+		doc.Operacoes[0].Infos = []InfoAdicional{{Tp: "0307", Valor: "0"}}
 		err := C75Inf1601CustoAquisicao{}.Apply(ctx, doc)
 		if err == nil || !strings.Contains(err.Error(), "0307") {
 			t.Errorf("esperava erro cessão sem custo, got %v", err)
@@ -41,8 +40,7 @@ func TestSprint38_ReaisDetectamViolacoes(t *testing.T) {
 
 	t.Run("C77_Inf18XX_PercZero", func(t *testing.T) {
 		doc := sampleDoc3040V2()
-		doc.Operacoes[0].Inf = "1801"
-		doc.Operacoes[0].Perc = "0"
+		doc.Operacoes[0].Infos = []InfoAdicional{{Tp: "1801", Perc: "0"}}
 		err := C77Inf18XXCoobrig{}.Apply(ctx, doc)
 		if err == nil || !strings.Contains(err.Error(), "coobrigação") {
 			t.Errorf("esperava erro coobrigação sem Perc, got %v", err)
@@ -51,7 +49,7 @@ func TestSprint38_ReaisDetectamViolacoes(t *testing.T) {
 
 	t.Run("C80_CrossRef_0307_Sem1201", func(t *testing.T) {
 		doc := sampleDoc3040V2()
-		doc.Operacoes[0].Inf = "0307"
+		doc.Operacoes[0].Infos = []InfoAdicional{{Tp: "0307"}}
 		err := C80InfCrossRef03071201{}.Apply(ctx, doc)
 		if err == nil || !strings.Contains(err.Error(), "0307/1201") {
 			t.Errorf("esperava erro cross-ref incompleto, got %v", err)
@@ -60,7 +58,7 @@ func TestSprint38_ReaisDetectamViolacoes(t *testing.T) {
 
 	t.Run("C90_Cessao_SemCedente", func(t *testing.T) {
 		doc := sampleDoc3040V2()
-		doc.Operacoes[0].Inf = "0307"
+		doc.Operacoes[0].Infos = []InfoAdicional{{Tp: "0307"}}
 		doc.Operacoes[0].Cli = nil
 		err := C90CessaoCedenteCd{}.Apply(ctx, doc)
 		if err == nil || !strings.Contains(err.Error(), "cedente") {
@@ -81,7 +79,7 @@ func TestSprint38_ReaisDetectamViolacoes(t *testing.T) {
 	t.Run("SUB05_Substituicao_InfInvalido", func(t *testing.T) {
 		doc := sampleDoc3040V2()
 		doc.Root.TpArq = "S"
-		doc.Operacoes[0].Inf = "0101" // não é I03XX
+		doc.Operacoes[0].Infos = []InfoAdicional{{Tp: "0101"}} // não é I03XX
 		err := SUB05SubstituicaoInf{}.Apply(ctx, doc)
 		if err == nil || !strings.Contains(err.Error(), "I03XX") {
 			t.Errorf("esperava erro Inf não-I03XX em substituição, got %v", err)

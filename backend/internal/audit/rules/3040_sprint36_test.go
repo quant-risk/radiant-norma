@@ -46,7 +46,7 @@ func sampleDoc3040V2() *Doc3040 {
 		},
 		Operacoes: []Operacao{
 			{
-				Inf:      "0101",
+				Inf:      "", // substituído por Infos (Sprint 39)
 				Contrt:   "12345",
 				IPOC:     "12345678",
 				Valor:    "10000",
@@ -54,6 +54,9 @@ func sampleDoc3040V2() *Doc3040 {
 				DtContr:  "2024-01-15",
 				DtVencOp: "2025-01-15",
 				ClassOp:  "A",
+				Infos: []InfoAdicional{
+					{Tp: "0101"}, // Sprint 39: Infos substitui Inf (string)
+				},
 				Cli: &Cli{
 					Cd:    "12345678901",
 					TpCli: "1",

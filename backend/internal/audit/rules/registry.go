@@ -40,6 +40,7 @@ type Doc3040Root struct {
 	EmailResp string
 	TelResp   string
 	TotalCli  string
+	TpFundo   string // tipo de fundo (01-05 ou vazio) — para FIDCs
 }
 
 // Agregado é a tag <Agreg>.
@@ -72,6 +73,7 @@ type Vencimentos struct {
 
 // Operacao representa uma operação individual dentro do documento 3040.
 // Sprint 32 Fase 3 — adicionado para suportar C11-C30, S13/S14, I01-I15.
+// Sprint 39 — parser extendido para <Cli>/<Op>/<Inf>.
 //
 // Nem todas as regras operam em Operacao. Regras de Agregado continuam
 // usando Agregado. Regras individuais (I-*) usam Operacao + Cli.
@@ -86,6 +88,19 @@ type Operacao struct {
 	ClassOp     string // classificação individual
 	ProvConsttd string // provisão individual
 
+	// Campos <Op> (individualizada) — Sprint 39 parser extension
+	NatuOp  string // natureza da operação (01=própria, 02=cobrados, 11=cessão)
+	Mod     string // modalidade BACEN (4 dígitos)
+	OrigemRec string // origem dos recursos
+	Indx    string // indexador (código)
+	VarCamb string // variação cambial
+	CEP     string // CEP agência contratação
+	TaxEft  string // taxa efetiva
+	Cosif   string // conta COSIF
+	VlrContr string // valor contratado (algumas modalidades)
+	DetCli  string // detalhamento cliente (CNPJ 14 dígitos)
+	CaractEsp string // características especiais da operação
+
 	Vencimentos Vencimentos // V110-V165 individuais
 
 	// Lista de identificadores de garantidores fidejussórios
@@ -97,14 +112,34 @@ type Operacao struct {
 
 	// Cliente individual (I-rules). Nil se operação sem cliente explícito.
 	Cli *Cli
+
+	// Informações adicionais (Inf) — Sprint 39
+	Infos []InfoAdicional
+}
+
+// InfoAdicional representa uma tag <Inf> dentro de <Op>.
+// Sprint 39 — parser extension para C71-C79, N02, etc.
+type InfoAdicional struct {
+	Tp     string // tipo+subtipo (ex: "0102", "1201", "0307")
+	Cd     string // código (ex: data cessão, identificador)
+	Ident  string // identificador (ex: CNPJ cessionário)
+	Perc   string // percentual coobrigação
+	Valor  string // valor
 }
 
 // Cli representa cliente individual em uma operação.
 // Sprint 32 Fase 3 — I-rules precisam Cd (CPF/CNPJ) + TpCli + IPOC.
+// Sprint 39 — campos extendidos com dados do <Cli> no XML.
 type Cli struct {
-	Cd    string // 11 dígitos PF / 8 dígitos PJ
-	TpCli string // 1=PF, 2=PJ
-	IPOC  string // código IPOC
+	Cd         string // 11 dígitos PF / 8 dígitos PJ
+	TpCli      string // 1=PF, 2=PJ
+	IPOC       string // código IPOC
+	Autorzc    string // autorização consulta (S/N)
+	PorteCli   string // porte do cliente
+	TpCtrl     string // tipo controle
+	IniRelactCli string // início relacionamento (YYYY-MM-DD)
+	ClassCli   string // classificação risco cliente
+	CongEcon   string // conglomerado econômico
 }
 
 // Parcela representa uma parcela individual de uma operação.
@@ -157,6 +192,7 @@ type Registry struct {
 	rawRules  map[string]RawRule
 	rules3050 map[string]Rule3050 // Sprint 33 Fase 1 — regras CADOC 3050
 	rules2070 map[string]Rule2070 // Sprint 35 Fase 1 — regras CADOC 2070 (DDR)
+	rules2061 map[string]Rule2061 // Sprint 50 — regras CADOC 2061 (DLO)
 	rules3044 map[string]Rule3044 // Sprint 42 — regras CADOC 3044 (JSON)
 }
 
@@ -167,6 +203,7 @@ func NewRegistry() *Registry {
 		rawRules:  make(map[string]RawRule),
 		rules3050: make(map[string]Rule3050),
 		rules2070: make(map[string]Rule2070),
+		rules2061: make(map[string]Rule2061),
 		rules3044: make(map[string]Rule3044),
 	}
 }
@@ -253,6 +290,36 @@ func (r *Registry) All2070() []Rule2070 {
 	out := make([]Rule2070, 0, len(r.rules2070))
 	for _, r := range r.rules2070 {
 		out = append(out, r)
+	}
+	return out
+}
+
+// Register2061 adiciona uma regra tipada para CADOC 2061 (DLO).
+//
+// Sprint 50: interface Rule2061 para regras DLO/2061.
+func (r *Registry) Register2061(rule Rule2061) {
+	r.rules2061[rule.Code()] = rule
+}
+
+// Get2061 retorna a regra 2061 por código.
+func (r *Registry) Get2061(code string) Rule2061 {
+	return r.rules2061[code]
+}
+
+// Codes2061 retorna todos os códigos 2061 registrados.
+func (r *Registry) Codes2061() []string {
+	out := make([]string, 0, len(r.rules2061))
+	for k := range r.rules2061 {
+		out = append(out, k)
+	}
+	return out
+}
+
+// All2061 retorna todas as regras 2061 (útil para inventário).
+func (r *Registry) All2061() []Rule2061 {
+	out := make([]Rule2061, 0, len(r.rules2061))
+	for _, rule := range r.rules2061 {
+		out = append(out, rule)
 	}
 	return out
 }
@@ -716,6 +783,10 @@ func Builtin3040() *Registry {
 	// T18, T19: carry-over (DB lookup — implementar quando DB layer pronto)
 	r.Register3044(T18{})
 	r.Register3044(T19{})
+
+	// Sprint 50 — AuditDLO 2061 (COSIF accounts + RWACAM)
+	// 24 regras implementadas (ELIM0001-ELIM0585).
+	BuiltinDLO(r)
 
 	return r
 }
