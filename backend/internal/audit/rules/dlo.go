@@ -35,10 +35,10 @@ type DocDLO struct {
 
 // Elem representa um elemento de detalhamento de uma conta COSIF.
 type Elem struct {
-	Codigo  string // código do elemento (1, 2, 3...)
-	Desc    string // descrição do elemento
-	Valor   float64
-	Peso    float64 // fator de ponderação (para RWACAM)
+	Codigo string // código do elemento (1, 2, 3...)
+	Desc   string // descrição do elemento
+	Valor  float64
+	Peso   float64 // fator de ponderação (para RWACAM)
 }
 
 // DocDLORoot é o elemento raiz do DLO.
@@ -78,7 +78,7 @@ func (e *PartialParseErrorDLO) Unwrap() error { return e.Err }
 func ParseDocDLO(data []byte) (*DocDLO, error) {
 	dec := xml.NewDecoder(bytes.NewReader(data))
 	doc := &DocDLO{
-		Accounts:  make(map[string]float64),
+		Accounts: make(map[string]float64),
 		Elements: make(map[string][]Elem),
 	}
 

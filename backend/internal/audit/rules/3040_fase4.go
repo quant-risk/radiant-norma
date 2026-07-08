@@ -397,8 +397,8 @@ func (S26NatuOp02TemInf) Apply(_ context.Context, doc *Doc3040) error {
 // Se Inf=0101 ou 0105, NatuOp deve ser 01 (própria) ou 02 (cobrados).
 type S33Inf0101Natureza struct{}
 
-func (S33Inf0101Natureza) Code() string  { return "S33" }
-func (S33Inf0101Natureza) Sheet() string { return "Sistemáticas" }
+func (S33Inf0101Natureza) Code() string     { return "S33" }
+func (S33Inf0101Natureza) Sheet() string    { return "Sistemáticas" }
 func (S33Inf0101Natureza) Severity() string { return "I" }
 func (S33Inf0101Natureza) Apply(_ context.Context, doc *Doc3040) error {
 	for i, op := range doc.Operacoes {

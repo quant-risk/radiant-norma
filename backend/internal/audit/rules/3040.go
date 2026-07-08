@@ -641,49 +641,49 @@ func ParseDoc3040(xmlContent []byte) (*Doc3040, error) {
 
 	// infOp: tag <Inf> dentro de <Op>.
 	type infOp struct {
-		Tp     string `xml:"Tp,attr"`
-		Cd     string `xml:"Cd,attr"`
-		Ident  string `xml:"Ident,attr"`
-		Perc   string `xml:"Perc,attr"`
-		Valor  string `xml:"Valor,attr"`
+		Tp    string `xml:"Tp,attr"`
+		Cd    string `xml:"Cd,attr"`
+		Ident string `xml:"Ident,attr"`
+		Perc  string `xml:"Perc,attr"`
+		Valor string `xml:"Valor,attr"`
 	}
 
 	// opOp: tag <Op> dentro de <Cli>.
 	type opOp struct {
-		XMLName   xml.Name `xml:"Op"`
-		DetCli    string   `xml:"DetCli,attr"`
-		Contrt    string   `xml:"Contrt,attr"`
-		NatuOp    string   `xml:"NatuOp,attr"`
-		Mod       string   `xml:"Mod,attr"`
-		OrigemRec string   `xml:"OrigemRec,attr"`
-		Indx      string   `xml:"Indx,attr"`
-		VarCamb   string   `xml:"VarCamb,attr"`
-		DtVencOp  string   `xml:"DtVencOp,attr"`
-		ClassOp   string   `xml:"ClassOp,attr"`
-		CEP       string   `xml:"CEP,attr"`
-		TaxEft    string   `xml:"TaxEft,attr"`
-		DtContr   string   `xml:"DtContr,attr"`
-		ProvConsttd string `xml:"ProvConsttd,attr"`
-		Cosif     string   `xml:"Cosif,attr"`
-		IPOC      string   `xml:"IPOC,attr"`
-		VlrContr  string   `xml:"VlrContr,attr"`
-		CaractEsp string   `xml:"CaractEsp,attr"`
-		Venc      vencOp   `xml:"Venc"`
-		Inf       []infOp  `xml:"Inf"`
+		XMLName     xml.Name `xml:"Op"`
+		DetCli      string   `xml:"DetCli,attr"`
+		Contrt      string   `xml:"Contrt,attr"`
+		NatuOp      string   `xml:"NatuOp,attr"`
+		Mod         string   `xml:"Mod,attr"`
+		OrigemRec   string   `xml:"OrigemRec,attr"`
+		Indx        string   `xml:"Indx,attr"`
+		VarCamb     string   `xml:"VarCamb,attr"`
+		DtVencOp    string   `xml:"DtVencOp,attr"`
+		ClassOp     string   `xml:"ClassOp,attr"`
+		CEP         string   `xml:"CEP,attr"`
+		TaxEft      string   `xml:"TaxEft,attr"`
+		DtContr     string   `xml:"DtContr,attr"`
+		ProvConsttd string   `xml:"ProvConsttd,attr"`
+		Cosif       string   `xml:"Cosif,attr"`
+		IPOC        string   `xml:"IPOC,attr"`
+		VlrContr    string   `xml:"VlrContr,attr"`
+		CaractEsp   string   `xml:"CaractEsp,attr"`
+		Venc        vencOp   `xml:"Venc"`
+		Inf         []infOp  `xml:"Inf"`
 	}
 
 	// cliOp: tag <Cli> dentro de <Doc3040>, contendo múltiplas <Op>.
 	type cliOp struct {
-		XMLName     xml.Name `xml:"Cli"`
-		Tp          string   `xml:"Tp,attr"`
-		Cd          string   `xml:"Cd,attr"`
-		Autorzc     string   `xml:"Autorzc,attr"`
-		PorteCli    string   `xml:"PorteCli,attr"`
-		TpCtrl      string   `xml:"TpCtrl,attr"`
+		XMLName      xml.Name `xml:"Cli"`
+		Tp           string   `xml:"Tp,attr"`
+		Cd           string   `xml:"Cd,attr"`
+		Autorzc      string   `xml:"Autorzc,attr"`
+		PorteCli     string   `xml:"PorteCli,attr"`
+		TpCtrl       string   `xml:"TpCtrl,attr"`
 		IniRelactCli string   `xml:"IniRelactCli,attr"`
-		ClassCli    string   `xml:"ClassCli,attr"`
-		CongEcon    string   `xml:"CongEcon,attr"`
-		Ops         []opOp   `xml:"Op"`
+		ClassCli     string   `xml:"ClassCli,attr"`
+		CongEcon     string   `xml:"CongEcon,attr"`
+		Ops          []opOp   `xml:"Op"`
 	}
 
 	// vencAg: vencimentos dentro de <Agreg> (v110..v165).
@@ -781,23 +781,23 @@ func ParseDoc3040(xmlContent []byte) (*Doc3040, error) {
 				})
 			}
 			out.Operacoes = append(out.Operacoes, Operacao{
-				DetCli:    op.DetCli,
-				Contrt:    op.Contrt,
-				NatuOp:    op.NatuOp,
-				Mod:       op.Mod,
-				OrigemRec: op.OrigemRec,
-				Indx:      op.Indx,
-				VarCamb:   op.VarCamb,
-				DtVencOp:  op.DtVencOp,
-				ClassOp:   op.ClassOp,
-				CEP:       op.CEP,
-				TaxEft:    op.TaxEft,
-				DtContr:   op.DtContr,
+				DetCli:      op.DetCli,
+				Contrt:      op.Contrt,
+				NatuOp:      op.NatuOp,
+				Mod:         op.Mod,
+				OrigemRec:   op.OrigemRec,
+				Indx:        op.Indx,
+				VarCamb:     op.VarCamb,
+				DtVencOp:    op.DtVencOp,
+				ClassOp:     op.ClassOp,
+				CEP:         op.CEP,
+				TaxEft:      op.TaxEft,
+				DtContr:     op.DtContr,
 				ProvConsttd: op.ProvConsttd,
-				Cosif:     op.Cosif,
-				IPOC:      op.IPOC,
-				VlrContr:  op.VlrContr,
-				CaractEsp: op.CaractEsp,
+				Cosif:       op.Cosif,
+				IPOC:        op.IPOC,
+				VlrContr:    op.VlrContr,
+				CaractEsp:   op.CaractEsp,
 				Vencimentos: Vencimentos{
 					V110: op.Venc.V110,
 					V120: op.Venc.V120,

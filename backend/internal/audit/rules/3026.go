@@ -39,7 +39,7 @@ type Doc3026Root struct {
 // CongEcon representa um conglomerado econômico no documento 3026.
 type CongEcon struct {
 	Cd    string // código do conglomerado
-	Parts []Part  // participantes do conglomerado
+	Parts []Part // participantes do conglomerado
 }
 
 // Part representa um participante (instituição) em um conglomerado.
@@ -227,5 +227,3 @@ func (O302604ParticipanteCNPJVazio) Apply(_ context.Context, doc *Doc3026) error
 	}
 	return nil
 }
-
-

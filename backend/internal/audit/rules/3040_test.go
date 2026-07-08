@@ -440,10 +440,8 @@ func TestBuiltin3040_RegistryCompleto(t *testing.T) {
 		// X01-X10: Cross-doc básico (1 real + 9 stubs)
 		"X01", "X02", "X03", "X04", "X05", "X06", "X07", "X08", "X09", "X10",
 		// 9 destravadas Sprint 36-37 (I15, S78, S84, S85, S86, S90, N05, N07, N08) sobrescrevem stubs.
-		// Sprint 40 DRL — LCR (LCR01-LCR08)
-		"LCR01", "LCR02", "LCR03", "LCR04", "LCR05", "LCR06", "LCR07", "LCR08",
-		// Sprint 41 DLP — NSFR (NSFR01-NSFR08)
-		"NSFR01", "NSFR02", "NSFR03", "NSFR04", "NSFR05", "NSFR06", "NSFR07", "NSFR08",
+		// Sprint 51 DRL — LCR (2160-LCR01-2160-LCR11): via Register2160, não no registry principal.
+		// Sprint 51 DLP — NSFR (2170-NSFR01-2170-NSFR10): via Register2170, não no registry principal.
 	}
 
 	if len(codes) != len(expectedCodigos) {
