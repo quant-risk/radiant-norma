@@ -197,6 +197,7 @@ type Registry struct {
 	rules2160 map[string]Rule2160 // Sprint 51 — regras CADOC 2160 (DRL/LCR)
 	rules2170 map[string]Rule2170 // Sprint 51 — regras CADOC 2170 (DLP/NSFR)
 	rules3044 map[string]Rule3044 // Sprint 42 — regras CADOC 3044 (JSON)
+	rulesDRM  map[string]RuleDRM  // Sprint 55 — regras CADOC 2060 (DRM)
 }
 
 // NewRegistry cria um registry vazio.
@@ -211,6 +212,7 @@ func NewRegistry() *Registry {
 		rules2160: make(map[string]Rule2160),
 		rules2170: make(map[string]Rule2170),
 		rules3044: make(map[string]Rule3044),
+		rulesDRM:  make(map[string]RuleDRM),
 	}
 }
 
@@ -415,6 +417,36 @@ func (r *Registry) Codes2062() []string {
 func (r *Registry) All2062() []Rule2062 {
 	out := make([]Rule2062, 0, len(r.rules2062))
 	for _, rule := range r.rules2062 {
+		out = append(out, rule)
+	}
+	return out
+}
+
+// RegisterDRM adiciona uma regra tipada para CADOC 2060 (DRM).
+//
+// Sprint 55: interface RuleDRM para regras de risco de mercado.
+func (r *Registry) RegisterDRM(rule RuleDRM) {
+	r.rulesDRM[rule.Code()] = rule
+}
+
+// GetDRM retorna a regra DRM por código.
+func (r *Registry) GetDRM(code string) RuleDRM {
+	return r.rulesDRM[code]
+}
+
+// CodesDRM retorna todos os códigos DRM registrados.
+func (r *Registry) CodesDRM() []string {
+	out := make([]string, 0, len(r.rulesDRM))
+	for k := range r.rulesDRM {
+		out = append(out, k)
+	}
+	return out
+}
+
+// AllDRM retorna todas as regras DRM (útil para inventário).
+func (r *Registry) AllDRM() []RuleDRM {
+	out := make([]RuleDRM, 0, len(r.rulesDRM))
+	for _, rule := range r.rulesDRM {
 		out = append(out, rule)
 	}
 	return out
