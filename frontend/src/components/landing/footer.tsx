@@ -21,7 +21,7 @@ const COLUMNS: Array<{ label: string; links: FooterLink[] }> = [
       { label: 'Features', href: '#features' },
       { label: 'Como funciona', href: '#how-it-works' },
       { label: 'Compliance', href: '#compliance' },
-      { label: 'Console', href: '/login' },
+      { label: 'Console', href: '/console' },
     ],
   },
   {

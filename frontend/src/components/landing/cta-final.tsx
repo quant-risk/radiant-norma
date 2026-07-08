@@ -28,7 +28,7 @@ export function LandingCTAFinal() {
         </Badge>
 
         <h2 className="font-serif text-4xl lg:text-5xl xl:text-display-sm font-medium text-ink leading-[1.05] tracking-[-0.03em] mb-6">
-          Compliance que escala com sua IF.
+          Pronto pra começar?
         </h2>
         <p className="text-lg text-ink-muted leading-relaxed max-w-2xl mx-auto mb-10">
           SOC 2 Type II, LGPD audit-ready, integração nativa com Keycloak/Okta.
@@ -36,9 +36,9 @@ export function LandingCTAFinal() {
         </p>
 
         <div className="flex items-center justify-center gap-3 flex-wrap">
-          <Link href="/login" passHref legacyBehavior={false}>
+          <Link href="/console" passHref legacyBehavior={false}>
             <Button asChild variant="primary" size="lg" rightIcon={<ArrowRight className="size-4" strokeWidth={2.25} />}>
-              Solicitar acesso
+              Abrir Console
             </Button>
           </Link>
           <Link href="mailto:contato@radiantnorma.com.br" passHref legacyBehavior={false}>

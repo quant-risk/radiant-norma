@@ -12,6 +12,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import type { Route } from 'next'
 import Link from 'next/link'
 import {
   Building2,
@@ -84,7 +85,11 @@ export default function LoginPage() {
         setError(err.error || 'Falha no login')
         return
       }
-      router.push('/')
+      // Após login vai pro console (dashboard autenticado).
+      // ?next= do middleware/console page é respeitado.
+      const next =
+        new URLSearchParams(window.location.search).get('next') || '/console'
+      router.push(next as Route)
       router.refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro de rede')

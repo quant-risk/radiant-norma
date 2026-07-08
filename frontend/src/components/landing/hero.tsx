@@ -82,9 +82,9 @@ export function LandingHero() {
               Entrar
             </Button>
           </Link>
-          <Link href="/login" passHref legacyBehavior={false}>
+          <Link href="/console" passHref legacyBehavior={false}>
             <Button asChild variant="primary" size="sm" rightIcon={<ArrowRight className="size-3.5" strokeWidth={2.25} />}>
-              Solicitar acesso
+              Abrir Console
             </Button>
           </Link>
         </div>
@@ -115,9 +115,9 @@ export function LandingHero() {
         </p>
 
         <div className="flex items-center justify-center gap-3 flex-wrap mb-8">
-          <Link href="/login" passHref legacyBehavior={false}>
+          <Link href="/console" passHref legacyBehavior={false}>
             <Button asChild variant="primary" size="lg" rightIcon={<ArrowRight className="size-4" strokeWidth={2.25} />}>
-              Começar agora
+              Abrir Console
             </Button>
           </Link>
           <Link href={{ pathname: '/', hash: 'features' } as unknown as Route} passHref legacyBehavior={false}>
