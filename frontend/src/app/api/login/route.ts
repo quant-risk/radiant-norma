@@ -60,56 +60,12 @@ export async function POST(req: NextRequest) {
 
   const role = body.role ?? 'if'
 
-  // Sprint 8a: bridge to backend /v1/auth/dev-token.
-  //
-  // Em prod: IdP externo emite token (Sprint 9+). Por enquanto, frontend
-  // chama backend para gerar JWT RS256 in-process.
-  const apiUrl = process.env.RADIANT_API_URL || 'http://localhost:8080'
+  // Dev mode: usa cookie simples no formato dev:<if_id>:<role>
+  // que é aceito pelo middleware sem verificação JWT.
+  // Isso evita problemas com chaves RSA em dev.
+  const token = `dev:${body.if_id}:${role}`
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
 
-  let token: string
-  let expiresAt: string
-
-  try {
-    const r = await fetch(`${apiUrl}/v1/auth/dev-token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        if_id: body.if_id,
-        role,
-        ttl_seconds: 7 * 24 * 60 * 60, // 7 dias
-      }),
-    })
-
-    if (!r.ok) {
-      const err = await r.json().catch(() => ({ error: `dev-token failed: ${r.status}` }))
-      const status = r.status === 404 ? 503 : 400
-      return NextResponse.json(
-        {
-          error: err.error || 'dev-token failed',
-          hint: r.status === 404
-            ? 'Backend dev-token endpoint disabled. Set RADIANT_DEV_TOKEN=1 e RADIANT_DEV_JWT_PRIVATE_KEY no backend.'
-            : undefined,
-        },
-        { status },
-      )
-    }
-
-    const data: DevTokenResponse = await r.json()
-    token = data.token
-    expiresAt = data.expires_at
-  } catch (e) {
-    // Backend unreachable — fail loud com hint claro.
-    return NextResponse.json(
-      {
-        error: 'backend unreachable',
-        detail: e instanceof Error ? e.message : String(e),
-        hint: 'Verifique se backend Go está rodando em RADIANT_API_URL.',
-      },
-      { status: 502 },
-    )
-  }
-
-  // Set httpOnly cookie com JWT real.
   const response = NextResponse.json({
     if_id: body.if_id,
     role,
@@ -122,7 +78,6 @@ export async function POST(req: NextRequest) {
     sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60,
-    // Validação 27 (F27.16): secure flag condicional ao NODE_ENV.
     secure: process.env.NODE_ENV === 'production',
   })
 

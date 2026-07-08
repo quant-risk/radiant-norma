@@ -2,6 +2,19 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.35.5 — 2026-07-08 (Sprint 56 follow-up — Login dev simplificado) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (simplificação dev mode)
+
+### Login direto via cookie dev (sem JWT bridge)
+
+`frontend/src/app/api/login/route.ts`: removida a chamada HTTP para `POST /v1/auth/dev-token` no login. Em dev mode (RADIANT_DEV_AUTH=1), o cookie é criado diretamente no formato `dev:<if_id>:<role>` e aceito pelo `getServerSession()` + middleware sem precisar de RSA keys. Idêntico ao que `cmd/seed-sprint8c` já fazia no backend.
+
+**Por quê**: simplifica o setup de demo (não precisa de RSA keys em `backend/dev-private.pem` + `frontend/.env.pubkey`). Em produção, esse path continua sendo bloqueado pelo gate `if isProd` em `session.ts` e `middleware.ts`.
+
+---
+
 ## v3.35.4 — 2026-07-08 (Sprint 56 follow-up — Code review fixes) ✅
 
 > **Status:** ✅ Shipped
