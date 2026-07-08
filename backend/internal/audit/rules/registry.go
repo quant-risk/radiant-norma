@@ -193,6 +193,7 @@ type Registry struct {
 	rules3050 map[string]Rule3050 // Sprint 33 Fase 1 — regras CADOC 3050
 	rules2070 map[string]Rule2070 // Sprint 35 Fase 1 — regras CADOC 2070 (DDR)
 	rules2061 map[string]Rule2061 // Sprint 50 — regras CADOC 2061 (DLO)
+	rules2062 map[string]Rule2062 // Sprint 52 — regras CADOC 2062 (DLI)
 	rules2160 map[string]Rule2160 // Sprint 51 — regras CADOC 2160 (DRL/LCR)
 	rules2170 map[string]Rule2170 // Sprint 51 — regras CADOC 2170 (DLP/NSFR)
 	rules3044 map[string]Rule3044 // Sprint 42 — regras CADOC 3044 (JSON)
@@ -206,6 +207,7 @@ func NewRegistry() *Registry {
 		rules3050: make(map[string]Rule3050),
 		rules2070: make(map[string]Rule2070),
 		rules2061: make(map[string]Rule2061),
+		rules2062: make(map[string]Rule2062),
 		rules2160: make(map[string]Rule2160),
 		rules2170: make(map[string]Rule2170),
 		rules3044: make(map[string]Rule3044),
@@ -383,6 +385,36 @@ func (r *Registry) Codes2170() []string {
 func (r *Registry) All2170() []Rule2170 {
 	out := make([]Rule2170, 0, len(r.rules2170))
 	for _, rule := range r.rules2170 {
+		out = append(out, rule)
+	}
+	return out
+}
+
+// Register2062 adiciona uma regra tipada para CADOC 2062 (DLI).
+//
+// Sprint 52: interface Rule2062 para regras DLI/2062.
+func (r *Registry) Register2062(rule Rule2062) {
+	r.rules2062[rule.Code()] = rule
+}
+
+// Get2062 retorna a regra 2062 por código.
+func (r *Registry) Get2062(code string) Rule2062 {
+	return r.rules2062[code]
+}
+
+// Codes2062 retorna todos os códigos 2062 registrados.
+func (r *Registry) Codes2062() []string {
+	out := make([]string, 0, len(r.rules2062))
+	for k := range r.rules2062 {
+		out = append(out, k)
+	}
+	return out
+}
+
+// All2062 retorna todas as regras 2062 (útil para inventário).
+func (r *Registry) All2062() []Rule2062 {
+	out := make([]Rule2062, 0, len(r.rules2062))
+	for _, rule := range r.rules2062 {
 		out = append(out, rule)
 	}
 	return out
@@ -837,6 +869,10 @@ func Builtin3040() *Registry {
 	// Sprint 50 — AuditDLO 2061 (COSIF accounts + RWACAM)
 	// 24 regras implementadas (ELIM0001-ELIM0585).
 	BuiltinDLO(r)
+
+	// Sprint 52 — AuditDLI 2062 (COSIF accounts + Limites Operacionais)
+	// 18 regras implementadas (DLI-01 a DLI-18).
+	BuiltinDLI(r)
 
 	return r
 }
