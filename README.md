@@ -11,8 +11,8 @@ auditoria tamper-evident e camadas que o BCValidador não tem.
 
 <br>
 
-![Status](https://img.shields.io/badge/status-v3.21.1_✅-10b981?style=for-the-badge)
-![Sprint](https://img.shields.io/badge/sprint-27%2F66_(Plano_Ouro)-6366f1?style=for-the-badge)
+![Status](https://img.shields.io/badge/status-v3.36.0_🚨-10b981?style=for-the-badge)
+![Sprint](https://img.shields.io/badge/sprint-57%2F67_(Plano_Ouro_→_Norma_Generator)-6366f1?style=for-the-badge)
 ![Stack](https://img.shields.io/badge/stack-Go_1.25%2B_+_Next.js_15_+_Postgres_16-00ADD8?style=for-the-badge&logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/license-proprietary-1e293b?style=for-the-badge)
 ![Roadmap](https://img.shields.io/badge/roadmap-Plano_Ouro_(12_meses)-f59e0b?style=for-the-badge)
@@ -33,38 +33,36 @@ auditoria tamper-evident e camadas que o BCValidador não tem.
 
 O BACEN publica **10 CADOCs** (SCR, DRSAC, DRM, DLO, DLI, DDR, DRL, DLP, DLO,
 eventos) com **centenas de leiautes versionados** e **milhares de regras de
-validação semântica**. O `BCValidador` oficial valida **um documento por vez,
-local, em Java**.
+validação semântica**. O `BCValidador` oficial **valida** — mas não gera.
+Matera e Dimensa também só validam. **Geração é commodity.**
 
-Quem precisa reportar — SCDs, IPs, bancos médios — acaba escrevendo o pipeline
-na mão: extrai dados, gera XML, valida, comprime, sobe no STA, reconcilia o
-protocolo, refaz no mês seguinte quando o leiaute muda.
+**Radiant Norma** é o **motor de geração**: recebe dados de qualquer fonte
+(planilhas, PDFs, APIs, bancos de dados, agentes IA via MCP) e produz o
+documento CADOC pronto pra submissão — com validação L1→L4 automática,
+explainability campo-a-campo, e push direto ao STA.
 
-**Radiant Norma** faz esse pipeline inteiro como serviço: Schema Registry
-versionado por data-base, Norma Audit em **4 camadas**, STA client real,
-audit log com **hash chain** (LGPD + SOC 2), multi-tenant isolado por RLS.
-
-> **Diferencial proprietário:** L3 (cross-documento) e L4 (histórico) — o
-> BCValidador não vai além de L1+L2.
+> **Diferencial proprietário:** Geração + validação integrada + copiloto com
+> humano no loop. O validador é o mesmo que o BCValidador, mas o gerador
+> que transforma dados em documento é o que justifica R$ 1.500–12.000/mês.
 
 ---
 
 ## ✦ Cobertura atual
 
-| CADOC | Sigla | Periodicidade | Status |
-|---|---|---|---|
-| **3040** | SCR — Risco de Crédito | Mensal | ✅ 25 regras portadas em Go (B/F/C/S), 320 no DB |
-| **3044** | Eventos de Crédito (JSON) | Por evento | ✅ Schema + 17 regras T01-T19 |
-| **3050** | Estatísticas Agregadas | Mensal/diária | ✅ V11 — 170 regras |
-| **2030** | DRSAC — Risco ESG | Semestral | ⚠️ Críticas não-públicas (gap conhecido) |
-| **2060** | DRM — Risco de Mercado | Mensal | ✅ 22 regras extraídas do PDF |
-| **2061** | DLO — Limites Operacionais | Mensal | ✅ 518 regras |
-| **2062** | DLI — Limites Individuais | Mensal | ✅ Leiaute + instruções |
-| **2070** *(cód 2011)* | DDR — Requerimento Capital | Diário | ✅ 11 regras |
-| **2160** | DRL — Liquidez (LCR) | Diário | ✅ Modelos II BACEN |
-| **2170** | DLP — Liquidez LP (NSFR) | Mensal | ✅ Modelo de cálculo oficial |
+| CADOC | Sigla | Periodicidade | Generator | Validação |
+|---|---|---|---|---|
+| **3040** | SCR — Risco de Crédito | Mensal | ✅ | ✅ 275 regras Go (B/F/C/S/I/H) |
+| **3044** | Eventos de Crédito (JSON) | Por evento | ✅ | ✅ 17 regras T01-T19 |
+| **3050** | Estatísticas Agregadas | Mensal/diária | ✅ | ✅ 170 regras TXB |
+| **2030** | DRSAC — Risco ESG | Semestral | ✅ | ⚠️ 0 regras (críticas não-públicas) |
+| **2060** | DRM — Risco de Mercado | Mensal | ✅ | ✅ 22 regras |
+| **2061** | DLO — Limites Operacionais | Mensal | ✅ | ✅ 24+ regras ELIM |
+| **2062** | DLI — Limites Individuais | Mensal | ✅ | ✅ 18 regras DLI |
+| **2070** *(cód 2011)* | DDR — Requerimento Capital | Diário | ✅ | ✅ 11 regras + cross-doc |
+| **2160** | DRL — Liquidez (LCR) | Diário | ✅ | ✅ 11 regras LCR |
+| **2170** | DLP — Liquidez LP (NSFR) | Mensal | ✅ | ✅ 10 regras NSFR |
 
-**1.099 regras de validação semântica** extraídas; **25 regras 3040** portadas em Go com parser XML tipado.
+**10 CADOCs com generator funcional** + **1.099 regras de validação** (275+ portadas em Go).
 
 ---
 
@@ -185,14 +183,14 @@ Stack completa em [`backend/README.md`](backend/README.md).
 
 **Total:** 27 sprints em ~2 meses · 105 arquivos Go · 29.481 LoC · 516 testes · 48 validações profundas documentadas.
 
-### Roadmap 12 meses — Plano Ouro (Q3 2026 → Q2 2027)
+### Roadmap 12 meses — Plano Ouro + Norma Generator (Q3 2026 → Q2 2027)
 
 | Quarter | Foco | Saída |
 |---|---|---|
-| **Q3 2026** (Sprints 28-37) | Vault + smoke BACEN + Postgres RLS + fechar 3040/3050 + CI + Observability + **piloto pagante** | Lite vendável |
-| **Q4 2026** (Sprints 38-48) | DLO + DDR + DRL + DLP + 3044 + cross-doc v2 + radar v2 + Stripe + white-label | Pro vendável |
-| **Q1 2027** (Sprints 49-56) | **DRSAC ESG first-mover** + 4111 + cross-doc DRSAC + AI Insights + **SOC 2 Type I** | ESG competitivo |
-| **Q2 2027** (Sprints 57-66) | DRM + DLI + SDK Go/Python + Webhooks + Marketplace + Multi-region + **SOC 2 Type II** | Enterprise |
+| **Q3 2026** (Sprints 28-37) | Vault + smoke BACEN + Postgres RLS + fechar 3040/3050 + CI + Observability + **piloto pagante** | ✅已完成 |
+| **Q4 2026** (Sprints 38-48) | DLO + DDR + DRL + DLP + 3044 + cross-doc v2 + radar v2 + Stripe + white-label | ✅已完成 |
+| **Q1 2027** (Sprints 49-56) | **DRSAC ESG first-mover** + 4111 + cross-doc DRSAC + AI Insights + **SOC 2 Type I** | ✅已完成 |
+| **Q2 2027** (Sprints 57-67) | 🚨 **Motor de Geração** + DRM + DLI + SDK Go/Python + Webhooks + Marketplace + Multi-region + **SOC 2 Type II** | Norma Generator vendável |
 
 **Milestones:** M1 (set/2026) piloto pagante · M2 (dez/2026) 10 clientes · M3 (mar/2027) ESG vendido · M4 (jun/2027) Series A ready.
 

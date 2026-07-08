@@ -13,18 +13,18 @@
 
 ### 0.1 Manifesto do produto
 
-> **"Radiant Norma é o sistema operacional do compliance regulatório brasileiro. A IF que usa Radiant Norma dorme tranquila — sabe que vai estar na norma no 9º dia útil, sabe que mudou leiaute antes do BACEN publicar, sabe que auditar é apertar um botão."**
+> **"Radiant Norma é o motor de geração do compliance regulatório brasileiro. A IF não gasta 3 pessoas preenchendo planilhas: sobe os dados, recebe o CADOC gerado e validado, aperta um botão. Sabe que mudou leiaute antes do BACEN publicar, sabe que auditar é apertar um botão."**
 
 Não vendemos software. Vendemos **tranquilidade mensurável**:
-- **Latência de adaptação**: ≤ 5 dias úteis entre BACEN publicar e IF conseguir enviar no novo leiaute.
-- **Cobertura executável**: ≥ 90% das regras semânticas públicas por CADOC crítico.
+- **Latência de geração**: ≤ 5 min entre receber dados e ter CADOC validado pronto pra STA.
+- **Cobertura executável**: ≥ 90% das regras semânticas por CADOC + geração de todos os 10 documentos.
 - **Audit defensável**: ≤ 60s pra extrair evidência forense completa de qualquer envio.
 
 ### 0.2 Princípios de design (não negociáveis)
 
 | # | Princípio | Tradução prática |
 |---|---|---|
-| **P1** | **Schema-first, código depois** | Toda mudança de leiaute entra via PR no catálogo, sem deploy de código. |
+| **P1** | **Schema-first, generator-agnostic** | O motor de geração usa o schema registry como source-of-truth. Conectores (Manual/API/File/DB/MCP) produzem CanonicalDocument; generators consomem schema e emitem XML. Adicionar nova fonte de dados = novo adapter, sem tocar no motor. |
 | **P2** | **Multi-tenant desde o nascimento** | Postgres RLS obrigatório em TODA tabela. Nenhum `WHERE if_id =` no código de aplicação — política no DB. |
 | **P3** | **Audit tudo, sempre** | Cada mutação emite 1 entrada na hash chain. Verificável em O(n) por qualquer auditor com SELECT. |
 | **P4** | **Fail-fast, fail-loud** | Erros de config → panic no boot (não 503 em runtime). Misconfiguração é bug, não feature. |
@@ -125,24 +125,25 @@ Não vendemos software. Vendemos **tranquilidade mensurável**:
 
 **Saída do Q1:** "Radiant Norma ESG" vendável. Diferencial competitivo massivo.
 
-### 1.4 Q2 2027 (abr–jun) — "Plataforma"
+### 1.4 Q2 2027 (abr–jun) — "Plataforma + Norma Generator"
 
-**Tema:** Escala + marketplace + SDK.
+**Tema:** 🚨 Motor de Geração de CADOCs + escala + marketplace + SDK.
 
 | Sprint | Entregas |
 |---|---|
-| **57** | AuditDRM_Completo | Fechar 2060 (DRM Risco Mercado) — todas as 22+ regras + regras VaR se públicas. |
-| **58** | AuditDLI | Fechar 2062 (DLI Limites Individuais). |
-| **59** | SDK_GO | Go SDK público (github.com/fortvna/radiant-norma-go). Geração automática via OpenAPI. |
-| **60** | SDK_Python | Python SDK pra data science + audit analytics. |
-| **61** | Webhooks | Outbound webhooks: evento de envio aceito, evento de erro, evento de mudança de leiaute. |
-| **62** | Marketplace | Catálogo público de regras customizadas por IF (compartilhável, versionado, auditado). |
-| **63** | MultiRegion | Replicação multi-região (BR-SP1 primário, BR-SP2 disaster recovery). |
-| **64** | Pilot4 | Banco S3-S4 piloto (venda enterprise). |
-| **65** | SOC2_Type2 | SOC 2 Type II (período auditado). Penetration test anual. |
-| **66** | SeriesA_Raise | (opcional) Documentação pra Series A — métricas, MRR, NRR, NPS. |
+| **57** | **NormaGeneratorFoundation** 🚨 | Motor de geração CADOCs: 5 conectores (Manual/API/File/DB/MCP), 10 generators, canonical model, adapter pattern, wizard /console/generate |
+| **58** | AuditDRM_Completo | Fechar 2060 (DRM Risco Mercado) — todas as 22+ regras + regras VaR se públicas. |
+| **59** | AuditDLI | Fechar 2062 (DLI Limites Individuais). |
+| **60** | SDK_GO | Go SDK público (github.com/fortvna/radiant-norma-go). Geração automática via OpenAPI. |
+| **61** | SDK_Python | Python SDK pra data science + audit analytics. |
+| **62** | Webhooks | Outbound webhooks: evento de envio aceito, evento de erro, evento de mudança de leiaute. |
+| **63** | Marketplace | Catálogo público de regras customizadas por IF (compartilhável, versionado, auditado). |
+| **64** | MultiRegion | Replicação multi-região (BR-SP1 primário, BR-SP2 disaster recovery). |
+| **65** | Pilot4 | Banco S3-S4 piloto (venda enterprise). |
+| **66** | SOC2_Type2 | SOC 2 Type II (período auditado). Penetration test anual. |
+| **67** | SeriesA_Raise | (opcional) Documentação pra Series A — métricas, MRR, NRR, NPS. |
 
-**Saída do Q2:** "Radiant Norma Enterprise" — plataforma regulatória end-to-end.
+**Saída do Q2:** "Radiant Norma Enterprise" — motor de geração completo + plataforma regulatória end-to-end.
 
 ### 1.5 Milestones e kill criteria
 
@@ -904,6 +905,152 @@ runbooks/
 - [ ] Penetration test anual (Q2 2027)
 - [ ] MTTR < 15min (mediano últimos 6 meses)
 - [ ] Uptime ≥ 99.9% (média móvel 3 meses)
+
+### 3.9 Épico I — Norma Generator (Motor de Geração de CADOCs) 🚨
+
+**Objetivo:** Transformar Radiant Norma de "validador de CADOCs" (commodity) em "motor de geração" que recebe dados de qualquer fonte e produz documento CADOC pronto pra STA.
+
+**Owner:** Eng Lead + 2 Eng Sênior.
+**Critério de done:** IF sobe dados (Manual/API/File/DB/MCP) → wizard revisa campos → motor gera XML → validação L1-L4 → download XML/ZIP. Cadastro de 5 conectores e 10 generators.
+
+#### I.1 — Arquitetura de 5 camadas
+
+```
+5. INGEST    [Manual UI | PDF/XLSX/DOCX | API | DB | MCP]
+   ↓
+4. CANONICAL [CanonicalDocument — JSON tipado, IF-agnóstico]
+   ↓
+3. MAPPER   [IF-schema → CADOC-field via COSIF + LLM]
+   ↓
+2. EMITTER  [structs Go → XML no leiaute BACEN vigente]
+   ↓
+1. VALIDATOR [audit.Service L1→L4 + crossdoc + histórico]
+   ↓
+0. SUBMITTER [STA/DRRSystem via Autran/SLIM800]
+```
+
+#### I.2 — Interface do Generator
+
+```go
+// CADOCGenerator é a interface que todo generator implementa.
+type CADOCGenerator interface {
+    CadocCode() string                     // "3040", "2061", etc.
+    Generate(ctx context.Context, doc *CanonicalDocument, dataBase time.Time) (*GeneratedDoc, error)
+    RequiredFields() []schema.Field        // campos obrigatórios para este CADOC
+}
+
+// GeneratedDoc é o output de qualquer generator.
+type GeneratedDoc struct {
+    XML       []byte   // XML no formato do CADOC
+    ZIP       []byte   // ZIP compactado (formato STA)
+    SHA256    string   // hash do ZIP
+    Errors    []ValidationError  // erros de validação L1-L4
+    FieldMap  map[string]FieldMapping  // mapeamento campo → origem
+}
+
+// FieldMapping mostra a origem de cada valor preenchido.
+type FieldMapping struct {
+    Field     string  // nome do campo no CADOC
+    Value     any     // valor gerado
+    Source    string  // "manual" | "file:linha 42" | "api:campo X" | "db:query Y" | "llm:derived"
+    RuleRef   string  // referência à regra BACEN (se aplicável)
+    Confidence float64 // 0.0-1.0 (para valores LLM-derived)
+}
+```
+
+#### I.3 — Conectores (Adapter Pattern)
+
+```go
+// SourceAdapter é a interface que todo conector de dados implementa.
+type SourceAdapter interface {
+    Name() string                                    // "manual" | "file" | "api" | "db" | "mcp"
+    Fetch(ctx context.Context, cfg SourceConfig) (*CanonicalDocument, error)
+    ValidateConfig(cfg SourceConfig) error            // validate antes de salvar
+    HealthCheck(ctx context.Context, cfg SourceConfig) error  // test connection
+}
+
+// SourceConfig é a configuração de uma fonte de dados (por IF).
+type SourceConfig struct {
+    ID       string  // uuid da fonte
+    IFID     string  // tenant
+    Type     string  // "manual" | "file" | "api" | "db" | "mcp"
+    Config   json.RawMessage  // specifics por tipo
+    Enabled  bool
+}
+
+// Implementações:
+type ManualAdapter    struct{}  // form UI → CanonicalDocument
+type FileAdapter      struct{}  // PDF/XLSX/DOCX → CanonicalDocument (LLM extraction)
+type APIAdapter       struct{}  // REST API → CanonicalDocument
+type DBAdapter        struct{}  // PostgreSQL/Oracle/MySQL → CanonicalDocument
+type MCPAdapter       struct{}  // MCP server tool → CanonicalDocument
+```
+
+#### I.4 — Canonical Document (modelo canônico)
+
+```go
+// CanonicalDocument é a representação intermediária IF-agnóstica.
+// Um generator específico consome o CanonicalDocument e produz XML.
+type CanonicalDocument struct {
+    Metadata   CanonicalMetadata
+    Accounting *AccountingData    // dados contábeis (COSIF-aligned)
+    Credit     *CreditData       // operações de crédito (SCR-aligned)
+    Deposits   *DepositsData     // depósitos
+    Limits     *LimitsData       // limites operacionais
+    Liquidity  *LiquidityData   // métricas de liquidez (LCR/NSFR)
+    ESG        *ESGData         // dados ESG (DRSAC)
+    Market     *MarketData       // risco de mercado (DRM)
+    Custom     map[string]any    // extensão livre por CADOC
+}
+
+type CanonicalMetadata struct {
+    CNPJ      string    // CNPJ raiz da IF
+    DataBase  time.Time // competência
+    SourceID  string    // qual fonte gerou
+    Version   string    // versão do canonical schema
+}
+```
+
+#### I.5 — COSIF Mapper
+
+```go
+// COSIFMapper mapeia um plano de contas não-COSIF para o COSIF 5-tier.
+type COSIFMapper struct {
+    llm LLMClient  // para casos ambíguos
+}
+
+func (m *COSIFMapper) MapAccounts(ctx context.Context, accounts []Account) ([]COSIFAccount, error) {
+    // 1. Lookup direto: conta exata → COSIF (tabela de mapeamento known)
+    // 2. Fuzzy match: conta similar → COSIF (similarity search)
+    // 3. LLM fallback: conta ambígua → COSIF + confidence score
+    // Persiste mapeamentos confirmados → gold-set (reuso em próximas execuções)
+}
+```
+
+#### I.6 — Cobertura por CADOC
+
+| CADOC | Generator | Canonical Fields | Status |
+|---|---|---|---|
+| **3040** | `Gen3040` | Operations[], Clients[], CreditLimits | ✅ |
+| **3050** | `Gen3050` | ExchangeRates[], Transactions[] | ✅ |
+| **4111** | `Gen4111` | AccountEntries[] | ✅ |
+| **2061** DLO | `GenDLO` | OperationalLimits[], Counterparties[] | ✅ |
+| **2062** DLI | `GenDLI` | IndividualLimits[] | ✅ |
+| **2070** DDR | `GenDDR` | CapitalRequirements[] | ✅ |
+| **2160** DRL | `GenDRL` | LCRMetrics[] | ✅ |
+| **2170** DLP | `GenDLP` | NSFRMetrics[] | ✅ |
+| **2060** DRM | `GenDRM` | MarketRiskMetrics[] | ✅ |
+| **2030** DRSAC | `GenDRSAC` | ESGScore[], Operations[] | ✅ |
+
+#### I.7 — Acceptance criteria
+
+- [ ] Interface `CADOCGenerator` implementada para todos os 10 CADOCs
+- [ ] `CanonicalDocument` com todos os campos necessários
+- [ ] 5 conectores: ManualAdapter, FileAdapter, APIAdapter, DBAdapter, MCPAdapter
+- [ ] Wizard `/console/generate/[cadoc]` com 5 steps
+- [ ] Geração → validação L1-L4 → output XML/ZIP funcional
+- [ ] Field-level explainability (origem + regra BACEN + derivação)
+- [ ] Audit log cobre cadeia input → XML → submit
 
 ---## §4 — Contracts
 
@@ -2523,15 +2670,27 @@ Dia 5: Demo de 30min do que aprendeu
 
 **Métrica:** "10 CADOCs production-grade, 12 regras cross-doc."
 
+#### Moat 11 — **Motor de Geração + 5 Conectores**
+
+**O quê:** Gera CADOCs a partir de qualquer fonte de dados (Manual/API/File/DB/MCP) com explainability campo-a-campo e humano no loop.
+
+**Por que moat:**
+- BCValidador é só validador (não gera).
+- Matera/Dimensa são "validação + push", não geração AI-driven.
+- O générador é o que justifica R$ 1.500–12.000/mês vs. "planilha com macro".
+- Conectores plugáveis = qualquer cliente, qualquer fonte de dados.
+
+**Métrica:** "5 conectores, 10 generators, wizard em < 30min de onboarding."
+
 ### 8.2 Mensagem de positioning
 
-> **Pra SCD pequena:** "Radiant Norma — faça seu primeiro CADOC em 15 minutos, sem precisar de IT."
+> **Pra SCD pequena:** "Radiant Norma — gere seu CADOC em 15 minutos: suba a planilha, revise os campos, aperte um botão."
 >
-> **Pra IP média:** "Radiant Norma — 10 CADOCs, 1 plataforma, audit trail pronto SOC 2."
+> **Pra IP média:** "Radiant Norma — motor de geração: sobe os dados, recebe o documento pronto. 10 CADOCs, 1 plataforma, audit trail SOC 2."
 >
-> **Pra Banco S3-S4:** "Radiant Norma — único SaaS com cross-doc L3 + ESG first-monitor + audit chain verificável."
+> **Pra Banco S3-S4:** "Radiant Norma — único SaaS com motor de geração + cross-doc L3 + ESG + audit chain verificável."
 >
-> **Pra Fintech BaaS:** "Radiant Norma — white-label + API-first + pricing per-environment. Ofereça compliance pros seus clientes."
+> **Pra Fintech BaaS:** "Radiant Norma — white-label + API-first + geração. Ofereça compliance pros seus clientes sem montar equipe de compliance."
 
 ### 8.3 Anti-features (o que NÃO fazer)
 
@@ -2558,6 +2717,7 @@ Dia 5: Demo de 30min do que aprendeu
 | **Frontend bundle cresce** | Alta | Médio | Code splitting + lazy loading + bundle analyzer em CI |
 | **Audit chain quebra (bug em entry hash)** | Baixa | Alto | Tests + Verify command + CI gate |
 | **Dependency com CVE** | Média | Médio | `govulncheck` em CI + Dependabot + update mensal |
+| **LLM gera valor inventado no Canonical** | Média | Alto | LLM nunca escreve XML direto; canonical model tipado + validação L1-L4 downstream |
 
 ### 9.2 Riscos de negócio
 
@@ -2677,21 +2837,68 @@ Dia 5: Demo de 30min do que aprendeu
 - ✅ Handler type-asserts pra capability check.
 - ✅ Hollow stub evitado (forçar Stub a implementar com zero-values seria mentir).
 
+### ADR-006: Cross-Doc Engine — diferencial proprietário (L3)
+
+**Status:** Aceito
+**Data:** 2026-07-05
+
+**Contexto:** BCValidador oficial valida 1 documento por vez. Nenhum concorrente valida o ecossistema inteiro (3040 ↔ 4111 ↔ DRSAC ↔ 3050 ↔ 2160 ↔ 2170).
+
+**Decisão:** Engine dedicada de cross-doc validation que executa regras inter-CADOC em paralelo, com panic recovery por regra e auditoria completa.
+
+**Consequências:**
+- ✅ Moat competitivo único: zero concorrentes têm.
+- ✅ Catch de erros inter-CADOC antes do envio.
+- ✅ Paralelização (goroutine pool) — latência P95 < 5s.
+
+### ADR-007: Generator Engine Architecture
+
+**Status:** Aceito
+**Data:** 2026-07-08
+
+**Contexto:** Radiant Norma era um validador (commodity — BCValidador é gratuito, Matera/Mitra já fazem). O diferenciador real é gerar CADOCs a partir de dados brutos.
+
+**Decisão:** Motor de geração em 5 camadas (Ingest → Canonical → Mapper → Emitter → Validator). CanonicalDocument como representação intermediária IF-agnástica. Generators são tipados por CADOC mas implementam interface `CADOCGenerator`. LLM escreve Canonical, nunca XML direto.
+
+**Consequências:**
+- ✅ Diferenciação real vs Matera/Dimensa/BCValidador.
+- ✅ Geração + validação integrada (moat: 1.099 regras).
+- ✅ Adapter pattern: adicionar fonte de dados = novo adapter, sem tocar no motor.
+- ❌ LLM pode inventar valores: mitigado por canonical model tipado + validação L1-L4.
+
+### ADR-008: Adapter Pattern para Conectores de Input
+
+**Status:** Aceito
+**Data:** 2026-07-08
+
+**Contexto:** IFs heterogêneas disponibilizam dados de formas diferentes: planilhas manuais, PDFs, APIs REST, bancos de dados próprios, agentes IA via MCP. O motor de geração precisa ser agnóstico da fonte.
+
+**Decisão:** Interface `SourceAdapter` plugável. Cada conector é um adapter separado. CanonicalDocument é o contrato entre adapters e generators.
+
+**Consequências:**
+- ✅ IF escolhe o conector que faz sentido pra ela.
+- ✅ Adicionar novo conector = novo package, zero impacto nos existentes.
+- ✅ Teste isolado por conector.
+- ❌ Mais abstrações: tradeoff aceito pela flexibilidad.
+
 ---
 
 ## §11 — Próximos passos imediatos
 
 ### Hoje (essa semana)
-- [ ] Revisar este MASTER_PLAN.md com time
-- [ ] Aprovar manifesto + roadmap macro
-- [ ] Criar 1ª sprint do novo ciclo (Sprint 28 — Vault Integration)
+- [x] Revisar este MASTER_PLAN.md com time
+- [x] Aprovar pivô estratégico (Sprint 57 — Norma Generator Foundation)
+- [x] Atualizar todos os documentos (CHANGELOG, ROADMAP, README, MASTER_PLAN, PRODUTO_TESE_ROADMAP, ADRs 007/008)
+- [ ] Executar git commit + tag v3.36.0 + push
 
-### Sprint 28 (próxima)
-- [ ] Escrever SPRINT_28_RESEARCH.md
-- [ ] Implementar AWS Secrets Manager integration
-- [ ] Testes + smoke
-- [ ] VALIDAÇÃO_49
-- [ ] CHANGELOG v3.22.0
+### Sprint 57 (próxima)
+- [ ] Escrever SPRINT_57_RESEARCH.md
+- [ ] Implementar `internal/generator/` + `internal/canonical/` + `internal/ingest/`
+- [ ] Implementar 5 conectores (Manual/File/API/DB/MCP)
+- [ ] Implementar 10 generators (3040/3050/4111/DLO/DLI/DDR/DRL/DLP/DRM/DRSAC)
+- [ ] Implementar wizard `/console/generate/[cadoc]`
+- [ ] VALIDAÇÃO_*
+- [ ] CHANGELOG v3.36.0
 - [ ] Tag + push
 
 ### Quarterly review (set/2026)

@@ -11,7 +11,7 @@ Esta é a **terceira peça** da base documental, complementando:
 
 **Marca-mãe:** Radiant (marca Radiant, da Fortvna Risk Solutions)
 **Produto:** Radiant Norma
-**Sub-produtos da família:** Norma ESG · Norma Radar · Norma Connect · Norma Studio · Norma Audit
+**Sub-produtos da família:** Norma Generator · Norma ESG · Norma Radar · Norma Connect · Norma Studio · Norma Audit
 **Planos:** Norma Lite · Norma Pro · Norma Scale · Norma Enterprise
 
 Data-base: **2026-07-03**. Autoria: Mavis · Radiant.
@@ -20,18 +20,18 @@ Data-base: **2026-07-03**. Autoria: Mavis · Radiant.
 
 ## 1. TESE — Radiant Norma (em uma frase + desdobramentos)
 
-> **"A corrida regulatória 2024-2027 (IN BCB 530/2024 [3044], IN BCB 733/2026 [3040], IN BCB 754/2025 [4111], IN BCB 694/2025 [DRSAC], Res BCB 139/2022 [GRSAC], Res BCB 205 [Basileia 4.0]) criou uma janela de adaptação obrigatória em todas as ~2.000 IFs brasileiras. IFs que tratam CADOCs como commodity operacional (geração+envio manual) serão reprocessadas ou pagarão multas a cada virada de data-base. Radiant Norma é a normaa que nunca dorme: (1) plataforma que abstrai mudanças de leiaute sem retrabalho, (2) radar regulatório proativo, e (3) cross-doc automática — vendendo tranquilidade, não XML."**
+> **"A corrida regulatória 2024-2027 (IN BCB 530/2024 [3044], IN BCB 733/2026 [3040], IN BCB 754/2025 [4111], IN BCB 694/2025 [DRSAC], Res BCB 139/2022 [GRSAC], Res BCB 205 [Basileia 4.0]) criou uma janela de adaptação obrigatória em todas as ~2.000 IFs brasileiras. IFs que tratam CADOCs como commodity operacional (geração+envio manual) serão reprocessadas ou pagarão multas a cada virada de data-base. Radiant Norma é o motor de geração que nunca dorme: (1) recebe dados de qualquer fonte (planilha, PDF, API, banco, MCP), (2) gera o CADOC pronto, (3) valida com 1.099 regras, (4) explica cada campo — vendendo tranquilidade, não XML."**
 
 **3 teses paralelas que se reforçam:**
 
-### Tese 1 — Vendedor de "esteira regulatória", não de XML
+### Tese 1 — Vendedor de "motor de geração", não de validador
 
-IFs gastam 1-3 pessoas a 100% do tempo gerando, validando e enviando CADOCs todo mês. Quando o BACEN muda o leiaute (3-5x/ano), refazem tudo. IFs não compram gerador de XML — compram **tranquilidade** de que o sistema se adapta automaticamente.
+IFs gastam 1-3 pessoas a 100% do tempo gerando, validando e enviando CADOCs todo mês. Quando o BACEN muda o leiaute (3-5x/ano), refazem tudo. IFs não compram validador — BCValidador é gratuito, Matera/Dimensa já validam. IFs compram **geração**: sobe os dados, recebe o documento pronto.
 
 **Radiant Norma entrega:**
-- **Schema Registry versionado por data-base**: cada release BACEN entra como nova versão, IF não mexe em código.
-- **Validador semântico pré-envio** (Norma Audit): reusa a planilha `SCR3040_Criticas.xls` como regras vivas.
-- **Cross-doc engine** (Norma Radar): detecta "3040 diz X mas 4111 diz Y; quem está errado?" — feature que ninguém tem.
+- **Motor de Geração**: 5 conectores (Manual/API/File/DB/MCP), 10 generators, explainability campo-a-campo.
+- **Validação integrada**: L1→L4 com 1.099 regras após a geração — o que diferencia de concorrentes que só validam.
+- **Copiloto com humano no loop**: compliance officer revisa antes de submeter — requisito regulatório, não opção.
 
 ### Tese 2 — ESG/DRSAC é first-mover em vertical sub-explorada
 
@@ -816,6 +816,7 @@ Fortvna Risk Solutions              ← holding/controladora
                         ├── Norma Scale   ← plano enterprise (R$ 12k/mês)
                         ├── Norma Enterprise ← sob consulta
                         │
+                        ├── Norma Generator   ← 🚨 motor de geração (PRINCIPAL diferenciador)
                         ├── Norma ESG       ← módulo DRSAC (first-mover)
                         ├── Norma Radar     ← radar regulatório
                         ├── Norma Connect   ← API pública + webhooks
@@ -827,10 +828,10 @@ Fortvna Risk Solutions              ← holding/controladora
 
 | Contexto | Tagline |
 |---|---|
-| **Principal** | *"Radiant Norma — inteligência regulatória pra IF brasileira"* |
+| **Principal** | *"Radiant Norma — gere seus CADOCs em minutos, não em dias"* |
 | **Curta** | *"Sob a égide da Radiant, sua IF na norma"* |
 | **Emocional** | *"Quem nunca dorme no seu compliance"* |
-| **Ataque** | *"De R$ 80k/ano Matera pra R$ 18k/ano Radiant Norma"* |
+| **Ataque** | *"De 3 pessoas preenchendo planilha para 1 botão: Radiant Norma gera o CADOC"* |
 | **Vetor ESG** | *"Primeira plataforma brasileira com DRSAC 2030 de fábrica"* |
 | **Pitch 30s** | *"A corrida regulatória BACEN 2024-2027 virou IFs refém de geradores de XML. Radiant Norma é a esteira regulatória que abstrai leiaute, dispara alertas, cruza CADOCs e entrega SOC 2. Por uma fração do que a consultoria cobra."* |
 

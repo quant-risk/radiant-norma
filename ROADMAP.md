@@ -72,13 +72,13 @@
 
 ---
 
-## Q2 2027 — "PLATAFORMA" (Sprints 57-66)
+## Q2 2027 — "PLATAFORMA + NORMA GENERATOR" (Sprints 57-67)
 
-**Tema:** Escala + marketplace + SDK.
+**Tema:** Motor de Geração de CADOCs + escala + marketplace + SDK.
 
 | Sprint | Entregas |
 |---|---|
-| **57** | AuditDRM_Completo | ✅ fechada (v3.34.39 — parser DRM/DLO + 7 cross-doc) |
+| **57** | **NormaGeneratorFoundation** 🚨 — Motor de geração CADOCs com 5 conectores (Manual/API/File/DB/MCP), 10 generators (3040/3050/4111/DLO/DLI/DDR/DRL/DLP/DRM/DRSAC), wizard UX /console/generate, canonical model, adapter pattern |
 | **58** | AuditDLI | ✅ fechada (v3.34.40 — parser Documento 2062 DLI + validações estruturais) |
 | **59** | SDK_GO — github.com/fortvna/radiant-norma-go | ✅ fechada (v3.34.41 — Go SDK) |
 | **60** | SDK_Python | ✅ fechada (v3.34.42 — PyPI radiant-norma) |
@@ -140,4 +140,4 @@ Output: `cmd/synth-gen` CLI que produz envios sintéticos para `cmd/seed` e test
 
 ---
 
-**Última atualização:** 2026-07-07 (v3.34.53 — AuditForge Agentic Self-Instruct ✅) · Roadmap de engenharia COMPLETO · Waiting for M1-M4 (product-market fit)
+**Última atualização:** 2026-07-08 (v3.36.0 — Pivô estratégico: Motor de Geração de CADOCs 🚨) · Sprint 57 Norm
