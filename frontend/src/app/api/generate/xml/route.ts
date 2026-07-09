@@ -20,9 +20,9 @@ export async function POST(req: NextRequest) {
       ifId = parts[1] || 'demo'
     }
 
-    const cadoc = body.cadoc
+    const cadoc = body.cadoc_code || body.cadoc
     if (!cadoc) {
-      return NextResponse.json({ error: 'cadoc is required' }, { status: 400 })
+      return NextResponse.json({ error: 'cadoc_code is required' }, { status: 400 })
     }
 
     const apiUrl = process.env.RADIANT_API_URL || 'http://localhost:8080'

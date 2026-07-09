@@ -10,7 +10,6 @@ import {
   ChevronRight, ChevronLeft, Download, RefreshCw,
   FileSpreadsheet, Table2, Code2,
 } from 'lucide-react'
-import { SectionHeader } from '@/components/ui/section-header'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -177,7 +176,7 @@ function UploadStep({ onParsed }: { onParsed: (doc: ParsedDoc) => void }) {
             <div className="text-ink-muted">
               <Upload className="size-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">Arraste ou clique para selecionar</p>
-              <p className="text-xs mt-1">CSV ou XLSX · Máximo 50MB</p>
+              <p className="text-xs mt-1">CSV ou XLSX · Máximo 10MB</p>
             </div>
           )}
         </div>
