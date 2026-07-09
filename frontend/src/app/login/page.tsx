@@ -145,7 +145,7 @@ export default function LoginPage() {
             <div className="inline-flex items-center gap-2 mb-7">
               <span className="size-1.5 rounded-full bg-accent-400 animate-pulse-soft" />
               <span className="text-2xs uppercase tracking-[0.22em] font-mono text-accent-300">
-                v3.35.6 · Em conformidade com BACEN / CMN 4.966
+                v3.36.0 · Em conformidade com BACEN / CMN 4.966
               </span>
             </div>
 

@@ -14,6 +14,8 @@ import {
   Sparkles,
   Send,
   History,
+  Wand2,
+  Database,
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -31,6 +33,22 @@ interface Feature {
 
 const FEATURES: Feature[] = [
   {
+    icon: Wand2,
+    title: 'Motor de Geração',
+    description:
+      '10 generators de CADOC (3040 pronto, 9 planejados). Recebe CanonicalDocument IF-agnóstico, gera XML validado pelo schema registry. Sem tocar no motor quando você troca de CADOC.',
+    badge: 'v3.36',
+    visual: <GeneratorVisual />,
+  },
+  {
+    icon: Database,
+    title: 'Ingest multi-fonte',
+    description:
+      '5 conectores (Manual, API, File, DB, MCP) produzem CanonicalDocument. Wizard guiado para configurar cada fonte. Adicione nova sem tocar no motor.',
+    badge: '5 adapters',
+    visual: <IngestVisual />,
+  },
+  {
     icon: Radar,
     title: 'Radar Regulatório',
     description:
@@ -40,9 +58,9 @@ const FEATURES: Feature[] = [
   },
   {
     icon: BookCheck,
-    title: 'Catálogo de 60 regras',
+    title: 'Catálogo de regras',
     description:
-      'Regras tipadas para CADOC 3040: estruturais, formato, campos e semânticas. Cada regra com exemplo, severidade e doc inline.',
+      'Regras tipadas para CADOCs: estruturais, formato, campos e semânticas. Cobertura 76% no 3040, 100% no 3050. Cada regra com exemplo, severidade e doc inline.',
     visual: <RulesVisual />,
   },
   {
@@ -132,6 +150,55 @@ export function LandingFeatures() {
 }
 
 /* ──────────── Micro-visuals (estilo terminal/dashboard) ──────────── */
+
+function GeneratorVisual() {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs font-mono bg-accent-50 text-accent-700 dark:bg-accent-950/40 dark:text-accent-300">
+          <span className="size-1 rounded-full bg-accent-500" />
+          3040
+        </div>
+        <div className="flex-1 h-px bg-gradient-to-r from-accent-300 to-magenta-300 dark:from-accent-700 dark:to-magenta-500" />
+        <Sparkles className="size-2.5 text-magenta-500" />
+        <div className="flex-1 h-px bg-gradient-to-r from-magenta-300 to-accent-300 dark:from-magenta-500 dark:to-accent-700" />
+        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs font-mono bg-magenta-500/10 text-magenta-600 dark:text-magenta-300">
+          <span className="size-1 rounded-full bg-magenta-500" />
+          XML
+        </div>
+      </div>
+      <div className="text-2xs font-mono text-ink-subtle mt-1.5">
+        canonical → generate → validate (275 regras)
+      </div>
+    </div>
+  )
+}
+
+function IngestVisual() {
+  return (
+    <div className="grid grid-cols-5 gap-1.5">
+      {[
+        { label: 'Manual', active: true },
+        { label: 'API', active: true },
+        { label: 'File', active: true },
+        { label: 'DB', active: false },
+        { label: 'MCP', active: false },
+      ].map((s) => (
+        <div
+          key={s.label}
+          className={cn(
+            'rounded text-2xs font-mono text-center py-1 ring-1 ring-inset',
+            s.active
+              ? 'bg-accent-50 text-accent-700 dark:bg-accent-950/40 dark:text-accent-300 ring-accent-200/60 dark:ring-accent-800/40'
+              : 'bg-surface-sunken/40 text-ink-subtle ring-border-subtle',
+          )}
+        >
+          {s.label}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 function RadarVisual() {
   return (

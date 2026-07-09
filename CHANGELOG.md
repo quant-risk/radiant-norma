@@ -178,6 +178,60 @@ Fluxo UX planejado em 5 etapas:
 
 ---
 
+## v3.36.1 — 2026-07-09 (Sprint 57 follow-up — UI para Generator + Ingest) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** minor (frontend: páginas do motor de geração)
+
+### Contexto
+
+Sprint 57 (`v3.36.0`) implementou o **motor de geração de CADOCs** no backend
+(`internal/generator/gen3040/`, `internal/canonical/`, `internal/ingest/`,
+`internal/api/generate.go`). O código Go estava pronto, mas a UI do console
+ainda não tinha fachada — landing e sidebar tratavam o produto como "validador".
+
+Este commit adiciona a camada UI pra refletir a proposta real: **Gera, valida e envia**.
+
+### Frontend (8 arquivos modificados, 3 criados)
+
+**Novas rotas**:
+- `/console/generate` — Motor de Geração
+  - Hero strip com 4 KPIs (Generators, Documentos gerados, Conectores, Pipeline)
+  - Pipeline visual 5 etapas (Ingest → Canonical → Generator → Validação → STA)
+  - Tabela com status de 10 CADOCs (1 pronto, 9 planejados, regras por CADOC)
+  - CTA final com Wizard guiado
+- `/console/ingest` — Conectores de Dados
+  - Hero strip com 3 contadores (Funcionais, Beta, Total)
+  - Grid 3×2 com 5 adapters (Manual, API, File, DB, MCP) com format + examples + CTA
+  - Cada adapter com status (ready/beta/stub) e formato de entrada
+
+**Sidebar**: novo grupo "Geração" com itens "Generator" + "Ingest" (ambos com badge `new`).
+
+**Landing** (reflete produto Generator):
+- Hero copy: "Validação CADOC que pensa junto" → "Gera, valida e envia CADOCs que o BCValidador não cobre"
+- Sub-headline: "Radar regulatório, catálogo de regras tipadas" → "Motor de geração + 5 conectores (Manual, API, File, DB, MCP) + validação L1-L4"
+- Mockup do produto: KPI "alertas críticos" → "CADOC 3040 pronto · 9 planejados"
+- Pipeline preview: alert → "Manual → Canonical → Generator → 275 regras ✓"
+- Sidebar mockup: Dashboard/Envios/Radar/Regras → Dashboard/Generator/Ingest/Envios/Radar
+- Features grid: 6 cards → 8 cards (Generator + Ingest no topo)
+- HowItWorks: 3 passos → **5 etapas** (Ingest → Canonical → Generator → Validação → STA)
+
+**Version bumps**:
+- Footer `v3.35.6` → `v3.36.0`
+- Login `v3.35.6` → `v3.36.0`
+
+### Documentação
+
+- `REDESIGN.md`: nota no topo sobre v3.36 + seção "Adições para refletir o produto Generator"
+
+### Validação
+
+- `tsc -p tsconfig.json --noEmit` → 0 erros
+- 8 páginas do console retornam 200: `/console`, `/console/generate`, `/console/ingest`, `/radar`, `/envios`, `/regras`, `/insights`, `/auditoria`
+- Landing renderiza com hero + 8 features + pipeline 5 etapas
+
+---
+
 ## v3.35.6 — 2026-07-08 (Sprint 56 follow-up — Paleta "Midnight Blue + Platinum") ✅
 
 > **Status:** ✅ Shipped

@@ -120,7 +120,7 @@ export function LandingFooter() {
             © 2026 Radiant Norma · Todos os direitos reservados
           </p>
           <p className="text-2xs text-ink-subtle font-mono uppercase tracking-wider">
-            Feito em São Paulo · v3.35.6
+            Feito em São Paulo · v3.36.0
           </p>
         </div>
       </div>

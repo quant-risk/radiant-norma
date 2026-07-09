@@ -1,8 +1,30 @@
-# Radiant Norma · Design System v3.35
+# Radiant Norma · Design System v3.36
 
 > **Linguagem visual "Institutional Premium Noir"** — fusão de Editorial Luxo Sério (Bloomberg/Stratos), Quiet Authority Tech (Linear/Vercel/Stripe) e Noir Banking Terminal (Mercury/Revolut dark).
+>
+> **Paleta accent:** Midnight Blue → Platinum (`#1E2A5E → #94A3B8`) — vibe tech-premium fintech (Stripe, Plaid).
 
 ---
+
+## v3.36.0 — Adições para refletir o produto Generator
+
+Com o motor de geração de CADOCs implementado (Sprint 57), a UI passa a refletir
+a proposta de valor: **Gera, valida e envia** — não só valida.
+
+**Mudanças na landing**:
+- Hero copy: "Validação CADOC que pensa junto" → "Gera, valida e envia CADOCs que o BCValidador não cobre"
+- Mockup do produto: de "2 alertas críticos" para "CADOC 3040 pronto · 9 planejados"
+- Features grid: 2 novos cards no topo (Generator + Ingest) ocupando 8 cards no total
+- HowItWorks: 3 passos → 5 etapas (Ingest → Canonical → Generator → Validação → STA)
+
+**Mudanças no console**:
+- Sidebar: novo grupo "Geração" com 2 itens (Generator + Ingest, ambos com badge `new`)
+- `/console/generate` — página completa com status de 10 generators, pipeline visual, CTA
+- `/console/ingest` — página completa com 5 conectores (Manual, API, File, DB, MCP), status individual
+
+---
+
+## 1. Princípios
 
 ## 1. Princípios
 

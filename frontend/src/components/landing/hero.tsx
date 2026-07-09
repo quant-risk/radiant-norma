@@ -102,15 +102,15 @@ export function LandingHero() {
         </div>
 
         <h1 className="font-serif text-5xl sm:text-6xl lg:text-7xl xl:text-display-md font-medium text-ink leading-[0.96] tracking-[-0.035em] mb-8">
-          Validação CADOC que{' '}
-          <span className="text-gradient-accent italic">pensa junto</span>
-          {' '}com você.
+          Gera, valida e envia{' '}
+          <span className="text-gradient-accent italic">CADOCs</span>
+          {' '}que o BCValidador não cobre.
         </h1>
 
         <p className="text-lg lg:text-xl text-ink-muted leading-relaxed max-w-2xl mx-auto mb-10">
-          Radar regulatório, catálogo de regras tipadas e auditoria LGPD
-          em uma plataforma desenhada para o ciclo regulatório brasileiro.
-          {' '}<span className="text-ink">60 regras 3040 monitoradas em tempo real.</span>
+          Motor de geração + 5 conectores (Manual, API, File, DB, MCP) +
+          validação L1-L4 + push direto pro STA.
+          {' '}<span className="text-ink">De dados brutos ao CADOC validado em 15 minutos.</span>
         </p>
 
         <div className="flex items-center justify-center gap-3 flex-wrap mb-8">
@@ -199,12 +199,12 @@ function ProductPreviewMockup() {
               </div>
             </div>
             {[
-              { label: 'Dashboard', active: true },
+              { label: 'Dashboard', active: false },
+              { label: 'Generator', active: true, badge: 'new' },
+              { label: 'Ingest', active: false, badge: 'new' },
               { label: 'Envios', active: false },
               { label: 'Radar', active: false, dot: true },
               { label: 'Regras', active: false },
-              { label: 'Insights', active: false },
-              { label: 'Auditoria', active: false },
             ].map((item) => (
               <div
                 key={item.label}
@@ -220,6 +220,11 @@ function ProductPreviewMockup() {
                 {item.dot && (
                   <span className="ml-auto size-1 rounded-full bg-success-500 animate-pulse-soft" />
                 )}
+                {item.badge && !item.dot && (
+                  <span className="ml-auto text-2xs font-mono uppercase tracking-wider px-1 rounded bg-accent-100 text-accent-700 dark:bg-accent-950/50 dark:text-accent-300">
+                    new
+                  </span>
+                )}
               </div>
             ))}
           </aside>
@@ -230,43 +235,43 @@ function ProductPreviewMockup() {
             <div className="flex items-baseline justify-between">
               <div>
                 <div className="text-2xs uppercase tracking-[0.18em] font-mono text-ink-subtle mb-1">
-                  Status operacional
+                  Motor de geração
                 </div>
                 <div className="text-base font-serif font-medium text-ink">
-                  2 alertas críticos exigem ação imediata
+                  CADOC 3040 pronto · 9 planejados
                 </div>
               </div>
-              <div className="px-2 py-0.5 rounded-full bg-critical-50 text-critical-700 text-2xs font-medium uppercase tracking-wide ring-1 ring-inset ring-critical-200/60 flex items-center gap-1">
-                <span className="size-1 rounded-full bg-critical-500" />
-                ação imediata
+              <div className="px-2 py-0.5 rounded-full bg-accent-50 text-accent-700 text-2xs font-medium uppercase tracking-wide ring-1 ring-inset ring-accent-200/60 flex items-center gap-1">
+                <span className="size-1 rounded-full bg-accent-500" />
+                generator
               </div>
             </div>
 
             {/* KPIs */}
             <div className="grid grid-cols-4 gap-3">
-              <MiniStat label="Envios (30d)" value="1.247" tone="accent" delta="+12,3%" />
-              <MiniStat label="Alertas ativos" value="12" tone="critical" />
-              <MiniStat label="Aprovação" value="98,4%" tone="success" delta="+0,4pp" />
-              <MiniStat label="CADOCs" value="8" tone="neutral" />
+              <MiniStat label="Generators" value="1/10" tone="accent" />
+              <MiniStat label="Conectores" value="5" tone="success" />
+              <MiniStat label="Regras 3040" value="275" tone="neutral" />
+              <MiniStat label="Onboarding" value="15 min" tone="success" />
             </div>
 
-            {/* Alert preview */}
+            {/* Generate pipeline preview */}
             <div className="rounded-lg border border-border bg-surface-raised p-3 relative overflow-hidden">
-              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-critical-500" aria-hidden />
+              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-accent-500" aria-hidden />
               <div className="flex items-start gap-3 pl-2">
-                <div className="size-7 rounded-md bg-critical-50 text-critical-600 flex items-center justify-center shrink-0">
-                  <Radar className="size-3.5" strokeWidth={2.25} />
+                <div className="size-7 rounded-md bg-accent-50 text-accent-600 flex items-center justify-center shrink-0">
+                  <Sparkles className="size-3.5" strokeWidth={2.25} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <span className="px-1.5 py-0.5 rounded-full bg-critical-50 text-critical-700 text-2xs font-medium uppercase ring-1 ring-inset ring-critical-200/60">
-                      Crítico
+                    <span className="px-1.5 py-0.5 rounded-full bg-accent-50 text-accent-700 text-2xs font-medium uppercase ring-1 ring-inset ring-accent-200/60">
+                      3040 gerado
                     </span>
-                    <span className="text-2xs font-mono text-ink-muted">CADOC 3040</span>
-                    <span className="text-2xs text-ink-subtle ml-auto font-mono">há 12 min</span>
+                    <span className="text-2xs font-mono text-ink-muted">data-base 07/2026</span>
+                    <span className="text-2xs text-ink-subtle ml-auto font-mono">4.2s</span>
                   </div>
                   <div className="text-xs font-serif font-medium text-ink leading-snug">
-                    Nova versão do layout BACEN publicada — reanálise automática em curso
+                    Manual → Canonical → Generator → 275 regras ✓
                   </div>
                 </div>
               </div>

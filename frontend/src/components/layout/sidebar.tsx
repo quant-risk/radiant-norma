@@ -25,6 +25,8 @@ import {
   BookCheck,
   Sparkles,
   History,
+  Wand2,
+  Database,
   ChevronsLeft,
   ChevronsRight,
 } from 'lucide-react'
@@ -48,7 +50,7 @@ const NAV_GROUPS: Array<{
     href: Route
     label: string
     icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }>
-    badge?: 'live'
+    badge?: 'live' | 'new'
   }>
 }> = [
   {
@@ -58,6 +60,13 @@ const NAV_GROUPS: Array<{
       { href: '/envios', label: 'Envios STA', icon: Send },
       { href: '/radar', label: 'Radar', icon: Radar, badge: 'live' },
       { href: '/regras', label: 'Regras', icon: BookCheck },
+    ],
+  },
+  {
+    label: 'Geração',
+    items: [
+      { href: '/console/generate', label: 'Generator', icon: Wand2, badge: 'new' },
+      { href: '/console/ingest', label: 'Ingest', icon: Database, badge: 'new' },
     ],
   },
   {
@@ -252,6 +261,11 @@ function SidebarContent({
                           <span className="absolute inset-0 rounded-full bg-success-500 animate-ping opacity-60" />
                           <span className="relative rounded-full size-1.5 bg-success-500" />
                         </span>
+                      </span>
+                    )}
+                    {!collapsed && item.badge === 'new' && (
+                      <span className="px-1.5 py-0.5 rounded text-2xs font-mono uppercase tracking-wider bg-accent-50 text-accent-700 dark:bg-accent-950/40 dark:text-accent-300 ring-1 ring-inset ring-accent-200/60 dark:ring-accent-800/40">
+                        new
                       </span>
                     )}
                   </Link>
