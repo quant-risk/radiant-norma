@@ -245,6 +245,11 @@ func (s *Server) parseUploadedFile(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "INVALID_CADOC", err.Error())
 		return
 	}
+	if genRegistry.Get(cadoc) == nil {
+		writeError(w, http.StatusBadRequest, "UNKNOWN_CADOC",
+			fmt.Sprintf("nenhum generator registrado para CADOC %s", cadoc))
+		return
+	}
 
 	// Get file from multipart.
 	file, header, err := r.FormFile("file")
