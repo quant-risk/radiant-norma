@@ -8,6 +8,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -89,17 +90,19 @@ func (s *Server) generateCadoc(w http.ResponseWriter, r *http.Request) {
 	generated, err := g.Generate(ctx, doc, dataBase)
 	if err != nil {
 		slog.Error("generate", "cadoc", cadoc, "err", err)
-		writeError(w, http.StatusInternalServerError, "GENERATE_ERROR", fmt.Sprintf("falha ao gerar %s: %v", cadoc, err))
-		return
-	}
-
-	if len(generated.Errors) > 0 {
+		// Validation/creation failures → 422 com detalhes.
+		// Systemic failures (DB, etc.) → 500.
 		writeJSON(w, http.StatusUnprocessableEntity, GenerateResponse{
 			CadocCode: cadoc,
 			DataBase:  dataBase,
-			Generated: generated,
-			Status:    "error",
-			Message:   "documento não pode ser gerado — campos obrigatórios faltantes",
+			Generated: &generator.GeneratedDoc{
+				Errors: []generator.GenError{{
+					Code:    "GENERATION_FAILED",
+					Message: err.Error(),
+				}},
+			},
+			Status:  "error",
+			Message: fmt.Sprintf("falha ao gerar %s: %v", cadoc, err),
 		})
 		return
 	}
@@ -175,6 +178,12 @@ func (s *Server) ingestSources(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := adapter.HealthCheck(ctx, cfg); err != nil {
+		if errors.Is(err, ingest.ErrNotImplemented) {
+			writeError(w, http.StatusNotImplemented,
+				"ADAPTER_NOT_IMPLEMENTED",
+				fmt.Sprintf("adapter %s ainda não implementado", cfg.Type))
+			return
+		}
 		writeJSON(w, http.StatusUnprocessableEntity, SourceConfigResponse{
 			CadocCode:  cadoc,
 			SourceType: cfg.Type,

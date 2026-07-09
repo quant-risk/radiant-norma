@@ -46,8 +46,6 @@ func main() {
 		cmdGenerate(os.Args[2:])
 	case "list":
 		cmdList(os.Args[2:])
-	case "serve":
-		cmdServe(os.Args[2:])
 	case "adapters":
 		cmdAdapters(os.Args[2:])
 	default:
@@ -63,7 +61,6 @@ Comandos:
   generate  -cadoc=<code> [-i <json> | -f <file>]  Gera um CADOC
   list                           Lista generators disponíveis
   adapters                       Lista conectores disponíveis
-  serve  -addr=:8080             Inicia server HTTP minimal
 
 Flags (generate):
   -cadoc        Código CADOC (ex: 3040)
@@ -127,15 +124,8 @@ func cmdGenerate(args []string) {
 		log.Fatalf("generate: %v", err)
 	}
 
-	if len(generated.Errors) > 0 {
-		fmt.Fprintf(os.Stderr, "Erros de geração:\n")
-		for _, e := range generated.Errors {
-			fmt.Fprintf(os.Stderr, "  [%s] %s: %s\n", e.Campo, e.Code, e.Message)
-		}
-	}
-
 	if *output != "" {
-		if err := os.WriteFile(*output, generated.XML, 0644); err != nil {
+		if err := os.WriteFile(*output, generated.XML, 0600); err != nil {
 			log.Fatalf("escrever output: %v", err)
 		}
 		fmt.Printf("Gerado: %s (%d bytes, SHA256=%s)\n", *output, len(generated.XML), generated.SHA256)
@@ -165,26 +155,22 @@ func cmdAdapters(args []string) {
 	}
 }
 
-func cmdServe(args []string) {
-	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
-	addr := fs.String("addr", ":8080", "endereço HTTP")
-	if err := fs.Parse(args); err != nil {
-		os.Exit(1)
-	}
-	fmt.Printf("Server mode: use a API principal (cmd/api) para funcionalidade completa.\n")
-	fmt.Printf("Addr: %s\n", *addr)
-}
-
 // parseDataBase parses AAAAMM string to time.Time (first day of month).
+// Returns zero time if parsing fails.
 func parseDataBase(s string) time.Time {
 	if s == "" {
 		t := time.Now()
 		return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
 	}
 	y, m := 2026, 1
-	fmt.Sscanf(s[:4], "%d", &y)
+	if n, _ := fmt.Sscanf(s[:min(len(s), 4)], "%d", &y); n != 1 {
+		return time.Time{}
+	}
 	if len(s) >= 6 {
 		fmt.Sscanf(s[4:6], "%d", &m)
+	}
+	if m < 1 || m > 12 {
+		return time.Time{}
 	}
 	return time.Date(y, time.Month(m), 1, 0, 0, 0, 0, time.UTC)
 }

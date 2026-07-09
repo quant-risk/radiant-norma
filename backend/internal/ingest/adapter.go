@@ -19,6 +19,7 @@ package ingest
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -26,6 +27,10 @@ import (
 
 	"github.com/fortvna/radiant-norma/backend/internal/canonical"
 )
+
+// ErrNotImplemented é retornado por adapters stub quando o Fetch()
+// ainda não foi implementado (Sprint 57 fase 2).
+var ErrNotImplemented = errors.New("adapter: fetch não implementado")
 
 // SourceType identifica o tipo de fonte de dados.
 type SourceType string
@@ -294,7 +299,7 @@ func (a *FileAdapter) Fetch(ctx context.Context, cfg SourceConfig, cadocCode str
 	case "xlsx", "csv":
 		// Stub:解析 XLSX/CSV completo entra na Sprint 57 (fase 2).
 		// Por agora, retorna erro indicando que ainda não está implementado.
-		return nil, fmt.Errorf("formato %s: parser ainda não implementado (Sprint 57 fase 2)", cfg.File.Format)
+		return nil, fmt.Errorf("%w: formato %s", ErrNotImplemented, cfg.File.Format)
 	default:
 		return nil, fmt.Errorf("formato desconhecido: %s", cfg.File.Format)
 	}
@@ -342,7 +347,7 @@ func (a *APIAdapter) Type() SourceType { return SourceAPI }
 func (a *APIAdapter) Fetch(ctx context.Context, cfg SourceConfig, cadocCode string, dataBase time.Time) (*canonical.CanonicalDocument, error) {
 	// Stub: implementação completa entra na Sprint 57 fase 2.
 	_ = cfg
-	return nil, fmt.Errorf("APIAdapter: fetch não implementado (Sprint 57 fase 2)")
+	return nil, ErrNotImplemented
 }
 
 func (a *APIAdapter) ValidateConfig(cfg SourceConfig) error {
@@ -358,7 +363,7 @@ func (a *APIAdapter) ValidateConfig(cfg SourceConfig) error {
 func (a *APIAdapter) HealthCheck(ctx context.Context, cfg SourceConfig) error {
 	// Stub: ping no endpoint.
 	_ = cfg
-	return fmt.Errorf("APIAdapter healthcheck: não implementado (Sprint 57 fase 2)")
+	return ErrNotImplemented
 }
 
 func (a *APIAdapter) DescribeFields(cadocCode string) []FieldDescriptor {
@@ -378,7 +383,7 @@ func (a *DBAdapter) Type() SourceType { return SourceDB }
 
 func (a *DBAdapter) Fetch(ctx context.Context, cfg SourceConfig, cadocCode string, dataBase time.Time) (*canonical.CanonicalDocument, error) {
 	_ = cfg
-	return nil, fmt.Errorf("DBAdapter: fetch não implementado (Sprint 57 fase 2)")
+	return nil, ErrNotImplemented
 }
 
 func (a *DBAdapter) ValidateConfig(cfg SourceConfig) error {
@@ -397,7 +402,7 @@ func (a *DBAdapter) ValidateConfig(cfg SourceConfig) error {
 func (a *DBAdapter) HealthCheck(ctx context.Context, cfg SourceConfig) error {
 	// Stub: test de conexão.
 	_ = cfg
-	return fmt.Errorf("DBAdapter healthcheck: não implementado (Sprint 57 fase 2)")
+	return ErrNotImplemented
 }
 
 func (a *DBAdapter) DescribeFields(cadocCode string) []FieldDescriptor {
@@ -416,7 +421,7 @@ func (a *MCPAdapter) Type() SourceType { return SourceMCP }
 
 func (a *MCPAdapter) Fetch(ctx context.Context, cfg SourceConfig, cadocCode string, dataBase time.Time) (*canonical.CanonicalDocument, error) {
 	_ = cfg
-	return nil, fmt.Errorf("MCPAdapter: fetch não implementado (Sprint 57 fase 2)")
+	return nil, ErrNotImplemented
 }
 
 func (a *MCPAdapter) ValidateConfig(cfg SourceConfig) error {
@@ -435,7 +440,7 @@ func (a *MCPAdapter) ValidateConfig(cfg SourceConfig) error {
 func (a *MCPAdapter) HealthCheck(ctx context.Context, cfg SourceConfig) error {
 	// Stub: verifica se o servidor MCP está acessível.
 	_ = cfg
-	return fmt.Errorf("MCPAdapter healthcheck: não implementado (Sprint 57 fase 2)")
+	return ErrNotImplemented
 }
 
 func (a *MCPAdapter) DescribeFields(cadocCode string) []FieldDescriptor {

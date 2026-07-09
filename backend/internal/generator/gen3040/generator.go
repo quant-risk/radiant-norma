@@ -110,20 +110,15 @@ func (g *Generator) EstimateComplexity(doc *canonical.CanonicalDocument) generat
 	}
 }
 
-// Generate produz o XML do 3040 a partir do CanonicalDocument.
+// Generate produces the XML of 3040 from the CanonicalDocument.
+// Returns (nil, error) when the document cannot be generated at all.
+// Returns (GeneratedDoc, nil) on success (Errors field is only populated
+// for partial failures with blocking issues).
 func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocument, dataBase time.Time) (*generator.GeneratedDoc, error) {
 	start := time.Now()
 
 	if errs := doc.Validate(); len(errs) > 0 {
-		return &generator.GeneratedDoc{
-			CadocCode: g.CadocCode(),
-			Errors:    mapErrors(errs),
-			Metadata: generator.GenMetadata{
-				GeneratorVersion: "1.0.0",
-				GeneratedAt:      start,
-				DurationMs:       time.Since(start).Milliseconds(),
-			},
-		}, nil
+		return nil, fmt.Errorf("document validation failed: %v", errs)
 	}
 
 	model := buildModel(doc, dataBase)
@@ -132,18 +127,7 @@ func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocume
 	enc := xml.NewEncoder(&buf)
 	enc.Indent("", "  ")
 	if err := enc.Encode(model); err != nil {
-		return &generator.GeneratedDoc{
-			CadocCode: g.CadocCode(),
-			Errors: []generator.GenError{{
-				Code:    "XML_ENCODE_ERROR",
-				Message: fmt.Sprintf("falha ao serializar XML: %v", err),
-			}},
-			Metadata: generator.GenMetadata{
-				GeneratorVersion: "1.0.0",
-				GeneratedAt:      start,
-				DurationMs:       time.Since(start).Milliseconds(),
-			},
-		}, nil
+		return nil, fmt.Errorf("XML encoding failed: %w", err)
 	}
 
 	return &generator.GeneratedDoc{
@@ -463,14 +447,6 @@ func sortedKeys(m map[key3040][]canonical.Operacao) []key3040 {
 		return a.localiz < b.localiz
 	})
 	return keys
-}
-
-func mapErrors(errs []string) []generator.GenError {
-	out := make([]generator.GenError, len(errs))
-	for i, e := range errs {
-		out[i] = generator.GenError{Code: "MISSING_FIELD", Campo: e, Message: e}
-	}
-	return out
 }
 
 func buildFieldMap(doc *canonical.CanonicalDocument) []canonical.FieldMapping {
