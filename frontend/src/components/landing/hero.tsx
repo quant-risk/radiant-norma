@@ -1,5 +1,3 @@
-'use client'
-
 /**
  * Hero — landing section principal.
  *
@@ -108,7 +106,7 @@ export function LandingHero() {
         </h1>
 
         <p className="text-lg lg:text-xl text-ink-muted leading-relaxed max-w-2xl mx-auto mb-10">
-          Motor de geração + 5 conectores (Manual, API, File, DB, MCP) +
+          Motor de geração + 5 conectores (Manual funcional, 4 em stub) +
           validação L1-L4 + push direto pro STA.
           {' '}<span className="text-ink">De dados brutos ao CADOC validado em 15 minutos.</span>
         </p>

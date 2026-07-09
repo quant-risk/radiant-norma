@@ -1,5 +1,3 @@
-'use client'
-
 /**
  * HowItWorks — pipeline editorial 5 etapas.
  *
@@ -19,7 +17,7 @@ const STEPS = [
       '5 conectores disponíveis: Manual (formulário), API (REST/webhook), File (PDF/XLSX/DOCX), DB (Postgres/Oracle/MySQL), MCP (LLM tools).',
     detail: [
       'Manual funcional',
-      'API + File beta',
+      'API + File em stub',
       'DB + MCP planejados',
     ],
   },

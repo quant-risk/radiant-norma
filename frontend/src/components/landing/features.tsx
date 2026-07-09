@@ -1,5 +1,3 @@
-'use client'
-
 /**
  * Features — grid de features do produto.
  *

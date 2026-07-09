@@ -232,6 +232,43 @@ Este commit adiciona a camada UI pra refletir a proposta real: **Gera, valida e 
 
 ---
 
+## v3.36.2 — 2026-07-09 (Code review fixes) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (correções pós-auditoria)
+
+### Correções aplicadas após code-review profundo
+
+**Críticas:**
+
+- **C1 — Adapters API/File rotulados como `ready` mas são stub no backend**:
+  - `ingest/page.tsx`: API e File mudaram de `ready`/`beta` → **`stub`**
+  - Descrições atualizadas para refletir o estado real (Fetch retorna `ErrNotImplemented` no backend)
+  - Examples: `ERP → /v1/ingest/api` → `POST /v1/generate/3040` (endpoint que existe)
+  - KPI "Beta" → "Planejados" (1 funcional + 4 planejados é a verdade)
+  - Hero copy: "5 conectores (Manual, API, File, DB, MCP)" → "Manual funcional, 4 em stub"
+  - HowItWorks: "API + File beta" → "API + File em stub"
+
+- **C2 — Copy "production-ready" → "MVP"**:
+  - `generate/page.tsx`: 3040 era descrito como "Motor completo / production-ready" — agora é "MVP funcional" (gera XML a partir de CanonicalDocument; validação XSD é feita em camada separada L1)
+
+- **C3 — Fetch fantasma removido**:
+  - `generate/page.tsx`: removida chamada a `GET /v1/generate/stats` (endpoint **não existe** no backend). Cada render disparava 404 silencioso. `totalGenerated` agora é `0` com TODO para reativar quando o endpoint existir.
+
+**Melhorias:**
+
+- **M2 — `'use client'` removido de componentes sem hooks**:
+  - `hero.tsx`, `features.tsx`, `how-it-works.tsx` → viraram **Server Components** (não usam `useState`/`useEffect`/`usePathname`/`useRouter`)
+  - Reduz client bundle size
+
+**Validação:**
+- `tsc -p tsconfig.json --noEmit` → 0 erros
+- `/console/ingest` → 200, badges mostram 1 `funcional` + 4 `planejado`
+- `/console/generate` → 200, 3040 marcado como `pronto` (MCP/MVP)
+- `/` (landing) → 200, hero reflete realidade (1 funcional + 4 stub)
+
+---
+
 ## v3.35.6 — 2026-07-08 (Sprint 56 follow-up — Paleta "Midnight Blue + Platinum") ✅
 
 > **Status:** ✅ Shipped

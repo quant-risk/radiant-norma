@@ -5,7 +5,11 @@
  * cada fonte. Cada conector produz CanonicalDocument que alimenta o
  * Generator.
  *
- * Sprint 57 (v3.36.0): 5 conectores implementados (Manual funcional,
+ * Sprint 57 (v3.36.0): adapter Manual funcional. Os outros 4 (File, API,
+ * DB, MCP) estão com Fetch ainda em stub (return ErrNotImplemented) —
+ * configuração ValidateConfig parcialmente funcional, geração real virá
+ * na Sprint 57 fase 2. Use POST /v1/generate/{cadoc} direto como
+ * work-around para adapters stub.
  * 4 stubs). Esta página é a fachada UI.
  */
 
@@ -54,23 +58,23 @@ const ADAPTERS: Adapter[] = [
   },
   {
     id: 'file',
-    name: 'File (PDF / XLSX / DOCX)',
+    name: 'File (XLSX / CSV / JSON)',
     description:
-      'Upload de planilhas, PDFs, DOCX. LLM extrai campos canônicos automaticamente.',
+      'Upload de planilhas. Adapter com ValidateConfig implementado; Fetch ainda em stub (Sprint 57 fase 2).',
     icon: FileSpreadsheet,
-    status: 'beta',
-    format: 'PDF / XLSX / DOCX → JSON',
-    examples: ['XLSX com colunas mapeadas', 'PDF de relatório', 'DOCX de processo'],
+    status: 'stub',
+    format: 'XLSX / CSV / JSON → JSON',
+    examples: ['XLSX com colunas mapeadas', 'CSV com header row', 'JSON com schema pré-definido'],
   },
   {
     id: 'api',
     name: 'API REST',
     description:
-      'Webhook + POST endpoint. Sistemas da IF (ERP, core banking) enviam dados direto pro motor.',
+      'Webhook + POST endpoint. Adapter registrado mas Fetch ainda retorna ErrNotImplemented. Use /v1/generate/{cadoc} direto enquanto isso.',
     icon: Globe,
-    status: 'ready',
+    status: 'stub',
     format: 'JSON via HTTPS',
-    examples: ['ERP → /v1/ingest/api', 'Core banking → webhook', 'Polling endpoint configurável'],
+    examples: ['POST /v1/generate/3040 (direto)', 'Webhook planejado', 'Polling endpoint configurável'],
   },
   {
     id: 'db',
@@ -117,7 +121,7 @@ export default async function IngestPage() {
   }
 
   const readyCount = ADAPTERS.filter((a) => a.status === 'ready').length
-  const betaCount = ADAPTERS.filter((a) => a.status === 'beta').length
+  const plannedCount = ADAPTERS.filter((a) => a.status !== 'ready').length
 
   return (
     <AppShell
@@ -164,15 +168,15 @@ export default async function IngestPage() {
 
             <div className="rounded-lg border border-border bg-surface-raised p-5">
               <div className="flex items-center gap-2.5 mb-2">
-                <Sparkles className="size-4 text-info-600" strokeWidth={2.25} />
+                <Sparkles className="size-4 text-ink-muted" strokeWidth={2.25} />
                 <span className="text-2xs uppercase tracking-wider font-mono text-ink-subtle">
-                  Beta
+                  Planejados
                 </span>
               </div>
               <div className="text-3xl font-serif font-medium text-ink tracking-tight nums">
-                {betaCount}
+                {plannedCount}
               </div>
-              <div className="text-xs text-ink-muted mt-1">em validação</div>
+              <div className="text-xs text-ink-muted mt-1">em roadmap</div>
             </div>
 
             <div className="rounded-lg border border-border bg-surface-raised p-5">

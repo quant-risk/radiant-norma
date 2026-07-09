@@ -1,12 +1,16 @@
 /**
  * /console/generate — Motor de Geração de CADOCs.
  *
- * Visualiza o motor (Gen3040 implementado, outros 9 planejados) +
+ * Visualiza o motor (Gen3040 MVP, outros 9 planejados) +
  * status de cada generator por CADOC + acesso ao wizard de geração.
  *
  * Sprint 57 (v3.36.0): motor 3040 + canonical + adapters + API REST
  * já implementado no backend (`internal/generator/gen3040/`).
  * Esta página é a fachada UI do motor.
+ *
+ * v3.36.2: removed silent fetch to /v1/generate/stats (endpoint
+ * inexistente). 3040 ainda é MVP — validação XSD é feita em camada
+ * separada (L1), não pelo generator.
  */
 
 import Link from 'next/link'
@@ -21,7 +25,6 @@ import {
   FileText,
   Cog,
 } from 'lucide-react'
-import { apiFetch } from '@/lib/api-fetch'
 import { getServerSession } from '@/lib/session'
 import { AppShell } from '@/components/layout/app-shell'
 import { StatCard } from '@/components/domain/stat-card'
@@ -47,7 +50,8 @@ const CADOCS: CadocStatus[] = [
     name: 'SCR — Risco de Crédito',
     generator: 'ready',
     rules: 275,
-    description: 'Motor completo. Gera XML 3040 v3.4 a partir de CanonicalDocument.',
+    description:
+      'MVP funcional. Gera XML 3040 v3.4 a partir de CanonicalDocument. Validação XSD é feita em camada separada (L1).',
   },
   {
     cadoc: '3050',
@@ -136,18 +140,11 @@ export default async function GeneratePage() {
     )
   }
 
-  // Try fetching real stats (sem quebrar se backend não tiver endpoint)
-  let totalGenerated = 0
-  try {
-    const stats = await apiFetch<{ total?: number }>(
-      '/v1/generate/stats',
-      {},
-      session.token,
-    )
-    totalGenerated = stats.total ?? 0
-  } catch {
-    // endpoint opcional; UI não depende
-  }
+  // TODO(v3.36.2): GET /v1/generate/stats endpoint — por ora 0.
+  // Backend não tem este endpoint ainda. Removida a call que retornava
+  // 404 silencioso a cada render. Adicionar quando /v1/generate/stats
+  // existir no backend.
+  const totalGenerated = 0
 
   const readyCount = CADOCS.filter((c) => c.generator === 'ready').length
   const plannedCount = CADOCS.filter((c) => c.generator === 'planned').length
