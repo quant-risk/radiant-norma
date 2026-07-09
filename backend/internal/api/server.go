@@ -209,6 +209,8 @@ func (s *Server) Router() http.Handler {
 		r.Get("/generate/{cadoc}/fields", s.listGenerateFields)
 		r.Post("/generate/{cadoc}/sources", s.ingestSources)
 		r.Get("/generate/adapters", s.listSourceAdapters)
+		// Sprint 60: Wizard UI — parse uploaded CSV/XLSX to CanonicalDocument.
+		r.Post("/generate/file/parse", s.parseUploadedFile)
 
 		// STA submission (stub)
 		r.Post("/sta/submit", s.staSubmit)

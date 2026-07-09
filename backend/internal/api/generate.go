@@ -13,6 +13,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
@@ -221,6 +223,127 @@ func (s *Server) listSourceAdapters(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
+// parseUploadedFile handles POST /v1/generate/file/parse.
+// Accepts multipart form data with a CSV/XLSX file and returns a parsed
+// CanonicalDocument. Used by the Wizard UI for the file → canonical step.
+func (s *Server) parseUploadedFile(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	if err := r.ParseMultipartForm(50 << 20); err != nil { // 50 MB max
+		writeError(w, http.StatusBadRequest, "MULTIPART_PARSE_ERROR",
+			fmt.Sprintf("falha ao processar multipart: %v", err))
+		return
+	}
+
+	// Get cadoc type from form field.
+	cadoc := r.FormValue("cadoc")
+	if cadoc == "" {
+		writeError(w, http.StatusBadRequest, "MISSING_CADOC", "campo cadoc é obrigatório")
+		return
+	}
+	if err := ValidateCadocCode(cadoc); err != nil {
+		writeError(w, http.StatusBadRequest, "INVALID_CADOC", err.Error())
+		return
+	}
+
+	// Get file from multipart.
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "MISSING_FILE", "campo file é obrigatório")
+		return
+	}
+	defer file.Close()
+
+	// Determine format from filename extension.
+	format := r.FormValue("format")
+	if format == "" {
+		switch {
+		case strings.HasSuffix(header.Filename, ".xlsx"), strings.HasSuffix(header.Filename, ".xls"):
+			format = "xlsx"
+		default:
+			format = "csv"
+		}
+	}
+	if format != "csv" && format != "xlsx" {
+		writeError(w, http.StatusBadRequest, "INVALID_FORMAT",
+			fmt.Sprintf("formato %q não suportado (suporta: csv, xlsx)", format))
+		return
+	}
+
+	// Parse data_base.
+	dataBaseStr := r.FormValue("data_base")
+	var dataBase time.Time
+	if dataBaseStr != "" {
+		dataBase, err = time.Parse("2006-01-02", dataBaseStr)
+		if err != nil {
+			dataBase, err = time.Parse("2006-01", dataBaseStr)
+			if err != nil {
+				writeError(w, http.StatusBadRequest, "INVALID_DATA_BASE",
+					fmt.Sprintf("data_base inválida: %v", err))
+				return
+			}
+		}
+	} else {
+		dataBase = time.Now()
+	}
+
+	// Copy uploaded file to a temp location for the FileAdapter.
+	tmpDir := os.TempDir()
+	tmpFile, err := os.CreateTemp(tmpDir, "radiant-parse-*.tmp")
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "TEMP_FILE_ERROR",
+			fmt.Sprintf("falha ao criar arquivo temporário: %v", err))
+		return
+	}
+	tmpPath := tmpFile.Name()
+	defer os.Remove(tmpPath)
+	defer tmpFile.Close()
+
+	if _, err := io.Copy(tmpFile, file); err != nil {
+		writeError(w, http.StatusInternalServerError, "TEMP_FILE_WRITE_ERROR",
+			fmt.Sprintf("falha ao escrever arquivo temporário: %v", err))
+		return
+	}
+
+	hasHeader := r.FormValue("has_header") != "false"
+
+	cfg := ingest.SourceConfig{
+		Name: cadoc,
+		File: &ingest.FileConfig{
+			Path:      tmpPath,
+			Format:    format,
+			HasHeader: hasHeader,
+		},
+	}
+
+	adapter := ingest.GetAdapter(ingest.SourceFile)
+	if adapter == nil {
+		writeError(w, http.StatusInternalServerError, "ADAPTER_NOT_FOUND",
+			"FileAdapter não registrado")
+		return
+	}
+
+	parsed, err := adapter.Fetch(ctx, cfg, cadoc, dataBase)
+	if err != nil {
+		if errors.Is(err, ingest.ErrNotImplemented) {
+			writeError(w, http.StatusNotImplemented, "ADAPTER_NOT_IMPLEMENTED",
+				"FileAdapter ainda não implementado")
+			return
+		}
+		writeError(w, http.StatusUnprocessableEntity, "PARSE_ERROR",
+			fmt.Sprintf("falha ao parsear arquivo: %v", err))
+		return
+	}
+
+	writeJSON(w, http.StatusOK, FileParseResponse{
+		CadocCode: cadoc,
+		DataBase:  dataBase,
+		Document:  parsed,
+		Status:    "ok",
+		Message:   fmt.Sprintf("arquivo %s parseado com sucesso", header.Filename),
+	})
+}
+
 // --- Request/Response types ---
 
 // GenerateRequest é o body do POST /v1/generate/{cadoc}.
@@ -267,6 +390,15 @@ type SourceConfigResponse struct {
 type AdapterInfo struct {
 	Type ingest.SourceType `json:"type"`
 	Name string            `json:"name"`
+}
+
+// FileParseResponse é o response do POST /v1/generate/file/parse.
+type FileParseResponse struct {
+	CadocCode string                       `json:"cadoc_code"`
+	DataBase  time.Time                    `json:"data_base"`
+	Document  *canonical.CanonicalDocument `json:"document"`
+	Status    string                       `json:"status"`
+	Message   string                       `json:"message"`
 }
 
 // writeError escreve um JSON de erro com código e mensagem.
