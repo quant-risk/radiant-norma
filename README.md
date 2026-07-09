@@ -11,8 +11,8 @@ auditoria tamper-evident e camadas que o BCValidador não tem.
 
 <br>
 
-![Status](https://img.shields.io/badge/status-v3.36.0_🚨-10b981?style=for-the-badge)
-![Sprint](https://img.shields.io/badge/sprint-57%2F67_(Plano_Ouro_→_Norma_Generator)-6366f1?style=for-the-badge)
+![Status](https://img.shields.io/badge/status-v3.35.6_🚨-10b981?style=for-the-badge)
+![Sprint](https://img.shields.io/badge/sprint-57%2F67-6366f1?style=for-the-badge)
 ![Stack](https://img.shields.io/badge/stack-Go_1.25%2B_+_Next.js_15_+_Postgres_16-00ADD8?style=for-the-badge&logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/license-proprietary-1e293b?style=for-the-badge)
 ![Roadmap](https://img.shields.io/badge/roadmap-Plano_Ouro_(12_meses)-f59e0b?style=for-the-badge)
@@ -51,18 +51,19 @@ explainability campo-a-campo, e push direto ao STA.
 
 | CADOC | Sigla | Periodicidade | Generator | Validação |
 |---|---|---|---|---|
-| **3040** | SCR — Risco de Crédito | Mensal | ✅ | ✅ 275 regras Go (B/F/C/S/I/H) |
-| **3044** | Eventos de Crédito (JSON) | Por evento | ✅ | ✅ 17 regras T01-T19 |
-| **3050** | Estatísticas Agregadas | Mensal/diária | ✅ | ✅ 170 regras TXB |
-| **2030** | DRSAC — Risco ESG | Semestral | ✅ | ⚠️ 0 regras (críticas não-públicas) |
-| **2060** | DRM — Risco de Mercado | Mensal | ✅ | ✅ 22 regras |
-| **2061** | DLO — Limites Operacionais | Mensal | ✅ | ✅ 24+ regras ELIM |
-| **2062** | DLI — Limites Individuais | Mensal | ✅ | ✅ 18 regras DLI |
-| **2070** *(cód 2011)* | DDR — Requerimento Capital | Diário | ✅ | ✅ 11 regras + cross-doc |
-| **2160** | DRL — Liquidez (LCR) | Diário | ✅ | ✅ 11 regras LCR |
-| **2170** | DLP — Liquidez LP (NSFR) | Mensal | ✅ | ✅ 10 regras NSFR |
+| **3040** | SCR — Risco de Crédito | Mensal | 📋 Sprint 57 | ✅ 275 regras Go (B/F/C/S/I/H) |
+| **3044** | Eventos de Crédito (JSON) | Por evento | 📋 Sprint 57 | ✅ 17 regras T01-T19 |
+| **3050** | Estatísticas Agregadas | Mensal/diária | 📋 Sprint 57 | ✅ 170 regras TXB |
+| **2030** | DRSAC — Risco ESG | Semestral | 📋 Sprint 57 | ⚠️ 0 regras (críticas não-públicas) |
+| **2060** | DRM — Risco de Mercado | Mensal | 📋 Sprint 57 | ✅ 22 regras |
+| **2061** | DLO — Limites Operacionais | Mensal | 📋 Sprint 57 | ✅ 24+ regras ELIM |
+| **2062** | DLI — Limites Individuais | Mensal | 📋 Sprint 57 | ✅ 18 regras DLI |
+| **2070** *(cód 2011)* | DDR — Requerimento Capital | Diário | 📋 Sprint 57 | ✅ 11 regras + cross-doc |
+| **2160** | DRL — Liquidez (LCR) | Diário | 📋 Sprint 57 | ✅ 11 regras LCR |
+| **2170** | DLP — Liquidez LP (NSFR) | Mensal | 📋 Sprint 57 | ✅ 10 regras NSFR |
 
-**10 CADOCs com generator funcional** + **1.099 regras de validação** (275+ portadas em Go).
+**Validação:** 1.099 regras de validação (275+ portadas em Go).
+**Generator:** 📋 Motor de geração planejado — Sprint 57 (decisão tomada, não implementado ainda).
 
 ---
 
@@ -170,7 +171,7 @@ Stack completa em [`backend/README.md`](backend/README.md).
 > **Visão macro executiva:** [`ROADMAP.md`](ROADMAP.md).
 > **Decisões arquiteturais:** [`docs/adr/`](docs/adr/).
 
-### Histórico shipped (v1.0 → v3.21.1)
+### Histórico shipped (v1.0 → v3.35.6)
 
 | Sprint | Tema | Status |
 |---|---|---|
@@ -180,8 +181,10 @@ Stack completa em [`backend/README.md`](backend/README.md).
 | **14–17** | Redis rate limiter + Observability + Production Hardening | ✅ v3.7.0 |
 | **18–22** | STA WS nativo + read side + chunked transfer + retry exponencial | ✅ v3.12.0 |
 | **23–27** | senhaws BACEN rotation + senhaws-rotate CLI + sta-submit CLI + pre-commit hook | ✅ v3.21.1 |
+| **28–56** | Multi-CADOC + ESG + SDKs + Stripe + Radar v2 + Marketplace + SOC2 + DLP/DRL/DDR/DLO | ✅ v3.34–v3.35 |
+| **57** | NormaGeneratorFoundation — decisão arquitetural tomada (implementação backlog) | 📋 v3.35.6 |
 
-**Total:** 27 sprints em ~2 meses · 105 arquivos Go · 29.481 LoC · 516 testes · 48 validações profundas documentadas.
+**Total:** 57 sprints · 105 arquivos Go · 29.481 LoC · 516 testes · 48 validações profundas documentadas.
 
 ### Roadmap 12 meses — Plano Ouro + Norma Generator (Q3 2026 → Q2 2027)
 
@@ -299,24 +302,21 @@ Detalhamento em [`PRODUTO_TESE_ROADMAP.md`](PRODUTO_TESE_ROADMAP.md).
 
 Estes são **deliberadamente públicos** — não escondemos o que falta:
 
+- **Motor de Geração (Sprint 57)** — não implementado ainda. Decisão
+  arquitetural tomada em v3.35.6. Código será implementado na Sprint 57.
 - **2030 DRSAC críticas** — não publicamente disponível; FAQ do BACEN aponta
-  pra página protegida por login. 5 URLs tentadas, todas retornaram erro.
-  Aguardando solicitação formal.
-- **Cobertura regras 3040** — 25/320 regras portadas (7.8%). Sprint 5 cobre
-  Agregadas + Individualizadas pra chegar a 50%+.
-- **BCValidador oficial vs Go** — implementação Go reescreve as regras públicas
-  das planilhas `SCR3040_Criticas.xls`. Comparação byte-a-byte fica pra Sprint 5
-  via Docker (BCValidador é Java-only).
-- **STA real** — stub gera protocolo fake. Cliente real Web/WS (Playwright +
-  Sisbacen + PSTA300) entra na Sprint 5.
-- **Auth** — `X-IF-ID` simples na Sprint 4. JWT + OAuth2 + refresh tokens na 5.
-- **Postgres RLS** — multi-tenant só identifica hoje. Isolamento por linha via
-  RLS policies na Sprint 5.
-- **Frontend Norma Console** — backend-only até Sprint 4. Next.js dashboard na 5.
+  pra página protegida por login. 35 regras D01-D35 portadas, mas catálogo
+  completo pendente.
+- **Cobertura regras 3040** — 275/361 regras portadas em Go (76.2%).
+  Sprint 38-41 cobriu o restante via stubs + carry-over honesto.
+- **4111 COSIF** — parser e XSD implementados (Sprint 51), regras iniciais
+  portadas, validação completa em produção.
+- **STA real** — implementado em Sprints 18-22 (WS client, retry, DLQ).
+- **Auth** — JWT + cookie implementado (Sprints 8-10, simplificado em v3.35.5).
+- **Postgres RLS** — ativado em Sprint 30.
+- **Frontend Norma Console** — Next.js 15 App Router (Sprints 34-37).
 - **Radar URLs** — algumas URLs BACEN retornam 404 (BACEN muda paths). Sistema
   é resiliente: baseline gravado mesmo quando fetch falha.
-- **Dedup 3040** — 14 warnings de UNIQUE constraint no seed (duplicatas reais
-  no JSON de origem). Pendente: dedup no `extract.py`.
 
 ---
 

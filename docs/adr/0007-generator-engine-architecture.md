@@ -1,6 +1,6 @@
 # ADR-0007: Generator Engine Architecture
 
-> **Status:** Aceito
+> **Status:** Proposto (implementação: Sprint 57 — não iniciado)
 > **Data:** 2026-07-08
 > **Decisor(es):** Henrique Costa
 

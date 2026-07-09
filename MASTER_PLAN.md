@@ -2853,12 +2853,12 @@ Dia 5: Demo de 30min do que aprendeu
 
 ### ADR-007: Generator Engine Architecture
 
-**Status:** Aceito
+**Status:** Proposto (implementação: Sprint 57 — não iniciado)
 **Data:** 2026-07-08
 
 **Contexto:** Radiant Norma era um validador (commodity — BCValidador é gratuito, Matera/Mitra já fazem). O diferenciador real é gerar CADOCs a partir de dados brutos.
 
-**Decisão:** Motor de geração em 5 camadas (Ingest → Canonical → Mapper → Emitter → Validator). CanonicalDocument como representação intermediária IF-agnástica. Generators são tipados por CADOC mas implementam interface `CADOCGenerator`. LLM escreve Canonical, nunca XML direto.
+**Decisão:** Motor de geração em 5 camadas (Ingest → Canonical → Mapper → Emitter → Validator). CanonicalDocument como representação intermediária IF-agnóstica. Generators são tipados por CADOC mas implementam interface `CADOCGenerator`. LLM escreve Canonical, nunca XML direto.
 
 **Consequências:**
 - ✅ Diferenciação real vs Matera/Dimensa/BCValidador.
@@ -2868,7 +2868,7 @@ Dia 5: Demo de 30min do que aprendeu
 
 ### ADR-008: Adapter Pattern para Conectores de Input
 
-**Status:** Aceito
+**Status:** Proposto (implementação: Sprint 57 — não iniciado)
 **Data:** 2026-07-08
 
 **Contexto:** IFs heterogêneas disponibilizam dados de formas diferentes: planilhas manuais, PDFs, APIs REST, bancos de dados próprios, agentes IA via MCP. O motor de geração precisa ser agnóstico da fonte.
@@ -2879,7 +2879,7 @@ Dia 5: Demo de 30min do que aprendeu
 - ✅ IF escolhe o conector que faz sentido pra ela.
 - ✅ Adicionar novo conector = novo package, zero impacto nos existentes.
 - ✅ Teste isolado por conector.
-- ❌ Mais abstrações: tradeoff aceito pela flexibilidad.
+- ❌ Mais abstrações: tradeoff aceito pela flexibilidade.
 
 ---
 

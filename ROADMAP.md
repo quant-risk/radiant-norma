@@ -78,7 +78,7 @@
 
 | Sprint | Entregas |
 |---|---|
-| **57** | **NormaGeneratorFoundation** 🚨 — Motor de geração CADOCs com 5 conectores (Manual/API/File/DB/MCP), 10 generators (3040/3050/4111/DLO/DLI/DDR/DRL/DLP/DRM/DRSAC), wizard UX /console/generate, canonical model, adapter pattern |
+| **57** | **NormaGeneratorFoundation** 🚨 | 📋 Decisão tomada — motor de geração CADOCs (5 conectores, 10 generators, wizard UX) — implementação backlog |
 | **58** | AuditDLI | ✅ fechada (v3.34.40 — parser Documento 2062 DLI + validações estruturais) |
 | **59** | SDK_GO — github.com/fortvna/radiant-norma-go | ✅ fechada (v3.34.41 — Go SDK) |
 | **60** | SDK_Python | ✅ fechada (v3.34.42 — PyPI radiant-norma) |
@@ -140,4 +140,4 @@ Output: `cmd/synth-gen` CLI que produz envios sintéticos para `cmd/seed` e test
 
 ---
 
-**Última atualização:** 2026-07-08 (v3.36.0 — Pivô estratégico: Motor de Geração de CADOCs 🚨) · Sprint 57 Norm
+**Última atualização:** 2026-07-08 (v3.35.6 — Pivô estratégico: decisão de arquitetura 🚨) · Sprint 57: decisão tomada, implementação backlog

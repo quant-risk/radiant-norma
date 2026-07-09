@@ -2,15 +2,17 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
-## v3.36.0 — 2026-07-08 (Pivô estratégico: Motor de Geração de CADOCs) 🚨
+## v3.35.6 — 2026-07-08 (Pivô estratégico: decisão de arquitetura) 🚨
 
-> **Status:** ✅ Shipped
-> **Tipo:** major (pivô de produto)
-> **Sprint:** 57 — Norma Generator Foundation
+> **Status:** 📋 Decisão tomada — **implementação em Sprint 57 (backlog)**
+> **Tipo:** major (pivô de produto — decisão, NÃO implementado ainda)
+> **Sprint:** 57 — Norma Generator Foundation (não iniciado)
 
 ### Pivô: de validador para gerador de CADOCs
 
-**Mudança de tese:** Radiant Norma deixa de ser um "validador de CADOCs" (função commodity — BCValidador é gratuito, Matera/Mitra já fazem) para se tornar o **motor de geração** que transforma dados brutos (planilhas, PDFs, APIs, bancos, agentes IA) em documentos CADOC prontos para submissão BACEN.
+**Decisão tomada:** Radiant Norma deixa de ser um "validador de CADOCs" (função commodity — BCValidador é gratuito, Matera/Mitra já fazem) para se tornar o **motor de geração** que transforma dados brutos (planilhas, PDFs, APIs, bancos, agentes IA) em documentos CADOC prontos para submissão BACEN.
+
+**Código ainda NÃO existe.** Esta versão documenta a decisão arquitetural. A implementação começa na Sprint 57.
 
 **Contexto de mercado:**
 - Banco Central oferece validador gratuito (BCValidador Java)
@@ -34,17 +36,17 @@
 0. SUBMITTER [STA/DRRSystem via Autran/SLIM800]
 ```
 
-### Conectores implementados (Sprint 57)
+### Conectores planejados (Sprint 57 — backlog)
 
 | Conector | Status | Descrição |
 |---|---|---|
-| **Manual/Form UI** | ✅ Sprint 57 | Wizard guiado por CADOC — /console/generate/[cadoc] |
-| **File (PDF/XLSX/DOCX)** | ✅ Sprint 57 | Upload + extração via LLM (insights.LLMClient) |
-| **API REST** | ✅ Sprint 57 | Cliente expõe API; Radiant consome com auth configurável |
-| **Database (PostgreSQL/Oracle/MySQL)** | ✅ Sprint 57 | Read-only conn com queries salvas por cliente |
-| **MCP Server** | ✅ Sprint 57 | Radiant expõe tools generate_cadoc / validate_cadoc / submit_sta |
+| **Manual/Form UI** | 📋 Sprint 57 | Wizard guiado por CADOC — /console/generate/[cadoc] |
+| **File (PDF/XLSX/DOCX)** | 📋 Sprint 57 | Upload + extração via LLM (insights.LLMClient) |
+| **API REST** | 📋 Sprint 57 | Cliente expõe API; Radiant consome com auth configurável |
+| **Database (PostgreSQL/Oracle/MySQL)** | 📋 Sprint 57 | Read-only conn com queries salvas por cliente |
+| **MCP Server** | 📋 Sprint 57 | Radiant expõe tools generate_cadoc / validate_cadoc / submit_sta |
 
-### Novos pacotes
+### Novos pacotes (Sprint 57 — a criar)
 
 | Pacote | Descrição |
 |---|---|
@@ -54,7 +56,7 @@
 | `internal/mapper/` | COSIFMapper (plano de contas → COSIF 5-tier) + FieldMapper |
 | `internal/ingest/` | Adapter pattern — ManualAdapter, FileAdapter, APIAdapter, DBAdapter, MCPAdapter |
 
-### Novos endpoints
+### Novos endpoints (Sprint 57 — a criar)
 
 | Endpoint | Método | Descrição |
 |---|---|---|
@@ -63,33 +65,31 @@
 | `/v1/ingest/sources` | GET/POST | CRUD de conexões de dados (fontes) |
 | `/v1/ingest/sources/:id/test` | POST | Testa conexão de fonte de dados |
 
-### CADOCs cobertos pelo motor de geração
-
-Todos os 10 CADOCs BACEN agora têm generator funcional:
+### CADOCs planejados para o motor de geração (Sprint 57 — backlog)
 
 | CADOC | Generator | Status |
 |---|---|---|
-| **3040** SCR | `Gen3040` | ✅ Production |
-| **3050** TXB | `Gen3050` | ✅ Production |
-| **4111** COSIF | `Gen4111` | ✅ Production |
-| **2061** DLO | `GenDLO` | ✅ Sprint 57 |
-| **2062** DLI | `GenDLI` | ✅ Sprint 57 |
-| **2070** DDR | `GenDDR` | ✅ Sprint 57 |
-| **2160** DRL | `GenDRL` | ✅ Sprint 57 |
-| **2170** DLP | `GenDLP` | ✅ Sprint 57 |
-| **2060** DRM | `GenDRM` | ✅ Sprint 57 |
-| **2030** DRSAC | `GenDRSAC` | ✅ Sprint 57 |
+| **3040** SCR | `Gen3040` | 📋 Sprint 57 |
+| **3050** TXB | `Gen3050` | 📋 Sprint 57 |
+| **4111** COSIF | `Gen4111` | 📋 Sprint 57 |
+| **2061** DLO | `GenDLO` | 📋 Sprint 57 |
+| **2062** DLI | `GenDLI` | 📋 Sprint 57 |
+| **2070** DDR | `GenDDR` | 📋 Sprint 57 |
+| **2160** DRL | `GenDRL` | 📋 Sprint 57 |
+| **2170** DLP | `GenDLP` | 📋 Sprint 57 |
+| **2060** DRM | `GenDRM` | 📋 Sprint 57 |
+| **2030** DRSAC | `GenDRSAC` | 📋 Sprint 57 |
 
-### Wizard de geração (/console/generate)
+### Wizard de geração (/console/generate) — Sprint 57
 
-Novo fluxo UX em 5 etapas:
+Fluxo UX planejado em 5 etapas:
 1. Escolher CADOC + data-base
 2. Escolher fonte de dados (Manual / Upload / API / DB / MCP)
 3. Revisar campos auto-preenchidos com explainability (origem + regra BACEN + derivação)
 4. Dry-run validation (mostra erros esperados sem submit)
 5. Submit to STA / download XML/ZIP
 
-### Decisões técnicas explícitas
+### Decisões técnicas explícitas (arquitetura Sprint 57)
 
 | Decisão | Escolha | Justificativa |
 |---|---|---|

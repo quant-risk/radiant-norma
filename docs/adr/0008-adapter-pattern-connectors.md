@@ -1,6 +1,6 @@
 # ADR-0008: Adapter Pattern para Conectores de Input
 
-> **Status:** Aceito
+> **Status:** Proposto (implementação: Sprint 57 — não iniciado)
 > **Data:** 2026-07-08
 > **Decisor(es):** Henrique Costa
 
