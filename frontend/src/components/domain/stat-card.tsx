@@ -214,8 +214,8 @@ function Sparkline({
       {tone === 'accent' && (
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#7C3AED" />
-            <stop offset="100%" stopColor="#D946EF" />
+            <stop offset="0%" stopColor="#1E2A5E" />
+            <stop offset="100%" stopColor="#94A3B8" />
           </linearGradient>
         </defs>
       )}

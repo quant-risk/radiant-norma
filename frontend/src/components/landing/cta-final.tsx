@@ -17,7 +17,7 @@ export function LandingCTAFinal() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            'radial-gradient(ellipse at center, rgba(124,58,237,0.10) 0%, transparent 60%)',
+            'radial-gradient(ellipse at center, rgba(30,42,94,0.10) 0%, transparent 60%)',
         }}
         aria-hidden
       />

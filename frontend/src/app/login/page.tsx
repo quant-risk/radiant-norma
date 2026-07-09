@@ -106,12 +106,12 @@ export default function LoginPage() {
         <div className="absolute inset-0 pattern-grid opacity-[0.06]" aria-hidden />
         <div
           className="absolute -top-40 -left-40 size-[28rem] rounded-full bg-accent-600/30 blur-3xl animate-gradient-pan"
-          style={{ backgroundImage: 'radial-gradient(circle, rgba(124,58,237,0.4) 0%, rgba(217,70,239,0.1) 50%, transparent 70%)' }}
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(30,42,94,0.4) 0%, rgba(148,163,184,0.12) 50%, transparent 70%)' }}
           aria-hidden
         />
         <div
           className="absolute -bottom-40 -right-40 size-[32rem] rounded-full blur-3xl"
-          style={{ backgroundImage: 'radial-gradient(circle, rgba(217,70,239,0.18) 0%, transparent 70%)' }}
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(148,163,184,0.20) 0%, transparent 70%)' }}
           aria-hidden
         />
 
@@ -145,7 +145,7 @@ export default function LoginPage() {
             <div className="inline-flex items-center gap-2 mb-7">
               <span className="size-1.5 rounded-full bg-accent-400 animate-pulse-soft" />
               <span className="text-2xs uppercase tracking-[0.22em] font-mono text-accent-300">
-                v3.35.4 · Em conformidade com BACEN / CMN 4.966
+                v3.35.6 · Em conformidade com BACEN / CMN 4.966
               </span>
             </div>
 

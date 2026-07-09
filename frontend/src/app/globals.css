@@ -11,35 +11,35 @@
  * Light: off-white quente #F7F5F0 → coal-ink #0F0E0C
  * Dark:  noir #0A0A0B → warm-paper #F2EFE8
  *
- * Accent: violet → magenta gradient (#7C3AED → #D946EF)
+ * Accent: Midnight Blue → Platinum gradient (#1E2A5E → #94A3B8)
  *         usado com parcimônia — só onde carrega hierarquia.
  */
 
 @layer base {
   :root {
-    /* Surfaces — warm off-white */
-    --surface: 247 245 240;            /* warm off-white */
-    --surface-raised: 252 250 245;     /* warmer paper */
-    --surface-sunken: 240 237 230;     /* sunk warm */
-    --surface-overlay: 255 253 248;    /* overlay paper */
-    --surface-inverse: 15 14 12;       /* coal */
+    /* Surfaces — warm slate / paper */
+    --surface: 244 245 248;            /* warm slate */
+    --surface-raised: 250 251 253;     /* lighter paper */
+    --surface-sunken: 232 234 240;     /* sunk warm */
+    --surface-overlay: 255 255 255;    /* overlay paper */
+    --surface-inverse: 14 16 22;       /* deep navy */
 
-    /* Borders — coal-tinted */
-    --border: 224 218 207;             /* warm slate-200 */
-    --border-subtle: 235 230 220;      /* warm slate-100 */
-    --border-strong: 199 191 175;      /* warm slate-300 */
-    --border-accent: 124 58 237;       /* violet-600 */
+    /* Borders — warm slate */
+    --border: 218 222 236;             /* warm slate-200 */
+    --border-subtle: 232 234 240;      /* warm slate-100 */
+    --border-strong: 178 190 217;      /* warm slate-300 */
+    --border-accent: 30 42 94;         /* midnight blue */
 
-    /* Ink — coal tones */
-    --ink: 15 14 12;                   /* coal-900 */
-    --ink-muted: 82 75 65;             /* warm slate-600 */
-    --ink-subtle: 140 131 117;         /* warm slate-400 */
-    --ink-inverse: 242 239 232;        /* warm paper */
+    /* Ink — deep navy tones */
+    --ink: 14 16 22;                   /* deep navy */
+    --ink-muted: 70 75 90;             /* slate-600 */
+    --ink-subtle: 120 125 140;         /* slate-400 */
+    --ink-inverse: 244 245 248;        /* warm paper */
 
-    /* Brand accent */
-    --accent: 124 58 237;              /* violet-600 */
+    /* Brand accent — Midnight Blue + Platinum */
+    --accent: 30 42 94;                /* midnight blue */
     --accent-fg: 255 255 255;
-    --accent-magenta: 217 70 239;      /* magenta-500 */
+    --accent-magenta: 148 163 184;     /* platinum */
 
     /* Pattern grid — coal hairlines */
     --pattern-grid: linear-gradient(
@@ -51,29 +51,29 @@
   }
 
   .dark {
-    /* Surfaces — deep noir */
-    --surface: 10 10 11;               /* noir-950 */
-    --surface-raised: 18 17 19;        /* noir-900 */
-    --surface-sunken: 6 6 7;           /* noir-1000 */
-    --surface-overlay: 26 25 28;       /* noir-850 */
-    --surface-inverse: 247 245 240;    /* warm paper */
+    /* Surfaces — deep navy */
+    --surface: 8 10 18;                /* deep navy 950 */
+    --surface-raised: 14 18 32;        /* navy 900 */
+    --surface-sunken: 5 6 12;          /* navy 1000 */
+    --surface-overlay: 22 28 48;       /* navy 850 */
+    --surface-inverse: 244 245 248;    /* warm paper */
 
     /* Borders — subtle on dark */
-    --border: 30 29 33;                /* noir-800 */
-    --border-subtle: 22 21 24;         /* noir-900 */
-    --border-strong: 47 45 51;         /* noir-700 */
-    --border-accent: 167 139 250;      /* violet-400 */
+    --border: 30 36 60;                /* navy 800 */
+    --border-subtle: 22 28 48;         /* navy 900 */
+    --border-strong: 47 56 92;         /* navy 700 */
+    --border-accent: 100 112 164;      /* midnight 400 */
 
     /* Ink — warm paper */
-    --ink: 242 239 232;                /* warm paper */
-    --ink-muted: 161 154 142;          /* warm slate-400 */
-    --ink-subtle: 110 104 95;          /* warm slate-500 */
-    --ink-inverse: 15 14 12;           /* coal */
+    --ink: 244 245 248;                /* warm paper */
+    --ink-muted: 180 188 210;          /* platinum-300 */
+    --ink-subtle: 130 138 162;         /* platinum-500 */
+    --ink-inverse: 14 16 22;           /* deep navy */
 
     /* Accent — brighter for dark contrast */
-    --accent: 167 139 250;             /* violet-400 */
-    --accent-fg: 15 14 12;
-    --accent-magenta: 232 121 249;     /* magenta-400 */
+    --accent: 100 112 164;             /* midnight 400 */
+    --accent-fg: 14 16 22;
+    --accent-magenta: 203 213 225;     /* platinum 300 */
 
     /* Pattern grid — paper hairlines */
     --pattern-grid: linear-gradient(

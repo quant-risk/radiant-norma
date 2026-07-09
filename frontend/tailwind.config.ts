@@ -34,25 +34,25 @@ const config: Config = {
     },
     extend: {
       colors: {
-        // Brand accent — violet com escala magenta no topo (gradient)
+        // Brand accent — midnight blue + platinum (tech-premium luxury)
         accent: {
-          50: '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',  // primary accent
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
-          950: '#2e1065',
+          50: '#eef0f7',
+          100: '#dadeec',
+          200: '#b8bed9',
+          300: '#8e98bf',
+          400: '#6470a4',
+          500: '#475089',
+          600: '#1E2A5E',  // primary accent (midnight blue)
+          700: '#182252',
+          800: '#131b43',
+          900: '#0e1432',
+          950: '#080a1a',
         },
-        // Magenta — complemento do gradient accent
+        // Platinum — complemento do gradient accent
         magenta: {
-          400: '#e879f9',
-          500: '#d946ef',
-          600: '#c026d3',
+          400: '#cbd5e1',
+          500: '#94A3B8',  // primary (platinum)
+          600: '#64748b',
         },
         // Semantic colors (HSL fine-tuned pra WCAG AA em ambos modos)
         success: {
@@ -160,8 +160,8 @@ const config: Config = {
         // Inner soft (input fields)
         'inner-soft': 'inset 0 1px 2px 0 rgb(15 14 12 / 0.04)',
         // Glow effects — reservados pra CTAs primários e alertas críticos
-        'glow-accent': '0 0 0 1px rgb(124 58 237 / 0.30), 0 8px 24px -6px rgb(124 58 237 / 0.35)',
-        'glow-accent-sm': '0 0 0 1px rgb(124 58 237 / 0.20), 0 2px 8px -2px rgb(124 58 237 / 0.20)',
+        'glow-accent': '0 0 0 1px rgb(30 42 94 / 0.30), 0 8px 24px -6px rgb(30 42 94 / 0.35)',
+        'glow-accent-sm': '0 0 0 1px rgb(30 42 94 / 0.20), 0 2px 8px -2px rgb(30 42 94 / 0.20)',
         'glow-critical': '0 0 0 1px rgb(225 29 72 / 0.25), 0 6px 20px -4px rgb(225 29 72 / 0.30)',
         'glow-success': '0 0 0 1px rgb(16 185 129 / 0.20), 0 6px 20px -4px rgb(16 185 129 / 0.25)',
         'glow-warning': '0 0 0 1px rgb(245 158 11 / 0.25), 0 6px 20px -4px rgb(245 158 11 / 0.30)',

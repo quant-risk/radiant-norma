@@ -33,7 +33,7 @@ export function LandingHero() {
         className="absolute -top-40 left-1/2 -translate-x-1/2 w-[1100px] h-[700px] rounded-full blur-3xl pointer-events-none"
         style={{
           background:
-            'radial-gradient(circle, rgba(124,58,237,0.18) 0%, rgba(217,70,239,0.08) 40%, transparent 70%)',
+            'radial-gradient(circle, rgba(30,42,94,0.18) 0%, rgba(148,163,184,0.08) 40%, transparent 70%)',
         }}
         aria-hidden
       />
@@ -41,7 +41,7 @@ export function LandingHero() {
         className="absolute top-1/3 -right-40 w-[600px] h-[600px] rounded-full blur-3xl pointer-events-none animate-gradient-pan"
         style={{
           background:
-            'radial-gradient(circle, rgba(217,70,239,0.12) 0%, transparent 70%)',
+            'radial-gradient(circle, rgba(148,163,184,0.12) 0%, transparent 70%)',
         }}
         aria-hidden
       />
@@ -162,7 +162,7 @@ function ProductPreviewMockup() {
         className="absolute -inset-x-12 -inset-y-8 rounded-3xl blur-2xl opacity-50"
         style={{
           background:
-            'radial-gradient(ellipse, rgba(124,58,237,0.25) 0%, rgba(217,70,239,0.10) 50%, transparent 80%)',
+            'radial-gradient(ellipse, rgba(30,42,94,0.25) 0%, rgba(148,163,184,0.12) 50%, transparent 80%)',
         }}
         aria-hidden
       />
