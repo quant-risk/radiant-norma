@@ -283,10 +283,8 @@ func TestParseFile_ExtraFieldsInCSV(t *testing.T) {
 	if op.Extra == nil {
 		t.Fatal("op.Extra is nil")
 	}
-	if indice, ok := op.Extra["indice"]; !ok || indice == nil {
-		t.Logf("Extra keys: %v", op.Extra)
-		// Extra field not required by test but validates that
-		// tryParseOperacao populates leftovers into Extra.
+	if _, ok := op.Extra["indice"]; !ok {
+		t.Errorf("op.Extra[\"indice\"] not populated; Extra keys: %v", op.Extra)
 	}
 }
 
