@@ -19,6 +19,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/canonical"
 	"github.com/fortvna/radiant-norma/backend/internal/generator"
 	gen3040 "github.com/fortvna/radiant-norma/backend/internal/generator/gen3040"
+	gen3050 "github.com/fortvna/radiant-norma/backend/internal/generator/gen3050"
 	"github.com/fortvna/radiant-norma/backend/internal/ingest"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/go-chi/chi/v5"
@@ -29,6 +30,7 @@ var genRegistry = generator.NewRegistry()
 
 func init() {
 	genRegistry.Register(gen3040.New())
+	genRegistry.Register(gen3050.New())
 }
 
 // generateCadoc handles POST /v1/generate/{cadoc}.
@@ -71,9 +73,11 @@ func (s *Server) generateCadoc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	doc := canonical.NewCanonical(req.IFID, dataBase, canonical.CadocType(cadoc))
-	doc.VersaoLayout = req.VersaoLayout
-	if doc.VersaoLayout == "" {
-		doc.VersaoLayout = "3.2"
+	if req.VersaoLayout != "" {
+		doc.VersaoLayout = req.VersaoLayout
+	} else {
+		// Use generator's default version instead of hardcoded "3.2".
+		doc.VersaoLayout = g.SupportedVersions()[0]
 	}
 	doc.Header.CNPJ = req.CNPJ
 	doc.Header.NomeIF = req.NomeIF

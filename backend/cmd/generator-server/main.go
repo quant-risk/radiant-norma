@@ -25,6 +25,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/canonical"
 	"github.com/fortvna/radiant-norma/backend/internal/generator"
 	gen3040 "github.com/fortvna/radiant-norma/backend/internal/generator/gen3040"
+	gen3050 "github.com/fortvna/radiant-norma/backend/internal/generator/gen3050"
 	"github.com/fortvna/radiant-norma/backend/internal/ingest"
 	"github.com/shopspring/decimal"
 )
@@ -33,6 +34,7 @@ var genRegistry = generator.NewRegistry()
 
 func init() {
 	genRegistry.Register(gen3040.New())
+	genRegistry.Register(gen3050.New())
 }
 
 func main() {
@@ -192,6 +194,8 @@ type CanonicalInput struct {
 		UF              string  `json:"uf,omitempty"`
 		ClassificacaoIF string  `json:"classificacao_if,omitempty"`
 		NumeroContrato  string  `json:"numero_contrato,omitempty"`
+		TaxaJuros       float64 `json:"taxa_juros,omitempty"`
+		Indexador       string  `json:"indexador,omitempty"`
 	} `json:"operacoes,omitempty"`
 }
 
@@ -214,6 +218,8 @@ func toCanonical(in CanonicalInput, cadoc string, dbTime time.Time) *canonical.C
 			UF:              op.UF,
 			ClassificacaoIF: op.ClassificacaoIF,
 			NumeroContrato:  op.NumeroContrato,
+			Indexador:       op.Indexador,
+			TaxaJuros:       decimal.NewFromFloat(op.TaxaJuros),
 			ValorPrincipal: canonical.Money{
 				Valor: decimal.NewFromFloat(op.ValorPrincipal),
 				Moeda: "BRL",
