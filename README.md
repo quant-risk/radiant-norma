@@ -11,7 +11,7 @@ auditoria tamper-evident e camadas que o BCValidador não tem.
 
 <br>
 
-![Status](https://img.shields.io/badge/status-v3.35.6_🚨-10b981?style=for-the-badge)
+![Status](https://img.shields.io/badge/status-v3.36.0_✅-10b981?style=for-the-badge)
 ![Sprint](https://img.shields.io/badge/sprint-57%2F67-6366f1?style=for-the-badge)
 ![Stack](https://img.shields.io/badge/stack-Go_1.25%2B_+_Next.js_15_+_Postgres_16-00ADD8?style=for-the-badge&logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/license-proprietary-1e293b?style=for-the-badge)
@@ -51,7 +51,7 @@ explainability campo-a-campo, e push direto ao STA.
 
 | CADOC | Sigla | Periodicidade | Generator | Validação |
 |---|---|---|---|---|
-| **3040** | SCR — Risco de Crédito | Mensal | 📋 Sprint 57 | ✅ 275 regras Go (B/F/C/S/I/H) |
+| **3040** | SCR — Risco de Crédito | Mensal | ✅ Sprint 57 | ✅ 275 regras Go (B/F/C/S/I/H) |
 | **3044** | Eventos de Crédito (JSON) | Por evento | 📋 Sprint 57 | ✅ 17 regras T01-T19 |
 | **3050** | Estatísticas Agregadas | Mensal/diária | 📋 Sprint 57 | ✅ 170 regras TXB |
 | **2030** | DRSAC — Risco ESG | Semestral | 📋 Sprint 57 | ⚠️ 0 regras (críticas não-públicas) |
@@ -63,7 +63,7 @@ explainability campo-a-campo, e push direto ao STA.
 | **2170** | DLP — Liquidez LP (NSFR) | Mensal | 📋 Sprint 57 | ✅ 10 regras NSFR |
 
 **Validação:** 1.099 regras de validação (275+ portadas em Go).
-**Generator:** 📋 Motor de geração planejado — Sprint 57 (decisão tomada, não implementado ainda).
+**Generator:** ✅ 3040 implementado (Sprint 57). Outros 9 CADOCs em开发和planejamento (Sprint 58+).
 
 ---
 
@@ -182,7 +182,7 @@ Stack completa em [`backend/README.md`](backend/README.md).
 | **18–22** | STA WS nativo + read side + chunked transfer + retry exponencial | ✅ v3.12.0 |
 | **23–27** | senhaws BACEN rotation + senhaws-rotate CLI + sta-submit CLI + pre-commit hook | ✅ v3.21.1 |
 | **28–56** | Multi-CADOC + ESG + SDKs + Stripe + Radar v2 + Marketplace + SOC2 + DLP/DRL/DDR/DLO | ✅ v3.34–v3.35 |
-| **57** | NormaGeneratorFoundation — decisão arquitetural tomada (implementação backlog) | 📋 v3.35.6 |
+| **57** | NormaGeneratorFoundation MVP — motor 3040 + canonical + adapters + API REST | ✅ v3.36.0 |
 
 **Total:** 57 sprints · 105 arquivos Go · 29.481 LoC · 516 testes · 48 validações profundas documentadas.
 

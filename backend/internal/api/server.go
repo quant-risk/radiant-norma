@@ -204,6 +204,12 @@ func (s *Server) Router() http.Handler {
 		// Validation
 		r.Post("/validate", s.validate)
 
+		// Geração de CADOCs (Sprint 57).
+		r.Post("/generate/{cadoc}", s.generateCadoc)
+		r.Get("/generate/{cadoc}/fields", s.listGenerateFields)
+		r.Post("/generate/{cadoc}/sources", s.ingestSources)
+		r.Get("/generate/adapters", s.listSourceAdapters)
+
 		// STA submission (stub)
 		r.Post("/sta/submit", s.staSubmit)
 

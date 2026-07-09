@@ -2,6 +2,75 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.36.0 — 2026-07-09 (Norma Generator — Sprint 57 MVP) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** major (nova funcionalidade: motor de geração CADOC)
+> **Sprint:** 57
+
+### Implementação: Norma Generator MVP
+
+**Código gerado e testado.** Geração de CADOC 3040 funcional via CLI e API REST.
+
+### Novos pacotes
+
+| Pacote | Descrição |
+|---|---|
+| `internal/canonical/` | Modelo canônico IF-agnóstico — `CanonicalDocument`, `Operacao`, `Participante`, `Money` |
+| `internal/generator/` | Interface `CADOCGenerator` + `GeneratedDoc` + `Registry` |
+| `internal/generator/gen3040/` | `Gen3040` — generator SCR (3040) funcional |
+| `internal/ingest/` | `SourceAdapter` + 5 conectores (Manual, File, API, DB, MCP) — stub |
+
+### API endpoints novos
+
+| Endpoint | Método | Descrição |
+|---|---|---|
+| `/v1/generate/{cadoc}` | POST | Gera XML a partir de `CanonicalDocument` |
+| `/v1/generate/{cadoc}/fields` | GET | Lista campos necessários para o CADOC |
+| `/v1/generate/{cadoc}/sources` | POST | Testa conexão de fonte de dados |
+| `/v1/generate/adapters` | GET | Lista conectores disponíveis |
+
+### CLI
+
+```bash
+# Listar generators
+go run ./cmd/generator-server list
+# 3040  versions=[3.0 3.1 3.2]  complexity=0.30
+
+# Listar conectores
+go run ./cmd/generator-server adapters
+# Input Manual (MANUAL) | Arquivo (FILE) | API REST (API) | DB (DB) | MCP (MCP)
+
+# Gerar 3040
+echo '{"cnpj":"...","operacoes":[{"valor_principal":50000}]}' \
+  | go run ./cmd/generator-server generate -cadoc=3040
+```
+
+### Detalhes técnicos
+
+- **`CanonicalDocument`**: modelo IF-agnóstico com `Header`, `Participantes[]`, `Operacoes[]`, `Extra map[string]any`
+- **`CADOCGenerator`**: interface com `Generate()`, `RequiredFields()`, `SupportedVersions()`, `EstimateComplexity()`
+- **`GeneratedDoc`**: XML + SHA256 + `FieldMap` (auditoria de origem por campo)
+- **Gen3040**: agrupa operações por `(modalidade, UF, tpCli, classOp, faixa)` e soma em `Venc[v110..v165]`
+- **Adapter stub**: 4 de 5 conectores (File XLSX/CSV, API, DB, MCP) returnam erro "não implementado" — apenas Manual funcional
+
+### Cobertura atual
+
+| CADOC | Generator | Status |
+|---|---|---|
+| **3040** SCR | `Gen3040` | ✅ Implementado |
+| **3050** TXB | — | 📋 Sprint 58 |
+| **4111** COSIF | — | 📋 Sprint 58 |
+| **2061** DLO | — | 📋 Sprint 58 |
+| **2062** DLI | — | 📋 Sprint 58 |
+| **2070** DDR | — | 📋 Sprint 58 |
+| **2160** DRL | — | 📋 Sprint 58 |
+| **2170** DLP | — | 📋 Sprint 58 |
+| **2060** DRM | — | 📋 Sprint 58 |
+| **2030** DRSAC | — | 📋 Sprint 58 |
+
+---
+
 ## v3.35.6 — 2026-07-08 (Pivô estratégico: decisão de arquitetura) 🚨
 
 > **Status:** 📋 Decisão tomada — **implementação em Sprint 57 (backlog)**
@@ -106,6 +175,46 @@ Fluxo UX planejado em 5 etapas:
 - `ROADMAP.md` — Sprint 57 "Motor de Geração" inserido em Q2 2027
 - `README.md` — tese atualizada, badge v3.36.0, arquitetura com 5 camadas
 - `PRODUTO_TESE_ROADMAP.md` — §1 tese reescrita com geração como centro
+
+---
+
+## v3.35.6 — 2026-07-08 (Sprint 56 follow-up — Paleta "Midnight Blue + Platinum") ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** minor (design system: paleta accent)
+
+### Troca de paleta accent: Violet → Midnight Blue
+
+Direção escolhida após preview side-by-side: **Midnight Blue + Platinum** (`#1E2A5E → #94A3B8`). Vibe: Stripe / Plaid / tech-premium fintech.
+
+**Mudanças de tokens**:
+
+- `tailwind.config.ts`:
+  - `accent.600`: `#7C3AED` (violet) → `#1E2A5E` (midnight blue)
+  - `accent.50..950`: paleta violet → navy slate coerente
+  - `magenta.500`: `#D946EF` (magenta) → `#94A3B8` (platinum)
+  - `glow-accent`: rgb(124 58 237) → rgb(30 42 94)
+- `globals.css`:
+  - Light: `--surface` warm slate `#F4F5F8`, `--ink` deep navy `#0E1016`, `--accent` midnight `#1E2A5E`, `--accent-magenta` platinum `#94A3B8`
+  - Dark: navy stack (surface `#080A1A`, ink `#F4F5F8`, accent `#6470A4` brighter)
+
+**Componentes atualizados** (cores hardcoded em rgba/stopColor):
+
+- `landing/hero.tsx`: glow do hero background, glow mockup, glow CTA final
+- `landing/cta-final.tsx`: glow do CTA final
+- `app/login/page.tsx`: glow do painel esquerdo, glow secundário
+- `domain/stat-card.tsx`: SVG stopColors do sparkline gradient
+
+**Páginas atualizadas**: Footer + Login version → `v3.35.6`.
+
+**Por que essa paleta**:
+
+- Navy + platinum = "tech-premium institucional" — combina com BACEN/CMN 4.966 sem ser GenZ fintech
+- Platinum no fim do gradient dá sofisticação que magenta/rosa não consegue
+- Funciona bem em ambos os modos (light e dark)
+- Já é o palette padrão de fintechs Tier 1 (Stripe, Plaid, Mercury)
+
+**Validação**: `tsc` 0 erros · `/`, `/console`, `/login` retornam 200.
 
 ---
 
