@@ -95,6 +95,7 @@ func parseXLSX(data []byte, cfg SourceConfig, doc *canonical.CanonicalDocument) 
 
 	var operations []canonical.Operacao
 	var headerFields map[string]string
+	foundHeader := false
 
 	dataRowStart := 1
 	if !hasHeader {
@@ -111,7 +112,16 @@ func parseXLSX(data []byte, cfg SourceConfig, doc *canonical.CanonicalDocument) 
 		if !hasHeader && isHeaderRow(rowMap) && len(operations) == 0 {
 			headerFields = rowMap
 			applyHeaderFields(headerFields, doc)
+			foundHeader = true
 			continue
+		}
+
+		// When hasHeader=true, the first data row carries IF metadata
+		// alongside operation fields. Extract IF fields before parsing
+		// as operation, so we don't skip it.
+		if hasHeader && !foundHeader {
+			applyHeaderFields(rowMap, doc)
+			foundHeader = true
 		}
 
 		op, ok := tryParseOperacao(rowMap)
@@ -120,15 +130,17 @@ func parseXLSX(data []byte, cfg SourceConfig, doc *canonical.CanonicalDocument) 
 		}
 	}
 
-	// If no header fields detected, treat all rows as operations.
-	if headerFields == nil {
+	// Re-process rows only when we never found a dedicated header row
+	// (hasHeader=false and the first row had no operation fields).
+	if !foundHeader && headerFields == nil && len(operations) == 0 {
 		headerFields = make(map[string]string)
-		for _, row := range rows[1:] {
+		for _, row := range rows[dataRowStart:] {
 			if len(row) == 0 {
 				continue
 			}
 			row = padRow(row, len(header))
 			rowMap := rowByIndex(header, row)
+			applyHeaderFields(rowMap, doc)
 			op, ok := tryParseOperacao(rowMap)
 			if ok {
 				operations = append(operations, op)
@@ -137,10 +149,6 @@ func parseXLSX(data []byte, cfg SourceConfig, doc *canonical.CanonicalDocument) 
 	}
 
 	doc.Operacoes = operations
-
-	if doc.Header.CNPJ == "" {
-		doc.Header.CNPJ = headerFields["cnpj"]
-	}
 
 	return nil
 }
@@ -296,11 +304,14 @@ func rowByIndex(header, row []string) map[string]string {
 	return m
 }
 
-// normalizeHeader normalizes a column header: strip accents, lowercase, underscore.
+// normalizeHeader normalizes a column header: strip accents, lowercase,
+// and collapse all non-alphanumeric runs (including underscores) into a
+// single character. This produces keys like "valorprincipal" (not
+// "valor_principal"), matching the keys tryParseOperacao expects.
 func normalizeHeader(col string) string {
 	s := stripAccents(col)
 	s = strings.Map(func(r rune) rune {
-		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_' {
+		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' {
 			return r
 		}
 		return '_'
@@ -309,7 +320,9 @@ func normalizeHeader(col string) string {
 	for strings.Contains(s, "__") {
 		s = strings.ReplaceAll(s, "__", "_")
 	}
-	return strings.Trim(s, "_")
+	// Collapse underscores so "valor_principal" → "valorprincipal".
+	s = strings.ReplaceAll(s, "_", "")
+	return s
 }
 
 // stripAccents removes common Portuguese accents.

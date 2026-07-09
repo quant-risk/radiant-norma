@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/fortvna/radiant-norma/backend/internal/canonical"
+	"github.com/xuri/excelize/v2"
 )
 
 func TestFileAdapter_Fetch_CSV(t *testing.T) {
@@ -87,6 +88,83 @@ func TestFileAdapter_Fetch_CSV_NoHeader(t *testing.T) {
 	var _ *canonical.CanonicalDocument = doc
 }
 
+func TestFileAdapter_Fetch_XLSX(t *testing.T) {
+	// Create a minimal XLSX in memory using excelize.
+	f := excelize.NewFile()
+	sheet := "Sheet1"
+	// Row 1: header
+	f.SetCellValue(sheet, "A1", "cnpj")
+	f.SetCellValue(sheet, "B1", "nome_if")
+	f.SetCellValue(sheet, "C1", "modalidade")
+	f.SetCellValue(sheet, "D1", "valor")
+	f.SetCellValue(sheet, "E1", "uf")
+	f.SetCellValue(sheet, "F1", "tipo_pessoa")
+	f.SetCellValue(sheet, "G1", "classificacao_if")
+	f.SetCellValue(sheet, "H1", "contrato")
+	// Row 2: IF metadata + first operation
+	f.SetCellValue(sheet, "A2", "12345678000123")
+	f.SetCellValue(sheet, "B2", "Banco Teste S.A.")
+	f.SetCellValue(sheet, "C2", "1000")
+	f.SetCellValue(sheet, "D2", "50000.00")
+	f.SetCellValue(sheet, "E2", "SP")
+	f.SetCellValue(sheet, "F2", "PJ")
+	f.SetCellValue(sheet, "G2", "A")
+	f.SetCellValue(sheet, "H2", "C001")
+	// Row 3: second operation
+	f.SetCellValue(sheet, "A3", "12345678000123")
+	f.SetCellValue(sheet, "B3", "Banco Teste S.A.")
+	f.SetCellValue(sheet, "C3", "1000")
+	f.SetCellValue(sheet, "D3", "30000.00")
+	f.SetCellValue(sheet, "E3", "RJ")
+	f.SetCellValue(sheet, "F3", "PJ")
+	f.SetCellValue(sheet, "G3", "B")
+	f.SetCellValue(sheet, "H3", "C002")
+	// Row 4: third operation
+	f.SetCellValue(sheet, "A4", "12345678000123")
+	f.SetCellValue(sheet, "B4", "Banco Teste S.A.")
+	f.SetCellValue(sheet, "C4", "2000")
+	f.SetCellValue(sheet, "D4", "100000.00")
+	f.SetCellValue(sheet, "E4", "SP")
+	f.SetCellValue(sheet, "F4", "PF")
+	f.SetCellValue(sheet, "G4", "C")
+	f.SetCellValue(sheet, "H4", "C003")
+
+	buf, err := f.WriteToBuffer()
+	if err != nil {
+		t.Fatalf("WriteToBuffer: %v", err)
+	}
+
+	tmpDir := t.TempDir()
+	xlsxPath := filepath.Join(tmpDir, "test.xlsx")
+	if err := os.WriteFile(xlsxPath, buf.Bytes(), 0600); err != nil {
+		t.Fatalf("write temp xlsx: %v", err)
+	}
+
+	adapter := &FileAdapter{}
+	cfg := SourceConfig{
+		File: &FileConfig{
+			Path:      xlsxPath,
+			Format:    "xlsx",
+			HasHeader: true,
+		},
+	}
+
+	doc, err := adapter.Fetch(context.Background(), cfg, "3040", time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("Fetch() error = %v", err)
+	}
+
+	if doc.Header.CNPJ != "12345678000123" {
+		t.Errorf("CNPJ = %q, want %q", doc.Header.CNPJ, "12345678000123")
+	}
+	if doc.Header.NomeIF != "Banco Teste S.A." {
+		t.Errorf("NomeIF = %q, want %q", doc.Header.NomeIF, "Banco Teste S.A.")
+	}
+	if len(doc.Operacoes) != 3 {
+		t.Errorf("len(Operacoes) = %d, want 3", len(doc.Operacoes))
+	}
+}
+
 func TestFileAdapter_ValidateConfig(t *testing.T) {
 	adapter := &FileAdapter{}
 
@@ -141,9 +219,11 @@ func TestMoney(t *testing.T) {
 func TestNormalizeHeader(t *testing.T) {
 	cases := []struct{ input, want string }{
 		{"CNPJ", "cnpj"},
-		{"Nome da IF", "nome_da_if"},
-		{"Valor Principal", "valor_principal"},
-		{"Taxa de Juros", "taxa_de_juros"},
+		{"Nome da IF", "nomedaif"},
+		{"Valor Principal", "valorprincipal"},
+		{"Taxa de Juros", "taxadejuros"},
+		{"modalidade", "modalidade"},
+		{"valor_principal", "valorprincipal"},
 	}
 	for _, c := range cases {
 		got := normalizeHeader(c.input)
