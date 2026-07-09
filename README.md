@@ -302,8 +302,9 @@ Detalhamento em [`PRODUTO_TESE_ROADMAP.md`](PRODUTO_TESE_ROADMAP.md).
 
 Estes são **deliberadamente públicos** — não escondemos o que falta:
 
-- **Motor de Geração (Sprint 57)** — não implementado ainda. Decisão
-  arquitetural tomada em v3.35.6. Código será implementado na Sprint 57.
+- **Motor de Geração** — 3040 (SCR) implementado em v3.36.0. Outros 9 CADOCs
+  em开发和planejamento (Sprint 58+). 4 de 5 conectores (File/API/DB/MCP)
+  stubs — apenas Manual funcional.
 - **2030 DRSAC críticas** — não publicamente disponível; FAQ do BACEN aponta
   pra página protegida por login. 35 regras D01-D35 portadas, mas catálogo
   completo pendente.

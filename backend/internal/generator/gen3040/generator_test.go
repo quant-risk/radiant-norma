@@ -48,9 +48,9 @@ func TestGenerator_RequiredFields(t *testing.T) {
 func TestGenerator_Generate_ValidDoc(t *testing.T) {
 	g := New()
 	doc := &canonical.CanonicalDocument{
-		IFID:     "if-test",
-		CadocCode: "3040",
-		DataBase:  canonical.DataBase(time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)),
+		IFID:         "if-test",
+		CadocCode:    "3040",
+		DataBase:     canonical.DataBase(time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)),
 		VersaoLayout: "3.2",
 		Header: canonical.DocumentHeader{
 			CNPJ:   "12345678000123",
@@ -66,13 +66,13 @@ func TestGenerator_Generate_ValidDoc(t *testing.T) {
 		},
 		Operacoes: []canonical.Operacao{
 			{
-				ID:               "op1",
-				Modalidade:       "1000",
-				ValorPrincipal:   canonical.Money{Valor: mustDecimal(50000.0), Moeda: "BRL"},
-				TipoPessoa:       "PJ",
-				UF:               "SP",
-				ClassificacaoIF:  "A",
-				NumeroContrato:   "C001",
+				ID:              "op1",
+				Modalidade:      "1000",
+				ValorPrincipal:  canonical.Money{Valor: mustDecimal(50000.0), Moeda: "BRL"},
+				TipoPessoa:      "PJ",
+				UF:              "SP",
+				ClassificacaoIF: "A",
+				NumeroContrato:  "C001",
 			},
 		},
 	}

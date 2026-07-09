@@ -25,13 +25,13 @@ func TestNewCanonical(t *testing.T) {
 
 func TestCanonicalDocument_Validate(t *testing.T) {
 	tests := []struct {
-		name   string
-		doc    *CanonicalDocument
+		name    string
+		doc     *CanonicalDocument
 		wantErr int // expected number of errors
 	}{
 		{
-			name:   "empty document",
-			doc:    &CanonicalDocument{},
+			name:    "empty document",
+			doc:     &CanonicalDocument{},
 			wantErr: 5, // IFID, CadocCode, DataBase, CNPJ, NomeIF
 		},
 		{

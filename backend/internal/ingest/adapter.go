@@ -18,10 +18,8 @@ package ingest
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"time"
 
@@ -270,42 +268,6 @@ type FileAdapter struct{}
 
 func (a *FileAdapter) Name() string     { return "Arquivo (XLSX/CSV/JSON)" }
 func (a *FileAdapter) Type() SourceType { return SourceFile }
-
-func (a *FileAdapter) Fetch(ctx context.Context, cfg SourceConfig, cadocCode string, dataBase time.Time) (*canonical.CanonicalDocument, error) {
-	if cfg.File == nil {
-		return nil, fmt.Errorf("config file é requerida")
-	}
-
-	f, err := os.Open(cfg.File.Path)
-	if err != nil {
-		return nil, fmt.Errorf("abrir arquivo: %w", err)
-	}
-	defer f.Close()
-
-	data, err := io.ReadAll(f)
-	if err != nil {
-		return nil, fmt.Errorf("ler arquivo: %w", err)
-	}
-
-	doc := canonical.NewCanonical(cfg.Name, dataBase, canonical.CadocType(cadocCode))
-	doc.Metadata.SourceAdapter = string(SourceFile)
-	doc.Metadata.SourceRef = cfg.File.Path
-
-	switch cfg.File.Format {
-	case "json":
-		if err := json.Unmarshal(data, &doc.Extra); err != nil {
-			return nil, fmt.Errorf("parsear JSON: %w", err)
-		}
-	case "xlsx", "csv":
-		// Stub:解析 XLSX/CSV completo entra na Sprint 57 (fase 2).
-		// Por agora, retorna erro indicando que ainda não está implementado.
-		return nil, fmt.Errorf("%w: formato %s", ErrNotImplemented, cfg.File.Format)
-	default:
-		return nil, fmt.Errorf("formato desconhecido: %s", cfg.File.Format)
-	}
-
-	return doc, nil
-}
 
 func (a *FileAdapter) ValidateConfig(cfg SourceConfig) error {
 	if cfg.File == nil {
