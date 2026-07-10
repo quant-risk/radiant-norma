@@ -15,9 +15,12 @@ type ValidationError struct {
 
 // ValidationResult é o resultado de validação de um documento.
 type ValidationResult struct {
-	Valid    bool              `json:"valid"`
-	Errors   []ValidationError `json:"errors"`
-	Warnings []ValidationError `json:"warnings"`
+	Passed     bool              `json:"passed"`
+	DataBase   string            `json:"data_base"`
+	XMLHash    string            `json:"xml_hash"`
+	Errors     []ValidationError `json:"errors"`
+	Warnings   []ValidationError `json:"warnings"`
+	DurationMs int64             `json:"duration_ms"`
 }
 
 // ErrorResponse é a resposta de erro padrão da API.

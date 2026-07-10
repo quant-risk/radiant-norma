@@ -906,5 +906,9 @@ func Builtin3040() *Registry {
 	// 18 regras implementadas (DLI-01 a DLI-18).
 	BuiltinDLI(r)
 
+	// Sprint 58 / v3.38.0 — AuditDRM_Completo 2060 (Risco de Mercado)
+	// 7 regras implementadas (DRM-01 a DRM-07) + parser completo.
+	BuiltinDRM(r)
+
 	return r
 }

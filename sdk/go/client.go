@@ -123,12 +123,15 @@ type CadocsService struct {
 
 // Validate valida um documento CADOC (não envia ao BACEN).
 //
+//	cadoc: código do CADOC (ex: "3040", "3050")
 //	xmlData: conteúdo XML do documento
 //
-// Resposta: ValidationResult com errors/warnings.
+// Resposta: ValidationResult com passed/errors/warnings.
 func (s *CadocsService) Validate(ctx context.Context, cadoc string, xmlData []byte) (*ValidationResult, error) {
-	resp, err := s.client.do(ctx, http.MethodPost,
-		fmt.Sprintf("/v1/validate/%s", cadoc), map[string]any{"xml": string(xmlData)})
+	resp, err := s.client.do(ctx, http.MethodPost, "/v1/validate", map[string]any{
+		"cadoc_code": cadoc,
+		"xml":        string(xmlData),
+	})
 	if err != nil {
 		return nil, err
 	}

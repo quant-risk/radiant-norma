@@ -43,7 +43,7 @@ func TestValidate_Success(t *testing.T) {
 		if r.Header.Get("X-IF-ID") != "12345" {
 			t.Errorf("X-IF-ID header: got %s", r.Header.Get("X-IF-ID"))
 		}
-		resp := ValidationResult{Valid: true, Errors: []ValidationError{}, Warnings: []ValidationError{}}
+		resp := ValidationResult{Passed: true, Errors: []ValidationError{}, Warnings: []ValidationError{}}
 		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer srv.Close()
@@ -53,7 +53,7 @@ func TestValidate_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !result.Valid {
+	if !result.Passed {
 		t.Error("expected valid=true")
 	}
 }

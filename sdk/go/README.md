@@ -36,7 +36,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Valid: %v\n", result.Valid)
+	fmt.Printf("Valid: %v\n", result.Passed)
 	for _, e := range result.Errors {
 		fmt.Printf("  [%s] %s\n", e.Code, e.Message)
 	}
@@ -86,11 +86,15 @@ result, err := c.Cadocs.Validate(ctx, "3040", xmlData)
 if err != nil {
     // erro de rede ou API
 }
-if !result.Valid {
+if !result.Passed {
     for _, e := range result.Errors {
         fmt.Printf("ERRO [%s]: %s\n", e.Code, e.Message)
     }
+    for _, w := range result.Warnings {
+        fmt.Printf("AVISO [%s]: %s\n", w.Code, w.Message)
+    }
 }
+fmt.Printf("XML hash: %s (took %dms)\n", result.XMLHash, result.DurationMs)
 ```
 
 ## Validação cross-document
