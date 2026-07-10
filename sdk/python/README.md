@@ -21,7 +21,7 @@ c = Client(
 # Validar um documento CADOC
 xml_data = b"<Doc3040>...</Doc3040>"
 result = c.cadocs.validate("3040", xml_data)
-print(f"Valid: {result.valid}")
+print(f"Passed: {result.passed}")
 for e in result.errors:
     print(f"  [{e.code}] {e.message}")
 
@@ -60,11 +60,12 @@ c = Client(
 
 ```python
 result = c.cadocs.validate("3040", xml_data)
-if not result.valid:
+if not result.passed:
     for e in result.errors:
         print(f"ERRO [{e.code}]: {e.message}")
     for w in result.warnings:
         print(f"AVISO [{w.code}]: {w.message}")
+print(f"XML hash: {result.xml_hash} (took {result.duration_ms}ms)")
 ```
 
 ## Validação cross-document

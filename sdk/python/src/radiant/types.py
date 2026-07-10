@@ -15,9 +15,12 @@ class ValidationError:
 
 @dataclass
 class ValidationResult:
-    valid: bool
+    passed: bool
+    data_base: str = ""
+    xml_hash: str = ""
     errors: List[ValidationError] = field(default_factory=list)
     warnings: List[ValidationError] = field(default_factory=list)
+    duration_ms: int = 0
 
 
 @dataclass

@@ -20,29 +20,32 @@ def client():
 def test_validate_success(client):
     responses.add(
         responses.POST,
-        "https://api.test.local/v1/validate/3040",
-        json={"valid": True, "errors": [], "warnings": []},
+        "https://api.test.local/v1/validate",
+        json={"passed": True, "data_base": "2026-01", "xml_hash": "abc123", "errors": [], "warnings": [], "duration_ms": 45},
         status=200,
     )
     result = client.cadocs.validate("3040", b"<Doc3040/>")
-    assert result.valid is True
+    assert result.passed is True
     assert len(result.errors) == 0
+    assert result.data_base == "2026-01"
+    assert result.xml_hash == "abc123"
 
 
 @responses.activate
 def test_validate_with_errors(client):
     responses.add(
         responses.POST,
-        "https://api.test.local/v1/validate/3040",
+        "https://api.test.local/v1/validate",
         json={
-            "valid": False,
+            "passed": False,
             "errors": [{"code": "F01", "severity": "E", "message": "data base inválida"}],
             "warnings": [],
+            "duration_ms": 12,
         },
         status=200,
     )
     result = client.cadocs.validate("3040", b"<Doc3040/>")
-    assert result.valid is False
+    assert result.passed is False
     assert len(result.errors) == 1
     assert result.errors[0].code == "F01"
 
@@ -51,7 +54,7 @@ def test_validate_with_errors(client):
 def test_validate_api_error(client):
     responses.add(
         responses.POST,
-        "https://api.test.local/v1/validate/3040",
+        "https://api.test.local/v1/validate",
         json={"error": "bad_request", "message": "invalid xml"},
         status=400,
     )

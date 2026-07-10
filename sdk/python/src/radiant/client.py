@@ -99,10 +99,13 @@ class CadocsService:
             xml_data: conteúdo XML do documento
 
         Returns:
-            ValidationResult com errors/warnings
+            ValidationResult com passed/errors/warnings
         """
-        payload = {"xml": xml_data if isinstance(xml_data, str) else xml_data.decode()}
-        data = self._c._post(f"/v1/validate/{cadoc}", body=payload)
+        payload = {
+            "cadoc_code": cadoc,
+            "xml": xml_data if isinstance(xml_data, str) else xml_data.decode(),
+        }
+        data = self._c._post("/v1/validate", body=payload)
         return _parse_validation_result(data)
 
     def validate_cross_doc(self, docs: Dict[str, Any]) -> CrossDocResult:
@@ -179,9 +182,12 @@ class SchemasService:
 
 def _parse_validation_result(data: dict) -> ValidationResult:
     return ValidationResult(
-        valid=data.get("valid", False),
+        passed=data.get("passed", False),
+        data_base=data.get("data_base", ""),
+        xml_hash=data.get("xml_hash", ""),
         errors=[ValidationError(**e) for e in data.get("errors", [])],
         warnings=[ValidationError(**w) for w in data.get("warnings", [])],
+        duration_ms=data.get("duration_ms", 0),
     )
 
 
