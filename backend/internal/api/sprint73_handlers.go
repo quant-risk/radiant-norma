@@ -3,17 +3,18 @@
 // Endpoints:
 //   - GET  /v1/crossdoc/rules     — lista todas regras cross-doc (XD-*) com metadata
 //   - GET  /v1/schema             — lista CADOCs disponíveis com versão e complexity
-//   - GET  /v1/generate/history    — histórico de gerações do IF autenticado
+//   - GET  /v1/generate/history   — histórico de gerações do IF autenticado
 package api
 
 import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
-	"github.com/fortvna/radiant-norma/backend/internal/auth"
+	"github.com/fortvna/radiant-norma/backend/internal/canonical"
 	"github.com/fortvna/radiant-norma/backend/internal/generator"
 )
 
@@ -28,7 +29,7 @@ type crossDocRuleInfo struct {
 // crossDocRulesResponse é o response de GET /v1/crossdoc/rules.
 type crossDocRulesResponse struct {
 	Rules []crossDocRuleInfo `json:"rules"`
-	Total int                 `json:"total"`
+	Total int                `json:"total"`
 }
 
 // listCrossDocRules handles GET /v1/crossdoc/rules.
@@ -104,8 +105,8 @@ func (s *Server) listSchemasV2(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Estimate complexity com doc zero (campos mínimos).
-		complexity := g.EstimateComplexity(nil)
+		// Estimate complexity with zero doc (minimum fields) so no nil dereference risk.
+		complexity := g.EstimateComplexity(canonical.NewCanonical("", time.Now(), ""))
 
 		out = append(out, schemaInfo{
 			CadocCode:         cadoc,
@@ -146,16 +147,18 @@ type generationHistoryItem struct {
 	DataBase    string    `json:"data_base"`
 	GeneratedAt time.Time `json:"generated_at"`
 	SHA256      string    `json:"sha256,omitempty"`
-	Status      string    `json:"status"` // generated, crossdoc_passed, crossdoc_failed
-	Passed      bool      `json:"passed"`
+	// Status: pending, validated, sent, accepted, rejected, error, processing, dead_letter.
+	// Passed=true para: validated, sent, accepted.
+	Status string `json:"status"`
+	Passed bool   `json:"passed"`
 }
 
 // generationHistoryResponse é o response de GET /v1/generate/history.
 type generationHistoryResponse struct {
-	Items  []generationHistoryItem `json:"items"`
-	Page   int                     `json:"page"`
-	PerPage int                    `json:"per_page"`
-	Total  int                     `json:"total"`
+	Items   []generationHistoryItem `json:"items"`
+	Page    int                     `json:"page"`
+	PerPage int                     `json:"per_page"`
+	Total   int                     `json:"total"`
 }
 
 // listGenerateHistory handles GET /v1/generate/history.
@@ -167,7 +170,7 @@ type generationHistoryResponse struct {
 //   - cadoc (opcional, filtro por tipo)
 func (s *Server) listGenerateHistory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	ifID := ifIDFromRequest(r) // extrai do JWT ou X-IF-ID fallback
+	ifID := getIfID(r) // extrai do JWT ou X-IF-ID fallback
 
 	page := intParam(r.URL.Query().Get("page"), 1)
 	perPage := intParam(r.URL.Query().Get("per_page"), 20)
@@ -180,9 +183,9 @@ func (s *Server) listGenerateHistory(w http.ResponseWriter, r *http.Request) {
 	offset := (page - 1) * perPage
 	cadocFilter := r.URL.Query().Get("cadoc")
 
-	// Se não tem DB, retorna 501.
+	// Se não tem DB, retorna 503.
 	if s.DB == nil {
-		writeJSON(w, http.StatusNotImplemented, map[string]string{
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{
 			"error":   "DB_NOT_CONFIGURED",
 			"message": "histórico não disponível (banco de dados não configurado)",
 		})
@@ -228,13 +231,12 @@ func (s *Server) listGenerateHistory(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var item generationHistoryItem
-		var xmlHash sql.NullString
+		var xmlHash string
 		if err := rows.Scan(&item.ID, &item.CadocCode, &item.DataBase, &item.GeneratedAt, &xmlHash, &item.Status); err != nil {
+			slog.Warn("listGenerateHistory: scan error, dropping row", "err", err)
 			continue
 		}
-		if xmlHash.Valid {
-			item.SHA256 = xmlHash.String
-		}
+		item.SHA256 = xmlHash
 		item.Passed = item.Status == "validated" || item.Status == "sent" || item.Status == "accepted"
 		items = append(items, item)
 	}
@@ -261,15 +263,4 @@ func intParam(s string, def int) int {
 		return def
 	}
 	return v
-}
-
-// ifIDFromRequest extrai IF-ID do request (JWT claim ou X-IF-ID header).
-func ifIDFromRequest(r *http.Request) string {
-	if claims, err := auth.ClaimsFromContext(r.Context()); err == nil && claims != nil && claims.IFID != "" {
-		return claims.IFID
-	}
-	if ifID := r.Header.Get("X-IF-ID"); ifID != "" {
-		return ifID
-	}
-	return ""
 }
