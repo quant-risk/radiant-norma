@@ -58,6 +58,14 @@ func NewEngine(reg *Registry) *Engine {
 	return &Engine{registry: reg}
 }
 
+// Rules retorna todas as regras registradas (exposto para API).
+func (e *Engine) Rules() []CrossDocRule {
+	if e.registry == nil {
+		return nil
+	}
+	return e.registry.All()
+}
+
 // SetLogger injeta logger customizado (tests silenciosos).
 func (e *Engine) SetLogger(l *slog.Logger) {
 	e.logger = l

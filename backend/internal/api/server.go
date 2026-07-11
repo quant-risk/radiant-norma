@@ -192,6 +192,8 @@ func (s *Server) Router() http.Handler {
 		r.Get("/schemas/{cadoc}/versions", s.listVersions)
 		// Sprint 54 v3.34.37: public changelog timeline.
 		r.Get("/schemas/{cadoc}/changelog", s.listSchemaChangelog)
+		// Sprint 73: schema listing with generation metadata.
+		r.Get("/schema", s.listSchemasV2)
 
 		// Rules (críticas)
 		r.Get("/rules", s.listRules)
@@ -214,6 +216,13 @@ func (s *Server) Router() http.Handler {
 		r.Post("/generate/file/parse", s.parseUploadedFile)
 		// Sprint 64: Batch generation with optional cross-doc validation.
 		r.Post("/generate/batch", s.generateBatch)
+		// Sprint 73: generation history.
+		r.Get("/generate/history", s.listGenerateHistory)
+
+		// Cross-Doc L3 (Sprint 6 v1.5.0) — diferencial proprietário.
+		r.Post("/crossdoc/validate", s.crossdocValidate)
+		// Sprint 73: list all cross-doc rules.
+		r.Get("/crossdoc/rules", s.listCrossDocRules)
 
 		// STA submission (stub)
 		r.Post("/sta/submit", s.staSubmit)
@@ -228,10 +237,6 @@ func (s *Server) Router() http.Handler {
 		r.Get("/radar/alerts/{id}", s.getRadarAlert)
 		r.Post("/radar/alerts/{id}/resolve", s.resolveRadarAlert)
 		r.Post("/radar/scan", s.triggerRadarScan)
-
-		// Cross-Doc L3 (Sprint 6 v1.5.0) — diferencial proprietário.
-		// Valida ecossistema inteiro (3040 ↔ 4111 ↔ DRSAC) em paralelo.
-		r.Post("/crossdoc/validate", s.crossdocValidate)
 
 		// L4 Histórico (Sprint 55) — diff vs envio anterior.
 		r.Get("/l4/compare", s.l4Compare)
