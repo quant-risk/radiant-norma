@@ -190,7 +190,9 @@ func TestListGenerateHistory_Empty(t *testing.T) {
 	}
 
 	var resp struct {
-		Items []struct{ ID string `json:"id"` } `json:"items"`
+		Items []struct {
+			ID string `json:"id"`
+		} `json:"items"`
 		Total int `json:"total"`
 	}
 	json.Unmarshal(w.Body.Bytes(), &resp)
@@ -230,7 +232,9 @@ func TestListGenerateHistory_Pagination(t *testing.T) {
 			srv.Router().ServeHTTP(w, req)
 
 			var resp struct {
-				Items []struct{ ID string `json:"id"` } `json:"items"`
+				Items []struct {
+					ID string `json:"id"`
+				} `json:"items"`
 			}
 			json.Unmarshal(w.Body.Bytes(), &resp)
 			if len(resp.Items) != tt.wantLen {
@@ -251,7 +255,9 @@ func TestListGenerateHistory_PageZeroClamp(t *testing.T) {
 	w := httptest.NewRecorder()
 	srv.Router().ServeHTTP(w, req)
 
-	var resp struct{ Page int `json:"page"` }
+	var resp struct {
+		Page int `json:"page"`
+	}
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	if resp.Page != 1 {
 		t.Errorf("page=0 should clamp to 1, got %d", resp.Page)
@@ -266,7 +272,9 @@ func TestListGenerateHistory_PerPageMaxClamp(t *testing.T) {
 	w := httptest.NewRecorder()
 	srv.Router().ServeHTTP(w, req)
 
-	var resp struct{ PerPage int `json:"per_page"` }
+	var resp struct {
+		PerPage int `json:"per_page"`
+	}
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	if resp.PerPage != 100 {
 		t.Errorf("per_page=9999 should clamp to 100, got %d", resp.PerPage)
@@ -301,7 +309,9 @@ func TestListGenerateHistory_FilterByCadoc(t *testing.T) {
 	srv.Router().ServeHTTP(w, req)
 
 	var resp struct {
-		Items []struct{ CadocCode string `json:"cadoc_code"` } `json:"items"`
+		Items []struct {
+			CadocCode string `json:"cadoc_code"`
+		} `json:"items"`
 		Total int `json:"total"`
 	}
 	json.Unmarshal(w.Body.Bytes(), &resp)
@@ -331,7 +341,9 @@ func TestListGenerateHistory_CrossTenantIsolation(t *testing.T) {
 	srv.Router().ServeHTTP(w, req)
 
 	var resp struct {
-		Items []struct{ ID string `json:"id"` } `json:"items"`
+		Items []struct {
+			ID string `json:"id"`
+		} `json:"items"`
 		Total int `json:"total"`
 	}
 	json.Unmarshal(w.Body.Bytes(), &resp)

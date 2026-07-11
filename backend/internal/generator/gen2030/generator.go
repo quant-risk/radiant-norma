@@ -66,11 +66,11 @@ func (g *Generator) EstimateComplexity(doc *canonical.CanonicalDocument) generat
 		score += 0.2
 	}
 	return generator.ComplexityScore{
-		Score:              score,
-		NumOperacoes:       numOp,
-		NumParticipantes:   numPart,
-		EstimatedAPICalls:  0,
-		EstimatedTimeMs:    int64(30 + numPart/10),
+		Score:             score,
+		NumOperacoes:      numOp,
+		NumParticipantes:  numPart,
+		EstimatedAPICalls: 0,
+		EstimatedTimeMs:   int64(30 + numPart/10),
 	}
 }
 
@@ -122,16 +122,16 @@ type Concentracao struct {
 
 // Ajuste represents a rating adjustment for a participant.
 type Ajuste struct {
-	Participante    string `xml:"participante,attr"`
-	RatingAnterior  string `xml:"ratingAnterior,attr"`
-	RatingAtual     string `xml:"ratingAtual,attr"`
+	Participante   string `xml:"participante,attr"`
+	RatingAnterior string `xml:"ratingAnterior,attr"`
+	RatingAtual    string `xml:"ratingAtual,attr"`
 }
 
 // faixaConcentracao determines concentration band from participation percentage.
 type faixaConcentracao struct {
-	faixa    string
-	minPct   float64
-	maxPct   float64
+	faixa  string
+	minPct float64
+	maxPct float64
 }
 
 func buildModel(doc *canonical.CanonicalDocument, dataBase time.Time) DocDRSAC {
@@ -178,7 +178,7 @@ func buildConcentracoes(doc *canonical.CanonicalDocument) []Concentracao {
 
 	// Standard concentration bands.
 	bands := []struct {
-		name  string
+		name   string
 		minPct float64
 		maxPct float64
 	}{

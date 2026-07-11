@@ -64,11 +64,11 @@ func (g *Generator) EstimateComplexity(doc *canonical.CanonicalDocument) generat
 		score += 0.2
 	}
 	return generator.ComplexityScore{
-		Score:              score,
-		NumOperacoes:       numOp,
-		NumParticipantes:   len(doc.Participantes),
-		EstimatedAPICalls:  0,
-		EstimatedTimeMs:    int64(35 + numOp/20),
+		Score:             score,
+		NumOperacoes:      numOp,
+		NumParticipantes:  len(doc.Participantes),
+		EstimatedAPICalls: 0,
+		EstimatedTimeMs:   int64(35 + numOp/20),
 	}
 }
 
@@ -102,17 +102,17 @@ func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocume
 
 // DocDRL is the root element of the DRL/LCR XML.
 type DocDRL struct {
-	XMLName      xml.Name   `xml:"DocDRL"`
-	CNPJ         string     `xml:"cnpj,attr"`
-	DataBase     string     `xml:"dataBase,attr"`
-	TpDocumento  string     `xml:"tpDocumento,attr"`
-	NumeroVersao string     `xml:"numeroVersao,attr"`
+	XMLName      xml.Name     `xml:"DocDRL"`
+	CNPJ         string       `xml:"cnpj,attr"`
+	DataBase     string       `xml:"dataBase,attr"`
+	TpDocumento  string       `xml:"tpDocumento,attr"`
+	NumeroVersao string       `xml:"numeroVersao,attr"`
 	HQLA         ValorSimples `xml:"HQLA,omitempty"`
 	Outflows     ValorSimples `xml:"Outflows,omitempty"`
 	Inflows      ValorSimples `xml:"Inflows,omitempty"`
 	LCRRatio     ValorSimples `xml:"LCRRatio,omitempty"`
-	Cenarios     []Cenario  `xml:"Cenario,omitempty"`
-	Contas       []Conta    `xml:"Conta,omitempty"`
+	Cenarios     []Cenario    `xml:"Cenario,omitempty"`
+	Contas       []Conta      `xml:"Conta,omitempty"`
 }
 
 // ValorSimples is a simple element with a valor attribute: <HQLA valor="1000.00"/>
@@ -128,11 +128,11 @@ type Conta struct {
 
 // Cenario represents a stress scenario for LCR.
 type Cenario struct {
-	ID        string `xml:"id,attr"`
-	HQLA      ValorSimples `xml:"HQLA,omitempty"`
-	Outflows  ValorSimples `xml:"Outflows,omitempty"`
-	Inflows   ValorSimples `xml:"Inflows,omitempty"`
-	LCRRatio  ValorSimples `xml:"LCRRatio,omitempty"`
+	ID       string       `xml:"id,attr"`
+	HQLA     ValorSimples `xml:"HQLA,omitempty"`
+	Outflows ValorSimples `xml:"Outflows,omitempty"`
+	Inflows  ValorSimples `xml:"Inflows,omitempty"`
+	LCRRatio ValorSimples `xml:"LCRRatio,omitempty"`
 }
 
 func buildModel(doc *canonical.CanonicalDocument, dataBase time.Time) DocDRL {
@@ -230,11 +230,11 @@ func buildCenarios(doc *canonical.CanonicalDocument, baseHQLA, baseOutflows, bas
 		scOut := baseOutflows * s.outFactor
 		scIn := baseInflows * 0.9 // inflows reduce under stress
 		casos = append(casos, Cenario{
-			ID:        s.id,
-			HQLA:      ValorSimples{Valor: formatMoney(scHQLA)},
-			Outflows:  ValorSimples{Valor: formatMoney(scOut)},
-			Inflows:   ValorSimples{Valor: formatMoney(scIn)},
-			LCRRatio:  ValorSimples{Valor: formatRatio(calculateLCR(scHQLA, scOut, scIn))},
+			ID:       s.id,
+			HQLA:     ValorSimples{Valor: formatMoney(scHQLA)},
+			Outflows: ValorSimples{Valor: formatMoney(scOut)},
+			Inflows:  ValorSimples{Valor: formatMoney(scIn)},
+			LCRRatio: ValorSimples{Valor: formatRatio(calculateLCR(scHQLA, scOut, scIn))},
 		})
 	}
 	return casos

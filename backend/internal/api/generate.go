@@ -585,16 +585,16 @@ func writeError(w http.ResponseWriter, status int, code, msg string) {
 
 // BatchGenerateRequest é o body do POST /v1/generate/batch.
 type BatchGenerateRequest struct {
-	Cadocs     []GenerateRequest `json:"cadocs"`
-	RunCrossDoc bool             `json:"run_crossdoc,omitempty"`
+	Cadocs      []GenerateRequest `json:"cadocs"`
+	RunCrossDoc bool              `json:"run_crossdoc,omitempty"`
 }
 
 // BatchGenerateResponse é o response do POST /v1/generate/batch.
 type BatchGenerateResponse struct {
-	Results          []BatchResult    `json:"results"`
-	CrossDocErrors   []CrossDocError  `json:"crossdoc_errors,omitempty"`
-	CrossDocWarnings []CrossDocError  `json:"crossdoc_warnings,omitempty"`
-	Passed           bool             `json:"passed"`
+	Results          []BatchResult   `json:"results"`
+	CrossDocErrors   []CrossDocError `json:"crossdoc_errors,omitempty"`
+	CrossDocWarnings []CrossDocError `json:"crossdoc_warnings,omitempty"`
+	Passed           bool            `json:"passed"`
 	Message          string          `json:"message"`
 }
 

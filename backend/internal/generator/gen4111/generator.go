@@ -82,11 +82,11 @@ func (g *Generator) EstimateComplexity(doc *canonical.CanonicalDocument) generat
 	}
 
 	return generator.ComplexityScore{
-		Score:              score,
-		NumOperacoes:       numOp,
-		NumParticipantes:   numPart,
-		EstimatedAPICalls:  0,
-		EstimatedTimeMs:    int64(30 + numPart/20),
+		Score:             score,
+		NumOperacoes:      numOp,
+		NumParticipantes:  numPart,
+		EstimatedAPICalls: 0,
+		EstimatedTimeMs:   int64(30 + numPart/20),
 	}
 }
 
@@ -128,17 +128,17 @@ func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocume
 // Documento4111 é o elemento raiz do XML 4111.
 type Documento4111 struct {
 	XMLName     xml.Name  `xml:"Documento4111"`
-	CNPJ        string   `xml:"cnpj,attr"`
-	DataBase    string   `xml:"dataBase,attr"`
-	CodigoDoc   string   `xml:"codigoDocumento,attr"`
+	CNPJ        string    `xml:"cnpj,attr"`
+	DataBase    string    `xml:"dataBase,attr"`
+	CodigoDoc   string    `xml:"codigoDocumento,attr"`
 	Clientes    []Cliente `xml:"Cliente,omitempty"`
-	Totalizador *Totaliz `xml:"Totalizador,omitempty"`
+	Totalizador *Totaliz  `xml:"Totalizador,omitempty"`
 }
 
 // Cliente representa um bloco de cliente no 4111.
 type Cliente struct {
-	QtdCli     string       `xml:"QtdCli,omitempty"`
-	CNPJ       string       `xml:"CNPJ,omitempty"`
+	QtdCli      string       `xml:"QtdCli,omitempty"`
+	CNPJ        string       `xml:"CNPJ,omitempty"`
 	Modalidades []Modalidade `xml:"Modalidade,omitempty"`
 }
 
@@ -245,9 +245,9 @@ func buildCliente(ops []canonical.Operacao, k key4111) Cliente {
 	}
 
 	cliente := Cliente{
-		QtdCli:       fmt.Sprintf("%d", qtdCli),
-		CNPJ:         k.cnpj,
-		Modalidades:  buildModalidades(ops),
+		QtdCli:      fmt.Sprintf("%d", qtdCli),
+		CNPJ:        k.cnpj,
+		Modalidades: buildModalidades(ops),
 	}
 
 	return cliente
@@ -359,10 +359,10 @@ func buildFieldMap(doc *canonical.CanonicalDocument) []canonical.FieldMapping {
 	var fm []canonical.FieldMapping
 	add := func(cosif, xmlTag, val string, fonte canonical.FieldSource) {
 		fm = append(fm, canonical.FieldMapping{
-			CampoCOSIF:       cosif,
-			CampoXML:         xmlTag,
-			ValorFormatado:   val,
-			Fonte:            fonte,
+			CampoCOSIF:     cosif,
+			CampoXML:       xmlTag,
+			ValorFormatado: val,
+			Fonte:          fonte,
 		})
 	}
 	add("dataBase", "dataBase", time.Time(doc.DataBase).Format("2006-01"), canonical.FontSourceManual)

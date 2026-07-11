@@ -62,11 +62,11 @@ func (g *Generator) EstimateComplexity(doc *canonical.CanonicalDocument) generat
 		score += 0.2
 	}
 	return generator.ComplexityScore{
-		Score:              score,
-		NumOperacoes:       numOp,
-		NumParticipantes:   len(doc.Participantes),
-		EstimatedAPICalls:  0,
-		EstimatedTimeMs:    int64(35 + numOp/20),
+		Score:             score,
+		NumOperacoes:      numOp,
+		NumParticipantes:  len(doc.Participantes),
+		EstimatedAPICalls: 0,
+		EstimatedTimeMs:   int64(35 + numOp/20),
 	}
 }
 
@@ -100,16 +100,16 @@ func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocume
 
 // DocDLP is the root element of the DLP/NSFR XML.
 type DocDLP struct {
-	XMLName      xml.Name   `xml:"DocDLP"`
-	CNPJ         string     `xml:"cnpj,attr"`
-	DataBase     string     `xml:"dataBase,attr"`
-	TpDocumento  string     `xml:"tpDocumento,attr"`
-	NumeroVersao string     `xml:"numeroVersao,attr"`
+	XMLName      xml.Name     `xml:"DocDLP"`
+	CNPJ         string       `xml:"cnpj,attr"`
+	DataBase     string       `xml:"dataBase,attr"`
+	TpDocumento  string       `xml:"tpDocumento,attr"`
+	NumeroVersao string       `xml:"numeroVersao,attr"`
 	ASFTotal     ValorSimples `xml:"ASFTotal,omitempty"`
 	RSFTotal     ValorSimples `xml:"RSFTotal,omitempty"`
 	NSFRRatio    ValorSimples `xml:"NSFRRatio,omitempty"`
-	Cenarios     []Cenario  `xml:"Cenario,omitempty"`
-	Contas       []Conta    `xml:"Conta,omitempty"`
+	Cenarios     []Cenario    `xml:"Cenario,omitempty"`
+	Contas       []Conta      `xml:"Conta,omitempty"`
 }
 
 // ValorSimples is a simple element with a valor attribute: <ASFTotal valor="5000.00"/>
@@ -125,10 +125,10 @@ type Conta struct {
 
 // Cenario represents a stress scenario for NSFR.
 type Cenario struct {
-	ID         string `xml:"id,attr"`
-	ASF        ValorSimples `xml:"ASF,omitempty"`
-	RSF        ValorSimples `xml:"RSF,omitempty"`
-	NSFRRatio  ValorSimples `xml:"NSFRRatio,omitempty"`
+	ID        string       `xml:"id,attr"`
+	ASF       ValorSimples `xml:"ASF,omitempty"`
+	RSF       ValorSimples `xml:"RSF,omitempty"`
+	NSFRRatio ValorSimples `xml:"NSFRRatio,omitempty"`
 }
 
 // calculateNSFR computes NSFR = ASF / RSF * 100.
@@ -205,9 +205,9 @@ func buildConta(code string, ops []canonical.Operacao) Conta {
 func buildCenarios(doc *canonical.CanonicalDocument, baseASF, baseRSF float64) []Cenario {
 	// Two standard NSFR stress scenarios.
 	scenarios := []struct {
-		id         string
-		asfFactor  float64
-		rsfFactor  float64
+		id        string
+		asfFactor float64
+		rsfFactor float64
 	}{
 		{"1", 0.85, 1.15}, // mild stress
 		{"2", 0.70, 1.30}, // severe stress

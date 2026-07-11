@@ -13,6 +13,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -77,7 +79,7 @@ type schemaInfo struct {
 // schemaListResponse é o response de GET /v1/schema.
 type schemaListResponse struct {
 	Schemas []schemaInfo `json:"schemas"`
-	Total   int         `json:"total"`
+	Total   int          `json:"total"`
 }
 
 // schemaInfoCache é um cache in-memory (5min TTL) para listSchemasV2.
@@ -231,7 +233,7 @@ func (s *Server) cadocsWithCacheWithoutLock() ([]string, error) {
 }
 
 // latestVersion retorna a versão mais recente de uma lista de versões.
-// Usa comparação semântica (parts[0].major, parts[0].minor) para ordernar.
+// Usa comparação semântica (major.minor) para ordernar.
 // Funciona corretamente com versões como "3.9" vs "3.10" onde string compare
 // falharia (alfabeticamente "3.9" > "3.10" porque '9' > '1').
 func latestVersion(versions []string) string {
@@ -269,36 +271,21 @@ func compareVersion(v1, v2 string) int {
 	return 0
 }
 
-// splitVersion divide "X.Y" ou "X.Y.Z" em inteiros.
-func splitVersion(v string) (parts [3]int) {
-	for i := range parts {
-		parts[i] = -1
+// splitVersion divide "X.Y" ou "X.Y.Z" em [major, minor, patch].
+// Usa strings.Split + strconv.Atoi — óbvio e correto.
+func splitVersion(v string) [3]int {
+	var parts [3]int
+	segs := strings.Split(v, ".")
+	if len(segs) >= 1 && segs[0] != "" {
+		parts[0], _ = strconv.Atoi(segs[0])
 	}
-	s := v
-	for i := 0; i < len(s); i++ {
-		if s[i] == '.' {
-			s = s[i+1:]
-			break
-		}
-		parts[0] = parts[0]*10 + int(s[i]-'0')
+	if len(segs) >= 2 && segs[1] != "" {
+		parts[1], _ = strconv.Atoi(segs[1])
 	}
-	for i := 0; i < len(s); i++ {
-		if s[i] == '.' {
-			s = s[i+1:]
-			break
-		}
-		if s[i] < '0' || s[i] > '9' {
-			break
-		}
-		parts[1] = parts[1]*10 + int(s[i]-'0')
+	if len(segs) >= 3 && segs[2] != "" {
+		parts[2], _ = strconv.Atoi(segs[2])
 	}
-	for i := 0; i < len(s); i++ {
-		if s[i] < '0' || s[i] > '9' {
-			break
-		}
-		parts[2] = parts[2]*10 + int(s[i]-'0')
-	}
-	return
+	return parts
 }
 
 // generationHistoryItem é um item no histórico de gerações.

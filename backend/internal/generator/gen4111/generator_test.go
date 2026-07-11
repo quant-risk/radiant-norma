@@ -212,9 +212,9 @@ func TestGenerator_Totalizador(t *testing.T) {
 // TestGenerator_IsInadimplente testa detecção de inadimplência.
 func TestGenerator_IsInadimplente(t *testing.T) {
 	tests := []struct {
-		name  string
-		op    canonical.Operacao
-		want  bool
+		name string
+		op   canonical.Operacao
+		want bool
 	}{
 		{"nivel risco H", canonical.Operacao{NivelRisco: "H"}, true},
 		{"nivel risco A", canonical.Operacao{NivelRisco: "A"}, false},

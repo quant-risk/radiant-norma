@@ -7,5 +7,5 @@ package bacen
 
 // ValorSimples is a simple wrapper for a value attribute.
 type ValorSimples struct {
-    Valor string `xml:"valor,attr"`
+	Valor string `xml:"valor,attr"`
 }

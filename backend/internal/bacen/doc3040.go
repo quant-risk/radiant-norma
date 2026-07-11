@@ -46,7 +46,7 @@ import (
 //	               V150="..." V160="..." V165="..."/>
 //	</Doc3040>
 type Doc3040 struct {
-	XMLName   xml.Name  `xml:"Doc3040"`
+	XMLName   xml.Name `xml:"Doc3040"`
 	CNPJ      string   `xml:"cnpj,attr"`
 	DataBase  string   `xml:"dataBase,attr"`
 	Remessa   string   `xml:"remessa,attr"`
@@ -56,7 +56,7 @@ type Doc3040 struct {
 	EmailResp string   `xml:"emailResp,attr"`
 	TelResp   string   `xml:"telResp,attr"`
 	TotalCli  string   `xml:"totalCli,attr"`
-	Agregadas []Agreg `xml:"Agreg,omitempty"`
+	Agregadas []Agreg  `xml:"Agreg,omitempty"`
 	Totaliz   *Totaliz `xml:"Totalizador,omitempty"`
 }
 
@@ -78,8 +78,8 @@ type Agreg struct {
 	ProvConsttd string `xml:"ProvConsttd,omitempty"`
 	QtdOp       string `xml:"QtdOp,omitempty"`
 	QtdCli      string `xml:"QtdCli,omitempty"`
-	IPOC        string `xml:"IPOC,omitempty"` // DRSAC cross-ref
-	CNPJSCR     string `xml:"CNPJ,omitempty"` // DRSAC cross-ref
+	IPOC        string `xml:"IPOC,omitempty"`  // DRSAC cross-ref
+	CNPJSCR     string `xml:"CNPJ,omitempty"`  // DRSAC cross-ref
 	Saldo       string `xml:"Saldo,omitempty"` // DRSAC cross-ref
 	Venc        Venc   `xml:"Venc"`
 }

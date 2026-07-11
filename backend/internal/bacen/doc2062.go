@@ -8,57 +8,59 @@ import "encoding/xml"
 //
 // Structure:
 // <documentoDLI cnpj="..." dataBase="YYYY-MM" codigoDocumento="2062" tipoEnvio="I">
-//   <limitesInformados>
-//     <limite codigoLimite="NN.NN" enviado="S|N">VALOR</limite>
-//     ...
-//   </limitesInformados>
-//   <parametros>
-//     <parametro codigo="NN">VALOR</parametro>
-//   </parametros>
-//   <contas>
-//     <conta codigoConta="X.XX.XX" valor="..."/>
-//   </contas>
+//
+//	<limitesInformados>
+//	  <limite codigoLimite="NN.NN" enviado="S|N">VALOR</limite>
+//	  ...
+//	</limitesInformados>
+//	<parametros>
+//	  <parametro codigo="NN">VALOR</parametro>
+//	</parametros>
+//	<contas>
+//	  <conta codigoConta="X.XX.XX" valor="..."/>
+//	</contas>
+//
 // </documentoDLI>
 type documentoDLI struct {
-    XMLName        xml.Name   `xml:"documentoDLI"`
-    CNPJ           string     `xml:"cnpj,attr"`
-    DataBase       string     `xml:"dataBase,attr"`
-    CodigoDocumento string    `xml:"codigoDocumento,attr"`
-    TipoEnvio      string     `xml:"tipoEnvio,attr"`
-    Limites        Limites    `xml:"limitesInformados"`
-    Parametros     Parametros `xml:"parametros"`
-    Contas         Contas     `xml:"contas"`
+	XMLName         xml.Name   `xml:"documentoDLI"`
+	CNPJ            string     `xml:"cnpj,attr"`
+	DataBase        string     `xml:"dataBase,attr"`
+	CodigoDocumento string     `xml:"codigoDocumento,attr"`
+	TipoEnvio       string     `xml:"tipoEnvio,attr"`
+	Limites         Limites    `xml:"limitesInformados"`
+	Parametros      Parametros `xml:"parametros"`
+	Contas          Contas     `xml:"contas"`
 }
 
 type Limites struct {
-    Limite []Limite `xml:"limite"`
+	Limite []Limite `xml:"limite"`
 }
 
 type Limite struct {
-    Codigo  string `xml:"codigoLimite,attr"`
-    Enviado string `xml:"enviado,attr"` // "S" or "N"
-    Value   string `xml:",innerxml"`    // the text content (the value)
+	Codigo  string `xml:"codigoLimite,attr"`
+	Enviado string `xml:"enviado,attr"` // "S" or "N"
+	Value   string `xml:",innerxml"`    // the text content (the value)
 }
 
 type Parametros struct {
-    Parametro []Parametro `xml:"parametro"`
+	Parametro []Parametro `xml:"parametro"`
 }
 
 type Parametro struct {
-    Codigo string `xml:"codigo,attr"`
-    Value  string `xml:",innerxml"`
+	Codigo string `xml:"codigo,attr"`
+	Value  string `xml:",innerxml"`
 }
 
 type Contas struct {
-    Conta []ContaDLI `xml:"conta"`
+	Conta []ContaDLI `xml:"conta"`
 }
 
 type ContaDLI struct {
-    CodigoConta string `xml:"codigoConta,attr"`
-    Valor       string `xml:"valor,attr"`
+	CodigoConta string `xml:"codigoConta,attr"`
+	Valor       string `xml:"valor,attr"`
 }
 
 func Parse2062(data []byte) (*documentoDLI, error) {
-    var doc documentoDLI
-    return &doc, xml.Unmarshal(data, &doc)
+	var doc documentoDLI
+	return &doc, xml.Unmarshal(data, &doc)
 }

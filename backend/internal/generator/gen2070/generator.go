@@ -60,11 +60,11 @@ func (g *Generator) EstimateComplexity(doc *canonical.CanonicalDocument) generat
 		score += 0.2
 	}
 	return generator.ComplexityScore{
-		Score:              score,
-		NumOperacoes:       numOp,
-		NumParticipantes:   len(doc.Participantes),
-		EstimatedAPICalls:  0,
-		EstimatedTimeMs:    int64(25 + numOp/20),
+		Score:             score,
+		NumOperacoes:      numOp,
+		NumParticipantes:  len(doc.Participantes),
+		EstimatedAPICalls: 0,
+		EstimatedTimeMs:   int64(25 + numOp/20),
 	}
 }
 
@@ -99,12 +99,12 @@ func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocume
 // DocDDR is the root element of the DDR XML (CADOC 2070).
 type DocDDR struct {
 	XMLName    xml.Name `xml:"DocDDR"`
-	CNPJ       string  `xml:"cnpj,attr"`
-	DataBase   string  `xml:"dataBase,attr"`
-	IndRemessa string  `xml:"indRemessa,attr"`
-	NmContato  string  `xml:"nmContato,attr"`
-	TelContato string  `xml:"telContato,attr"`
-	DDRs       []DDR   `xml:"DDR,omitempty"`
+	CNPJ       string   `xml:"cnpj,attr"`
+	DataBase   string   `xml:"dataBase,attr"`
+	IndRemessa string   `xml:"indRemessa,attr"`
+	NmContato  string   `xml:"nmContato,attr"`
+	TelContato string   `xml:"telContato,attr"`
+	DDRs       []DDR    `xml:"DDR,omitempty"`
 }
 
 // DDR represents a DDR (Requerimento de Capital) entry.

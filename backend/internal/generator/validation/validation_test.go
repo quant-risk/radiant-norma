@@ -437,10 +437,10 @@ func build2061Doc() *canonical.CanonicalDocument {
 		},
 		Operacoes: []canonical.Operacao{
 			{
-				ID:              "op-2061-1",
-				Modalidade:      "800.01",
-				ValorPrincipal:  canonical.Money{Valor: decimal.NewFromFloat(500000.0), Moeda: "BRL"},
-				NumeroContrato:  "CTR-DLO-001",
+				ID:             "op-2061-1",
+				Modalidade:     "800.01",
+				ValorPrincipal: canonical.Money{Valor: decimal.NewFromFloat(500000.0), Moeda: "BRL"},
+				NumeroContrato: "CTR-DLO-001",
 				Extra: map[string]any{
 					"contaCosif": "800.01",
 				},
@@ -471,10 +471,10 @@ func build2062Doc() *canonical.CanonicalDocument {
 		},
 		Operacoes: []canonical.Operacao{
 			{
-				ID:              "op-2062-1",
-				Modalidade:      "6.00.00",
-				ValorPrincipal:  canonical.Money{Valor: decimal.NewFromFloat(100000.0), Moeda: "BRL"},
-				NumeroContrato:  "CTR-DLI-001",
+				ID:             "op-2062-1",
+				Modalidade:     "6.00.00",
+				ValorPrincipal: canonical.Money{Valor: decimal.NewFromFloat(100000.0), Moeda: "BRL"},
+				NumeroContrato: "CTR-DLI-001",
 				Extra: map[string]any{
 					"contaCosif": "6.00.00",
 				},
@@ -500,20 +500,20 @@ func build2070Doc() *canonical.CanonicalDocument {
 		},
 		Operacoes: []canonical.Operacao{
 			{
-				ID:              "op-2070-1",
-				Modalidade:      "161000",
-				ValorPrincipal:  canonical.Money{Valor: decimal.NewFromFloat(1000000.0), Moeda: "BRL"},
-				NumeroContrato:  "CTR-DDR-001",
+				ID:             "op-2070-1",
+				Modalidade:     "161000",
+				ValorPrincipal: canonical.Money{Valor: decimal.NewFromFloat(1000000.0), Moeda: "BRL"},
+				NumeroContrato: "CTR-DDR-001",
 				Extra: map[string]any{
 					"ddrCodigo": "161000",
 					"moeda":     "BRL",
 				},
 			},
 			{
-				ID:              "op-2070-2",
-				Modalidade:      "181000",
-				ValorPrincipal:  canonical.Money{Valor: decimal.NewFromFloat(500000.0), Moeda: "BRL"},
-				NumeroContrato:  "CTR-DDR-002",
+				ID:             "op-2070-2",
+				Modalidade:     "181000",
+				ValorPrincipal: canonical.Money{Valor: decimal.NewFromFloat(500000.0), Moeda: "BRL"},
+				NumeroContrato: "CTR-DDR-002",
 				Extra: map[string]any{
 					"ddrCodigo": "181000",
 					"moeda":     "USD",
@@ -542,11 +542,11 @@ func build2160Doc() *canonical.CanonicalDocument {
 		},
 		Operacoes: []canonical.Operacao{
 			{
-				ID:              "op-2160-1",
-				Modalidade:      "10.01",
-				ValorPrincipal:  canonical.Money{Valor: decimal.NewFromFloat(2000000.0), Moeda: "BRL"},
-				Indexador:       "CDI",
-				NumeroContrato:  "CTR-DRL-001",
+				ID:             "op-2160-1",
+				Modalidade:     "10.01",
+				ValorPrincipal: canonical.Money{Valor: decimal.NewFromFloat(2000000.0), Moeda: "BRL"},
+				Indexador:      "CDI",
+				NumeroContrato: "CTR-DRL-001",
 				Extra: map[string]any{
 					"contaCosif": "10.01",
 				},
@@ -573,11 +573,11 @@ func build2170Doc() *canonical.CanonicalDocument {
 		},
 		Operacoes: []canonical.Operacao{
 			{
-				ID:              "op-2170-1",
-				Modalidade:      "30.01",
-				ValorPrincipal:  canonical.Money{Valor: decimal.NewFromFloat(3000000.0), Moeda: "BRL"},
-				TipoOperacao:    "DEP",
-				NumeroContrato:  "CTR-DLP-001",
+				ID:             "op-2170-1",
+				Modalidade:     "30.01",
+				ValorPrincipal: canonical.Money{Valor: decimal.NewFromFloat(3000000.0), Moeda: "BRL"},
+				TipoOperacao:   "DEP",
+				NumeroContrato: "CTR-DLP-001",
 				Extra: map[string]any{
 					"contaCosif": "30.01",
 				},
@@ -607,11 +607,11 @@ func build2060Doc() *canonical.CanonicalDocument {
 		},
 		Operacoes: []canonical.Operacao{
 			{
-				ID:              "op-2060-1",
-				Modalidade:      "moeda",
-				ValorPrincipal:  canonical.Money{Valor: decimal.NewFromFloat(500000.0), Moeda: "BRL"},
-				Indexador:       "USD",
-				NumeroContrato:  "CTR-DRM-001",
+				ID:             "op-2060-1",
+				Modalidade:     "moeda",
+				ValorPrincipal: canonical.Money{Valor: decimal.NewFromFloat(500000.0), Moeda: "BRL"},
+				Indexador:      "USD",
+				NumeroContrato: "CTR-DRM-001",
 				Extra: map[string]any{
 					"moeda":         "USD",
 					"posicaoCodigo": "1",
@@ -637,19 +637,19 @@ func build2030Doc() *canonical.CanonicalDocument {
 		},
 		Operacoes: []canonical.Operacao{
 			{
-				ID:              "op-2030-1",
-				Modalidade:      "1000",
-				ValorPrincipal:  canonical.Money{Valor: decimal.NewFromFloat(10000000.0), Moeda: "BRL"},
-				NumeroContrato:  "CTR-DRSAC-001",
+				ID:             "op-2030-1",
+				Modalidade:     "1000",
+				ValorPrincipal: canonical.Money{Valor: decimal.NewFromFloat(10000000.0), Moeda: "BRL"},
+				NumeroContrato: "CTR-DRSAC-001",
 				Extra: map[string]any{
 					"participanteCnpj": "98765432000199",
 				},
 			},
 			{
-				ID:              "op-2030-2",
-				Modalidade:      "1000",
-				ValorPrincipal:  canonical.Money{Valor: decimal.NewFromFloat(5000000.0), Moeda: "BRL"},
-				NumeroContrato:  "CTR-DRSAC-002",
+				ID:             "op-2030-2",
+				Modalidade:     "1000",
+				ValorPrincipal: canonical.Money{Valor: decimal.NewFromFloat(5000000.0), Moeda: "BRL"},
+				NumeroContrato: "CTR-DRSAC-002",
 				Extra: map[string]any{
 					"participanteCnpj": "11122233000155",
 				},

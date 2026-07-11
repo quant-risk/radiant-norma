@@ -61,11 +61,11 @@ func (g *Generator) EstimateComplexity(doc *canonical.CanonicalDocument) generat
 		score += 0.2
 	}
 	return generator.ComplexityScore{
-		Score:              score,
-		NumOperacoes:       numOp,
-		NumParticipantes:   len(doc.Participantes),
-		EstimatedAPICalls:  0,
-		EstimatedTimeMs:    int64(35 + numOp/20),
+		Score:             score,
+		NumOperacoes:      numOp,
+		NumParticipantes:  len(doc.Participantes),
+		EstimatedAPICalls: 0,
+		EstimatedTimeMs:   int64(35 + numOp/20),
 	}
 }
 
@@ -99,12 +99,12 @@ func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocume
 
 // DocumentoDLI is the root element.
 type DocumentoDLI struct {
-	XMLName    xml.Name   `xml:"documentoDLI"`
-	CNPJ       string     `xml:"cnpj,attr"`
-	DataBase   string     `xml:"dataBase,attr"`
-	CodigoDoc  string     `xml:"codigoDocumento,attr"`
-	TipoEnvio  string     `xml:"tipoEnvio,attr"`
-	Limites    []Limite   `xml:"limitesInformados>limite,omitempty"`
+	XMLName    xml.Name    `xml:"documentoDLI"`
+	CNPJ       string      `xml:"cnpj,attr"`
+	DataBase   string      `xml:"dataBase,attr"`
+	CodigoDoc  string      `xml:"codigoDocumento,attr"`
+	TipoEnvio  string      `xml:"tipoEnvio,attr"`
+	Limites    []Limite    `xml:"limitesInformados>limite,omitempty"`
 	Parametros []Parametro `xml:"parametros>parametro,omitempty"`
 	Contas     []Conta     `xml:"contas>conta,omitempty"`
 }
@@ -142,7 +142,7 @@ func buildModel(doc *canonical.CanonicalDocument, dataBase time.Time) DocumentoD
 	tipoEnvio := strVal(doc.Extra["tipoEnvio"], "I")
 
 	model := DocumentoDLI{
-		CNPJ:       cnpj,
+		CNPJ:      cnpj,
 		DataBase:  dataBase.Format("2006-01"),
 		CodigoDoc: "2062",
 		TipoEnvio: tipoEnvio,

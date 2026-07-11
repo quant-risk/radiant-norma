@@ -7,7 +7,7 @@
 //   - DocDLO@cnpj, dataBase, tpDocumento, numeroVersao
 //   - Conta770, LimiteTotal, Patrimonio
 //   - Conta@codigoConta, valor (cada conta COSIF)
-//     - Elem@codigoElem, descElem, valor, peso
+//   - Elem@codigoElem, descElem, valor, peso
 //
 // O DLO funciona como demonstrativo de limites: each Conta groups Elem elements
 // with peso (ponderação) for RWACAM calculations.
@@ -68,11 +68,11 @@ func (g *Generator) EstimateComplexity(doc *canonical.CanonicalDocument) generat
 		score += 0.2
 	}
 	return generator.ComplexityScore{
-		Score:              score,
-		NumOperacoes:       numOp,
-		NumParticipantes:   len(doc.Participantes),
-		EstimatedAPICalls:  0,
-		EstimatedTimeMs:    int64(40 + numOp/20),
+		Score:             score,
+		NumOperacoes:      numOp,
+		NumParticipantes:  len(doc.Participantes),
+		EstimatedAPICalls: 0,
+		EstimatedTimeMs:   int64(40 + numOp/20),
 	}
 }
 
@@ -107,16 +107,16 @@ func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocume
 
 // DocDLO is the root element of the DLO XML.
 type DocDLO struct {
-	XMLName      xml.Name   `xml:"DocDLO"`
-	CNPJ         string     `xml:"cnpj,attr"`
-	DataBase     string     `xml:"dataBase,attr"`
-	TpDocumento  string     `xml:"tpDocumento,attr"`
-	NumeroVersao string     `xml:"numeroVersao,attr"`
+	XMLName      xml.Name     `xml:"DocDLO"`
+	CNPJ         string       `xml:"cnpj,attr"`
+	DataBase     string       `xml:"dataBase,attr"`
+	TpDocumento  string       `xml:"tpDocumento,attr"`
+	NumeroVersao string       `xml:"numeroVersao,attr"`
 	Conta770     ValorSimples `xml:"Conta770,omitempty"`
 	LimiteTotal  ValorSimples `xml:"LimiteTotal,omitempty"`
 	Patrimonio   ValorSimples `xml:"Patrimonio,omitempty"`
-	Contas       []Conta    `xml:"Conta,omitempty"`
-	Totalizador  *Totaliz   `xml:"Totalizador,omitempty"`
+	Contas       []Conta      `xml:"Conta,omitempty"`
+	Totalizador  *Totaliz     `xml:"Totalizador,omitempty"`
 }
 
 // ValorSimples is a simple element with a valor attribute: <Conta770 valor="1000.00"/>
@@ -126,23 +126,23 @@ type ValorSimples struct {
 
 // Conta represents a COSIF account in DLO.
 type Conta struct {
-	CodigoConta string  `xml:"codigoConta,attr"`
-	Valor       string  `xml:"valor,attr"`
-	Elems       []Elem  `xml:"Elem,omitempty"`
+	CodigoConta string `xml:"codigoConta,attr"`
+	Valor       string `xml:"valor,attr"`
+	Elems       []Elem `xml:"Elem,omitempty"`
 }
 
 // Elem represents a detail element within a Conta.
 type Elem struct {
-	CodigoElem string  `xml:"codigoElem,attr"`
-	DescElem   string  `xml:"descElem,attr"`
-	Valor      string  `xml:"valor,attr"`
-	Peso       string  `xml:"peso,attr,omitempty"`
+	CodigoElem string `xml:"codigoElem,attr"`
+	DescElem   string `xml:"descElem,attr"`
+	Valor      string `xml:"valor,attr"`
+	Peso       string `xml:"peso,attr,omitempty"`
 }
 
 // Totaliz is the DLO totals block.
 type Totaliz struct {
-	ContasTotal    string `xml:"contasTotal,attr"`
-	RWACAMTotal    string `xml:"rwacamTotal,attr"`
+	ContasTotal     string `xml:"contasTotal,attr"`
+	RWACAMTotal     string `xml:"rwacamTotal,attr"`
 	PatrimonioTotal string `xml:"patrimonioTotal,attr"`
 }
 
@@ -240,9 +240,9 @@ func buildTotalizador(contas []Conta, patrimonio string) *Totaliz {
 		total += v
 	}
 	return &Totaliz{
-		ContasTotal:      fmt.Sprintf("%d", len(contas)),
+		ContasTotal:     fmt.Sprintf("%d", len(contas)),
 		RWACAMTotal:     formatMoney(total),
-		PatrimonioTotal:  patrimonio, // use explicit patrimonio, not sum of contas
+		PatrimonioTotal: patrimonio, // use explicit patrimonio, not sum of contas
 	}
 }
 

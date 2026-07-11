@@ -40,40 +40,40 @@ func TestBatchGenerate_3040_4111(t *testing.T) {
 
 	dataBase := time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)
 
-		// Use 8-digit CNPJ root for both so cross-doc XD-4111-01 passes
+	// Use 8-digit CNPJ root for both so cross-doc XD-4111-01 passes
 	// (gen4111 truncates to 8 digits; gen3040 uses header CNPJ as-is).
 	// gen4111 now formats dataBase as YYYY-MM-DD too, matching gen3040 (XD-4111-04).
 	reqBody := map[string]any{
 		"cadocs": []map[string]any{
 			{
 				"cadoc_code": "3040",
-				"if_id":     "demo",
-				"cnpj":      "12345678",
-				"nome_if":   "Banco Teste",
-				"data_base": dataBase.Format(time.RFC3339),
+				"if_id":      "demo",
+				"cnpj":       "12345678",
+				"nome_if":    "Banco Teste",
+				"data_base":  dataBase.Format(time.RFC3339),
 				"operacoes": []map[string]any{
 					{
-						"id":               "op-1",
-						"tipo_pessoa":      "PF",
-						"modalidade":       "1000",
-						"uf":               "SP",
+						"id":              "op-1",
+						"tipo_pessoa":     "PF",
+						"modalidade":      "1000",
+						"uf":              "SP",
 						"numero_contrato": "CTR-001",
-						"valor_principal":  map[string]any{"valor": "50000.00", "moeda": "BRL"},
+						"valor_principal": map[string]any{"valor": "50000.00", "moeda": "BRL"},
 					},
 				},
 			},
 			{
 				"cadoc_code": "4111",
-				"if_id":     "demo",
-				"cnpj":      "12345678",
-				"nome_if":   "Banco Teste",
-				"data_base": dataBase.Format(time.RFC3339),
+				"if_id":      "demo",
+				"cnpj":       "12345678",
+				"nome_if":    "Banco Teste",
+				"data_base":  dataBase.Format(time.RFC3339),
 				"operacoes": []map[string]any{
 					{
-						"id":               "op-1",
-						"modalidade":       "2100",
+						"id":              "op-1",
+						"modalidade":      "2100",
 						"numero_contrato": "CTR-001",
-						"valor_principal":  map[string]any{"valor": "50000.00", "moeda": "BRL"},
+						"valor_principal": map[string]any{"valor": "50000.00", "moeda": "BRL"},
 					},
 				},
 			},
@@ -150,17 +150,17 @@ func TestBatchGenerate_SingleCADOC_SkipsCrossDoc(t *testing.T) {
 		"cadocs": []map[string]any{
 			{
 				"cadoc_code": "3040",
-				"if_id":     "demo",
-				"cnpj":      "12345678000123",
-				"nome_if":   "Banco Teste",
-				"data_base": dataBase.Format(time.RFC3339),
+				"if_id":      "demo",
+				"cnpj":       "12345678000123",
+				"nome_if":    "Banco Teste",
+				"data_base":  dataBase.Format(time.RFC3339),
 				"operacoes": []map[string]any{
 					{
-						"id":               "op-1",
-						"tipo_pessoa":      "PF",
-						"modalidade":       "1000",
+						"id":              "op-1",
+						"tipo_pessoa":     "PF",
+						"modalidade":      "1000",
 						"numero_contrato": "CTR-001",
-						"valor_principal":  map[string]any{"valor": "50000.00", "moeda": "BRL"},
+						"valor_principal": map[string]any{"valor": "50000.00", "moeda": "BRL"},
 					},
 				},
 			},
@@ -204,9 +204,9 @@ func TestBatchGenerate_UnknownCADOC(t *testing.T) {
 		"cadocs": []map[string]any{
 			{
 				"cadoc_code": "9999",
-				"if_id":     "demo",
-				"cnpj":      "12345678",
-				"nome_if":   "Banco Teste",
+				"if_id":      "demo",
+				"cnpj":       "12345678",
+				"nome_if":    "Banco Teste",
 			},
 		},
 	}
@@ -231,53 +231,53 @@ func TestBatchGenerate_MultipleCADOCs(t *testing.T) {
 
 	dataBase := time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)
 
-		reqBody := map[string]any{
+	reqBody := map[string]any{
 		"cadocs": []map[string]any{
 			{
 				"cadoc_code": "3040",
-				"if_id":     "demo",
-				"cnpj":      "12345678",
-				"nome_if":   "Banco Teste",
-				"data_base": dataBase.Format(time.RFC3339),
+				"if_id":      "demo",
+				"cnpj":       "12345678",
+				"nome_if":    "Banco Teste",
+				"data_base":  dataBase.Format(time.RFC3339),
 				"operacoes": []map[string]any{
 					{
-						"id":               "op-1",
-						"tipo_pessoa":      "PF",
-						"modalidade":       "1000",
+						"id":              "op-1",
+						"tipo_pessoa":     "PF",
+						"modalidade":      "1000",
 						"numero_contrato": "CTR-001",
-						"valor_principal":  map[string]any{"valor": "50000.00", "moeda": "BRL"},
+						"valor_principal": map[string]any{"valor": "50000.00", "moeda": "BRL"},
 					},
 				},
 			},
 			{
 				"cadoc_code": "3050",
-				"if_id":     "demo",
-				"cnpj":      "12345678",
-				"nome_if":   "Banco Teste",
-				"data_base": dataBase.Format(time.RFC3339),
+				"if_id":      "demo",
+				"cnpj":       "12345678",
+				"nome_if":    "Banco Teste",
+				"data_base":  dataBase.Format(time.RFC3339),
 				"operacoes": []map[string]any{
 					{
-						"id":               "op-1",
-						"modalidade":       "desDuplicatas",
-						"tipo_pessoa":      "PJ",
+						"id":              "op-1",
+						"modalidade":      "desDuplicatas",
+						"tipo_pessoa":     "PJ",
 						"indexador":       "CDI",
-						"valor_principal":  map[string]any{"valor": "100000.00", "moeda": "BRL"},
-						"taxa_juros":       "0.018",
+						"valor_principal": map[string]any{"valor": "100000.00", "moeda": "BRL"},
+						"taxa_juros":      "0.018",
 					},
 				},
 			},
 			{
 				"cadoc_code": "4111",
-				"if_id":     "demo",
-				"cnpj":      "12345678",
-				"nome_if":   "Banco Teste",
-				"data_base": dataBase.Format(time.RFC3339),
+				"if_id":      "demo",
+				"cnpj":       "12345678",
+				"nome_if":    "Banco Teste",
+				"data_base":  dataBase.Format(time.RFC3339),
 				"operacoes": []map[string]any{
 					{
-						"id":               "op-1",
-						"modalidade":       "2100",
+						"id":              "op-1",
+						"modalidade":      "2100",
 						"numero_contrato": "CTR-001",
-						"valor_principal":  map[string]any{"valor": "50000.00", "moeda": "BRL"},
+						"valor_principal": map[string]any{"valor": "50000.00", "moeda": "BRL"},
 					},
 				},
 			},
@@ -323,33 +323,33 @@ func TestBatchGenerate_CrossDocFail_422(t *testing.T) {
 		"cadocs": []map[string]any{
 			{
 				"cadoc_code": "3040",
-				"if_id":     "demo",
-				"cnpj":      "12345678000123", // full CNPJ → truncated to root 12345678 by gen3040
-				"nome_if":   "Banco Teste",
-				"data_base": dataBase.Format(time.RFC3339),
+				"if_id":      "demo",
+				"cnpj":       "12345678000123", // full CNPJ → truncated to root 12345678 by gen3040
+				"nome_if":    "Banco Teste",
+				"data_base":  dataBase.Format(time.RFC3339),
 				"operacoes": []map[string]any{
 					{
-						"id":               "op-1",
-						"tipo_pessoa":      "PF",
-						"modalidade":       "1000",
-						"uf":               "SP",
+						"id":              "op-1",
+						"tipo_pessoa":     "PF",
+						"modalidade":      "1000",
+						"uf":              "SP",
 						"numero_contrato": "CTR-001",
-						"valor_principal":  map[string]any{"valor": "50000.00", "moeda": "BRL"},
+						"valor_principal": map[string]any{"valor": "50000.00", "moeda": "BRL"},
 					},
 				},
 			},
 			{
 				"cadoc_code": "4111",
-				"if_id":     "demo",
-				"cnpj":      "87654321", // different root → mismatch after 3040 truncates to 12345678
-				"nome_if":   "Banco Teste",
-				"data_base": dataBase.Format(time.RFC3339),
+				"if_id":      "demo",
+				"cnpj":       "87654321", // different root → mismatch after 3040 truncates to 12345678
+				"nome_if":    "Banco Teste",
+				"data_base":  dataBase.Format(time.RFC3339),
 				"operacoes": []map[string]any{
 					{
-						"id":               "op-1",
-						"modalidade":       "2100",
+						"id":              "op-1",
+						"modalidade":      "2100",
 						"numero_contrato": "CTR-001",
-						"valor_principal":  map[string]any{"valor": "50000.00", "moeda": "BRL"},
+						"valor_principal": map[string]any{"valor": "50000.00", "moeda": "BRL"},
 					},
 				},
 			},

@@ -344,9 +344,11 @@ func applyDRSAC(ctx context.Context, docs *crossdoc.DocSet, ruleCode string) err
 // XDDR01IPOCExistsInSCR — XD-DR01.
 type XDDR01IPOCExistsInSCR struct{}
 
-func (XDDR01IPOCExistsInSCR) Code() string          { return "XD-DR01" }
-func (XDDR01IPOCExistsInSCR) Description() string  { return "IPOC de operação no DRSAC deve existir no SCR (3040)" }
-func (XDDR01IPOCExistsInSCR) Severity() string     { return "E" }
+func (XDDR01IPOCExistsInSCR) Code() string { return "XD-DR01" }
+func (XDDR01IPOCExistsInSCR) Description() string {
+	return "IPOC de operação no DRSAC deve existir no SCR (3040)"
+}
+func (XDDR01IPOCExistsInSCR) Severity() string       { return "E" }
 func (XDDR01IPOCExistsInSCR) RequiredDocs() []string { return []string{"2030", "3040"} }
 func (XDDR01IPOCExistsInSCR) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
 	return applyDRSAC(ctx, docs, "XD-DR01")
@@ -355,11 +357,11 @@ func (XDDR01IPOCExistsInSCR) Apply(ctx context.Context, docs *crossdoc.DocSet) e
 // XDDR02SaldoConsistente — XD-DR02.
 type XDDR02SaldoConsistente struct{}
 
-func (XDDR02SaldoConsistente) Code() string          { return "XD-DR02" }
+func (XDDR02SaldoConsistente) Code() string { return "XD-DR02" }
 func (XDDR02SaldoConsistente) Description() string {
 	return "Saldo DRSAC diverge mais de 10%% do saldo SCR para mesmo IPOC"
 }
-func (XDDR02SaldoConsistente) Severity() string     { return "A" }
+func (XDDR02SaldoConsistente) Severity() string       { return "A" }
 func (XDDR02SaldoConsistente) RequiredDocs() []string { return []string{"2030", "3040"} }
 func (XDDR02SaldoConsistente) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
 	return applyDRSAC(ctx, docs, "XD-DR02")
@@ -368,11 +370,11 @@ func (XDDR02SaldoConsistente) Apply(ctx context.Context, docs *crossdoc.DocSet) 
 // XDDR03ClienteExisteNoSCR — XD-DR03.
 type XDDR03ClienteExisteNoSCR struct{}
 
-func (XDDR03ClienteExisteNoSCR) Code() string          { return "XD-DR03" }
+func (XDDR03ClienteExisteNoSCR) Code() string { return "XD-DR03" }
 func (XDDR03ClienteExisteNoSCR) Description() string {
 	return "Cliente do DRSAC não encontrado no SCR para a mesma data-base"
 }
-func (XDDR03ClienteExisteNoSCR) Severity() string     { return "E" }
+func (XDDR03ClienteExisteNoSCR) Severity() string       { return "E" }
 func (XDDR03ClienteExisteNoSCR) RequiredDocs() []string { return []string{"2030", "3040"} }
 func (XDDR03ClienteExisteNoSCR) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
 	return applyDRSAC(ctx, docs, "XD-DR03")
@@ -381,11 +383,11 @@ func (XDDR03ClienteExisteNoSCR) Apply(ctx context.Context, docs *crossdoc.DocSet
 // XDDR04SetorCNAEConsistente — XD-DR04.
 type XDDR04SetorCNAEConsistente struct{}
 
-func (XDDR04SetorCNAEConsistente) Code() string          { return "XD-DR04" }
+func (XDDR04SetorCNAEConsistente) Code() string { return "XD-DR04" }
 func (XDDR04SetorCNAEConsistente) Description() string {
 	return "Setor CNAE no DRSAC deve ser consistente com classificação no SCR"
 }
-func (XDDR04SetorCNAEConsistente) Severity() string     { return "A" }
+func (XDDR04SetorCNAEConsistente) Severity() string       { return "A" }
 func (XDDR04SetorCNAEConsistente) RequiredDocs() []string { return []string{"2030", "3040"} }
 func (XDDR04SetorCNAEConsistente) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
 	return applyDRSAC(ctx, docs, "XD-DR04")
@@ -394,11 +396,11 @@ func (XDDR04SetorCNAEConsistente) Apply(ctx context.Context, docs *crossdoc.DocS
 // XDDR05RiscoSocialAlto — XD-DR05.
 type XDDR05RiscoSocialAlto struct{}
 
-func (XDDR05RiscoSocialAlto) Code() string          { return "XD-DR05" }
+func (XDDR05RiscoSocialAlto) Code() string { return "XD-DR05" }
 func (XDDR05RiscoSocialAlto) Description() string {
 	return "Alto risco social no DRSAC deve ter flag correspondente no SCR"
 }
-func (XDDR05RiscoSocialAlto) Severity() string     { return "A" }
+func (XDDR05RiscoSocialAlto) Severity() string       { return "A" }
 func (XDDR05RiscoSocialAlto) RequiredDocs() []string { return []string{"2030", "3040"} }
 func (XDDR05RiscoSocialAlto) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
 	return applyDRSAC(ctx, docs, "XD-DR05")
@@ -407,11 +409,11 @@ func (XDDR05RiscoSocialAlto) Apply(ctx context.Context, docs *crossdoc.DocSet) e
 // XDDR06RiscoAmbiental — XD-DR06.
 type XDDR06RiscoAmbiental struct{}
 
-func (XDDR06RiscoAmbiental) Code() string          { return "XD-DR06" }
+func (XDDR06RiscoAmbiental) Code() string { return "XD-DR06" }
 func (XDDR06RiscoAmbiental) Description() string {
 	return "Risco ambiental no DRSAC deve constar no SCR"
 }
-func (XDDR06RiscoAmbiental) Severity() string     { return "A" }
+func (XDDR06RiscoAmbiental) Severity() string       { return "A" }
 func (XDDR06RiscoAmbiental) RequiredDocs() []string { return []string{"2030", "3040"} }
 func (XDDR06RiscoAmbiental) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
 	return applyDRSAC(ctx, docs, "XD-DR06")
@@ -420,11 +422,11 @@ func (XDDR06RiscoAmbiental) Apply(ctx context.Context, docs *crossdoc.DocSet) er
 // XDDR07TotalTVMConsistente — XD-DR07.
 type XDDR07TotalTVMConsistente struct{}
 
-func (XDDR07TotalTVMConsistente) Code() string          { return "XD-DR07" }
+func (XDDR07TotalTVMConsistente) Code() string { return "XD-DR07" }
 func (XDDR07TotalTVMConsistente) Description() string {
 	return "Total de exposição TVM no DRSAC deve ser consistente com SCR"
 }
-func (XDDR07TotalTVMConsistente) Severity() string     { return "A" }
+func (XDDR07TotalTVMConsistente) Severity() string       { return "A" }
 func (XDDR07TotalTVMConsistente) RequiredDocs() []string { return []string{"2030", "3040"} }
 func (XDDR07TotalTVMConsistente) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
 	return applyDRSAC(ctx, docs, "XD-DR07")
@@ -433,11 +435,11 @@ func (XDDR07TotalTVMConsistente) Apply(ctx context.Context, docs *crossdoc.DocSe
 // XDDR08ContribPositivaGreen — XD-DR08.
 type XDDR08ContribPositivaGreen struct{}
 
-func (XDDR08ContribPositivaGreen) Code() string          { return "XD-DR08" }
+func (XDDR08ContribPositivaGreen) Code() string { return "XD-DR08" }
 func (XDDR08ContribPositivaGreen) Description() string {
 	return "Contribuição positiva sem instrumento verde registrado no SCR"
 }
-func (XDDR08ContribPositivaGreen) Severity() string     { return "I" }
+func (XDDR08ContribPositivaGreen) Severity() string       { return "I" }
 func (XDDR08ContribPositivaGreen) RequiredDocs() []string { return []string{"2030", "3040"} }
 func (XDDR08ContribPositivaGreen) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
 	return applyDRSAC(ctx, docs, "XD-DR08")

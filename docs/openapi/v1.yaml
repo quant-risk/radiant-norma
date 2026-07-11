@@ -1,0 +1,2089 @@
+# Radiant Norma — OpenAPI 3.1 Specification
+# https://github.com/quant-risk/radiant-norma
+#
+# Auto-generated from handler signatures (Sprint 77).
+# regenerate with: oapi-codegen -generate types -package api v1.yaml
+#
+openapi: 3.1.0
+info:
+  title: Radiant Norma API
+  description: |
+    API REST para geração, validação e submissão de CADOCs BACEN.
+
+    **Autenticação:** header `X-IF-ID` (fallback) ou JWT Bearer token no
+    `Authorization` header. O token JWT contém `if_id`, `cnpj`, `role`.
+
+    **Formato:** todos os endpoints aceitam e retornam `application/json`
+    salvo onde indicado.
+
+    **Códigos de erro:** `error` + `message` no body. Códigos HTTP:
+    - 400 Bad Request — payload inválido ou mal formatado
+    - 401 Unauthorized — autenticação requerida
+    - 403 Forbidden — sem permissão para este IF/endpoint
+    - 404 Not Found — recurso não encontrado
+    - 422 Unprocessable Entity — validação semântica falhou
+    - 429 Too Many Requests — rate limit excedido
+    - 500 Internal Server Error — erro interno (detalhes não expostos)
+    - 503 Service Unavailable — dependência externa indisponível
+
+    **Rate limiting:** cada IF tem buckets independentes. Atualizar
+    via `/v1/l4/compare` retorna headers `X-RateLimit-*`.
+  version: "3.36.2"
+  contact:
+    name: Radiant Risk
+    url: https://radiantrisk.com
+    email: api@radiantrisk.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.radiantrisk.com/v1
+    description: Produção
+  - url: https://staging-api.radiantrisk.com/v1
+    description: Staging
+
+security:
+  - BearerAuth: []
+  - IFIDHeader: []
+
+tags:
+  - name: Health
+    description: Health checks e readiness.
+  - name: Schema
+    description: Schema Registry — versões e metadados de leiautes CADOC.
+  - name: Rules
+    description: Catálogo de regras de validação.
+  - name: Validation
+    description: Validação L1→L4 de documentos CADOC.
+  - name: Generation
+    description: Geração de documentos CADOC a partir do Canonical Model.
+  - name: CrossDoc
+    description: Validação cross-document (L3) — consistência entre CADOCs.
+  - name: STA
+    description: Integração com o sistema STA do BACEN.
+  - name: Radar
+    description: Radar Regulatório — detecção de mudanças de leiaute.
+  - name: Audit
+    description: Histórico de envios e auditoria.
+  - name: Insights
+    description: KPIs, heatmaps e recomendações orientadas por ML.
+
+paths:
+
+  # =====================================================================
+  # Health
+  # =====================================================================
+
+  /healthz:
+    get:
+      operationId: healthz
+      summary: Liveness probe
+      tags: [Health]
+      security: []
+      responses:
+        "200":
+          description: Servidor está vivo.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "ok" }
+                  version: { type: string, example: "3.36.2" }
+
+  /readyz:
+    get:
+      operationId: readyz
+      summary: Readiness probe — verifica DB e dependências.
+      tags: [Health]
+      security: []
+      responses:
+        "200":
+          description: Pronto para receber tráfego.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "ready" }
+                  db: { type: string, example: "ok" }
+        "503":
+          description: Dependência indisponível.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # =====================================================================
+  # Schema Registry
+  # =====================================================================
+
+  /schemas:
+    get:
+      operationId: listSchemas
+      summary: Lista códigos CADOC disponíveis.
+      tags: [Schema]
+      responses:
+        "200":
+          description: Lista de CADOCs.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cadocs:
+                    type: array
+                    items: { type: string }
+                    example: ["2030","2060","2061","2062","2070","2160","2170","3040","3044","3050","4111"]
+                  total: { type: integer }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /schemas/{cadoc}:
+    get:
+      operationId: getSchema
+      summary: Retorna leiaute atualmente efetivo para um CADOC.
+      tags: [Schema]
+      parameters:
+        - $ref: "#/components/parameters/Cadoc"
+      responses:
+        "200":
+          description: Schema efetivo.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchemaVersion"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /schemas/{cadoc}/versions:
+    get:
+      operationId: listVersions
+      summary: Lista todas as versões de layout disponíveis para um CADOC.
+      tags: [Schema]
+      parameters:
+        - $ref: "#/components/parameters/Cadoc"
+      responses:
+        "200":
+          description: Lista de versões.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cadoc: { type: string }
+                  versions:
+                    type: array
+                    items: { type: string }
+                    example: ["3.0","3.1","3.2"]
+                  total: { type: integer }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /schemas/{cadoc}/changelog:
+    get:
+      operationId: listSchemaChangelog
+      summary: Lista histórico de alterações de leiaute (por data-base).
+      tags: [Schema]
+      parameters:
+        - $ref: "#/components/parameters/Cadoc"
+      responses:
+        "200":
+          description: Changelog de versões.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cadoc: { type: string }
+                  changelog:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SchemaChangelogEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /schema:
+    get:
+      operationId: listSchemasV2
+      summary: Lista CADOCs com metadados expandidos (versão, complexidade, campos).
+      description: |
+        Semelhante a GET /schemas mas inclui info de geração:
+        versões suportadas, complexidade estimada, data de vigência,
+        contagem de campos. Ideal para o wizard de geração.
+        Cacheado por 5 minutos no servidor.
+      tags: [Schema]
+      responses:
+        "200":
+          description: Lista de schemas com metadados.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchemaListResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # =====================================================================
+  # Rules
+  # =====================================================================
+
+  /rules:
+    get:
+      operationId: listRules
+      summary: Lista todos os códigos CADOC que possuem regras de validação.
+      tags: [Rules]
+      responses:
+        "200":
+          description: Códigos com regras disponíveis.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cadocs:
+                    type: array
+                    items: { type: string }
+                  total: { type: integer }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /rules/{cadoc}:
+    get:
+      operationId: listRulesByCadoc
+      summary: Lista todas as regras de validação para um CADOC específico.
+      tags: [Rules]
+      parameters:
+        - $ref: "#/components/parameters/Cadoc"
+      responses:
+        "200":
+          description: Lista de regras.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RuleListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /rules/disabled:
+    get:
+      operationId: listDisabledRules
+      summary: Lista regras desabilitadas para o IF autenticado.
+      tags: [Rules]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Regras desabilitadas.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  if_id: { type: string }
+                  disabled_codes:
+                    type: array
+                    items: { type: string }
+                  total: { type: integer }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /rules/{code}/toggle:
+    post:
+      operationId: toggleRule
+      summary: Habilita ou desabilita uma regra para o IF autenticado.
+      description: Toggle idempotente — envia o mesmo código mais de uma vez alterna o estado.
+      tags: [Rules]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema: { type: string, pattern: "^[A-Z][0-9]{1,3}$" }
+      responses:
+        "200":
+          description: Novo estado da regra.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: string }
+                  if_id: { type: string }
+                  disabled: { type: boolean }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # =====================================================================
+  # Validation
+  # =====================================================================
+
+  /validate:
+    post:
+      operationId: validate
+      summary: Valida um documento CADOC (L1 XSD → L2 Semântico → L3 Cross-doc).
+      description: |
+        Executa validação em 3 camadas:
+
+        **L1 (XSD):** bem-formedness + conformidade estrutural.
+        **L2 (Semântico):** regras de negócio específicas do CADOC
+        (ex: 275 regras para 3040, organizadas em B/F/C/S/I/H).
+        **L3 (Cross-doc):** consistência entre múltiplos CADOCs do mesmo
+        período (ex: 4111.X → 3040).
+
+        O campo `xml` pode conter XML ou JSON (para 3044).
+      tags: [Validation]
+      security:
+        - BearerAuth: []
+        - IFIDHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidateRequest"
+            example:
+              cadoc_code: "3040"
+              data_base: "2026-06-30"
+              xml: "<SCRDocumento>...</SCRDocumento>"
+              content_type: "application/xml"
+      responses:
+        "200":
+          description: Resultado da validação.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidateResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          description: Validação semântica falhou (documento bem formado mas regras violadas).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidateResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # =====================================================================
+  # Generation
+  # =====================================================================
+
+  /generate/{cadoc}:
+    post:
+      operationId: generateCadoc
+      summary: Gera um documento CADOC a partir do Canonical Model.
+      description: |
+        Recebe um `CanonicalDocument` com `Participantes` e `Operacoes`
+        e produz o XML final. Suporta os CADOCs: 2030, 2060, 2061, 2062,
+        2070, 2160, 2170, 3040, 3050, 4111.
+
+        O campo `source` indica a fonte de dados: `manual`, `api`, `file`,
+        `db`, `mcp`. O wizard de geração (/console/generate) determina a
+        source antes de enviar a requisição.
+
+        O `versao_layout` é opcional — se omitido, usa a versão efetiva
+        mais recente para a `data_base`.
+
+        A resposta inclui `xml` (documento gerado), `xml_hash` (SHA-256
+        do XML) e `explain` (campo a campo do que foi gerado).
+      tags: [Generation]
+      security:
+        - BearerAuth: []
+        - IFIDHeader: []
+      parameters:
+        - $ref: "#/components/parameters/Cadoc"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateRequest"
+            example:
+              cadoc_code: "3040"
+              if_id: "if_demo"
+              cnpj: "12.345.678/0001-90"
+              nome_if: "Banco Demo S.A."
+              versao_layout: "3.0"
+              data_base: "2026-06-30"
+              participantes:
+                - id: "P001"
+                  tipo: "PF"
+                  nome: "João Silva"
+                  cpf: "123.456.789-00"
+                  Rating: "AA"
+              operacoes:
+                - id: "O001"
+                  tipo: "CRÉDITO_PESSOAL"
+                  valor: 50000.00
+                  prazo: 24
+                  taxa: 18.5
+      responses:
+        "200":
+          description: Documento gerado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          description: Geração falhou — canonical incompleto ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /generate/{cadoc}/fields:
+    get:
+      operationId: listGenerateFields
+      summary: Retorna os campos necessários para gerar um CADOC específico.
+      description: |
+        Usado pelo wizard de geração para saber quais campos o Canonical Model
+        precisa. Inclui: nome do campo, tipo, se é obrigatório, description
+        e пример (exemplo de valor).
+      tags: [Generation]
+      parameters:
+        - $ref: "#/components/parameters/Cadoc"
+      responses:
+        "200":
+          description: Lista de campos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FieldsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /generate/{cadoc}/sources:
+    post:
+      operationId: ingestSources
+      summary: Configura a fonte de dados para um CADOC.
+      description: |
+        Registra qual connector será usado (manual/api/file/db/mcp) e
+        retorna os fields que precisam ser preenchidos/mapeados.
+        É o passo intermediário do wizard — antes de gerar, o frontend
+        confirma a fonte e faz o mapping de campos.
+      tags: [Generation]
+      security:
+        - BearerAuth: []
+        - IFIDHeader: []
+      parameters:
+        - $ref: "#/components/parameters/Cadoc"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source_type]
+              properties:
+                source_type:
+                  $ref: "#/components/schemas/SourceType"
+                source_name:
+                  type: string
+                  description: "Nome/identificador da fonte (ex: api-customer, file-contas-a-pagar)"
+                mapping:
+                  type: object
+                  description: "Mapeamento opcional: campo -> source_field"
+                  additionalProperties: { type: string }
+      responses:
+        "200":
+          description: Configuração aceita.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceConfigResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /generate/adapters:
+    get:
+      operationId: listSourceAdapters
+      summary: Lista os adapters de fonte de dados disponíveis.
+      description: Retorna todos os conectores registrados (manual/api/file/db/mcp).
+      tags: [Generation]
+      responses:
+        "200":
+          description: Lista de adapters.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  adapters:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdapterInfo"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /generate/file/parse:
+    post:
+      operationId: parseUploadedFile
+      summary: Faz upload e parse de um arquivo para extrair CanonicalDocument.
+      description: |
+        Aceita CSV, XLSX, PDF ou JSON e tenta extrair participantes e
+        operações no formato Canonical Model. Retorna o documento
+        extraído para validação antes da geração.
+      tags: [Generation]
+      security:
+        - BearerAuth: []
+        - IFIDHeader: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                cadoc_code:
+                  type: string
+                data_base:
+                  type: string
+                  format: date
+      responses:
+        "200":
+          description: Documento extraído.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileParseResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "415":
+          description: Formato de arquivo não suportado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /generate/batch:
+    post:
+      operationId: generateBatch
+      summary: Gera múltiplos CADOCs em uma única requisição.
+      description: |
+        Útil para fechamento mensal onde múltiplos CADOCs precisam ser
+        gerados juntos. Executa em paralelo e retorna o resultado de cada
+        um. Opcionalmente executa validação cross-doc após a geração.
+      tags: [Generation]
+      security:
+        - BearerAuth: []
+        - IFIDHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchGenerateRequest"
+      responses:
+        "200":
+          description: Resultados do batch.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchGenerateResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /generate/history:
+    get:
+      operationId: listGenerateHistory
+      summary: Retorna histórico de gerações do IF autenticado.
+      description: |
+        Lista envios anteriores com status. Status: pending, validated,
+        sent, accepted, rejected, error, processing, dead_letter.
+        `passed=true` para: validated, sent, accepted.
+      tags: [Generation]
+      security:
+        - BearerAuth: []
+        - IFIDHeader: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1, minimum: 1 }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+        - name: cadoc
+          in: query
+          schema: { type: string }
+          description: Filtro opcional por tipo CADOC.
+      responses:
+        "200":
+          description: Histórico paginado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationHistoryResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          description: Banco de dados não configurado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # =====================================================================
+  # Cross-Document Validation
+  # =====================================================================
+
+  /crossdoc/validate:
+    post:
+      operationId: crossdocValidate
+      summary: Executa validação cross-document (L3) — consistência entre CADOCs.
+      description: |
+        Valida consistência entre documentos relacionados (ex: 4111.XDRR01IPOC
+        ↔ 3040, 4111.XDRR01SCR ↔ SCR). Regras cross-doc definidas no
+        Schema Registry e executadas após validação individual.
+      tags: [CrossDoc]
+      security:
+        - BearerAuth: []
+        - IFIDHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [documents]
+              properties:
+                documents:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/CrossDocInput"
+      responses:
+        "200":
+          description: Resultado da validação cross-doc.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrossDocValidateResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /crossdoc/rules:
+    get:
+      operationId: listCrossDocRules
+      summary: Lista todas as regras cross-doc disponíveis.
+      tags: [CrossDoc]
+      responses:
+        "200":
+          description: Catálogo de regras cross-doc.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrossDocRulesResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # =====================================================================
+  # STA — Integração BACEN
+  # =====================================================================
+
+  /sta/submit:
+    post:
+      operationId: staSubmit
+      summary: Submete um documento ao STA do BACEN.
+      description: |
+        Submete o XML gerado ao Sistema de Transferência de Arquivos do BACEN.
+        No modo stub (default em dev), apenas armazena localmente.
+        Em produção, usa STA-h (HTTPS) ou STA-ws (WebSocket).
+      tags: [STA]
+      security:
+        - BearerAuth: []
+        - IFIDHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaSubmitRequest"
+      responses:
+        "200":
+          description: Submissão aceita.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaSubmitResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "502":
+          description: STA BACEN retornou erro.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          description: STA indisponível.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sta/disponiveis:
+    get:
+      operationId: staDisponiveis
+      summary: Lista documentos disponíveis para download no STA.
+      tags: [STA]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Lista de documentos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaDisponiveisResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /sta/situacao:
+    post:
+      operationId: staSituacao
+      summary: Consulta a situação (status de aceitação/rejeição) de um documento.
+      tags: [STA]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [protocolo]
+              properties:
+                protocolo:
+                  type: string
+                  description: Número de protocolo do STA.
+      responses:
+        "200":
+          description: Situação do documento.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaSituacaoResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # =====================================================================
+  # Radar Regulatório
+  # =====================================================================
+
+  /radar/alerts:
+    get:
+      operationId: listRadarAlerts
+      summary: Lista alertas de mudança de leiaute detectados pelo Radar.
+      tags: [Radar]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [open, resolved, dismissed] }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: Lista de alertas.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarAlertsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /radar/alerts/{id}:
+    get:
+      operationId: getRadarAlert
+      summary: Detalhes de um alerta específico.
+      tags: [Radar]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Alerta.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RadarAlert"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /radar/alerts/{id}/resolve:
+    post:
+      operationId: resolveRadarAlert
+      summary: Marca um alerta como resolvido (lido + ação tomada).
+      tags: [Radar]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resolution:
+                  type: string
+                  description: 'Descricao da resolucao (ex: schema atualizado, regras alinhadas)'
+      responses:
+        "200":
+          description: Alerta resolvido.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  status: { type: string, example: "resolved" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /radar/scan:
+    post:
+      operationId: triggerRadarScan
+      summary: Dispara um scan under-demand do Radar Regulatório.
+      description: |
+        No modo automático, o Radar roda em background a cada 6h.
+        Este endpoint permite forçar um scan imediato (ex: após
+        receber notificação do BACEN).
+      tags: [Radar]
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cadoc:
+                  type: string
+                  description: Opcional — escanear apenas este CADOC.
+      responses:
+        "202":
+          description: Scan agendado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "scheduled" }
+                  scan_id: { type: string }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # =====================================================================
+  # L4 — Histórico
+  # =====================================================================
+
+  /l4/compare:
+    get:
+      operationId: l4Compare
+      summary: Compara documento atual com histórico de versões (L4).
+      description: Compara um envio com o anterior (mesma IF + CADOC). Retorna regras que passaram a falhar, regras que foram corrigidas, e variacoes em campos numericos.
+      tags: [Audit]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: envio_id
+          in: query
+          required: true
+          schema: { type: string }
+          description: UUID do envio atual
+      responses:
+        "200":
+          description: Comparacao L4.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/L4Comparison"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # =====================================================================
+  # Audit & Envios
+  # =====================================================================
+
+  /envios:
+    get:
+      operationId: listEnvios
+      summary: Lista envios do IF autenticado.
+      tags: [Audit]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: Lista de envios.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnviosResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /envios/stats:
+    get:
+      operationId: enviosStats
+      summary: Estatísticas agregadas de envios do IF.
+      tags: [Audit]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Estatísticas.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnviosStats"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          description: Banco de dados não configurado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /audit_log:
+    get:
+      operationId: listAuditLog
+      summary: Lista entradas do audit log (hash chain tamper-evident).
+      tags: [Audit]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: Audit log entries.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # =====================================================================
+  # Insights
+  # =====================================================================
+
+  /insights/kpis:
+    get:
+      operationId: insightsKPIs
+      summary: KPIs principais (taxa de erro, volume, tendência).
+      tags: [Insights]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: KPIs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KPIResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /insights/heatmap:
+    get:
+      operationId: insightsHeatmap
+      summary: Heatmap de regras por hora/dia da semana.
+      tags: [Insights]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Heatmap data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HeatmapResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /insights/rules/top-failing:
+    get:
+      operationId: insightsTopFailingRules
+      summary: Top 10 regras com maior taxa de falha.
+      tags: [Insights]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cadoc
+          in: query
+          schema: { type: string }
+        - name: period
+          in: query
+          schema: { type: string, default: "30d" }
+          description: Período (7d, 30d, 90d).
+      responses:
+        "200":
+          description: Top failing rules.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopFailingRulesResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /insights/recommendations:
+    get:
+      operationId: insightsRecommendations
+      summary: Recomendações geradas por análise de padrões de falha.
+      tags: [Insights]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, acknowledged] }
+      responses:
+        "200":
+          description: Lista de recomendações.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendationsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /insights/recommendations/{id}/acknowledge:
+    post:
+      operationId: acknowledgeRecommendation
+      summary: Marca uma recomendação como reconhecida pelo usuário.
+      tags: [Insights]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Recomendacao reconhecida.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  status: { type: string }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: unacknowledgeRecommendation
+      summary: Desfaz reconhecimento de uma recomendacao.
+      tags: [Insights]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Recomendacao nao mais reconhecida.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  status: { type: string }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+# =====================================================================
+# Components
+# =====================================================================
+
+components:
+
+  parameters:
+    Cadoc:
+      name: cadoc
+      in: path
+      required: true
+      description: "Código CADOC (4 dígitos, ex: 3040, 4111)."
+      schema: { type: string, pattern: "^[0-9]{4}$" }
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token emitido pelo endpoint de autenticação.
+        Claims esperados: `if_id`, `cnpj`, `role`.
+    IFIDHeader:
+      type: apiKey
+      in: header
+      name: X-IF-ID
+      description: |
+        Fallback de autenticação para ambientes onde JWT não está
+        disponível (ex: integrações simples). Preferir Bearer JWT.
+
+  schemas:
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Código de erro machine-readable.
+          example: "INVALID_CADOC"
+        message:
+          type: string
+          description: Mensagem legível para debugging (não exponha em prod).
+          example: "invalid cadoc_code \"30400\" (expected 4 digits)"
+
+    # ---- Validation ----
+
+    ValidateRequest:
+      type: object
+      required: [cadoc_code, xml]
+      properties:
+        cadoc_code:
+          type: string
+          pattern: "^[0-9]{4}$"
+          description: Aceita também "cadoc" como alias.
+          example: "3040"
+        data_base:
+          type: string
+          format: date
+          description: "YYYY-MM-DD. Opcional se inferível do XML."
+          example: "2026-06-30"
+        xml:
+          type: string
+          description: Documento XML (ou JSON para 3044).
+          example: "<SCRDocumento>...</SCRDocumento>"
+        content_type:
+          type: string
+          default: "application/xml"
+          enum: [application/xml, application/json]
+          description: "application/xml para CADOCs normais, application/json para 3044."
+
+    ValidateResponse:
+      type: object
+      properties:
+        cadoc_code:
+          type: string
+          example: "3040"
+        data_base:
+          type: string
+          example: "2026-06-30"
+        xml_hash:
+          type: string
+          description: SHA-256 do XML recebido.
+          example: "a3f2c1..."
+        passed:
+          type: boolean
+          description: "true se zero erros."
+        errors:
+          type: array
+          items: { $ref: "#/components/schemas/ValidationError" }
+        warnings:
+          type: array
+          items: { $ref: "#/components/schemas/ValidationError" }
+        executed_at:
+          type: string
+          format: date-time
+        duration_ms:
+          type: integer
+          description: Tempo de execução em milissegundos.
+        disabled_rules:
+          type: array
+          items: { type: string }
+          description: Regras puladas porque desabilitadas pelo IF.
+
+    ValidationError:
+      type: object
+      properties:
+        code:
+          type: string
+          description: 'Codigo da regra (ex: B12, F23)'
+          example: "B12"
+        severity:
+          type: string
+          enum: [error, warning, info]
+          example: "error"
+        field:
+          type: string
+          description: Campo XPath ou JSON path onde o erro ocorre.
+          example: "/SCRDocumento/Modalidade[1]/Valor"
+        message:
+          type: string
+          description: Mensagem descritiva.
+          example: "Valor debe ser maior que zero"
+        position:
+          type: string
+          description: Posição no documento (XPath ou linha).
+          example: "line 42, col 15"
+
+    # ---- Schema ----
+
+    SchemaVersion:
+      type: object
+      properties:
+        cadoc:
+          type: string
+        version:
+          type: string
+          example: "3.0"
+        effective_from:
+          type: string
+          format: date
+        source_uri:
+          type: string
+          description: URI do XSD fonte (BACEN ou interno).
+
+    SchemaChangelogEntry:
+      type: object
+      properties:
+        version:
+          type: string
+        effective_from:
+          type: string
+          format: date
+        changes:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              change_type:
+                type: string
+                enum: [added, removed, modified]
+              description:
+                type: string
+
+    SchemaListResponse:
+      type: object
+      properties:
+        schemas:
+          type: array
+          items:
+            $ref: "#/components/schemas/SchemaInfo"
+        total:
+          type: integer
+
+    SchemaInfo:
+      type: object
+      properties:
+        cadoc_code:
+          type: string
+          example: "3040"
+        latest_version:
+          type: string
+          example: "3.2"
+        effective_from:
+          type: string
+          description: Data de vigência do layout mais recente.
+          example: "2026-01-01"
+        source_uri:
+          type: string
+        supported_versions:
+          type: array
+          items: { type: string }
+          example: ["3.0","3.1","3.2"]
+        field_count:
+          type: integer
+          description: Número de campos no leiaute.
+        complexity:
+          $ref: "#/components/schemas/ComplexityScore"
+
+    ComplexityScore:
+      type: object
+      properties:
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: "0.0 (trivial) a 1.0 (muito complexo)."
+          example: 0.72
+        num_operacoes:
+          type: integer
+          description: Número estimado de operações no documento.
+          example: 1540
+        num_participantes:
+          type: integer
+          description: Número de participantes.
+          example: 230
+        estimated_api_calls:
+          type: integer
+          description: Chamadas de API necessárias para conectar dados.
+          example: 3
+        estimated_time_ms:
+          type: integer
+          description: Tempo estimado de geração em ms.
+          example: 450
+
+    # ---- Rules ----
+
+    RuleListResponse:
+      type: object
+      properties:
+        cadoc:
+          type: string
+        rules:
+          type: array
+          items: { $ref: "#/components/schemas/Rule" }
+        total:
+          type: integer
+
+    Rule:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "B12"
+        description:
+          type: string
+          example: "Valor da operação deve ser maior que zero"
+        severity:
+          type: string
+          enum: [error, warning, info]
+        category:
+          type: string
+          description: "Categoria: B (Balanço), F (Financeiro), C (Cliente), S (Sistema), I (Inadimplência), H (Historicamente inadimplente)."
+          example: "B"
+        required_docs:
+          type: array
+          items: { type: string }
+          description: Documentos complementares exigidos por esta regra.
+
+    # ---- Generation ----
+
+    GenerateRequest:
+      type: object
+      required: [cadoc_code, if_id]
+      properties:
+        cadoc_code:
+          type: string
+          example: "3040"
+        if_id:
+          type: string
+          example: "if_demo"
+        cnpj:
+          type: string
+          example: "12.345.678/0001-90"
+        nome_if:
+          type: string
+          example: "Banco Demo S.A."
+        versao_layout:
+          type: string
+          description: Opcional — default é a versão efetiva mais recente.
+          example: "3.0"
+        data_base:
+          type: string
+          format: date-time
+          description: "AAAA-MM-DDTHH:MM:SSZ"
+          example: "2026-06-30T00:00:00Z"
+        extra:
+          type: object
+          additionalProperties: true
+          description: Campos extras específicos do CADOC.
+        participantes:
+          type: array
+          items: { $ref: "#/components/schemas/Participante" }
+        operacoes:
+          type: array
+          items: { $ref: "#/components/schemas/Operacao" }
+        source:
+          type: string
+          enum: [manual, api, file, db, mcp]
+          description: Fonte dos dados.
+          example: "manual"
+
+    Participante:
+      type: object
+      properties:
+        id:
+          type: string
+        tipo:
+          type: string
+          enum: [PF, PJ]
+          description: "Pessoa Física ou Jurídica."
+        nome:
+          type: string
+        cpf:
+          type: string
+        cnpj:
+          type: string
+        rating:
+          type: string
+          description: 'Classificacao de risco (ex: AA, BB, CCC)'
+        # ...outros campos dependem do CADOC
+
+    Operacao:
+      type: object
+      properties:
+        id:
+          type: string
+        tipo:
+          type: string
+          description: Tipo de operação (depende do CADOC).
+        valor:
+          type: number
+          format: double
+        prazo:
+          type: integer
+        taxa:
+          type: number
+          format: double
+        # ...outros campos dependem do CADOC
+
+    GenerateResponse:
+      type: object
+      properties:
+        cadoc_code:
+          type: string
+        data_base:
+          type: string
+          format: date-time
+        generated:
+          type: object
+          description: Documento gerado.
+          properties:
+            xml:
+              type: string
+              description: XML final do CADOC.
+            xml_hash:
+              type: string
+              description: SHA-256 do XML.
+            explain:
+              type: object
+              additionalProperties: true
+              description: Explain campo-a-campo do que foi gerado.
+        status:
+          type: string
+          enum: [generated, error]
+        message:
+          type: string
+          description: Mensagem descritiva (erro ou info).
+
+    FieldsResponse:
+      type: object
+      properties:
+        cadoc_code:
+          type: string
+        fields:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              type: { type: string }
+              required: { type: boolean }
+              example: {}
+        versions:
+          type: array
+          items: { type: string }
+        complexity:
+          $ref: "#/components/schemas/ComplexityScore"
+
+    SourceType:
+      type: string
+      enum: [manual, api, file, db, mcp]
+      description: |
+        - **manual**: preenchimento direto no console
+        - **api**: conector REST/GraphQL
+        - **file**: upload CSV/XLSX/PDF
+        - **db**: conector JDBC/Postgres
+        - **mcp**: Model Context Protocol (agente IA)
+
+    SourceConfigResponse:
+      type: object
+      properties:
+        cadoc_code: { type: string }
+        source_type: { $ref: "#/components/schemas/SourceType" }
+        source_name: { type: string }
+        fields:
+          type: array
+          items: { $ref: "#/components/schemas/FieldDescriptor" }
+        status: { type: string }
+        message: { type: string }
+
+    FieldDescriptor:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+        type: { type: string }
+        required: { type: boolean }
+        example: { type: string }
+
+    AdapterInfo:
+      type: object
+      properties:
+        type: { $ref: "#/components/schemas/SourceType" }
+        name: { type: string }
+
+    L4Comparison:
+      type: object
+      properties:
+        current:
+          $ref: "#/components/schemas/L4SubmissionSnapshot"
+        previous:
+          $ref: "#/components/schemas/L4SubmissionSnapshot"
+        new_failures:
+          type: array
+          items: { $ref: "#/components/schemas/L4FailedRule" }
+        fixed_rules:
+          type: array
+          items: { $ref: "#/components/schemas/L4FailedRule" }
+        changed_fields:
+          type: array
+          items: { $ref: "#/components/schemas/L4FieldChange" }
+        alerts:
+          type: array
+          items: { $ref: "#/components/schemas/L4Alert" }
+
+    L4SubmissionSnapshot:
+      type: object
+      properties:
+        id: { type: string }
+        cadoc_code: { type: string }
+        data_base: { type: string }
+        xml_hash: { type: string }
+        submitted_at: { type: string, format: date-time }
+        passed: { type: boolean }
+
+    L4FailedRule:
+      type: object
+      properties:
+        code: { type: string }
+        severity: { type: string }
+        message: { type: string }
+
+    L4FieldChange:
+      type: object
+      properties:
+        cadoc_code: { type: string }
+        field: { type: string }
+        previous: { type: number, format: double }
+        current: { type: number, format: double }
+        delta_pct: { type: number, format: double }
+
+    L4Alert:
+      type: object
+      properties:
+        type: { type: string }
+        code: { type: string }
+        severity: { type: string }
+        message: { type: string }
+
+    FileParseResponse:
+      type: object
+      properties:
+        cadoc_code: { type: string }
+        data_base: { type: string }
+        document:
+          $ref: "#/components/schemas/CanonicalDocument"
+        status: { type: string }
+        message: { type: string }
+
+    CanonicalDocument:
+      type: object
+      description: Modelo canônico independente de CADOC.
+      properties:
+        cadoc_code: { type: string }
+        data_base: { type: string }
+        participantes: { type: array, items: { $ref: "#/components/schemas/Participante" } }
+        operacoes: { type: array, items: { $ref: "#/components/schemas/Operacao" } }
+        extra: { type: object, additionalProperties: true }
+
+    BatchGenerateRequest:
+      type: object
+      required: [cadocs]
+      properties:
+        cadocs:
+          type: array
+          items: { $ref: "#/components/schemas/GenerateRequest" }
+          minItems: 1
+          maxItems: 50
+        run_crossdoc:
+          type: boolean
+          default: false
+          description: Executa validação cross-doc após geração.
+
+    BatchGenerateResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items: { $ref: "#/components/schemas/BatchResult" }
+        crossdoc_errors:
+          type: array
+          items: { $ref: "#/components/schemas/CrossDocError" }
+        crossdoc_warnings:
+          type: array
+          items: { $ref: "#/components/schemas/CrossDocError" }
+        passed:
+          type: boolean
+        message:
+          type: string
+
+    BatchResult:
+      type: object
+      properties:
+        cadoc_code: { type: string }
+        status: { type: string }
+        xml_hash: { type: string }
+        message: { type: string }
+
+    GenerationHistoryResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/GenerationHistoryItem" }
+        page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+
+    GenerationHistoryItem:
+      type: object
+      properties:
+        id: { type: string }
+        cadoc_code: { type: string }
+        data_base: { type: string }
+        generated_at: { type: string, format: date-time }
+        sha256: { type: string }
+        status:
+          type: string
+          enum: [pending, validated, sent, accepted, rejected, error, processing, dead_letter]
+        passed: { type: boolean }
+
+    # ---- Cross-Doc ----
+
+    CrossDocInput:
+      type: object
+      required: [cadoc_code, xml]
+      properties:
+        cadoc_code: { type: string }
+        xml: { type: string }
+        data_base: { type: string }
+
+    CrossDocError:
+      type: object
+      properties:
+        code: { type: string }
+        severity: { type: string, enum: [error, warning] }
+        message: { type: string }
+        involved_docs:
+          type: array
+          items: { type: string }
+          description: Códigos dos documentos envolvidos na inconsistência.
+
+    CrossDocValidateResponse:
+      type: object
+      properties:
+        passed:
+          type: boolean
+        errors:
+          type: array
+          items: { $ref: "#/components/schemas/CrossDocError" }
+        warnings:
+          type: array
+          items: { $ref: "#/components/schemas/CrossDocError" }
+        rules_executed:
+          type: integer
+        duration_ms: { type: integer }
+
+    CrossDocRulesResponse:
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            type: object
+            properties:
+              code: { type: string }
+              severity: { type: string }
+              required_docs: { type: array, items: { type: string } }
+        total: { type: integer }
+
+    # ---- STA ----
+
+    StaSubmitRequest:
+      type: object
+      required: [cadoc_code, xml]
+      properties:
+        cadoc_code: { type: string }
+        data_base: { type: string }
+        xml: { type: string }
+        xml_hash: { type: string }
+        protocolo_sta:
+          type: string
+          description: "Opcional: protocolo de Retorno STA (para re-submissão)."
+
+    StaSubmitResponse:
+      type: object
+      properties:
+        protocolo:
+          type: string
+          description: Número de protocolo STA.
+          example: "STA-2026-694123"
+        status:
+          type: string
+          enum: [submitted, accepted, pending]
+        submitted_at:
+          type: string
+          format: date-time
+
+    StaDisponiveisResponse:
+      type: object
+      properties:
+        documentos:
+          type: array
+          items:
+            type: object
+            properties:
+              protocolo: { type: string }
+              cadoc_code: { type: string }
+              data_base: { type: string }
+              received_at: { type: string, format: date-time }
+              size_bytes: { type: integer }
+        total: { type: integer }
+
+    StaSituacaoResponse:
+      type: object
+      properties:
+        protocolo: { type: string }
+        status:
+          type: string
+          enum: [pending, accepted, rejected, error]
+        details:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+
+    # ---- Radar ----
+
+    RadarAlertsResponse:
+      type: object
+      properties:
+        alerts:
+          type: array
+          items: { $ref: "#/components/schemas/RadarAlert" }
+        total: { type: integer }
+        page: { type: integer }
+        per_page: { type: integer }
+
+    RadarAlert:
+      type: object
+      properties:
+        id: { type: string }
+        cadoc: { type: string }
+        version_before: { type: string }
+        version_after: { type: string }
+        change_type:
+          type: string
+          enum: [major, minor, xsd_change, rule_change]
+        source: { type: string }
+        status:
+          type: string
+          enum: [open, resolved, dismissed]
+        created_at: { type: string, format: date-time }
+        resolved_at: { type: string, format: date-time }
+
+    # ---- Audit ----
+
+    EnviosResponse:
+      type: object
+      properties:
+        envios:
+          type: array
+          items: { $ref: "#/components/schemas/Envio" }
+        total: { type: integer }
+        page: { type: integer }
+        per_page: { type: integer }
+
+    Envio:
+      type: object
+      properties:
+        id: { type: string }
+        if_id: { type: string }
+        cadoc_code: { type: string }
+        data_base: { type: string }
+        xml_hash: { type: string }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+        submitted_at: { type: string, format: date-time }
+        accepted_at: { type: string, format: date-time }
+
+    EnviosStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        by_status:
+          type: object
+          additionalProperties: { type: integer }
+          example: { pending: 2, accepted: 45, rejected: 3 }
+        by_cadoc:
+          type: object
+          additionalProperties: { type: integer }
+        acceptance_rate:
+          type: number
+          format: float
+
+    AuditLogResponse:
+      type: object
+      properties:
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/AuditLogEntry" }
+        total: { type: integer }
+        page: { type: integer }
+        per_page: { type: integer }
+
+    AuditLogEntry:
+      type: object
+      properties:
+        seq: { type: integer }
+        timestamp: { type: string, format: date-time }
+        if_id: { type: string }
+        action: { type: string }
+        resource: { type: string }
+        prev_hash: { type: string }
+        hash: { type: string }
+        metadata: { type: object }
+
+    # ---- Insights ----
+
+    KPIResponse:
+      type: object
+      properties:
+        period:
+          type: string
+          example: "30d"
+        total_validations:
+          type: integer
+        error_rate:
+          type: number
+          format: float
+        top_cadoc:
+          type: string
+        avg_duration_ms:
+          type: number
+          format: float
+        trend:
+          type: string
+          enum: [improving, stable, degrading]
+
+    HeatmapResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: array
+            description: Matriz [hora][dia] com counts de erros.
+        day_labels:
+          type: array
+          items: { type: string }
+          example: ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"]
+        hour_labels:
+          type: array
+          items: { type: integer }
+
+    TopFailingRulesResponse:
+      type: object
+      properties:
+        period: { type: string }
+        rules:
+          type: array
+          items:
+            type: object
+            properties:
+              code: { type: string }
+              cadoc: { type: string }
+              fail_count: { type: integer }
+              fail_rate: { type: number, format: float }
+              avg_field_value: {}
+        total: { type: integer }
+
+    RecommendationsResponse:
+      type: object
+      properties:
+        recommendations:
+          type: array
+          items: { $ref: "#/components/schemas/Recommendation" }
+        total: { type: integer }
+
+    Recommendation:
+      type: object
+      properties:
+        id: { type: string }
+        type: { type: string }
+        title: { type: string }
+        cadoc: { type: string }
+        rule_codes: { type: array, items: { type: string } }
+        status: { type: string, enum: [pending, acknowledged] }
+        created_at: { type: string, format: date-time }
+
+  responses:
+    BadRequest:
+      description: Requisição mal formada ou campos inválidos.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Autenticação requerida ou token inválido.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Recurso não encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalError:
+      description: Erro interno do servidor.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"

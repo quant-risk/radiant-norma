@@ -105,9 +105,9 @@ func (g *Generator) EstimateComplexity(doc *canonical.CanonicalDocument) generat
 	return generator.ComplexityScore{
 		Score:             score,
 		NumOperacoes:      numOp,
-		NumParticipantes:   numPart,
-		EstimatedAPICalls:  0,
-		EstimatedTimeMs:    int64(50 + numOp/10),
+		NumParticipantes:  numPart,
+		EstimatedAPICalls: 0,
+		EstimatedTimeMs:   int64(50 + numOp/10),
 	}
 }
 
@@ -132,12 +132,12 @@ func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocume
 	}
 
 	return &generator.GeneratedDoc{
-		XML:         buf.Bytes(),
-		SHA256:      sha256Hex(buf.Bytes()),
-		CadocCode:   g.CadocCode(),
+		XML:          buf.Bytes(),
+		SHA256:       sha256Hex(buf.Bytes()),
+		CadocCode:    g.CadocCode(),
 		VersaoLayout: doc.VersaoLayout,
-		DataBase:    dataBase,
-		FieldMap:    buildFieldMap(doc),
+		DataBase:     dataBase,
+		FieldMap:     buildFieldMap(doc),
 		Metadata: generator.GenMetadata{
 			GeneratorVersion: "1.0.0",
 			GeneratedAt:      start,
@@ -152,8 +152,8 @@ func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocume
 // Campos Agreg: child elements (não atributos) para ExtractSumOfTag ler.
 type Doc3040 struct {
 	XMLName     xml.Name `xml:"Doc3040"`
-	CNPJ        string   `xml:"cnpj,attr"`        // lowercase para cross-doc rules
-	DataBase    string   `xml:"dataBase,attr"`    // lowercase para cross-doc rules
+	CNPJ        string   `xml:"cnpj,attr"`     // lowercase para cross-doc rules
+	DataBase    string   `xml:"dataBase,attr"` // lowercase para cross-doc rules
 	Remessa     string   `xml:"remessa,attr"`
 	Parte       string   `xml:"parte,attr"`
 	TpArq       string   `xml:"tpArq,attr"`
@@ -169,8 +169,8 @@ type Doc3040 struct {
 // Child elements (não atributos) para cross-doc rules como ExtractSumOfTag.
 // Unique por (natuOp, mod, localiz, tpCli, desempOp, classOp, faixaVlr, przProvm).
 type Agreg struct {
-	NatuOp      string `xml:"NatuOp,omitempty"`    // child element, não attr
-	Mod         string `xml:"Mod,omitempty"`         // child element para XD-002
+	NatuOp      string `xml:"NatuOp,omitempty"` // child element, não attr
+	Mod         string `xml:"Mod,omitempty"`    // child element para XD-002
 	OrigemRec   string `xml:"OrigemRec,omitempty"`
 	VincME      string `xml:"VincME,omitempty"`
 	ClassOp     string `xml:"ClassOp,omitempty"`
@@ -214,15 +214,15 @@ type Totaliz struct {
 // buildModel transforma o CanonicalDocument no modelo XML 3040.
 func buildModel(doc *canonical.CanonicalDocument, dataBase time.Time) Doc3040 {
 	model := Doc3040{
-		CNPJ:        doc.Header.CNPJ,
-		DataBase:    dataBase.Format("2006-01-02"), // cross-doc extractRootAttr espera YYYY-MM-DD
-		Remessa:     fmt.Sprintf("%d", max(1, intVal(doc.Extra["remessa"]))),
-		Parte:       fmt.Sprintf("%d", max(1, intVal(doc.Extra["parte"]))),
-		TpArq:       strVal(doc.Extra["tpArq"], "F"),
-		NomeResp:    strVal(doc.Extra["nomeResp"], "RESP"),
-		EmailResp:   strVal(doc.Extra["emailResp"], "resp@if.com.br"),
-		TelResp:     strVal(doc.Extra["telResp"], "0000000000"),
-		TotalCli:    fmt.Sprintf("%d", len(doc.Participantes)),
+		CNPJ:      doc.Header.CNPJ,
+		DataBase:  dataBase.Format("2006-01-02"), // cross-doc extractRootAttr espera YYYY-MM-DD
+		Remessa:   fmt.Sprintf("%d", max(1, intVal(doc.Extra["remessa"]))),
+		Parte:     fmt.Sprintf("%d", max(1, intVal(doc.Extra["parte"]))),
+		TpArq:     strVal(doc.Extra["tpArq"], "F"),
+		NomeResp:  strVal(doc.Extra["nomeResp"], "RESP"),
+		EmailResp: strVal(doc.Extra["emailResp"], "resp@if.com.br"),
+		TelResp:   strVal(doc.Extra["telResp"], "0000000000"),
+		TotalCli:  fmt.Sprintf("%d", len(doc.Participantes)),
 	}
 
 	agregMap := groupByKey(doc)
@@ -464,10 +464,10 @@ func buildFieldMap(doc *canonical.CanonicalDocument) []canonical.FieldMapping {
 	var fm []canonical.FieldMapping
 	add := func(cosif, xmlTag, val string, fonte canonical.FieldSource) {
 		fm = append(fm, canonical.FieldMapping{
-			CampoCOSIF:      cosif,
-			CampoXML:        xmlTag,
-			ValorFormatado:  val,
-			Fonte:           fonte,
+			CampoCOSIF:     cosif,
+			CampoXML:       xmlTag,
+			ValorFormatado: val,
+			Fonte:          fonte,
 		})
 	}
 	add("dataBase", "dataBase", time.Time(doc.DataBase).Format("200601"), canonical.FontSourceManual)

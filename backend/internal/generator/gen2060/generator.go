@@ -67,11 +67,11 @@ func (g *Generator) EstimateComplexity(doc *canonical.CanonicalDocument) generat
 		score += 0.2
 	}
 	return generator.ComplexityScore{
-		Score:              score,
-		NumOperacoes:       numOp,
-		NumParticipantes:   len(doc.Participantes),
-		EstimatedAPICalls:  0,
-		EstimatedTimeMs:    int64(30 + numOp/20),
+		Score:             score,
+		NumOperacoes:      numOp,
+		NumParticipantes:  len(doc.Participantes),
+		EstimatedAPICalls: 0,
+		EstimatedTimeMs:   int64(30 + numOp/20),
 	}
 }
 
@@ -105,17 +105,17 @@ func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocume
 
 // DocDRM is the root element of the DRM XML.
 type DocDRM struct {
-	XMLName   xml.Name   `xml:"DocDRM"`
-	CNPJ      string     `xml:"cnpj,attr"`
-	DataBase  string     `xml:"dataBase,attr"`
-	RWAJUR1   ValorSimples `xml:"RWAJUR1,omitempty"`
-	RWAJUR2   ValorSimples `xml:"RWAJUR2,omitempty"`
-	RWAJUR3   ValorSimples `xml:"RWAJUR3,omitempty"`
-	RWAJUR4   ValorSimples `xml:"RWAJUR4,omitempty"`
-	VaR       ValorSimples `xml:"VaR,omitempty"`
-	SVaR      ValorSimples `xml:"sVaR,omitempty"`
-	RWACOM    ValorSimples `xml:"RWACOM,omitempty"`
-	Posicoes  []Posicao   `xml:"Posicao,omitempty"`
+	XMLName  xml.Name     `xml:"DocDRM"`
+	CNPJ     string       `xml:"cnpj,attr"`
+	DataBase string       `xml:"dataBase,attr"`
+	RWAJUR1  ValorSimples `xml:"RWAJUR1,omitempty"`
+	RWAJUR2  ValorSimples `xml:"RWAJUR2,omitempty"`
+	RWAJUR3  ValorSimples `xml:"RWAJUR3,omitempty"`
+	RWAJUR4  ValorSimples `xml:"RWAJUR4,omitempty"`
+	VaR      ValorSimples `xml:"VaR,omitempty"`
+	SVaR     ValorSimples `xml:"sVaR,omitempty"`
+	RWACOM   ValorSimples `xml:"RWACOM,omitempty"`
+	Posicoes []Posicao    `xml:"Posicao,omitempty"`
 }
 
 // ValorSimples is a simple element with a valor attribute: <RWAJUR1 valor="100.00"/>
