@@ -12,7 +12,7 @@ auditoria tamper-evident e camadas que o BCValidador não tem.
 <br>
 
 ![Status](https://img.shields.io/badge/status-v3.36.2_✅-10b981?style=for-the-badge)
-![Sprint](https://img.shields.io/badge/sprint-77%2F77-6366f1?style=for-the-badge)
+![Sprint](https://img.shields.io/badge/sprint-78%2F78-6366f1?style=for-the-badge)
 ![Stack](https://img.shields.io/badge/stack-Go_1.25%2B_+_Next.js_15_+_Postgres_16-00ADD8?style=for-the-badge&logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/license-proprietary-1e293b?style=for-the-badge)
 ![Roadmap](https://img.shields.io/badge/roadmap-Plano_Ouro_(12_meses)-f59e0b?style=for-the-badge)
@@ -65,6 +65,7 @@ explainability campo-a-campo, e push direto ao STA.
 **Validação:** 1.099 regras de validação (275+ portadas em Go).
 **Generator:** ✅ 3040, 3050, 4111, 2060, 2061, 2062, 2070, 2160, 2170, 2030 (Sprint 57–73).
 **SDK Go:** `github.com/fortvna/radiant-norma-go` — Go client oficial (Sprint 77).
+**SDK Python:** `github.com/quant-risk/radiant-norma` (sdk/py) — Python client oficial (Sprint 78).
 
 ---
 
@@ -198,8 +199,9 @@ Stack completa em [`backend/README.md`](backend/README.md).
 | **71–73** | DRSAC 4111 + cross-doc rules adapter + handlers REST (history, schemas v2, crossdoc rules) | ✅ v3.36.1 |
 | **74–76** | Tests Sprint 74, cache SchemaInfo 5min TTL (singleflight+mutex), documentação + README | ✅ v3.36.2 |
 | **77** | OpenAPI v3.36.2 spec + Go SDK `github.com/fortvna/radiant-norma-go` | ✅ v3.36.2 |
+| **78** | Python SDK (sdk/py) — `radiant-norma` pip package + 20 smoke tests | ✅ v3.36.2 |
 
-**Total:** 77 sprints · 105 arquivos Go · 29.481 LoC · 516 testes · 48 validações profundas documentadas.
+**Total:** 78 sprints · 105 arquivos Go · 29.481 LoC · 516 testes · 48 validações profundas documentadas.
 
 ### Roadmap 12 meses — Plano Ouro + Norma Generator (Q3 2026 → Q2 2027)
 

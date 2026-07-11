@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "radiant-norma"
+version = "3.36.2"
+description = "Official Python client for Radiant Norma API — BACEN CADOC generation and validation"
+readme = "README.md"
+license = {text = "Proprietary"}
+authors = [
+    {name = "Radiant Risk", email = "api@radiantrisk.com"},
+]
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "requests>=2.31.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "httpx>=0.27.0",
+    "responses>=0.25.0",
+]
+
+[project.urls]
+Homepage = "https://radiantrisk.com"
+Documentation = "https://github.com/quant-risk/radiant-norma"
+Repository = "https://github.com/quant-risk/radiant-norma"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["radiant*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
