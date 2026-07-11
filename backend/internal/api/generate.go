@@ -19,9 +19,18 @@ import (
 
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
 	"github.com/fortvna/radiant-norma/backend/internal/canonical"
+	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 	"github.com/fortvna/radiant-norma/backend/internal/generator"
+	gen2030 "github.com/fortvna/radiant-norma/backend/internal/generator/gen2030"
+	gen2060 "github.com/fortvna/radiant-norma/backend/internal/generator/gen2060"
+	gen2061 "github.com/fortvna/radiant-norma/backend/internal/generator/gen2061"
+	gen2062 "github.com/fortvna/radiant-norma/backend/internal/generator/gen2062"
+	gen2070 "github.com/fortvna/radiant-norma/backend/internal/generator/gen2070"
+	gen2160 "github.com/fortvna/radiant-norma/backend/internal/generator/gen2160"
+	gen2170 "github.com/fortvna/radiant-norma/backend/internal/generator/gen2170"
 	gen3040 "github.com/fortvna/radiant-norma/backend/internal/generator/gen3040"
 	gen3050 "github.com/fortvna/radiant-norma/backend/internal/generator/gen3050"
+	gen4111 "github.com/fortvna/radiant-norma/backend/internal/generator/gen4111"
 	"github.com/fortvna/radiant-norma/backend/internal/ingest"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/go-chi/chi/v5"
@@ -31,8 +40,16 @@ import (
 var genRegistry = generator.NewRegistry()
 
 func init() {
+	genRegistry.Register(gen2030.New())
+	genRegistry.Register(gen2060.New())
+	genRegistry.Register(gen2061.New())
+	genRegistry.Register(gen2062.New())
+	genRegistry.Register(gen2070.New())
+	genRegistry.Register(gen2160.New())
+	genRegistry.Register(gen2170.New())
 	genRegistry.Register(gen3040.New())
 	genRegistry.Register(gen3050.New())
+	genRegistry.Register(gen4111.New())
 }
 
 // generateCadoc handles POST /v1/generate/{cadoc}.
@@ -120,6 +137,150 @@ func (s *Server) generateCadoc(w http.ResponseWriter, r *http.Request) {
 		Status:    "ok",
 		Message:   fmt.Sprintf("%s gerado com sucesso", cadoc),
 	})
+}
+
+// generateBatch handles POST /v1/generate/batch.
+func (s *Server) generateBatch(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "BODY_READ_ERROR", "falha ao ler body")
+		return
+	}
+
+	var req BatchGenerateRequest
+	if err := json.Unmarshal(body, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "JSON_PARSE_ERROR", fmt.Sprintf("JSON inválido: %v", err))
+		return
+	}
+
+	if len(req.Cadocs) == 0 {
+		writeError(w, http.StatusBadRequest, "EMPTY_CADOCS", "nenhum CADOC fornecido")
+		return
+	}
+
+	results := make([]BatchResult, 0, len(req.Cadocs))
+	successfulXMLs := make(map[string]string)
+
+	for _, cadocReq := range req.Cadocs {
+		cadocCode := cadocReq.CadocCode
+
+		if err := ValidateCadocCode(cadocCode); err != nil {
+			results = append(results, BatchResult{
+				CadocCode: cadocCode,
+				Errors: []generator.GenError{{
+					Code:    "INVALID_CADOC",
+					Message: err.Error(),
+				}},
+				Status: "error",
+			})
+			continue
+		}
+
+		g := genRegistry.Get(cadocCode)
+		if g == nil {
+			results = append(results, BatchResult{
+				CadocCode: cadocCode,
+				Errors: []generator.GenError{{
+					Code:    "GENERATOR_NOT_FOUND",
+					Message: fmt.Sprintf("generator para CADOC %s não encontrado", cadocCode),
+				}},
+				Status: "error",
+			})
+			continue
+		}
+
+		dataBase := cadocReq.DataBase
+		if dataBase.IsZero() {
+			dataBase = time.Now()
+			if dataBase.Day() > 25 {
+				dataBase = dataBase.AddDate(0, 1, -dataBase.Day()+1)
+			} else {
+				dataBase = time.Date(dataBase.Year(), dataBase.Month(), 1, 0, 0, 0, 0, time.UTC)
+			}
+		}
+
+		doc := canonical.NewCanonical(cadocReq.IFID, dataBase, canonical.CadocType(cadocCode))
+		if cadocReq.VersaoLayout != "" {
+			doc.VersaoLayout = cadocReq.VersaoLayout
+		} else {
+			doc.VersaoLayout = g.SupportedVersions()[0]
+		}
+		doc.Header.CNPJ = cadocReq.CNPJ
+		doc.Header.NomeIF = cadocReq.NomeIF
+		doc.Header.DataHoraGeracao = time.Now()
+		doc.Extra = cadocReq.Extra
+		doc.Participantes = cadocReq.Participantes
+		doc.Operacoes = cadocReq.Operacoes
+		doc.Metadata.SourceAdapter = cadocReq.Source
+
+		if claims, err := auth.ClaimsFromContext(ctx); err == nil && claims != nil {
+			doc.Metadata.GeneratedBy = claims.IFID
+		}
+
+		generated, err := g.Generate(ctx, doc, dataBase)
+		if err != nil {
+			slog.Error("batch generate", "cadoc", cadocCode, "err", err)
+			results = append(results, BatchResult{
+				CadocCode: cadocCode,
+				Generated: &generator.GeneratedDoc{
+					Errors: []generator.GenError{{
+						Code:    "GENERATION_FAILED",
+						Message: err.Error(),
+					}},
+				},
+				Status: "error",
+			})
+			continue
+		}
+
+		results = append(results, BatchResult{
+			CadocCode: cadocCode,
+			Generated: generated,
+			Status:    "ok",
+		})
+
+		if generated != nil && len(generated.XML) > 0 {
+			successfulXMLs[cadocCode] = string(generated.XML)
+		}
+	}
+
+	response := BatchGenerateResponse{
+		Results: results,
+		Passed:  true,
+		Message: "batch generation completed",
+	}
+
+	// Run cross-doc validation if requested and 2+ CADOCs succeeded
+	if req.RunCrossDoc && len(successfulXMLs) >= 2 && s.CrossDoc != nil {
+		crossResp := s.CrossDoc.Validate(ctx, &crossdoc.ValidationRequest{
+			Cadocs: successfulXMLs,
+		})
+
+		for _, err := range crossResp.Errors {
+			response.CrossDocErrors = append(response.CrossDocErrors, CrossDocError{
+				Code:     err.Code,
+				Severity: "error",
+				Message:  err.Message,
+			})
+		}
+		for _, warn := range crossResp.Warnings {
+			response.CrossDocWarnings = append(response.CrossDocWarnings, CrossDocError{
+				Code:     warn.Code,
+				Severity: "warning",
+				Message:  warn.Message,
+			})
+		}
+		response.Passed = crossResp.Passed
+		if !crossResp.Passed {
+			response.Message = "batch generation completed with cross-doc errors"
+		}
+	} else if req.RunCrossDoc && len(successfulXMLs) < 2 {
+		response.Message = "cross-doc validation skipped: less than 2 CADOCs generated successfully"
+	}
+
+	writeJSON(w, http.StatusOK, response)
 }
 
 // listGenerateFields handles GET /v1/generate/{cadoc}/fields.
@@ -353,6 +514,7 @@ func (s *Server) parseUploadedFile(w http.ResponseWriter, r *http.Request) {
 
 // GenerateRequest é o body do POST /v1/generate/{cadoc}.
 type GenerateRequest struct {
+	CadocCode     string                   `json:"cadoc_code"`
 	IFID          string                   `json:"if_id"`
 	CNPJ          string                   `json:"cnpj"`
 	NomeIF        string                   `json:"nome_if"`
@@ -409,4 +571,37 @@ type FileParseResponse struct {
 // writeError escreve um JSON de erro com código e mensagem.
 func writeError(w http.ResponseWriter, status int, code, msg string) {
 	writeJSON(w, status, map[string]string{"error": code, "message": msg})
+}
+
+// --- Batch generation types ---
+
+// BatchGenerateRequest é o body do POST /v1/generate/batch.
+type BatchGenerateRequest struct {
+	Cadocs     []GenerateRequest `json:"cadocs"`
+	RunCrossDoc bool             `json:"run_crossdoc,omitempty"`
+}
+
+// BatchGenerateResponse é o response do POST /v1/generate/batch.
+type BatchGenerateResponse struct {
+	Results          []BatchResult    `json:"results"`
+	CrossDocErrors   []CrossDocError  `json:"crossdoc_errors,omitempty"`
+	CrossDocWarnings []CrossDocError  `json:"crossdoc_warnings,omitempty"`
+	Passed           bool             `json:"passed"`
+	Message          string          `json:"message"`
+}
+
+// BatchResult representa o resultado da geração de um único CADOC no batch.
+type BatchResult struct {
+	CadocCode string                  `json:"cadoc_code"`
+	Generated *generator.GeneratedDoc `json:"generated,omitempty"`
+	Errors    []generator.GenError    `json:"errors,omitempty"`
+	Warnings  []generator.GenWarning  `json:"warnings,omitempty"`
+	Status    string                  `json:"status"`
+}
+
+// CrossDocError representa um erro ou warning do cross-doc validation.
+type CrossDocError struct {
+	Code     string `json:"code"`
+	Severity string `json:"severity"`
+	Message  string `json:"message"`
 }

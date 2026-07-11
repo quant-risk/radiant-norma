@@ -149,15 +149,16 @@ func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocume
 // Doc3040 é o modelo XML do 3040.
 type Doc3040 struct {
 	XMLName     xml.Name `xml:"Doc3040"`
-	DataBase    string   `xml:"dataBase,attr"`
-	CNPJ        string   `xml:"cnpj,attr"`
-	Remessa     string   `xml:"remessa,attr"`
-	Parte       string   `xml:"parte,attr"`
-	TpArq       string   `xml:"tpArq,attr"`
-	NomeResp    string   `xml:"nomeResp,attr"`
-	EmailResp   string   `xml:"emailResp,attr"`
-	TelResp     string   `xml:"telResp,attr"`
-	TotalCli    string   `xml:"totalCli,attr"`
+	DtBase      string   `xml:"DtBase,attr"`
+	CNPJ        string   `xml:"CNPJ,attr"`
+	Remessa     string   `xml:"Remessa,attr"`
+	Parte       string   `xml:"Parte,attr"`
+	TpArq       string   `xml:"TpArq,attr"`
+	NomeResp    string   `xml:"NomeResp,attr"`
+	EmailResp   string   `xml:"EmailResp,attr"`
+	TelResp     string   `xml:"TelResp,attr"`
+	TotalCli    string   `xml:"TotalCli,attr"`
+	TpFundo     string   `xml:"TpFundo,attr,omitempty"`
 	Agregadas   []Agreg  `xml:"Agreg,omitempty"`
 	Totalizador *Totaliz `xml:"Totalizador,omitempty"`
 }
@@ -209,7 +210,7 @@ type Totaliz struct {
 // buildModel transforma o CanonicalDocument no modelo XML 3040.
 func buildModel(doc *canonical.CanonicalDocument, dataBase time.Time) Doc3040 {
 	model := Doc3040{
-		DataBase:  dataBase.Format("200601"),
+		DtBase:    dataBase.Format("2006-01-02"),
 		CNPJ:      doc.Header.CNPJ,
 		Remessa:   fmt.Sprintf("%d", max(1, intVal(doc.Extra["remessa"]))),
 		Parte:     fmt.Sprintf("%d", max(1, intVal(doc.Extra["parte"]))),
@@ -218,6 +219,7 @@ func buildModel(doc *canonical.CanonicalDocument, dataBase time.Time) Doc3040 {
 		EmailResp: strVal(doc.Extra["emailResp"], "resp@if.com.br"),
 		TelResp:   strVal(doc.Extra["telResp"], "0000000000"),
 		TotalCli:  fmt.Sprintf("%d", len(doc.Participantes)),
+		TpFundo:   strVal(doc.Extra["tpFundo"], ""),
 	}
 
 	agregMap := groupByKey(doc)

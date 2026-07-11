@@ -72,7 +72,7 @@ func newTestServerWithWS(t *testing.T, mockHandler http.Handler) (*api.Server, *
 	audLog := auditlog.New(d)
 	radarSvc := radar.New(d, 1)
 
-	srv := api.NewServer(d, schReg, audSvc, audLog, wsClient, radarSvc, nil, nil, nil, branding.NewBrandingService(d), nil, nil, nil)
+	srv := api.NewServer(d, schReg, audSvc, audLog, wsClient, radarSvc, nil, nil, nil, branding.NewBrandingService(d), nil, nil, nil, nil)
 	srv.ScanLimiter = radar.NewScanLimiter(1 * time.Minute)
 	srv.ScanCache = radar.NewScanCache(5 * time.Minute)
 	srv.AdminAuth = &radar.AdminAuth{Token: "test-admin-token"}

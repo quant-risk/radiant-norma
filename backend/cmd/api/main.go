@@ -106,7 +106,10 @@ func main() {
 		logger.Info("insights LLM initialized", "provider", os.Getenv("LLM_PROVIDER"))
 	}
 
-	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, ruleprefs.NewPreferences(d), ruleprefs.NewToggleLimiter(10, time.Minute), insights.NewAcknowledgments(d), brandingSvc, insightsLLM, marketplaceSvc, pilotSvc)
+	// Cross-Doc L3 — endpoint /v1/crossdoc/validate and /v1/generate/batch.
+	crossDocEngine := crossdoc.NewEngine(crossrules.BuiltinRegistry())
+
+	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, ruleprefs.NewPreferences(d), ruleprefs.NewToggleLimiter(10, time.Minute), insights.NewAcknowledgments(d), brandingSvc, insightsLLM, marketplaceSvc, pilotSvc, crossDocEngine)
 
 	// Sprint 10 — Hub SSE + wrap audit logger pra publicar eventos em
 	// real-time. Em produção, hub pode ser substituído por Kafka/Redis
@@ -236,9 +239,6 @@ func main() {
 	}
 	srv.ScanLimiter = radar.NewScanLimiter(1 * time.Minute)
 	srv.ScanCache = radar.NewScanCache(5 * time.Minute)
-
-	// Cross-Doc L3 — endpoint /v1/crossdoc/validate.
-	srv.CrossDoc = crossdoc.NewEngine(crossrules.BuiltinRegistry())
 
 	// Sprint 8a (v2.1.0) — dev-token endpoint /v1/auth/dev-token.
 	//

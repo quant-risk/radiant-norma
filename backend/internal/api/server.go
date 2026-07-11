@@ -119,7 +119,7 @@ type auditLogAPI interface {
 }
 
 // NewServer cria um Server.
-func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences, tl *ruleprefs.ToggleLimiter, ack *insights.Acknowledgments, br *branding.BrandingService, insightsLLM *insights.LLMService, mp *marketplace.Service, pilotSvc *pilot.Service) *Server {
+func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences, tl *ruleprefs.ToggleLimiter, ack *insights.Acknowledgments, br *branding.BrandingService, insightsLLM *insights.LLMService, mp *marketplace.Service, pilotSvc *pilot.Service, crossDoc *crossdoc.Engine) *Server {
 	return &Server{
 		DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient,
 		Radar: rad, RulePrefs: rp, ToggleLimiter: tl, Insights: ack,
@@ -127,6 +127,7 @@ func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogA
 		InsightsLLM: insightsLLM,
 		Marketplace: mp,
 		Pilot:       pilotSvc,
+		CrossDoc:    crossDoc,
 		startedAt:   time.Now(),
 		RateLimiter: newMemoryRateLimiter(),
 	}
@@ -211,6 +212,8 @@ func (s *Server) Router() http.Handler {
 		r.Get("/generate/adapters", s.listSourceAdapters)
 		// Sprint 60: Wizard UI — parse uploaded CSV/XLSX to CanonicalDocument.
 		r.Post("/generate/file/parse", s.parseUploadedFile)
+		// Sprint 64: Batch generation with optional cross-doc validation.
+		r.Post("/generate/batch", s.generateBatch)
 
 		// STA submission (stub)
 		r.Post("/sta/submit", s.staSubmit)

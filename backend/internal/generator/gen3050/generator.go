@@ -133,7 +133,7 @@ func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocume
 // DocTXB é o elemento raiz do XML 3050 TXB.
 type DocTXB struct {
 	XMLName    xml.Name   `xml:"DocTXB"`
-	CNPJ       string     `xml:"cnpj,attr"`
+	CNPJ       string     `xml:"cnpjInstituicao,attr"`
 	DataBase   string     `xml:"dataBase,attr"`
 	IndRemessa string     `xml:"indRemessa,attr"`
 	NmContato  string     `xml:"nmContato,attr"`
