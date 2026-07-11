@@ -20,6 +20,7 @@ Usage::
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Union
+from urllib.parse import quote
 
 import requests
 from requests import Response
@@ -143,7 +144,7 @@ class Client:
 
     def get_schema(self, cadoc: str) -> SchemaVersion:
         """GET /schemas/{cadoc} — effective schema for a CADOC."""
-        resp = self._request("GET", f"/schemas/{cadoc}")
+        resp = self._request("GET", f"/schemas/{quote(cadoc, safe='')}")
         return SchemaVersion.model_validate(resp.json())
 
     def list_versions(self, cadoc: str) -> VersionsResponse:
@@ -162,7 +163,7 @@ class Client:
 
     def list_rules_by_cadoc(self, cadoc: str) -> RuleListResponse:
         """GET /rules/{cadoc} — all rules for a specific CADOC."""
-        resp = self._request("GET", f"/rules/{cadoc}")
+        resp = self._request("GET", f"/rules/{quote(cadoc, safe='')}")
         return RuleListResponse.model_validate(resp.json())
 
     # -------------------------------------------------------------------------
@@ -206,12 +207,12 @@ class Client:
                 Required: cadoc_code, if_id.
                 Optional: cnpj, nome_if, versao_layout, data_base, participantes, operacoes.
         """
-        resp = self._request("POST", f"/generate/{cadoc}", json=request)
+        resp = self._request("POST", f"/generate/{quote(cadoc, safe='')}", json=request)
         return GenerateResponse.model_validate(resp.json())
 
     def list_generate_fields(self, cadoc: str) -> FieldsResponse:
         """GET /generate/{cadoc}/fields — required fields for generating a CADOC."""
-        resp = self._request("GET", f"/generate/{cadoc}/fields")
+        resp = self._request("GET", f"/generate/{quote(cadoc, safe='')}/fields")
         return FieldsResponse.model_validate(resp.json())
 
     def list_source_adapters(self) -> AdaptersResponse:
@@ -298,7 +299,7 @@ class Client:
 
     def get_radar_alert(self, alert_id: str) -> RadarAlert:
         """GET /radar/alerts/{id} — details of a specific alert."""
-        resp = self._request("GET", f"/radar/alerts/{alert_id}")
+        resp = self._request("GET", f"/radar/alerts/{quote(alert_id, safe='')}")
         return RadarAlert.model_validate(resp.json())
 
     def resolve_radar_alert(self, alert_id: str, resolution: str = "") -> Dict[str, Any]:
@@ -306,7 +307,7 @@ class Client:
         payload: Dict[str, Any] = {}
         if resolution:
             payload["resolution"] = resolution
-        resp = self._request("POST", f"/radar/alerts/{alert_id}/resolve", json=payload)
+        resp = self._request("POST", f"/radar/alerts/{quote(alert_id, safe='')}/resolve", json=payload)
         return resp.json()
 
     def trigger_radar_scan(self, cadoc: Optional[str] = None) -> Dict[str, Any]:
