@@ -11,8 +11,8 @@ auditoria tamper-evident e camadas que o BCValidador não tem.
 
 <br>
 
-![Status](https://img.shields.io/badge/status-v3.36.0_✅-10b981?style=for-the-badge)
-![Sprint](https://img.shields.io/badge/sprint-57%2F67-6366f1?style=for-the-badge)
+![Status](https://img.shields.io/badge/status-v3.36.2_✅-10b981?style=for-the-badge)
+![Sprint](https://img.shields.io/badge/sprint-76%2F76-6366f1?style=for-the-badge)
 ![Stack](https://img.shields.io/badge/stack-Go_1.25%2B_+_Next.js_15_+_Postgres_16-00ADD8?style=for-the-badge&logo=go&logoColor=white)
 ![License](https://img.shields.io/badge/license-proprietary-1e293b?style=for-the-badge)
 ![Roadmap](https://img.shields.io/badge/roadmap-Plano_Ouro_(12_meses)-f59e0b?style=for-the-badge)
@@ -53,7 +53,7 @@ explainability campo-a-campo, e push direto ao STA.
 |---|---|---|---|---|
 | **3040** | SCR — Risco de Crédito | Mensal | ✅ Sprint 57 | ✅ 275 regras Go (B/F/C/S/I/H) |
 | **3044** | Eventos de Crédito (JSON) | Por evento | 📋 Sprint 57 | ✅ 17 regras T01-T19 |
-| **3050** | Estatísticas Agregadas | Mensal/diária | 📋 Sprint 57 | ✅ 170 regras TXB |
+| **3050** | Estatísticas Agregadas | Mensal/diária | ✅ Sprint 57 | ✅ 170 regras TXB |
 | **2030** | DRSAC — Risco ESG | Semestral | 📋 Sprint 57 | ⚠️ 0 regras (críticas não-públicas) |
 | **2060** | DRM — Risco de Mercado | Mensal | 📋 Sprint 57 | ✅ 22 regras |
 | **2061** | DLO — Limites Operacionais | Mensal | 📋 Sprint 57 | ✅ 24+ regras ELIM |
@@ -63,7 +63,7 @@ explainability campo-a-campo, e push direto ao STA.
 | **2170** | DLP — Liquidez LP (NSFR) | Mensal | 📋 Sprint 57 | ✅ 10 regras NSFR |
 
 **Validação:** 1.099 regras de validação (275+ portadas em Go).
-**Generator:** ✅ 3040 implementado (Sprint 57). Outros 9 CADOCs em开发和planejamento (Sprint 58+).
+**Generator:** ✅ 3040, 3050, 4111, 2060, 2061, 2062, 2070, 2160, 2170, 2030 (Sprint 57–73).
 
 ---
 
@@ -159,6 +159,17 @@ curl -s -X POST http://localhost:8080/v1/validate \
   -H "X-IF-ID: demo" \
   -H "Content-Type: application/json" \
   -d "{\"cadoc\":\"3040\",\"xml\":\"<root>...</root>\"}" | jq .
+
+# Geração de CADOCs (Sprint 57–73)
+# Lista schemas com metadata de geração (complexidade, versões)
+curl -s http://localhost:8080/v1/schema -H "X-IF-ID: demo" | jq .
+
+# Lista todas as regras cross-doc (XD-001, XD-4111-01..05, XD-DR01..08)
+curl -s http://localhost:8080/v1/crossdoc/rules -H "X-IF-ID: demo" | jq '.rules[] | .code'
+
+# Histórico de gerações do IF (paginado)
+curl -s "http://localhost:8080/v1/generate/history?page=1&per_page=20" \
+  -H "X-IF-ID: demo" | jq .
 ```
 
 Stack completa em [`backend/README.md`](backend/README.md).
