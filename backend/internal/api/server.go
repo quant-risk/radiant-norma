@@ -279,11 +279,13 @@ func (s *Server) Router() http.Handler {
 		r.Put("/admin/tenant/{id}/branding", s.adminUpdateBranding)
 
 		// Sprint 61 v3.34.43: Webhooks outbound.
-		r.Route("/v1/webhooks", func(r chi.Router) {
+		r.Route("/webhooks", func(r chi.Router) {
 			r.Get("/", s.listWebhooks)
 			r.Post("/", s.registerWebhook)
 			r.Delete("/{id}", s.deleteWebhook)
 			r.Get("/{id}/deliveries", s.listDeliveries)
+			r.Get("/{id}/deliveries/{delivery_id}", s.getDelivery)
+			r.Post("/{id}/deliveries/{delivery_id}/retry", s.retryDelivery)
 		})
 
 		// Sprint 62 v3.34.44: Marketplace de regras customizadas.

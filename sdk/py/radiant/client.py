@@ -375,6 +375,68 @@ class Client:
         resp = self._request("GET", "/insights/rules/top-failing", params=params)
         return resp.json()
 
+    # -------------------------------------------------------------------------
+    # Webhooks
+    # -------------------------------------------------------------------------
+
+    def list_webhooks(self) -> Dict[str, Any]:
+        """GET /v1/webhooks — lista webhooks registrados."""
+        resp = self._request("GET", "/v1/webhooks")
+        return resp.json()
+
+    def register_webhook(
+        self,
+        url: str,
+        events: List[str],
+        secret: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """POST /v1/webhooks — registra um novo webhook."""
+        body: Dict[str, Any] = {"url": url, "events": events}
+        if secret:
+            body["secret"] = secret
+        resp = self._request("POST", "/v1/webhooks", json=body)
+        return resp.json()
+
+    def delete_webhook(self, webhook_id: str) -> None:
+        """DELETE /v1/webhooks/{id} — remove um webhook."""
+        path = f"/v1/webhooks/{quote(webhook_id, safe='')}"
+        self._request("DELETE", path)
+
+    def list_deliveries(
+        self,
+        webhook_id: str,
+        page: int = 1,
+        limit: int = 20,
+        status: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """GET /v1/webhooks/{id}/deliveries — lista entregas com paginação."""
+        path = f"/v1/webhooks/{quote(webhook_id, safe='')}/deliveries"
+        params: Dict[str, Any] = {"page": page, "limit": limit}
+        if status:
+            params["status"] = status
+        resp = self._request("GET", path, params=params)
+        return resp.json()
+
+    def get_delivery(
+        self,
+        webhook_id: str,
+        delivery_id: str,
+    ) -> Dict[str, Any]:
+        """GET /v1/webhooks/{id}/deliveries/{delivery_id} — retorna uma entrega."""
+        path = f"/v1/webhooks/{quote(webhook_id, safe='')}/deliveries/{quote(delivery_id, safe='')}"
+        resp = self._request("GET", path)
+        return resp.json()
+
+    def retry_delivery(
+        self,
+        webhook_id: str,
+        delivery_id: str,
+    ) -> Dict[str, Any]:
+        """POST /v1/webhooks/{id}/deliveries/{delivery_id}/retry — reenvia uma entrega."""
+        path = f"/v1/webhooks/{quote(webhook_id, safe='')}/deliveries/{quote(delivery_id, safe='')}/retry"
+        resp = self._request("POST", path)
+        return resp.json()
+
     def close(self) -> None:
         """Close the underlying session."""
         self._session.close()

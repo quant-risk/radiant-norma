@@ -175,10 +175,21 @@ type Delivery struct {
 }
 
 // ListDeliveries returns recent deliveries for a webhook.
+// Returns ErrWebhookNotFound if the webhook doesn't exist or belongs to another tenant.
 func (s *Service) ListDeliveries(ctx context.Context, ifID, webhookID string, limit int) ([]Delivery, error) {
+	// First verify the webhook belongs to this tenant.
+	var exists int
+	if err := s.db.QueryRowContext(ctx,
+		`SELECT 1 FROM webhooks WHERE id = ? AND if_id = ? AND active = 1`,
+		webhookID, ifID).Scan(&exists); err == sql.ErrNoRows {
+		return nil, fmt.Errorf("webhook not found")
+	} else if err != nil {
+		return nil, fmt.Errorf("check webhook: %w", err)
+	}
+
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT wd.id, wd.webhook_id, wd.event, wd.payload, wd.status,
-		       COALESCE(wd.http_status, 0), wd.attempt, wd.created_at, COALESCE(wd.delivered_at, '1970-01-01')
+		       COALESCE(wd.http_status, 0), wd.attempt, wd.created_at, wd.delivered_at
 		FROM webhook_deliveries wd
 		JOIN webhooks w ON w.id = wd.webhook_id
 		WHERE w.if_id = ? AND wd.webhook_id = ?
@@ -193,18 +204,133 @@ func (s *Service) ListDeliveries(ctx context.Context, ifID, webhookID string, li
 	var out []Delivery
 	for rows.Next() {
 		var d Delivery
+		var deliveredAt sql.NullTime
 		if err := rows.Scan(&d.ID, &d.WebhookID, &d.Event, &d.Payload, &d.Status,
-			&d.HTTPStatus, &d.Attempt, &d.CreatedAt, &d.DeliveredAt); err != nil {
+			&d.HTTPStatus, &d.Attempt, &d.CreatedAt, &deliveredAt); err != nil {
 			return nil, fmt.Errorf("scan delivery: %w", err)
+		}
+		if deliveredAt.Valid {
+			d.DeliveredAt = deliveredAt.Time
 		}
 		out = append(out, d)
 	}
 	return out, rows.Err()
 }
 
+// GetDelivery returns a single delivery by ID (tenant-scoped).
+func (s *Service) GetDelivery(ctx context.Context, ifID, webhookID, deliveryID string) (*Delivery, error) {
+	var d Delivery
+	var deliveredAt sql.NullTime
+	err := s.db.QueryRowContext(ctx, `
+		SELECT wd.id, wd.webhook_id, wd.event, wd.payload, wd.status,
+		       COALESCE(wd.http_status, 0), wd.attempt, wd.created_at, wd.delivered_at
+		FROM webhook_deliveries wd
+		JOIN webhooks w ON w.id = wd.webhook_id
+		WHERE w.if_id = ? AND wd.webhook_id = ? AND wd.id = ?
+	`, ifID, webhookID, deliveryID).Scan(
+		&d.ID, &d.WebhookID, &d.Event, &d.Payload, &d.Status,
+		&d.HTTPStatus, &d.Attempt, &d.CreatedAt, &deliveredAt)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("delivery not found")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get delivery: %w", err)
+	}
+	if deliveredAt.Valid {
+		d.DeliveredAt = deliveredAt.Time
+	}
+	return &d, nil
+}
+
+// RetryDelivery resets a failed delivery back to 'pending' so the dispatcher
+// will re-attempt it. Only works on deliveries in 'failed' status.
+// Tenant-scoped via IFID check on the webhook.
+func (s *Service) RetryDelivery(ctx context.Context, ifID, webhookID, deliveryID string) error {
+	res, err := s.db.ExecContext(ctx, `
+		UPDATE webhook_deliveries
+		SET status='pending', attempt=0, http_status=0, response_body=NULL
+		WHERE id = ?
+		AND webhook_id = ?
+		AND status = 'failed'
+		AND EXISTS (SELECT 1 FROM webhooks WHERE id = ? AND if_id = ?)
+	`, deliveryID, webhookID, webhookID, ifID)
+	if err != nil {
+		return fmt.Errorf("retry delivery: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("delivery not found or not in failed status")
+	}
+	// Re-enqueue via dispatcher if available.
+	if s.ds != nil {
+		var payload, event string
+		_ = s.db.QueryRowContext(ctx,
+			"SELECT payload, event FROM webhook_deliveries WHERE id=?", deliveryID,
+		).Scan(&payload, &event)
+		if payload != "" {
+			s.ds.Enqueue(deliveryID, webhookID, event, payload)
+		}
+	}
+	return nil
+}
+
+// DispatchSchemaChanged fires a schema.changed webhook event.
+func (s *Service) DispatchSchemaChanged(ctx context.Context, ifID, cadoc, effectiveFrom, changelog string) {
+	if s == nil {
+		return
+	}
+	evt := EventSchemaChanged{}
+	evt.WebhookBase = WebhookBase{Event: "schema.changed", Timestamp: Now(), IFID: ifID}
+	evt.Cadoc = cadoc
+	evt.EffectiveFrom = effectiveFrom
+	evt.Changelog = changelog
+	s.Dispatch(ctx, ifID, "schema.changed", evt)
+}
+
+// DispatchRadarChangeDetected fires a radar.change_detected webhook event.
+func (s *Service) DispatchRadarChangeDetected(ctx context.Context, ifID, cadoc, scanID string, changes []Change) {
+	if s == nil {
+		return
+	}
+	evt := EventRadarChangeDetected{}
+	evt.WebhookBase = WebhookBase{Event: "radar.change_detected", Timestamp: Now(), IFID: ifID}
+	evt.Cadoc = cadoc
+	evt.ScanID = scanID
+	evt.Changes = changes
+	s.Dispatch(ctx, ifID, "radar.change_detected", evt)
+}
+
+// DispatchSubmissionAccepted fires a submission.accepted webhook event.
+func (s *Service) DispatchSubmissionAccepted(ctx context.Context, ifID, cadoc, dataBase, protocolo, xmlHash string) {
+	if s == nil {
+		return
+	}
+	evt := EventSubmissionAccepted{}
+	evt.WebhookBase = WebhookBase{Event: "submission.accepted", Timestamp: Now(), IFID: ifID}
+	evt.Cadoc = cadoc
+	evt.DataBase = dataBase
+	evt.Protocolo = protocolo
+	evt.XMLHash = xmlHash
+	s.Dispatch(ctx, ifID, "submission.accepted", evt)
+}
+
+// DispatchSubmissionRejected fires a submission.rejected webhook event.
+func (s *Service) DispatchSubmissionRejected(ctx context.Context, ifID, cadoc, dataBase, protocolo, reason string) {
+	if s == nil {
+		return
+	}
+	evt := EventSubmissionRejected{}
+	evt.WebhookBase = WebhookBase{Event: "submission.rejected", Timestamp: Now(), IFID: ifID}
+	evt.Cadoc = cadoc
+	evt.DataBase = dataBase
+	evt.Protocolo = protocolo
+	evt.Reason = reason
+	s.Dispatch(ctx, ifID, "submission.rejected", evt)
+}
+
 // ============================================================
 // Event types
-// ============================================================
+// ====================================
 
 // EventValidationCompleted fired when a CADOC validation finishes.
 type EventValidationCompleted struct {
@@ -240,6 +366,24 @@ type Change struct {
 	Kind     string `json:"kind"` // added, removed, modified
 	OldValue string `json:"old_value,omitempty"`
 	NewValue string `json:"new_value,omitempty"`
+}
+
+// EventSubmissionAccepted fired when a submission is accepted by BACEN STA.
+type EventSubmissionAccepted struct {
+	WebhookBase
+	Cadoc       string `json:"cadoc"`
+	DataBase    string `json:"data_base"`
+	Protocolo   string `json:"protocolo"`
+	XMLHash     string `json:"xml_hash,omitempty"`
+}
+
+// EventSubmissionRejected fired when a submission is rejected by BACEN STA.
+type EventSubmissionRejected struct {
+	WebhookBase
+	Cadoc     string `json:"cadoc"`
+	DataBase  string `json:"data_base"`
+	Protocolo string `json:"protocolo"`
+	Reason    string `json:"reason,omitempty"`
 }
 
 // WebhookBase is embedded in every event.

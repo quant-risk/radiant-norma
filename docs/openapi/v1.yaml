@@ -67,6 +67,8 @@ tags:
     description: Histórico de envios e auditoria.
   - name: Insights
     description: KPIs, heatmaps e recomendações orientadas por ML.
+  - name: Webhooks
+    description: Webhooks outbound — eventos de validação, schema, radar e submissão.
 
 paths:
 
@@ -1228,6 +1230,191 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  # =====================================================================
+  # Webhooks
+  # =====================================================================
+
+  /v1/webhooks:
+    get:
+      operationId: listWebhooks
+      summary: Lista webhooks registrados para o tenant.
+      tags: [Webhooks]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Lista de webhooks.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Webhook"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: registerWebhook
+      summary: Registra um novo webhook.
+      tags: [Webhooks]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterWebhookRequest"
+      responses:
+        "201":
+          description: Webhook criado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          description: Validação falhou.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/webhooks/{id}:
+    delete:
+      operationId: deleteWebhook
+      summary: Remove um webhook.
+      tags: [Webhooks]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Webhook removido.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/webhooks/{id}/deliveries:
+    get:
+      operationId: listDeliveries
+      summary: Lista entregas de um webhook com paginação.
+      tags: [Webhooks]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+        - name: status
+          in: query
+          description: Filtrar por status (pending, success, failed).
+          schema: { type: string, enum: [pending, success, failed] }
+      responses:
+        "200":
+          description: Lista de entregas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Delivery"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/webhooks/{id}/deliveries/{delivery_id}:
+    get:
+      operationId: getDelivery
+      summary: Retorna uma entrega específica.
+      tags: [Webhooks]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: delivery_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Detalhes da entrega.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delivery"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/webhooks/{id}/deliveries/{delivery_id}/retry:
+    post:
+      operationId: retryDelivery
+      summary: Reenvia uma entrega com falha.
+      tags: [Webhooks]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: delivery_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Entrega reenfileirada.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  status: { type: string }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Entrega não está em estado falhou.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
 # =====================================================================
 # Components
 # =====================================================================
@@ -2061,6 +2248,119 @@ components:
         rule_codes: { type: array, items: { type: string } }
         status: { type: string, enum: [pending, acknowledged] }
         created_at: { type: string, format: date-time }
+
+    # ---- Webhooks ----
+
+    Webhook:
+      type: object
+      properties:
+        id: { type: string }
+        if_id: { type: string }
+        url: { type: string }
+        events:
+          type: array
+          items: { type: string }
+          description: "Eventos aceitos: validation.completed, schema.changed, radar.change_detected, submission.accepted, submission.rejected"
+        active: { type: boolean }
+        created_at: { type: string, format: date-time }
+
+    RegisterWebhookRequest:
+      type: object
+      required: [url, events]
+      properties:
+        url:
+          type: string
+          description: URL HTTPS do endpoint receptor.
+          example: "https://example.com/webhooks/radiant"
+        secret:
+          type: string
+          description: Opcional. Secret usado para HMAC-SHA256. Se omitido, assinaturas não são geradas.
+          example: "whsec_abc123xyz"
+        events:
+          type: array
+          items: { type: string }
+          minItems: 1
+          description: Lista de eventos para assinar.
+          example: ["validation.completed", "schema.changed"]
+
+    Delivery:
+      type: object
+      properties:
+        id: { type: string }
+        webhook_id: { type: string }
+        if_id: { type: string }
+        event: { type: string }
+        status: { type: string, enum: [pending, success, failed] }
+        attempt_count: { type: integer }
+        last_attempt: { type: string, format: date-time, nullable: true }
+        next_retry: { type: string, format: date-time, nullable: true }
+        response_code: { type: integer, nullable: true }
+        error: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    # ---- Webhook event payloads ----
+
+    EventValidationCompleted:
+      type: object
+      properties:
+        event: { type: string, example: "validation.completed" }
+        timestamp: { type: string, format: date-time }
+        if_id: { type: string }
+        cadoc_code: { type: string }
+        data_base: { type: string }
+        status: { type: string }
+        rule_codes: { type: array, items: { type: string } }
+        error_count: { type: integer }
+
+    EventSchemaChanged:
+      type: object
+      properties:
+        event: { type: string, example: "schema.changed" }
+        timestamp: { type: string, format: date-time }
+        if_id: { type: string }
+        cadoc: { type: string }
+        effective_from: { type: string }
+        changelog: { type: string }
+
+    EventRadarChangeDetected:
+      type: object
+      properties:
+        event: { type: string, example: "radar.change_detected" }
+        timestamp: { type: string, format: date-time }
+        if_id: { type: string }
+        cadoc: { type: string }
+        scan_id: { type: string }
+        changes:
+          type: array
+          items:
+            type: object
+            properties:
+              tag: { type: string }
+              attr: { type: string }
+              kind: { type: string }
+              old_value: { type: string }
+              new_value: { type: string }
+
+    EventSubmissionAccepted:
+      type: object
+      properties:
+        event: { type: string, example: "submission.accepted" }
+        timestamp: { type: string, format: date-time }
+        if_id: { type: string }
+        cadoc_code: { type: string }
+        data_base: { type: string }
+        xml_hash: { type: string }
+
+    EventSubmissionRejected:
+      type: object
+      properties:
+        event: { type: string, example: "submission.rejected" }
+        timestamp: { type: string, format: date-time }
+        if_id: { type: string }
+        cadoc_code: { type: string }
+        data_base: { type: string }
+        xml_hash: { type: string }
+        reason: { type: string }
 
   responses:
     BadRequest:
