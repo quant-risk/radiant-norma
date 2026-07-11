@@ -1236,7 +1236,7 @@ paths:
   # Marketplace
   # =====================================================================
 
-  /v1/marketplace:
+  /marketplace:
     get:
       operationId: listMarketplaceRules
       summary: Lista regras disponíveis no marketplace.
@@ -1403,7 +1403,7 @@ paths:
   # Webhooks
   # =====================================================================
 
-  /v1/webhooks:
+  /webhooks:
     get:
       operationId: listWebhooks
       summary: Lista webhooks registrados para o tenant.

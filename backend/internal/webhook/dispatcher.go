@@ -62,11 +62,16 @@ func (d *Dispatcher) processJob(job deliveryJob) {
 	// row (created by Dispatch or RetryDelivery) is preserved — avoiding the
 	// DELETE+INSERT cycle of INSERT OR REPLACE which races with concurrent
 	// goroutines on the same SQLite connection in the test environment.
-	_, err := d.db.ExecContext(ctx,
+	res, err := d.db.ExecContext(ctx,
 		`UPDATE webhook_deliveries SET status='pending' WHERE id=? AND webhook_id=?`,
 		job.ID, job.WebhookID)
 	if err != nil {
-		slog.Error("webhook deliver: failed to upsert delivery record", "id", job.ID, "err", err)
+		slog.Error("webhook deliver: failed to update delivery record", "id", job.ID, "err", err)
+		return
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		slog.Warn("webhook deliver: delivery record not found, skipping", "id", job.ID, "webhook_id", job.WebhookID)
 		return
 	}
 

@@ -151,7 +151,9 @@ func (s *Service) Dispatch(ctx context.Context, ifID, event string, payload any)
 			continue
 		}
 		deliveryID := newID()
-		s.ds.Enqueue(deliveryID, id, event, payloadStr)
+		if s.ds != nil {
+			s.ds.Enqueue(deliveryID, id, event, payloadStr)
+		}
 
 		// Fire-and-forget: worker processa a entrega.
 		// Se secret existe, calcula HMAC-SHA256 do payload.

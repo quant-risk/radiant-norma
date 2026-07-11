@@ -380,7 +380,7 @@ class Client:
     # -------------------------------------------------------------------------
 
     def list_webhooks(self) -> Dict[str, Any]:
-        """GET /v1/webhooks — lista webhooks registrados."""
+        """GET /webhooks — lista webhooks registrados."""
         resp = self._request("GET", "/webhooks")
         return resp.json()
 
@@ -390,7 +390,7 @@ class Client:
         events: List[str],
         secret: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """POST /v1/webhooks — registra um novo webhook."""
+        """POST /webhooks — registra um novo webhook."""
         body: Dict[str, Any] = {"url": url, "events": events}
         if secret:
             body["secret"] = secret
@@ -398,7 +398,7 @@ class Client:
         return resp.json()
 
     def delete_webhook(self, webhook_id: str) -> None:
-        """DELETE /v1/webhooks/{id} — remove um webhook."""
+        """DELETE /webhooks/{id} — remove um webhook."""
         path = f"/webhooks/{quote(webhook_id, safe='')}"
         self._request("DELETE", path)
 
@@ -409,7 +409,7 @@ class Client:
         limit: int = 20,
         status: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """GET /v1/webhooks/{id}/deliveries — lista entregas com paginação."""
+        """GET /webhooks/{id}/deliveries — lista entregas com paginação."""
         path = f"/webhooks/{quote(webhook_id, safe='')}/deliveries"
         params: Dict[str, Any] = {"page": page, "limit": limit}
         if status:
@@ -422,7 +422,7 @@ class Client:
         webhook_id: str,
         delivery_id: str,
     ) -> Dict[str, Any]:
-        """GET /v1/webhooks/{id}/deliveries/{delivery_id} — retorna uma entrega."""
+        """GET /webhooks/{id}/deliveries/{delivery_id} — retorna uma entrega."""
         path = f"/webhooks/{quote(webhook_id, safe='')}/deliveries/{quote(delivery_id, safe='')}"
         resp = self._request("GET", path)
         return resp.json()
@@ -432,7 +432,7 @@ class Client:
         webhook_id: str,
         delivery_id: str,
     ) -> Dict[str, Any]:
-        """POST /v1/webhooks/{id}/deliveries/{delivery_id}/retry — reenvia uma entrega."""
+        """POST /webhooks/{id}/deliveries/{delivery_id}/retry — reenvia uma entrega."""
         path = f"/webhooks/{quote(webhook_id, safe='')}/deliveries/{quote(delivery_id, safe='')}/retry"
         resp = self._request("POST", path)
         return resp.json()
@@ -448,7 +448,7 @@ class Client:
         limit: int = 20,
         offset: int = 0,
     ) -> Dict[str, Any]:
-        """GET /v1/marketplace — lista regras disponíveis no marketplace."""
+        """GET /marketplace — lista regras disponíveis no marketplace."""
         params: Dict[str, Any] = {"limit": limit, "offset": offset}
         if cadoc:
             params["cadoc"] = cadoc
@@ -468,7 +468,7 @@ class Client:
         author_name: Optional[str] = None,
         tags: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
-        """POST /v1/marketplace — publica uma regra no marketplace."""
+        """POST /marketplace — publica uma regra no marketplace."""
         body: Dict[str, Any] = {
             "name": name,
             "code": code,
@@ -487,19 +487,19 @@ class Client:
         return resp.json()
 
     def install_rule(self, rule_id: str) -> Dict[str, Any]:
-        """POST /v1/marketplace/{id}/install — instala uma regra."""
+        """POST /marketplace/{id}/install — instala uma regra."""
         path = f"/marketplace/{quote(rule_id, safe='')}/install"
         resp = self._request("POST", path)
         return resp.json()
 
     def rate_rule(self, rule_id: str, stars: int) -> Dict[str, Any]:
-        """POST /v1/marketplace/{id}/rate — avalia uma regra (1-5 estrelas)."""
+        """POST /marketplace/{id}/rate — avalia uma regra (1-5 estrelas)."""
         path = f"/marketplace/{quote(rule_id, safe='')}/rate"
         resp = self._request("POST", path, json={"stars": stars})
         return resp.json()
 
     def list_installed_rules(self) -> List[Dict[str, Any]]:
-        """GET /v1/marketplace/installed — lista regras instaladas pelo tenant."""
+        """GET /marketplace/installed — lista regras instaladas pelo tenant."""
         resp = self._request("GET", "/marketplace/installed")
         return resp.json()
 
