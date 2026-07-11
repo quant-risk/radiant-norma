@@ -98,10 +98,14 @@ func NewSchemaInfoCache() *SchemaInfoCache {
 }
 
 // GetOrFetch retorna cache se válido, senão chama fetch() e cacheia.
+// Sempre retorna deep copy do slice Schemas para evitar aliasing com o cache.
 func (c *SchemaInfoCache) GetOrFetch(fetch func() (*schemaListResponse, error)) (*schemaListResponse, error) {
 	c.mu.Lock()
 	if c.resp != nil && time.Since(c.cachedAt) < c.ttl {
-		out := *c.resp // shallow copy
+		out := *c.resp
+		schemas := make([]schemaInfo, len(c.resp.Schemas))
+		copy(schemas, c.resp.Schemas)
+		out.Schemas = schemas
 		c.mu.Unlock()
 		return &out, nil
 	}
@@ -112,6 +116,9 @@ func (c *SchemaInfoCache) GetOrFetch(fetch func() (*schemaListResponse, error)) 
 		// Re-check após acquire
 		if c.resp != nil && time.Since(c.cachedAt) < c.ttl {
 			out := *c.resp
+			schemas := make([]schemaInfo, len(c.resp.Schemas))
+			copy(schemas, c.resp.Schemas)
+			out.Schemas = schemas
 			c.mu.Unlock()
 			return &out, nil
 		}
@@ -130,7 +137,11 @@ func (c *SchemaInfoCache) GetOrFetch(fetch func() (*schemaListResponse, error)) 
 	if err != nil {
 		return nil, err
 	}
-	return v.(*schemaListResponse), nil
+	// Deep copy do resultado do singleflight antes de retornar.
+	schemas := make([]schemaInfo, len(v.(*schemaListResponse).Schemas))
+	copy(schemas, v.(*schemaListResponse).Schemas)
+	out := &schemaListResponse{Schemas: schemas, Total: v.(*schemaListResponse).Total}
+	return out, nil
 }
 
 // listSchemasV2 handles GET /v1/schema.
@@ -220,18 +231,74 @@ func (s *Server) cadocsWithCacheWithoutLock() ([]string, error) {
 }
 
 // latestVersion retorna a versão mais recente de uma lista de versões.
-// Assume formato "X.Y" e retorna o último alfabeticamente (X.Y crescente).
+// Usa comparação semântica (parts[0].major, parts[0].minor) para ordernar.
+// Funciona corretamente com versões como "3.9" vs "3.10" onde string compare
+// falharia (alfabeticamente "3.9" > "3.10" porque '9' > '1').
 func latestVersion(versions []string) string {
 	if len(versions) == 0 {
 		return ""
 	}
 	latest := versions[0]
 	for _, v := range versions[1:] {
-		if v > latest {
+		if compareVersion(v, latest) > 0 {
 			latest = v
 		}
 	}
 	return latest
+}
+
+// compareVersion retorna -1, 0, +1 comparando v1 e v2 semanticamente.
+// Suporta formato "X.Y" ou "X.Y.Z". Usa major.minor para comparação primária.
+func compareVersion(v1, v2 string) int {
+	p1 := splitVersion(v1)
+	p2 := splitVersion(v2)
+	major1, minor1 := p1[0], p1[1]
+	major2, minor2 := p2[0], p2[1]
+	if major1 != major2 {
+		if major1 > major2 {
+			return 1
+		}
+		return -1
+	}
+	if minor1 != minor2 {
+		if minor1 > minor2 {
+			return 1
+		}
+		return -1
+	}
+	return 0
+}
+
+// splitVersion divide "X.Y" ou "X.Y.Z" em inteiros.
+func splitVersion(v string) (parts [3]int) {
+	for i := range parts {
+		parts[i] = -1
+	}
+	s := v
+	for i := 0; i < len(s); i++ {
+		if s[i] == '.' {
+			s = s[i+1:]
+			break
+		}
+		parts[0] = parts[0]*10 + int(s[i]-'0')
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] == '.' {
+			s = s[i+1:]
+			break
+		}
+		if s[i] < '0' || s[i] > '9' {
+			break
+		}
+		parts[1] = parts[1]*10 + int(s[i]-'0')
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			break
+		}
+		parts[2] = parts[2]*10 + int(s[i]-'0')
+	}
+	return
 }
 
 // generationHistoryItem é um item no histórico de gerações.
