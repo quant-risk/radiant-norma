@@ -83,6 +83,9 @@ type Server struct {
 	// listSchemas / listRules consultam DB mas com cache 5min.
 	CadocListCache *schema.CadocListCache
 
+	// Sprint 75: schema info cache (listSchemasV2).
+	SchemaInfoCache *SchemaInfoCache
+
 	// Sprint 10 — SSE hub para real-time push (alertas/audit/envios).
 	// Se nil, /v1/events/stream retorna 503.
 	EventsHub *realtime.Hub

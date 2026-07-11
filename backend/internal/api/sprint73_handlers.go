@@ -7,15 +7,18 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/fortvna/radiant-norma/backend/internal/canonical"
 	"github.com/fortvna/radiant-norma/backend/internal/generator"
+	"golang.org/x/sync/singleflight"
 )
 
 // crossDocRuleInfo descreve uma regra cross-doc para o frontend.
@@ -74,25 +77,98 @@ type schemaInfo struct {
 // schemaListResponse é o response de GET /v1/schema.
 type schemaListResponse struct {
 	Schemas []schemaInfo `json:"schemas"`
-	Total   int          `json:"total"`
+	Total   int         `json:"total"`
+}
+
+// schemaInfoCache é um cache in-memory (5min TTL) para listSchemasV2.
+//
+// Sprint 75: Evita N queries (1 por CADOC) ao Schema.Registry.
+// O cache expira a cada 5min — dados de schema_versions mudam raramente.
+type SchemaInfoCache struct {
+	mu       sync.Mutex
+	resp     *schemaListResponse
+	cachedAt time.Time
+	ttl      time.Duration
+	sf       singleflight.Group
+}
+
+// NewSchemaInfoCache cria um cache com TTL de 5 minutos.
+func NewSchemaInfoCache() *SchemaInfoCache {
+	return &SchemaInfoCache{ttl: 5 * time.Minute}
+}
+
+// GetOrFetch retorna cache se válido, senão chama fetch() e cacheia.
+func (c *SchemaInfoCache) GetOrFetch(fetch func() (*schemaListResponse, error)) (*schemaListResponse, error) {
+	c.mu.Lock()
+	if c.resp != nil && time.Since(c.cachedAt) < c.ttl {
+		out := *c.resp // shallow copy
+		c.mu.Unlock()
+		return &out, nil
+	}
+	c.mu.Unlock()
+
+	v, err, _ := c.sf.Do("schemaInfo", func() (any, error) {
+		c.mu.Lock()
+		// Re-check após acquire
+		if c.resp != nil && time.Since(c.cachedAt) < c.ttl {
+			out := *c.resp
+			c.mu.Unlock()
+			return &out, nil
+		}
+		c.mu.Unlock()
+
+		result, err := fetch()
+		if err != nil {
+			return nil, err
+		}
+		c.mu.Lock()
+		c.resp = result
+		c.cachedAt = time.Now()
+		c.mu.Unlock()
+		return result, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return v.(*schemaListResponse), nil
 }
 
 // listSchemasV2 handles GET /v1/schema.
 // Lista CADOCs disponíveis com metadata de geração.
 // Semelhante a GET /v1/schemas mas inclui info de geração (complexidade,
 // versões suportadas) útil para o wizard de geração.
+//
+// Sprint 75: Usa SchemaInfoCache (5min TTL) para evitar N queries ao DB
+// (1 GetEffective por CADOC). Cache é por Server instance.
 func (s *Server) listSchemasV2(w http.ResponseWriter, r *http.Request) {
-	cadocs, err := s.cadocsWithCache(r.Context())
+	if s.SchemaInfoCache == nil {
+		s.listSchemasV2NoCache(w, r)
+		return
+	}
+
+	resp, err := s.SchemaInfoCache.GetOrFetch(func() (*schemaListResponse, error) {
+		return s.buildSchemaInfoList()
+	})
 	if err != nil {
 		s.internalServerError(w, err, "listSchemasV2")
 		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// buildSchemaInfoList constrói a lista de schemas (sem cache).
+// Chamado por GetOrFetch no cache miss.
+func (s *Server) buildSchemaInfoList() (*schemaListResponse, error) {
+	cadocs, err := s.cadocsWithCacheWithoutLock()
+	if err != nil {
+		return nil, err
 	}
 
 	out := make([]schemaInfo, 0, len(cadocs))
 	for _, cadoc := range cadocs {
 		g := genRegistry.Get(cadoc)
 		if g == nil {
-			continue // sem generator → não listar
+			continue
 		}
 
 		var effFrom string
@@ -105,9 +181,7 @@ func (s *Server) listSchemasV2(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Estimate complexity with zero doc (minimum fields) so no nil dereference risk.
 		complexity := g.EstimateComplexity(canonical.NewCanonical("", time.Now(), ""))
-
 		out = append(out, schemaInfo{
 			CadocCode:         cadoc,
 			LatestVersion:     latestVersion(g.SupportedVersions()),
@@ -118,11 +192,31 @@ func (s *Server) listSchemasV2(w http.ResponseWriter, r *http.Request) {
 			Complexity:        complexity,
 		})
 	}
+	return &schemaListResponse{Schemas: out, Total: len(out)}, nil
+}
 
-	writeJSON(w, http.StatusOK, schemaListResponse{
-		Schemas: out,
-		Total:   len(out),
-	})
+// listSchemasV2NoCache usado quando não há cache (ex: tests).
+func (s *Server) listSchemasV2NoCache(w http.ResponseWriter, r *http.Request) {
+	resp, err := s.buildSchemaInfoList()
+	if err != nil {
+		s.internalServerError(w, err, "listSchemasV2NoCache")
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// cadocsWithCacheWithoutLock versão sem request context — para uso dentro
+// do GetOrFetch (singleflight). Usa CadocListCache se disponível.
+func (s *Server) cadocsWithCacheWithoutLock() ([]string, error) {
+	if s.Schema == nil {
+		return []string{}, nil
+	}
+	if s.CadocListCache != nil {
+		return s.CadocListCache.GetOrFetch(func() ([]string, error) {
+			return s.Schema.ListCadocs(context.Background())
+		})
+	}
+	return s.Schema.ListCadocs(context.Background())
 }
 
 // latestVersion retorna a versão mais recente de uma lista de versões.
