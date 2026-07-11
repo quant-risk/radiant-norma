@@ -437,6 +437,72 @@ class Client:
         resp = self._request("POST", path)
         return resp.json()
 
+    # -------------------------------------------------------------------------
+    # Marketplace
+    # -------------------------------------------------------------------------
+
+    def list_marketplace_rules(
+        self,
+        cadoc: Optional[str] = None,
+        tag: Optional[str] = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> Dict[str, Any]:
+        """GET /v1/marketplace — lista regras disponíveis no marketplace."""
+        params: Dict[str, Any] = {"limit": limit, "offset": offset}
+        if cadoc:
+            params["cadoc"] = cadoc
+        if tag:
+            params["tag"] = tag
+        resp = self._request("GET", "/marketplace", params=params)
+        return resp.json()
+
+    def publish_rule(
+        self,
+        name: str,
+        code: str,
+        cadoc: str,
+        rule_type: str,
+        description: Optional[str] = None,
+        config: Optional[Dict[str, Any]] = None,
+        author_name: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """POST /v1/marketplace — publica uma regra no marketplace."""
+        body: Dict[str, Any] = {
+            "name": name,
+            "code": code,
+            "cadoc": cadoc,
+            "rule_type": rule_type,
+        }
+        if description:
+            body["description"] = description
+        if config:
+            body["config"] = config
+        if author_name:
+            body["author_name"] = author_name
+        if tags:
+            body["tags"] = tags
+        resp = self._request("POST", "/marketplace", json=body)
+        return resp.json()
+
+    def install_rule(self, rule_id: str) -> Dict[str, Any]:
+        """POST /v1/marketplace/{id}/install — instala uma regra."""
+        path = f"/marketplace/{quote(rule_id, safe='')}/install"
+        resp = self._request("POST", path)
+        return resp.json()
+
+    def rate_rule(self, rule_id: str, stars: int) -> Dict[str, Any]:
+        """POST /v1/marketplace/{id}/rate — avalia uma regra (1-5 estrelas)."""
+        path = f"/marketplace/{quote(rule_id, safe='')}/rate"
+        resp = self._request("POST", path, json={"stars": stars})
+        return resp.json()
+
+    def list_installed_rules(self) -> List[Dict[str, Any]]:
+        """GET /v1/marketplace/installed — lista regras instaladas pelo tenant."""
+        resp = self._request("GET", "/marketplace/installed")
+        return resp.json()
+
     def close(self) -> None:
         """Close the underlying session."""
         self._session.close()

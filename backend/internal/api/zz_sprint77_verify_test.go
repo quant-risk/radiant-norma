@@ -5,9 +5,9 @@ import "testing"
 func TestSprint77VersionFix(t *testing.T) {
 	// The bug: string comparison would say "3.9" > "3.10"
 	cases := []struct {
-		name string
+		name     string
 		versions []string
-		want string
+		want     string
 	}{
 		{"3.9 vs 3.10", []string{"3.9", "3.10"}, "3.10"},
 		{"3.10 vs 3.9 reversed", []string{"3.10", "3.9"}, "3.10"},
@@ -31,7 +31,7 @@ func TestSprint77VersionFix(t *testing.T) {
 	// compareVersion direct checks
 	compCases := []struct {
 		v1, v2 string
-		want int // +1 if v1>v2, -1 if v1<v2, 0 equal
+		want   int // +1 if v1>v2, -1 if v1<v2, 0 equal
 	}{
 		{"3.10", "3.9", 1},
 		{"3.9", "3.10", -1},
@@ -46,7 +46,11 @@ func TestSprint77VersionFix(t *testing.T) {
 			got := compareVersion(tc.v1, tc.v2)
 			// normalize sign
 			sign := 0
-			if got > 0 { sign = 1 } else if got < 0 { sign = -1 }
+			if got > 0 {
+				sign = 1
+			} else if got < 0 {
+				sign = -1
+			}
 			if sign != tc.want {
 				t.Errorf("compareVersion(%q,%q) = %d, want sign %d", tc.v1, tc.v2, got, tc.want)
 			}
@@ -55,7 +59,7 @@ func TestSprint77VersionFix(t *testing.T) {
 
 	// splitVersion edge cases
 	svCases := []struct {
-		v string
+		v    string
 		want [3]int
 	}{
 		{"3.10", [3]int{3, 10, 0}},

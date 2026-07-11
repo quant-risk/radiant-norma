@@ -58,13 +58,13 @@ func (d *Dispatcher) processJob(job deliveryJob) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Insert delivery record. Uses INSERT OR REPLACE so retries (which re-enqueue
-	// an existing delivery ID) correctly UPDATE the existing record instead of
-	// failing with UNIQUE constraint violation.
+	// Ensure delivery record exists with status=pending. Uses UPDATE so the
+	// row (created by Dispatch or RetryDelivery) is preserved — avoiding the
+	// DELETE+INSERT cycle of INSERT OR REPLACE which races with concurrent
+	// goroutines on the same SQLite connection in the test environment.
 	_, err := d.db.ExecContext(ctx,
-		`INSERT OR REPLACE INTO webhook_deliveries (id, webhook_id, event, payload, status, attempt, http_status, response_body)
-		 VALUES (?, ?, ?, ?, 'pending', 0, 0, NULL)`,
-		job.ID, job.WebhookID, job.Event, job.Payload)
+		`UPDATE webhook_deliveries SET status='pending' WHERE id=? AND webhook_id=?`,
+		job.ID, job.WebhookID)
 	if err != nil {
 		slog.Error("webhook deliver: failed to upsert delivery record", "id", job.ID, "err", err)
 		return

@@ -71,15 +71,10 @@ func setupWebhookTest(t *testing.T) (*Server, *sql.DB, func()) {
 		}
 	}
 
-	wbSvc := webhook.NewService(d)
+	wbSvc := webhook.NewServiceWithoutDispatcher(d)
 	srv := &Server{DB: d, Webhook: wbSvc, RateLimiter: newMemoryRateLimiter()}
 
 	return srv, d, func() { _ = d.Close() }
-}
-
-// authRequest attaches X-IF-ID header for dev auth (RADIANT_DEV_AUTH=1).
-func authRequest(r *http.Request, ifID string) {
-	r.Header.Set("X-IF-ID", ifID)
 }
 
 // ============================================================================
@@ -439,6 +434,11 @@ func TestRetryDelivery_OK(t *testing.T) {
 		`INSERT INTO webhook_deliveries (id, webhook_id, event, payload, status, attempt) VALUES (?, ?, ?, ?, ?, ?)`,
 		"del-failed", "wh-1", "validation.completed", `{}`, "failed", 3)
 
+	// Verify initial state.
+	var before string
+	_ = d.QueryRowContext(ctx, `SELECT status FROM webhook_deliveries WHERE id=?`, "del-failed").Scan(&before)
+	t.Logf("DB status before retry: %q", before)
+
 	handler := srv.Router()
 	req := httptest.NewRequest("POST", "/v1/webhooks/wh-1/deliveries/del-failed/retry", nil)
 	authRequest(req, "demo")
@@ -454,10 +454,13 @@ func TestRetryDelivery_OK(t *testing.T) {
 		t.Errorf("expected status pending, got %v", out["status"])
 	}
 
-	var status string
-	_ = d.QueryRowContext(ctx, `SELECT status FROM webhook_deliveries WHERE id=?`, "del-failed").Scan(&status)
-	if status != "pending" {
-		t.Errorf("expected DB status pending, got %s", status)
+	// Check DB immediately (before any async worker can run).
+	var after string
+	_ = d.QueryRowContext(ctx, `SELECT status FROM webhook_deliveries WHERE id=?`, "del-failed").Scan(&after)
+	t.Logf("DB status immediately after retry: %q", after)
+
+	if after != "pending" {
+		t.Errorf("expected DB status pending, got %s", after)
 	}
 }
 

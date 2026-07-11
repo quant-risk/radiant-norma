@@ -36,6 +36,13 @@ func NewService(db *sql.DB) *Service {
 	return &Service{db: db, ds: NewDispatcher(db)}
 }
 
+// NewServiceWithoutDispatcher cria um webhook service sem dispatcher de fundo.
+// Útil para testes onde não se deseja processamento assíncrono (evita race
+// conditions com SQLite in-memory).
+func NewServiceWithoutDispatcher(db *sql.DB) *Service {
+	return &Service{db: db, ds: nil}
+}
+
 // Webhook representa um webhook registrado.
 type Webhook struct {
 	ID          string    `json:"id"`
@@ -371,10 +378,10 @@ type Change struct {
 // EventSubmissionAccepted fired when a submission is accepted by BACEN STA.
 type EventSubmissionAccepted struct {
 	WebhookBase
-	Cadoc       string `json:"cadoc"`
-	DataBase    string `json:"data_base"`
-	Protocolo   string `json:"protocolo"`
-	XMLHash     string `json:"xml_hash,omitempty"`
+	Cadoc     string `json:"cadoc"`
+	DataBase  string `json:"data_base"`
+	Protocolo string `json:"protocolo"`
+	XMLHash   string `json:"xml_hash,omitempty"`
 }
 
 // EventSubmissionRejected fired when a submission is rejected by BACEN STA.

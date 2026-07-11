@@ -289,7 +289,7 @@ func (s *Server) Router() http.Handler {
 		})
 
 		// Sprint 62 v3.34.44: Marketplace de regras customizadas.
-		r.Route("/v1/marketplace", func(r chi.Router) {
+		r.Route("/marketplace", func(r chi.Router) {
 			r.Get("/", s.listMarketplaceRules)
 			r.Post("/", s.publishRule)
 			r.Post("/{id}/install", s.installRule)
@@ -298,7 +298,7 @@ func (s *Server) Router() http.Handler {
 		})
 
 		// Sprint 55 — v3.34.49: Pilot3 ESG-first.
-		r.Route("/v1/pilot", func(r chi.Router) {
+		r.Route("/pilot", func(r chi.Router) {
 			r.Get("/programs", s.listPilotPrograms)
 			r.Post("/programs", s.createPilotProgram)
 			r.Get("/programs/{programId}/participants", s.listPilotParticipants)

@@ -69,6 +69,8 @@ tags:
     description: KPIs, heatmaps e recomendações orientadas por ML.
   - name: Webhooks
     description: Webhooks outbound — eventos de validação, schema, radar e submissão.
+  - name: Marketplace
+    description: Marketplace de regras customizadas compartilháveis entre IFs.
 
 paths:
 
@@ -1231,6 +1233,173 @@ paths:
           $ref: "#/components/responses/InternalError"
 
   # =====================================================================
+  # Marketplace
+  # =====================================================================
+
+  /v1/marketplace:
+    get:
+      operationId: listMarketplaceRules
+      summary: Lista regras disponíveis no marketplace.
+      tags: [Marketplace]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cadoc
+          in: query
+          schema: { type: string }
+          description: 'Filtrar por código CADOC (ex: 3040).'
+        - name: tag
+          in: query
+          schema: { type: string }
+          description: 'Filtrar por tag (ex: credito, limite).'
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: Lista de regras.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rules:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MarketplaceRule"
+                  total: { type: integer }
+                  limit: { type: integer }
+                  offset: { type: integer }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: publishRule
+      summary: Publica uma regra no marketplace.
+      tags: [Marketplace]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishRuleRequest"
+      responses:
+        "201":
+          description: Regra publicada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketplaceRule"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          description: Validação falhou.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/marketplace/{id}/install:
+    post:
+      operationId: installRule
+      summary: Instala uma regra do marketplace para o tenant.
+      tags: [Marketplace]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Regra instalada.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "installed" }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/marketplace/{id}/rate:
+    post:
+      operationId: rateRule
+      summary: Avalia uma regra do marketplace.
+      tags: [Marketplace]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stars]
+              properties:
+                stars:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: Nota de 1 a 5 estrelas.
+      responses:
+        "200":
+          description: Avaliação registrada.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "rated" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/marketplace/installed:
+    get:
+      operationId: listInstalledRules
+      summary: Lista regras instaladas pelo tenant.
+      tags: [Marketplace]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Lista de regras instaladas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MarketplaceRule"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  # =====================================================================
   # Webhooks
   # =====================================================================
 
@@ -2229,6 +2398,59 @@ components:
               fail_rate: { type: number, format: float }
               avg_field_value: {}
         total: { type: integer }
+
+    # ---- Marketplace ----
+
+    MarketplaceRule:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        code: { type: string }
+        cadoc: { type: string }
+        rule_type: { type: string, enum: [format, semantic, crossdoc, raw] }
+        config: { type: string, description: JSON com parâmetros da regra }
+        author_if_id: { type: string }
+        author_name: { type: string }
+        rating: { type: number, format: float }
+        rating_count: { type: integer }
+        install_count: { type: integer }
+        tags: { type: array, items: { type: string } }
+        active: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    PublishRuleRequest:
+      type: object
+      required: [name, code, cadoc, rule_type]
+      properties:
+        name:
+          type: string
+          example: "Validação IPOC obrigatório"
+        description:
+          type: string
+          example: "Garante que campo IPOC está presente em todas as operações"
+        code:
+          type: string
+          pattern: "^(CUSTOM_|X_|AUDIT_)[A-Za-z0-9_]{1,28}$"
+          example: "CUSTOM_IPOC_001"
+        cadoc:
+          type: string
+          example: "3040"
+        rule_type:
+          type: string
+          enum: [format, semantic, crossdoc, raw]
+        config:
+          type: object
+          description: Parâmetros configuráveis da regra (opcional).
+        author_name:
+          type: string
+          example: "Banco Exemplo S.A."
+        tags:
+          type: array
+          items: { type: string }
+          example: ["credito", "ipoc"]
 
     RecommendationsResponse:
       type: object
