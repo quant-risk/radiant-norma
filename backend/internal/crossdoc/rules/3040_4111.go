@@ -6,15 +6,18 @@
 //   - Severity: E (erro) / A (aviso) / I (informativo)
 //   - RequiredDocs: CADOCs que devem estar presentes
 //   - Apply: lógica de validação cruzando os docs
+//
+// Sprint 72: refatorado para usar bacen.Doc3040 e doc4111 via xml.Unmarshal,
+// eliminando string-scraping com regex frágil.
 package rules
 
 import (
 	"context"
 	"fmt"
-	"log/slog"
-	"strings"
 
+	"github.com/fortvna/radiant-norma/backend/internal/bacen"
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
+	"github.com/fortvna/radiant-norma/backend/internal/doc4111"
 )
 
 // XD-001 — Total de operações no 3040 deve bater com total de clientes no 4111.
@@ -37,8 +40,23 @@ func (TotalOperacoes3040Consistente4111) RequiredDocs() []string {
 func (TotalOperacoes3040Consistente4111) Apply(_ context.Context, docs *crossdoc.DocSet) error {
 	xml3040 := docs.Get("3040")
 	xml4111 := docs.Get("4111")
-	ops := crossdoc.ExtractSumOfTag(xml3040, "Agreg", "QtdOp")
-	clients := crossdoc.ExtractSumOfTag(xml4111, "Cliente", "QtdCli")
+	if xml3040 == "" || xml4111 == "" {
+		return nil
+	}
+
+	// Usa typed unmarshal — xml.Unmarshal sobre Doc3040 e Documento4111.
+	doc3040, err := bacen.Parse3040([]byte(xml3040))
+	if err != nil {
+		return crossdoc.NewError("XD-001", "A", "3040 parse error: "+err.Error())
+	}
+	d4111, err := doc4111.ParseFromBytes([]byte(xml4111))
+	if err != nil {
+		return crossdoc.NewError("XD-001", "A", "4111 parse error: "+err.Error())
+	}
+
+	ops := doc3040.QtdOpTotal()
+	clients := doc4111.ExtractQtdTotal(d4111)
+
 	if ops == 0 {
 		return crossdoc.NewError("XD-001", "A", "3040 sem operações detectadas")
 	}
@@ -77,30 +95,39 @@ func (Modalidade0213FlagChequeEspecial) RequiredDocs() []string {
 }
 func (Modalidade0213FlagChequeEspecial) Apply(_ context.Context, docs *crossdoc.DocSet) error {
 	xml3040 := docs.Get("3040")
+	if xml3040 == "" {
+		return nil
+	}
 
-	// Conta quantos <Agreg> têm Mod="0213"
+	doc3040, err := bacen.Parse3040([]byte(xml3040))
+	if err != nil {
+		return nil
+	}
+
+	// Itera sobre Agreg[] usando struct tipada (sem string-scraping).
 	count0213 := 0
-	agregCount := 0
-	currentMod := ""
-	for line := range iterateXMLElements(xml3040, "Agreg") {
-		agregCount++
-		if line.Mod != "" {
-			currentMod = line.Mod
-		}
-		if currentMod == "0213" {
+	for _, a := range doc3040.Agregadas {
+		if a.Mod == "0213" {
 			count0213++
 		}
 	}
 
-	// Se 3040 não tem cheque especial, regra é N/A (skip)
+	// Se 3040 não tem cheque especial, regra é N/A.
 	if count0213 == 0 {
 		return nil
 	}
 
-	// Verifica 4111 tem flag CE (cheque especial)
 	xml4111 := docs.Get("4111")
-	if crossdoc.ExtractTextBetween(xml4111, "FlagChequeEspecial") == "" &&
-		crossdoc.CountTag(xml4111, "Modalidade0213") == 0 {
+	if xml4111 == "" {
+		return nil
+	}
+
+	d4111, err := doc4111.ParseFromBytes([]byte(xml4111))
+	if err != nil {
+		return nil
+	}
+
+	if !doc4111.HasModalidadeInadimplente(d4111) {
 		return crossdoc.NewError("XD-002", "A",
 			fmt.Sprintf("3040 reporta %d ocorrências de Mod 0213 mas 4111 não tem flag correspondente",
 				count0213))
@@ -109,9 +136,6 @@ func (Modalidade0213FlagChequeEspecial) Apply(_ context.Context, docs *crossdoc.
 }
 
 // XD-003 — Subsegmento DRSAC ESG deve ser compatível com classificação de risco 3040.
-//
-// Justificativa: IFs com subsegmento "S2" ou "S3" no DRSAC (maior risco)
-// devem ter ScoreRisco mais alto no 3040.
 type DRSACSubsegmentoClassificacaoRisco struct{}
 
 func (DRSACSubsegmentoClassificacaoRisco) Code() string {
@@ -125,28 +149,32 @@ func (DRSACSubsegmentoClassificacaoRisco) RequiredDocs() []string {
 	return []string{"3040", "2030"}
 }
 func (DRSACSubsegmentoClassificacaoRisco) Apply(_ context.Context, docs *crossdoc.DocSet) error {
-	xml3040 := docs.Get("3040")
 	xml2030 := docs.Get("2030")
-
-	subseg := crossdoc.ExtractTextBetween(xml2030, "Subsegmento")
-	if subseg == "" {
-		return nil // DRSAC sem subsegmento → não valida
+	if xml2030 == "" {
+		return nil
 	}
 
-	// Subsegmentos de maior risco: S4, S5
+	// Extrai Subsegmento do XML 2030 via string scan simples
+	// (não vale a pena criar outro tipo para uma string só).
+	subseg := crossdoc.ExtractTextBetween(xml2030, "Subsegmento")
+	if subseg == "" {
+		return nil
+	}
 	if subseg != "S4" && subseg != "S5" {
 		return nil
 	}
 
-	// 3040 deveria ter score de risco médio acima de X
+	xml3040 := docs.Get("3040")
+	if xml3040 == "" {
+		return nil
+	}
 	score := crossdoc.ExtractTextBetween(xml3040, "ScoreRiscoMedio")
 	if score == "" {
-		return nil // sem score → skip
+		return nil
 	}
 
-	// S4/S5 → score deve ser >= 0.7 (alto risco)
 	var f float64
-	_, _ = fmt.Sscanf(score, "%f", &f)
+	fmt.Sscanf(score, "%f", &f)
 	if f < 0.7 {
 		return crossdoc.NewError("XD-003", "I",
 			fmt.Sprintf("DRSAC Subsegmento=%s mas ScoreRiscoMedio 3040=%s (esperado ≥0.7)",
@@ -155,64 +183,4 @@ func (DRSACSubsegmentoClassificacaoRisco) Apply(_ context.Context, docs *crossdo
 	return nil
 }
 
-// ===========================
-// Helpers internos — XML line scanning
-// ===========================
-
-type xmlLine struct {
-	Mod string
-}
-
-func iterateXMLElements(xmlContent, parentTag string) <-chan xmlLine {
-	out := make(chan xmlLine)
-	go func() {
-		// Validação 15 (F15.2): panic recover — sem isso, panic em
-		// ExtractTextBetween/parseNum mata o consumer (que está
-		// esperando no canal — deadlock) e ninguém fica sabendo.
-		defer func() {
-			if r := recover(); r != nil {
-				slog.Default().Error("iterateXMLElements panic recovered",
-					"parent_tag", parentTag,
-					"panic", r)
-			}
-			close(out)
-		}()
-		current := xmlLine{}
-		openTag := "<" + parentTag + ">"
-		idx := 0
-		for {
-			start := indexFrom(xmlContent, openTag, idx)
-			if start == -1 {
-				break
-			}
-			end := indexFrom(xmlContent, "</"+parentTag+">", start)
-			if end == -1 {
-				break
-			}
-			content := xmlContent[start+len(openTag) : end]
-			// Extrai Mod (se houver)
-			if mod := crossdoc.ExtractTextBetween(content, "Mod"); mod != "" {
-				current.Mod = mod
-				out <- current
-			}
-			idx = end + 1
-		}
-	}()
-	return out
-}
-
-// indexFrom retorna posição absoluta de sub em s começando de from.
-// Usa strings.Index internamente (Go stdlib).
-//
-// Validação 14 (F14.3): removido wrapper customizado `indexOf` que
-// reinventava strings.Index byte-by-byte. Memory pattern.
-func indexFrom(s, sub string, from int) int {
-	if from >= len(s) {
-		return -1
-	}
-	idx := strings.Index(s[from:], sub)
-	if idx == -1 {
-		return -1
-	}
-	return idx + from
-}
+var _ = bacen.Parse3040

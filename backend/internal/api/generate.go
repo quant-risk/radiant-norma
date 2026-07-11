@@ -278,8 +278,16 @@ func (s *Server) generateBatch(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if req.RunCrossDoc && len(successfulXMLs) < 2 {
 		response.Message = "cross-doc validation skipped: less than 2 CADOCs generated successfully"
+		response.Passed = true // skipped ≠ failed
 	}
 
+	// HTTP semantics: 200 = request processed, 422 = semantically invalid.
+	// Only gate on 422 when cross-doc was actually requested and failed.
+	// Skipped (no cross-doc flag, or <2 docs) does NOT trigger 422.
+	if req.RunCrossDoc && len(successfulXMLs) >= 2 && !response.Passed {
+		writeJSON(w, http.StatusUnprocessableEntity, response)
+		return
+	}
 	writeJSON(w, http.StatusOK, response)
 }
 

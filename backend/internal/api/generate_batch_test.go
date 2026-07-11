@@ -188,9 +188,12 @@ func TestBatchGenerate_SingleCADOC_SkipsCrossDoc(t *testing.T) {
 	if len(resp.Results) != 1 {
 		t.Errorf("expected 1 result, got %d", len(resp.Results))
 	}
-	// Cross-doc should be skipped for single CADOC
+	// Cross-doc should be skipped for single CADOC — skip ≠ fail, so Passed=true, HTTP 200.
 	if resp.Message != "cross-doc validation skipped: less than 2 CADOCs generated successfully" {
 		t.Errorf("unexpected message: %s", resp.Message)
+	}
+	if !resp.Passed {
+		t.Errorf("expected Passed=true for skipped cross-doc, got false")
 	}
 }
 
@@ -307,4 +310,72 @@ func TestBatchGenerate_MultipleCADOCs(t *testing.T) {
 			t.Errorf("result %s: status=%s, errors=%v", r.CadocCode, r.Status, r.Errors)
 		}
 	}
+}
+
+// TestBatchGenerate_CrossDocFail_422 verifies that when cross-doc rules fail,
+// the batch returns HTTP 422 (semantically invalid for BCB submission).
+func TestBatchGenerate_CrossDocFail_422(t *testing.T) {
+	srv, _ := newTestServer(t)
+
+	// Use mismatching CNPJs so XD-4111-01 triggers a failure.
+	dataBase := time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)
+	reqBody := map[string]any{
+		"cadocs": []map[string]any{
+			{
+				"cadoc_code": "3040",
+				"if_id":     "demo",
+				"cnpj":      "12345678000123", // full CNPJ → truncated to root 12345678 by gen3040
+				"nome_if":   "Banco Teste",
+				"data_base": dataBase.Format(time.RFC3339),
+				"operacoes": []map[string]any{
+					{
+						"id":               "op-1",
+						"tipo_pessoa":      "PF",
+						"modalidade":       "1000",
+						"uf":               "SP",
+						"numero_contrato": "CTR-001",
+						"valor_principal":  map[string]any{"valor": "50000.00", "moeda": "BRL"},
+					},
+				},
+			},
+			{
+				"cadoc_code": "4111",
+				"if_id":     "demo",
+				"cnpj":      "87654321", // different root → mismatch after 3040 truncates to 12345678
+				"nome_if":   "Banco Teste",
+				"data_base": dataBase.Format(time.RFC3339),
+				"operacoes": []map[string]any{
+					{
+						"id":               "op-1",
+						"modalidade":       "2100",
+						"numero_contrato": "CTR-001",
+						"valor_principal":  map[string]any{"valor": "50000.00", "moeda": "BRL"},
+					},
+				},
+			},
+		},
+		"run_crossdoc": true,
+	}
+
+	body, _ := json.Marshal(reqBody)
+	req := httptest.NewRequest(http.MethodPost, "/v1/generate/batch", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-IF-ID", "demo")
+
+	w := httptest.NewRecorder()
+	srv.Router().ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("expected 422 when cross-doc fails, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp api.BatchGenerateResponse
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if resp.Passed {
+		t.Errorf("expected Passed=false when cross-doc fails, got true")
+	}
+	if len(resp.CrossDocErrors) == 0 {
+		t.Errorf("expected cross-doc errors, got none")
+	}
+	t.Logf("422 correctly returned: passed=%v, errors=%v", resp.Passed, resp.CrossDocErrors)
 }

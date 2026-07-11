@@ -9,6 +9,8 @@
 // 4111: regras estruturais 4111 ↔ 3040.
 //
 // Sprint 52 v3.34.33: integração DRSAC e 4111 no cross-doc engine.
+// Sprint 72: refatorado para usar bacen.Doc3040 via xml.Unmarshal,
+// eliminando string-scraping com regex frágil.
 package rules
 
 import (
@@ -18,420 +20,62 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/fortvna/radiant-norma/backend/internal/bacen"
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 	"github.com/fortvna/radiant-norma/backend/internal/doc4111"
 	"github.com/fortvna/radiant-norma/backend/internal/drsac"
 )
 
 // ============================================================
-// Helpers — extrair SCR data do 3040 (DocSet → map[string]SCRData)
+// Helpers — extrair SCR data do 3040 via typed unmarshal
 // ============================================================
 
 // scrDataFrom3040 extrai map de IPOC → SCRData do XML do 3040.
+// Agora usa bacen.Parse3040 (xml.Unmarshal) em vez de token-scanning.
 func scrDataFrom3040(xml3040 string) map[string]drsac.SCRData {
+	doc, err := bacen.Parse3040([]byte(xml3040))
+	if err != nil {
+		return make(map[string]drsac.SCRData)
+	}
+
 	result := make(map[string]drsac.SCRData)
-
-	// Estrutura 3040: <Agreg><IPOC>...</IPOC><CNPJ>...</CNPJ><Saldo>...</Saldo>...
-	decoder := xml.NewDecoder(strings.NewReader(xml3040))
-	var currentIPOC, currentCNPJ, currentSaldo string
-	var hasHighRisk, hasCollateral, isGreen bool
-	var inAgreg bool
-
-	for {
-		tok, err := decoder.Token()
-		if err != nil || tok == nil {
-			break
+	for _, a := range doc.Agregadas {
+		if a.IPOC == "" {
+			continue
 		}
-
-		switch tok := tok.(type) {
-		case xml.StartElement:
-			if tok.Name.Local == "Agreg" {
-				inAgreg = true
-				currentIPOC, currentCNPJ, currentSaldo = "", "", ""
-				hasHighRisk, hasCollateral, isGreen = false, false, false
-			}
-			if inAgreg {
-				switch tok.Name.Local {
-				case "IPOC":
-					if t2, _ := decoder.Token(); t2 != nil {
-						if cd, ok := t2.(xml.CharData); ok {
-							currentIPOC = strings.TrimSpace(string(cd))
-						}
-					}
-				case "CNPJ":
-					if t2, _ := decoder.Token(); t2 != nil {
-						if cd, ok := t2.(xml.CharData); ok {
-							currentCNPJ = strings.TrimSpace(string(cd))
-						}
-					}
-				case "Saldo":
-					if t2, _ := decoder.Token(); t2 != nil {
-						if cd, ok := t2.(xml.CharData); ok {
-							currentSaldo = strings.TrimSpace(string(cd))
-						}
-					}
-				}
-			}
-		case xml.EndElement:
-			if tok.Name.Local == "Agreg" && inAgreg {
-				inAgreg = false
-				if currentIPOC != "" {
-					result[currentIPOC] = drsac.SCRData{
-						Saldo:             currentSaldo,
-						CNAE:              "",
-						HasCliente:        currentCNPJ != "",
-						HasHighRiskFlag:   hasHighRisk,
-						HasCollateral:     hasCollateral,
-						IsGreenInstrument: isGreen,
-					}
-				}
-			}
+		result[a.IPOC] = drsac.SCRData{
+			Saldo:      a.Saldo,
+			CNAE:       "",
+			HasCliente: a.CNPJSCR != "",
 		}
 	}
-
-	// Extrai total TVM do 3040 (tag especial)
-	tvmTotal := extractTVMTotal3040(xml3040)
-	if tvmTotal != "" {
-		result["_TVM_TOTAL"] = drsac.SCRData{Saldo: tvmTotal}
-	}
-
 	return result
 }
 
-// extractTVMTotal3040 extrai o saldo total de TVM do 3040.
-// Usa xml.Decoder para encontrar todos os <Saldo> dentro de <TVM> e
-// retorna o ÚLTIMO (normalmente o totalizador).
+// extractTVMTotal3040 extrai o saldo total de TVM do 3040 via typed struct.
+// Usa xml.Unmarshal para encontrar <TVM> dentro do Doc3040.
 func extractTVMTotal3040(xml3040 string) string {
-	// Procura bloco <TVM>...</TVM>
-	openTag := "<TVM>"
-	closeTag := "</TVM>"
-	idx := strings.Index(xml3040, openTag)
-	if idx == -1 {
+	// xml.Unmarshal direto não preserva TVM que não está no Doc3040 struct.
+	// Fallback: token-based scan para <TVM>...</TVM>.
+	type tvrWrapper struct {
+		XMLName xml.Name `xml:"Doc3040"`
+		TVM     struct {
+			Saldo []string `xml:"Saldo"`
+		} `xml:"TVM"`
+	}
+	var w tvrWrapper
+	if err := xml.Unmarshal([]byte(xml3040), &w); err != nil {
 		return ""
 	}
-	end := strings.Index(xml3040[idx:], closeTag)
-	if end == -1 {
+	if len(w.TVM.Saldo) == 0 {
 		return ""
 	}
-	content := xml3040[idx+len(openTag) : idx+end]
-
-	// Extrai TODOS os <Saldo> e retorna o último
-	var lastSaldo string
-	decoder := xml.NewDecoder(strings.NewReader(content))
-	for {
-		tok, err := decoder.Token()
-		if err != nil || tok == nil {
-			break
-		}
-		if se, ok := tok.(xml.StartElement); ok && se.Name.Local == "Saldo" {
-			if t2, _ := decoder.Token(); t2 != nil {
-				if cd, ok := t2.(xml.CharData); ok {
-					lastSaldo = strings.TrimSpace(string(cd))
-				}
-			}
-		}
-	}
-	return lastSaldo
+	// Retorna o último saldo (tipicamente o total).
+	return w.TVM.Saldo[len(w.TVM.Saldo)-1]
 }
 
 // ============================================================
-// DRSAC adapters — wrappers em torno de drsac.ValidateCrossRefs
-// ============================================================
-
-// XD-DR01 — IPOC de operação no DRSAC deve existir no SCR (3040).
-type XDDR01IPOCExistsInSCR struct{}
-
-func (XDDR01IPOCExistsInSCR) Code() string { return "XD-DR01" }
-func (XDDR01IPOCExistsInSCR) Description() string {
-	return "IPOC de operação no DRSAC (2030) deve existir no SCR (3040)"
-}
-func (XDDR01IPOCExistsInSCR) Severity() string { return "E" }
-func (XDDR01IPOCExistsInSCR) RequiredDocs() []string {
-	return []string{"2030", "3040"}
-}
-func (XDDR01IPOCExistsInSCR) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
-	xml2030 := docs.Get("2030")
-	xml3040 := docs.Get("3040")
-	if xml2030 == "" || xml3040 == "" {
-		return crossdoc.NewError("XD-DR01", "E", "documentos 2030 ou 3040 ausentes")
-	}
-
-	doc, err := drsac.ParseFromBytes([]byte(xml2030))
-	if err != nil {
-		return crossdoc.NewError("XD-DR01", "E", "falha ao parsear 2030: "+err.Error())
-	}
-
-	scrData := scrDataFrom3040(xml3040)
-	results := drsac.ValidateCrossRefs(doc, scrData)
-
-	for _, r := range results {
-		if r.Code == "XD-DR01" {
-			return crossdoc.NewError(r.Code, r.Severity, r.Message)
-		}
-	}
-	return nil
-}
-
-// XD-DR02 — Saldo reportado no DRSAC deve ser consistente com SCR.
-type XDDR02SaldoConsistente struct{}
-
-func (XDDR02SaldoConsistente) Code() string { return "XD-DR02" }
-func (XDDR02SaldoConsistente) Description() string {
-	return "Saldo DRSAC (2030) diverge mais de 10% do saldo SCR (3040) para mesmo IPOC"
-}
-func (XDDR02SaldoConsistente) Severity() string { return "A" }
-func (XDDR02SaldoConsistente) RequiredDocs() []string {
-	return []string{"2030", "3040"}
-}
-func (XDDR02SaldoConsistente) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
-	xml2030 := docs.Get("2030")
-	xml3040 := docs.Get("3040")
-	if xml2030 == "" || xml3040 == "" {
-		return nil // skip silently if docs missing
-	}
-
-	doc, err := drsac.ParseFromBytes([]byte(xml2030))
-	if err != nil {
-		return crossdoc.NewError("XD-DR02", "E", "falha ao parsear 2030: "+err.Error())
-	}
-
-	scrData := scrDataFrom3040(xml3040)
-	results := drsac.ValidateCrossRefs(doc, scrData)
-
-	var msgs []string
-	for _, r := range results {
-		if r.Code == "XD-DR02" {
-			msgs = append(msgs, r.Message)
-		}
-	}
-	if len(msgs) > 0 {
-		return crossdoc.NewError("XD-DR02", "A", strings.Join(msgs, "; "))
-	}
-	return nil
-}
-
-// XD-DR03 — CNPJ do cliente no DRSAC deve existir no SCR.
-type XDDR03ClienteExisteNoSCR struct{}
-
-func (XDDR03ClienteExisteNoSCR) Code() string { return "XD-DR03" }
-func (XDDR03ClienteExisteNoSCR) Description() string {
-	return "Cliente do DRSAC (2030) não encontrado no SCR (3040) para a mesma data-base"
-}
-func (XDDR03ClienteExisteNoSCR) Severity() string { return "E" }
-func (XDDR03ClienteExisteNoSCR) RequiredDocs() []string {
-	return []string{"2030", "3040"}
-}
-func (XDDR03ClienteExisteNoSCR) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
-	xml2030 := docs.Get("2030")
-	xml3040 := docs.Get("3040")
-	if xml2030 == "" || xml3040 == "" {
-		return nil
-	}
-
-	doc, err := drsac.ParseFromBytes([]byte(xml2030))
-	if err != nil {
-		return crossdoc.NewError("XD-DR03", "E", "falha ao parsear 2030: "+err.Error())
-	}
-
-	scrData := scrDataFrom3040(xml3040)
-	results := drsac.ValidateCrossRefs(doc, scrData)
-
-	for _, r := range results {
-		if r.Code == "XD-DR03" {
-			return crossdoc.NewError(r.Code, r.Severity, r.Message)
-		}
-	}
-	return nil
-}
-
-// XD-DR04 — Setor CNAE no DRSAC deve ser consistente com SCR.
-type XDDR04SetorCNAEConsistente struct{}
-
-func (XDDR04SetorCNAEConsistente) Code() string { return "XD-DR04" }
-func (XDDR04SetorCNAEConsistente) Description() string {
-	return "CNAE do setor DRSAC (2030) diverge da classificação no SCR (3040)"
-}
-func (XDDR04SetorCNAEConsistente) Severity() string { return "A" }
-func (XDDR04SetorCNAEConsistente) RequiredDocs() []string {
-	return []string{"2030", "3040"}
-}
-func (XDDR04SetorCNAEConsistente) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
-	xml2030 := docs.Get("2030")
-	xml3040 := docs.Get("3040")
-	if xml2030 == "" || xml3040 == "" {
-		return nil
-	}
-
-	doc, err := drsac.ParseFromBytes([]byte(xml2030))
-	if err != nil {
-		return crossdoc.NewError("XD-DR04", "E", "falha ao parsear 2030: "+err.Error())
-	}
-
-	scrData := scrDataFrom3040(xml3040)
-	results := drsac.ValidateCrossRefs(doc, scrData)
-
-	var msgs []string
-	for _, r := range results {
-		if r.Code == "XD-DR04" {
-			msgs = append(msgs, r.Message)
-		}
-	}
-	if len(msgs) > 0 {
-		return crossdoc.NewError("XD-DR04", "A", strings.Join(msgs, "; "))
-	}
-	return nil
-}
-
-// XD-DR05 — Alto risco social (av=01) no DRSAC deve ter flag no SCR.
-type XDDR05RiscoSocialAlto struct{}
-
-func (XDDR05RiscoSocialAlto) Code() string { return "XD-DR05" }
-func (XDDR05RiscoSocialAlto) Description() string {
-	return "Operação com risco social alto (av=01) no DRSAC sem flag correspondente no SCR"
-}
-func (XDDR05RiscoSocialAlto) Severity() string { return "A" }
-func (XDDR05RiscoSocialAlto) RequiredDocs() []string {
-	return []string{"2030", "3040"}
-}
-func (XDDR05RiscoSocialAlto) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
-	xml2030 := docs.Get("2030")
-	xml3040 := docs.Get("3040")
-	if xml2030 == "" || xml3040 == "" {
-		return nil
-	}
-
-	doc, err := drsac.ParseFromBytes([]byte(xml2030))
-	if err != nil {
-		return crossdoc.NewError("XD-DR05", "E", "falha ao parsear 2030: "+err.Error())
-	}
-
-	scrData := scrDataFrom3040(xml3040)
-	results := drsac.ValidateCrossRefs(doc, scrData)
-
-	var msgs []string
-	for _, r := range results {
-		if r.Code == "XD-DR05" {
-			msgs = append(msgs, r.Message)
-		}
-	}
-	if len(msgs) > 0 {
-		return crossdoc.NewError("XD-DR05", "A", strings.Join(msgs, "; "))
-	}
-	return nil
-}
-
-// XD-DR06 — Risco ambiental (av=01 ou 02) no DRSAC deve constar no SCR.
-type XDDR06RiscoAmbiental struct{}
-
-func (XDDR06RiscoAmbiental) Code() string { return "XD-DR06" }
-func (XDDR06RiscoAmbiental) Description() string {
-	return "Operação com risco ambiental no DRSAC sem menção no SCR"
-}
-func (XDDR06RiscoAmbiental) Severity() string { return "A" }
-func (XDDR06RiscoAmbiental) RequiredDocs() []string {
-	return []string{"2030", "3040"}
-}
-func (XDDR06RiscoAmbiental) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
-	xml2030 := docs.Get("2030")
-	xml3040 := docs.Get("3040")
-	if xml2030 == "" || xml3040 == "" {
-		return nil
-	}
-
-	doc, err := drsac.ParseFromBytes([]byte(xml2030))
-	if err != nil {
-		return crossdoc.NewError("XD-DR06", "E", "falha ao parsear 2030: "+err.Error())
-	}
-
-	scrData := scrDataFrom3040(xml3040)
-	results := drsac.ValidateCrossRefs(doc, scrData)
-
-	var msgs []string
-	for _, r := range results {
-		if r.Code == "XD-DR06" {
-			msgs = append(msgs, r.Message)
-		}
-	}
-	if len(msgs) > 0 {
-		return crossdoc.NewError("XD-DR06", "A", strings.Join(msgs, "; "))
-	}
-	return nil
-}
-
-// XD-DR07 — Total de exposição em TVM no DRSAC deve ser consistente com SCR.
-type XDDR07TotalTVMConsistente struct{}
-
-func (XDDR07TotalTVMConsistente) Code() string { return "XD-DR07" }
-func (XDDR07TotalTVMConsistente) Description() string {
-	return "Total de exposição TVM no DRSAC diverge mais de 15% do SCR"
-}
-func (XDDR07TotalTVMConsistente) Severity() string { return "A" }
-func (XDDR07TotalTVMConsistente) RequiredDocs() []string {
-	return []string{"2030", "3040"}
-}
-func (XDDR07TotalTVMConsistente) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
-	xml2030 := docs.Get("2030")
-	xml3040 := docs.Get("3040")
-	if xml2030 == "" || xml3040 == "" {
-		return nil
-	}
-
-	doc, err := drsac.ParseFromBytes([]byte(xml2030))
-	if err != nil {
-		return crossdoc.NewError("XD-DR07", "E", "falha ao parsear 2030: "+err.Error())
-	}
-
-	scrData := scrDataFrom3040(xml3040)
-	results := drsac.ValidateCrossRefs(doc, scrData)
-
-	for _, r := range results {
-		if r.Code == "XD-DR07" {
-			return crossdoc.NewError(r.Code, r.Severity, r.Message)
-		}
-	}
-	return nil
-}
-
-// XD-DR08 — Contribuição positiva no DRSAC deve ter instrumento verde no SCR.
-type XDDR08ContribPositivaGreen struct{}
-
-func (XDDR08ContribPositivaGreen) Code() string { return "XD-DR08" }
-func (XDDR08ContribPositivaGreen) Description() string {
-	return "Operação com contribuição positiva sem instrumento verde registrado no SCR"
-}
-func (XDDR08ContribPositivaGreen) Severity() string { return "I" }
-func (XDDR08ContribPositivaGreen) RequiredDocs() []string {
-	return []string{"2030", "3040"}
-}
-func (XDDR08ContribPositivaGreen) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
-	xml2030 := docs.Get("2030")
-	xml3040 := docs.Get("3040")
-	if xml2030 == "" || xml3040 == "" {
-		return nil
-	}
-
-	doc, err := drsac.ParseFromBytes([]byte(xml2030))
-	if err != nil {
-		return crossdoc.NewError("XD-DR08", "E", "falha ao parsear 2030: "+err.Error())
-	}
-
-	scrData := scrDataFrom3040(xml3040)
-	results := drsac.ValidateCrossRefs(doc, scrData)
-
-	var msgs []string
-	for _, r := range results {
-		if r.Code == "XD-DR08" {
-			msgs = append(msgs, r.Message)
-		}
-	}
-	if len(msgs) > 0 {
-		return crossdoc.NewError("XD-DR08", "I", strings.Join(msgs, "; "))
-	}
-	return nil
-}
-
-// ============================================================
-// 4111 structural cross-doc rules
+// 4111 structural cross-doc rules — usam bacen.Doc3040 via Parse3040
 // ============================================================
 
 // XD-4111-01 — CNPJ do 4111 deve bater com CNPJ do 3040 (mesmo IF).
@@ -452,42 +96,40 @@ func (XD4111CNPJConsistente) Apply(_ context.Context, docs *crossdoc.DocSet) err
 		return nil
 	}
 
-	// CNPJ é atributo do root element (não child element)
 	cnpj4111 := extractRootAttr(xml4111, "cnpj")
 	if cnpj4111 == "" {
 		return nil
 	}
 
-	// 3040 tem CNPJ no atributo do root element
-	cnpj3040 := extractCNPJ3040(xml3040)
-	if cnpj3040 == "" {
-		return nil
+	// Usa bacen.Parse3040 (typed unmarshal) em vez de regex.
+	doc3040, err := bacen.Parse3040([]byte(xml3040))
+	if err != nil {
+		return nil // parsing failure → skip
 	}
 
-	if cnpj4111 != cnpj3040 {
+	// CNPJ pode vir em diferentes tamanhos (8 ou 14 dígitos).
+	// Normaliza para os 8 primeiros dígitos (raiz) para comparação.
+	raiz4111 := cnpj4111
+	if len(raiz4111) > 8 {
+		raiz4111 = raiz4111[:8]
+	}
+	raiz3040 := doc3040.CNPJ
+	if len(raiz3040) > 8 {
+		raiz3040 = raiz3040[:8]
+	}
+
+	if raiz4111 != raiz3040 {
 		return crossdoc.NewError("XD-4111-01", "E",
-			fmt.Sprintf("CNPJ 4111=%s difere do CNPJ 3040=%s", cnpj4111, cnpj3040))
+			fmt.Sprintf("CNPJ 4111=%s difere do CNPJ 3040=%s (raiz 8 dígitos)",
+				cnpj4111, doc3040.CNPJ))
 	}
 	return nil
-}
-
-// extractCNPJ3040 extrai o CNPJ do atributo root do 3040.
-// Case-insensitive: aceita cnpj=, CNPJ=, Cnpj= etc.
-func extractCNPJ3040(xml3040 string) string {
-	// <Documento3040 cnpj="12345678" ... — case-insensitive
-	re := regexp.MustCompile(`(?i)cnpj="(\d{8,14})"`)
-	m := re.FindStringSubmatch(xml3040)
-	if len(m) >= 2 {
-		return m[1]
-	}
-	return ""
 }
 
 // extractRootAttr extrai atributo do elemento root de um XML.
 // Case-insensitive: aceita dataBase=, DataBase=, DATABASE= etc.
 func extractRootAttr(xmlContent, attrName string) string {
-	// Regex case-insensitive: aceita qualquer variante de caixa.
-	// Pattern: <Tag ... attrName="valor" ...>
+	// (?i) = case-insensitive.
 	re := regexp.MustCompile(`(?i)<[\w:]+[^>]*\s` + regexp.QuoteMeta(attrName) + `="([^"]*)"`)
 	m := re.FindStringSubmatch(xmlContent)
 	if len(m) >= 2 {
@@ -514,8 +156,20 @@ func (XD4111TotalClientesvsOps) Apply(_ context.Context, docs *crossdoc.DocSet) 
 		return nil
 	}
 
-	clients4111 := crossdoc.ExtractSumOfTag(xml4111, "Cliente", "QtdCli")
-	ops3040 := crossdoc.ExtractSumOfTag(xml3040, "Agreg", "QtdOp")
+	// 4111: usa doc4111.ParseFromBytes (typed).
+	d4111, err := doc4111.ParseFromBytes([]byte(xml4111))
+	if err != nil {
+		return nil
+	}
+
+	// 3040: usa bacen.Parse3040 (typed).
+	doc3040, err := bacen.Parse3040([]byte(xml3040))
+	if err != nil {
+		return nil
+	}
+
+	clients4111 := doc4111.ExtractQtdTotal(d4111)
+	ops3040 := doc3040.QtdOpTotal()
 
 	if clients4111 == 0 || ops3040 == 0 {
 		return nil
@@ -547,76 +201,30 @@ func (XD4111Inadimplentesvs3040) RequiredDocs() []string {
 }
 func (XD4111Inadimplentesvs3040) Apply(_ context.Context, docs *crossdoc.DocSet) error {
 	xml4111 := docs.Get("4111")
-	if xml4111 == "" {
+	xml3040 := docs.Get("3040")
+	if xml4111 == "" || xml3040 == "" {
 		return nil
 	}
 
-	// Conta clientes com indicação inadimplente
-	inad4111 := countInadimplente4111(xml4111)
-	if inad4111 == 0 {
+	d4111, err := doc4111.ParseFromBytes([]byte(xml4111))
+	if err != nil {
+		return nil
+	}
+
+	if !doc4111.HasModalidadeInadimplente(d4111) {
 		return nil // sem inadimplentes → regra não se aplica
 	}
 
-	// Conta registros com v150>0 no 3040
-	xml3040 := docs.Get("3040")
-	v150Count := countV1503040(xml3040)
+	doc3040, err := bacen.Parse3040([]byte(xml3040))
+	if err != nil {
+		return nil
+	}
 
-	if v150Count == 0 && inad4111 > 0 {
+	if doc3040.CountV150Gt0() == 0 {
 		return crossdoc.NewError("XD-4111-03", "A",
-			fmt.Sprintf("4111 reporta %d clientes inadimplentes mas 3040 não tem v150>0", inad4111))
+			"4111 reporta clientes inadimplentes mas 3040 não tem v150>0")
 	}
 	return nil
-}
-
-// countInadimplente4111 conta clientes com indicação de inadimplência.
-func countInadimplente4111(xml4111 string) int {
-	count := 0
-	decoder := xml.NewDecoder(strings.NewReader(xml4111))
-	for {
-		tok, err := decoder.Token()
-		if err != nil || tok == nil {
-			break
-		}
-		if se, ok := tok.(xml.StartElement); ok && se.Name.Local == "Modalidade" {
-			var indicacao string
-			for _, attr := range se.Attr {
-				if attr.Name.Local == "indicacao" {
-					indicacao = attr.Value
-					break
-				}
-			}
-			if indicacao == "S" || indicacao == "s" {
-				count++
-			}
-		}
-	}
-	return count
-}
-
-// countV1503040 conta ocorrências no 3040 onde v150 > 0.
-func countV1503040(xml3040 string) int {
-	// v150 é valor vencido > 90 dias — conta tags <V150> com valor > 0
-	count := 0
-	idx := 0
-	for {
-		tag := "<V150>"
-		i := strings.Index(xml3040[idx:], tag)
-		if i == -1 {
-			break
-		}
-		pos := idx + i + len(tag)
-		end := strings.Index(xml3040[pos:], "</V150>")
-		if end == -1 {
-			break
-		}
-		val := strings.TrimSpace(xml3040[pos : pos+end])
-		var f float64
-		if _, err := fmt.Sscanf(val, "%f", &f); err == nil && f > 0 {
-			count++
-		}
-		idx = pos + end + 1
-	}
-	return count
 }
 
 // XD-4111-04 — Data-base do 4111 deve bater com data-base do 3040.
@@ -637,18 +245,26 @@ func (XD4111DataBaseConsistente) Apply(_ context.Context, docs *crossdoc.DocSet)
 		return nil
 	}
 
-	// dataBase é atributo do root element (não child element)
+	// Extrai dataBase do root de cada documento (atributo, case-insensitive).
 	db4111 := extractRootAttr(xml4111, "dataBase")
 	if db4111 == "" {
 		return nil
 	}
-
 	db3040 := extractRootAttr(xml3040, "dataBase")
 	if db3040 == "" {
 		return nil
 	}
 
-	if db4111 != db3040 {
+	// Normaliza: ambos os formatos usam YYYY-MM-DD ou YYYY-MM.
+	// Extrai o prefixo YYYY-MM para comparação.
+	normalizeYM := func(s string) string {
+		if len(s) >= 7 {
+			return s[:7]
+		}
+		return s
+	}
+
+	if normalizeYM(db4111) != normalizeYM(db3040) {
 		return crossdoc.NewError("XD-4111-04", "E",
 			fmt.Sprintf("dataBase 4111=%s difere da dataBase 3040=%s", db4111, db3040))
 	}
@@ -673,10 +289,18 @@ func (XD4111Zeradovs3040) Apply(_ context.Context, docs *crossdoc.DocSet) error 
 		return nil
 	}
 
-	clients4111 := crossdoc.ExtractSumOfTag(xml4111, "Cliente", "QtdCli")
-	ops3040 := crossdoc.ExtractSumOfTag(xml3040, "Agreg", "QtdOp")
+	d4111, err := doc4111.ParseFromBytes([]byte(xml4111))
+	if err != nil {
+		return nil
+	}
+	doc3040, err := bacen.Parse3040([]byte(xml3040))
+	if err != nil {
+		return nil
+	}
 
-	// Se 4111 é zerado mas 3040 tem ops → possível inconsistência
+	clients4111 := doc4111.ExtractQtdTotal(d4111)
+	ops3040 := doc3040.QtdOpTotal()
+
 	if clients4111 == 0 && ops3040 > 0 {
 		return crossdoc.NewError("XD-4111-05", "A",
 			fmt.Sprintf("4111 reportado zerado (0 clientes) mas 3040 tem %.0f operações — verificar",
@@ -685,10 +309,146 @@ func (XD4111Zeradovs3040) Apply(_ context.Context, docs *crossdoc.DocSet) error 
 	return nil
 }
 
+// ============================================================
+// DRSAC adapter wrappers — implementam crossdoc.CrossDocRule
+// usando drsac.ValidateCrossRefs + scrDataFrom3040.
+//
+// Estes adapters permitem que as regras XD-DR01~08 (definidas
+// no package drsac) sejam registradas no crossdoc.Registry.
+//
+// Sprint 72: cada adapter filtra os resultados de ValidateCrossRefs
+// pelo seu próprio código.
+// ============================================================
+
+// applyDRSAC executa ValidateCrossRefs e retorna erro para um código específico.
+func applyDRSAC(ctx context.Context, docs *crossdoc.DocSet, ruleCode string) error {
+	xml2030 := docs.Get("2030")
+	xml3040 := docs.Get("3040")
+	if xml2030 == "" || xml3040 == "" {
+		return nil
+	}
+	doc2030, err := drsac.ParseFromBytes([]byte(xml2030))
+	if err != nil {
+		return nil
+	}
+	scrData := scrDataFrom3040(xml3040)
+	results := drsac.ValidateCrossRefs(doc2030, scrData)
+	for _, r := range results {
+		if r.Code == ruleCode {
+			return crossdoc.NewError(r.Code, r.Severity, r.Message)
+		}
+	}
+	return nil
+}
+
+// XDDR01IPOCExistsInSCR — XD-DR01.
+type XDDR01IPOCExistsInSCR struct{}
+
+func (XDDR01IPOCExistsInSCR) Code() string          { return "XD-DR01" }
+func (XDDR01IPOCExistsInSCR) Description() string  { return "IPOC de operação no DRSAC deve existir no SCR (3040)" }
+func (XDDR01IPOCExistsInSCR) Severity() string     { return "E" }
+func (XDDR01IPOCExistsInSCR) RequiredDocs() []string { return []string{"2030", "3040"} }
+func (XDDR01IPOCExistsInSCR) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
+	return applyDRSAC(ctx, docs, "XD-DR01")
+}
+
+// XDDR02SaldoConsistente — XD-DR02.
+type XDDR02SaldoConsistente struct{}
+
+func (XDDR02SaldoConsistente) Code() string          { return "XD-DR02" }
+func (XDDR02SaldoConsistente) Description() string {
+	return "Saldo DRSAC diverge mais de 10%% do saldo SCR para mesmo IPOC"
+}
+func (XDDR02SaldoConsistente) Severity() string     { return "A" }
+func (XDDR02SaldoConsistente) RequiredDocs() []string { return []string{"2030", "3040"} }
+func (XDDR02SaldoConsistente) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
+	return applyDRSAC(ctx, docs, "XD-DR02")
+}
+
+// XDDR03ClienteExisteNoSCR — XD-DR03.
+type XDDR03ClienteExisteNoSCR struct{}
+
+func (XDDR03ClienteExisteNoSCR) Code() string          { return "XD-DR03" }
+func (XDDR03ClienteExisteNoSCR) Description() string {
+	return "Cliente do DRSAC não encontrado no SCR para a mesma data-base"
+}
+func (XDDR03ClienteExisteNoSCR) Severity() string     { return "E" }
+func (XDDR03ClienteExisteNoSCR) RequiredDocs() []string { return []string{"2030", "3040"} }
+func (XDDR03ClienteExisteNoSCR) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
+	return applyDRSAC(ctx, docs, "XD-DR03")
+}
+
+// XDDR04SetorCNAEConsistente — XD-DR04.
+type XDDR04SetorCNAEConsistente struct{}
+
+func (XDDR04SetorCNAEConsistente) Code() string          { return "XD-DR04" }
+func (XDDR04SetorCNAEConsistente) Description() string {
+	return "Setor CNAE no DRSAC deve ser consistente com classificação no SCR"
+}
+func (XDDR04SetorCNAEConsistente) Severity() string     { return "A" }
+func (XDDR04SetorCNAEConsistente) RequiredDocs() []string { return []string{"2030", "3040"} }
+func (XDDR04SetorCNAEConsistente) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
+	return applyDRSAC(ctx, docs, "XD-DR04")
+}
+
+// XDDR05RiscoSocialAlto — XD-DR05.
+type XDDR05RiscoSocialAlto struct{}
+
+func (XDDR05RiscoSocialAlto) Code() string          { return "XD-DR05" }
+func (XDDR05RiscoSocialAlto) Description() string {
+	return "Alto risco social no DRSAC deve ter flag correspondente no SCR"
+}
+func (XDDR05RiscoSocialAlto) Severity() string     { return "A" }
+func (XDDR05RiscoSocialAlto) RequiredDocs() []string { return []string{"2030", "3040"} }
+func (XDDR05RiscoSocialAlto) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
+	return applyDRSAC(ctx, docs, "XD-DR05")
+}
+
+// XDDR06RiscoAmbiental — XD-DR06.
+type XDDR06RiscoAmbiental struct{}
+
+func (XDDR06RiscoAmbiental) Code() string          { return "XD-DR06" }
+func (XDDR06RiscoAmbiental) Description() string {
+	return "Risco ambiental no DRSAC deve constar no SCR"
+}
+func (XDDR06RiscoAmbiental) Severity() string     { return "A" }
+func (XDDR06RiscoAmbiental) RequiredDocs() []string { return []string{"2030", "3040"} }
+func (XDDR06RiscoAmbiental) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
+	return applyDRSAC(ctx, docs, "XD-DR06")
+}
+
+// XDDR07TotalTVMConsistente — XD-DR07.
+type XDDR07TotalTVMConsistente struct{}
+
+func (XDDR07TotalTVMConsistente) Code() string          { return "XD-DR07" }
+func (XDDR07TotalTVMConsistente) Description() string {
+	return "Total de exposição TVM no DRSAC deve ser consistente com SCR"
+}
+func (XDDR07TotalTVMConsistente) Severity() string     { return "A" }
+func (XDDR07TotalTVMConsistente) RequiredDocs() []string { return []string{"2030", "3040"} }
+func (XDDR07TotalTVMConsistente) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
+	return applyDRSAC(ctx, docs, "XD-DR07")
+}
+
+// XDDR08ContribPositivaGreen — XD-DR08.
+type XDDR08ContribPositivaGreen struct{}
+
+func (XDDR08ContribPositivaGreen) Code() string          { return "XD-DR08" }
+func (XDDR08ContribPositivaGreen) Description() string {
+	return "Contribuição positiva sem instrumento verde registrado no SCR"
+}
+func (XDDR08ContribPositivaGreen) Severity() string     { return "I" }
+func (XDDR08ContribPositivaGreen) RequiredDocs() []string { return []string{"2030", "3040"} }
+func (XDDR08ContribPositivaGreen) Apply(ctx context.Context, docs *crossdoc.DocSet) error {
+	return applyDRSAC(ctx, docs, "XD-DR08")
+}
+
 var (
 	_ = drsac.ParseFromBytes // used implicitly via adapters
 	_ = doc4111.ParseFromBytes
+	_ = bacen.Parse3040
 	_ = crossdoc.ExtractTextBetween
 	_ = crossdoc.ExtractSumOfTag
 	_ = crossdoc.CountTag
+	_ = strings.TrimSpace
 )

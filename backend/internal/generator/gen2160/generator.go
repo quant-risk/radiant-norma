@@ -20,8 +20,6 @@ import (
 	"crypto/sha256"
 	"encoding/xml"
 	"fmt"
-	"math"
-	"sort"
 	"strconv"
 	"time"
 
@@ -332,9 +330,7 @@ func sha256Hex(data []byte) string {
 	return fmt.Sprintf("%x", h)
 }
 
-var _ = strconv.ParseFloat
-var _ = math.Pow
-var _ = sort.Slice
-
 // Verify interface.
 var _ generator.CADOCGenerator = (*Generator)(nil)
+
+// Verify interface.

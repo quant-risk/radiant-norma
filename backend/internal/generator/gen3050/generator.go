@@ -236,9 +236,11 @@ func buildModel(doc *canonical.CanonicalDocument, dataBase time.Time) DocTXB {
 		setBloco(&model.Referencia.Diario.CRDLivre, k.tipoCli, bloc)
 	}
 
-	// mensal: copy same data (or could be different aggregation).
-	// TXB typically has same daily and monthly sections with different periods.
-	for k, ops := range agregMap {
+	// mensal: agrega todas as operações do período em um total mensal.
+	// Diferente do Diario (instantâneo do dia), Mensal é acumulado no mês.
+	// Agrupamos por (tipoCli, encargo) — uma entrada por combinação.
+	mensalMap := groupMensal(doc)
+	for k, ops := range mensalMap {
 		subMod := buildSubModalidade(ops, k)
 		bloc := getBloco(&model.Referencia.Mensal.CRDLivre, k.tipoCli)
 		switch k.encargo {
@@ -267,6 +269,21 @@ func groupByTXKey(doc *canonical.CanonicalDocument) map[txKey][]canonical.Operac
 			mod = strVal(doc.Extra["modalidade"], "desDuplicatas")
 		}
 		k := txKey{tipoCli: tipoCli, encargo: encargo, mod: mod}
+		m[k] = append(m[k], op)
+	}
+	return m
+}
+
+// groupMensal agrega operações por (tipoCli, encargo) para a seção mensal.
+// Uma única entrada por combinação (agregação completa no mês).
+func groupMensal(doc *canonical.CanonicalDocument) map[txKey][]canonical.Operacao {
+	m := make(map[txKey][]canonical.Operacao)
+	for _, op := range doc.Operacoes {
+		tipoCli := tipoCliMap(op.TipoPessoa)
+		encargo := encargoMap(op.Indexador)
+		// Mensal: agrega todas ops no mês — ignorar modalidade específica,
+		// uma entrada por tipo de cliente + encargo.
+		k := txKey{tipoCli: tipoCli, encargo: encargo, mod: ""}
 		m[k] = append(m[k], op)
 	}
 	return m
@@ -303,14 +320,18 @@ func buildSubModalidade(ops []canonical.Operacao, k txKey) SubModalidade {
 		avgTaxa = taxaSum / float64(taxaCount)
 	}
 
+	codigo := k.mod
+	if codigo == "" {
+		codigo = "TOTAL"
+	}
 	return SubModalidade{
-		Codigo:          k.mod,
+		Codigo:          codigo,
 		TxMedJuros:      formatTaxa(avgTaxa),
 		TxMinima:        formatTaxa(minTaxa),
 		TxMaxima:        formatTaxa(maxTaxa),
 		VlrConcessoes:   formatMoney(totalVal),
 		QtdNovContratos: fmt.Sprintf("%d", qtdContratos),
-		SldCarAtiva:     formatMoney(totalVal), // use same as proxy
+		SldCarAtiva:     formatMoney(totalVal),
 	}
 }
 
@@ -365,14 +386,13 @@ func setBloco(crd *CRDLivre, tipoCli string, bloc ClienteBloco) {
 
 // formatTaxa formats a taxa (decimal, e.g. 0.015 = 1.5%) as percentage string.
 // TXB uses percentage value (e.g. "1.5000" for 1.5% a.m.).
-// Returns "0.0000" for zero, negative (sentinel -999), or >100 values.
+// Returns "0.0000" for zero or values outside (0, 100].
 func formatTaxa(v float64) string {
-	if v <= 0 || v > 100 { // guard against zero, negative (sentinels), and overflow
+	if v <= 0 || v > 100 {
 		return "0.0000"
 	}
 	// Convert decimal to percentage (e.g. 0.015 → 1.5000).
-	pct := v * 100
-	return fmt.Sprintf("%.4f", pct)
+	return fmt.Sprintf("%.4f", v*100)
 }
 
 // formatMoney formats a monetary value as N15,2 string.

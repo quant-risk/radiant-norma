@@ -410,4 +410,5 @@ func decimalToFloat(d any) float64 {
 	return 0.0
 }
 
-var _ = strconv.ParseFloat // golint
+// Verify interface.
+var _ generator.CADOCGenerator = (*Generator)(nil)

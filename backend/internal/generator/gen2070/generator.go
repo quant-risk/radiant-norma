@@ -1,10 +1,10 @@
 // Package gen2070 implementa o CADOCGenerator para o documento 2070 (DDR).
 //
 // O CADOC 2070 — DDR (Requerimento de Capital Diário) reporta o capital
-// regulatório diário required ao BACEN.
+// regulatório diário ao BACEN.
 //
 // Estrutura:
-//   - Doc2070@cnpj, dataBase, indRemessa, nmContato, telContato
+//   - DocDDR@cnpj, dataBase, indRemessa, nmContato, telContato
 //   - DDR@codigo, moeda, valor (cada posição)
 //
 // CadocCode: "2070" | COSIF accounts: 161000, 181000, 710000, etc.
@@ -238,8 +238,6 @@ func sha256Hex(data []byte) string {
 	h := sha256.Sum256(data)
 	return fmt.Sprintf("%x", h)
 }
-
-var _ = strconv.ParseFloat
 
 // Verify interface.
 var _ generator.CADOCGenerator = (*Generator)(nil)

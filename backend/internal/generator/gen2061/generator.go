@@ -176,16 +176,10 @@ func buildModel(doc *canonical.CanonicalDocument, dataBase time.Time) DocDLO {
 	}
 
 	if len(model.Contas) > 0 {
-		model.Totalizador = buildTotalizador(model.Contas)
+		model.Totalizador = buildTotalizador(model.Contas, patrimonio)
 	}
 
 	return model
-}
-
-// keyConta groups operations by COSIF account code.
-type keyConta struct {
-	code   string
-	mod    string
 }
 
 func groupByConta(doc *canonical.CanonicalDocument) map[string][]canonical.Operacao {
@@ -239,16 +233,16 @@ func buildElems(ops []canonical.Operacao) []Elem {
 	return elems
 }
 
-func buildTotalizador(contas []Conta) *Totaliz {
+func buildTotalizador(contas []Conta, patrimonio string) *Totaliz {
 	var total float64
 	for _, c := range contas {
 		v, _ := strconv.ParseFloat(c.Valor, 64)
 		total += v
 	}
 	return &Totaliz{
-		ContasTotal:     fmt.Sprintf("%d", len(contas)),
-		RWACAMTotal:    formatMoney(total),
-		PatrimonioTotal: formatMoney(total),
+		ContasTotal:      fmt.Sprintf("%d", len(contas)),
+		RWACAMTotal:     formatMoney(total),
+		PatrimonioTotal:  patrimonio, // use explicit patrimonio, not sum of contas
 	}
 }
 
@@ -321,8 +315,6 @@ func sha256Hex(data []byte) string {
 	h := sha256.Sum256(data)
 	return fmt.Sprintf("%x", h)
 }
-
-var _ = strconv.ParseFloat
 
 // Verify interface.
 var _ generator.CADOCGenerator = (*Generator)(nil)
