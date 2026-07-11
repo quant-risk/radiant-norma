@@ -148,7 +148,7 @@ func buildModel(doc *canonical.CanonicalDocument, dataBase time.Time) DocDRM {
 	rwajur3 := parseExtraFloat(doc.Extra["rwajur3"])
 	rwajur4 := parseExtraFloat(doc.Extra["rwajur4"])
 	vaR := parseExtraFloat(doc.Extra["vaR"])
-	sVaR := parseExtraFloat(doc.Extra["svaR"])
+	sVaR := parseExtraFloat(doc.Extra["sVaR"])
 	rwacom := parseExtraFloat(doc.Extra["rwacom"])
 
 	model := DocDRM{

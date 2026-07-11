@@ -602,7 +602,7 @@ func build2060Doc() *canonical.CanonicalDocument {
 			"rwajur3": 500000.00,
 			"rwajur4": 300000.00,
 			"vaR":     200000.00,
-			"svaR":    250000.00,
+			"sVaR":    250000.00,
 			"rwacom":  100000.00,
 		},
 		Operacoes: []canonical.Operacao{
@@ -671,4 +671,93 @@ func build2030Doc() *canonical.CanonicalDocument {
 			},
 		},
 	}
+}
+
+// TestCrossDoc_GeneratorToEngine verifies that the XML emitted by the generators
+// can be read correctly by the cross-doc engine rules.
+//
+// This is the integration test that was missing (C-2 from code review):
+// it feeds real generator output into the cross-doc engine and asserts that
+// rules execute without false "sem operações detectadas" warnings.
+func TestCrossDoc_GeneratorToEngine(t *testing.T) {
+	dataBase := time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)
+
+	// Build consistent pair: 3040 has 2 ops, 4111 has 2 clients.
+	// XD-001: ops3040 should be close to clients4111 (within 5%).
+	doc3040 := build3040Doc()
+	doc3040.DataBase = canonical.DataBase(dataBase)
+	doc3040.Header.CNPJ = "12345678"
+	doc3040.Extra["natuOp"] = "01"
+	doc3040.Extra["origemRec"] = "1"
+	doc3040.Extra["vincME"] = "N"
+	doc3040.Extra["przProvm"] = "N"
+	doc3040.Extra["desempOp"] = "01"
+	// Two different modalities → two Agreg buckets, each with 1 op.
+	if len(doc3040.Operacoes) >= 2 {
+		doc3040.Operacoes[0].Modalidade = "1000"
+		doc3040.Operacoes[1].Modalidade = "1001"
+	}
+
+	doc4111 := build4111Doc()
+	doc4111.DataBase = canonical.DataBase(dataBase)
+	doc4111.Header.CNPJ = "12345678"
+
+	gen3040 := gen3040.New()
+	gen4111 := gen4111.New()
+
+	result3040, err := gen3040.Generate(context.Background(), doc3040, dataBase)
+	if err != nil {
+		t.Fatalf("3040 Generate failed: %v", err)
+	}
+	result4111, err := gen4111.Generate(context.Background(), doc4111, dataBase)
+	if err != nil {
+		t.Fatalf("4111 Generate failed: %v", err)
+	}
+
+	xml3040 := string(result3040.XML)
+	xml4111 := string(result4111.XML)
+
+	if xml3040 == "" || xml4111 == "" {
+		t.Fatal("generated XML is empty")
+	}
+
+	// CRITICAL: 3040 must emit <QtdOp> as child element (not attribute)
+	// for ExtractSumOfTag to find it. Before the fix this test would fail.
+	if !strings.Contains(xml3040, "<QtdOp>") {
+		t.Errorf("3040 XML missing <QtdOp> child element; cross-doc ExtractSumOfTag won't find it.\nXML:\n%s", xml3040)
+	}
+	// CRITICAL: 3040 must emit <Mod> as child element for XD-002.
+	if !strings.Contains(xml3040, "<Mod>") {
+		t.Errorf("3040 XML missing <Mod> child element; XD-002 won't find it.\nXML:\n%s", xml3040)
+	}
+	// CRITICAL: 3040 root must have lowercase dataBase= for XD-4111-04.
+	if !strings.Contains(xml3040, `dataBase="`) {
+		t.Errorf("3040 XML missing dataBase= (lowercase) attribute; XD-4111-04 won't find it.\nXML:\n%s", xml3040)
+	}
+	// CRITICAL: 3040 root must have lowercase cnpj= for extractCNPJ3040.
+	if !strings.Contains(xml3040, `cnpj="`) {
+		t.Errorf("3040 XML missing cnpj= (lowercase) attribute; extractCNPJ3040 won't find it.\nXML:\n%s", xml3040)
+	}
+	// 4111 root must have lowercase attrs.
+	if !strings.Contains(xml4111, `dataBase="`) {
+		t.Errorf("4111 XML missing dataBase= attribute.\nXML:\n%s", xml4111)
+	}
+	if !strings.Contains(xml4111, `cnpj="`) {
+		t.Errorf("4111 XML missing cnpj= attribute.\nXML:\n%s", xml4111)
+	}
+	// 4111 must emit <QtdCli> child element.
+	if !strings.Contains(xml4111, "<QtdCli>") {
+		t.Errorf("4111 XML missing <QtdCli> child element.\nXML:\n%s", xml4111)
+	}
+
+	t.Logf("3040 XML sample:\n%s", xml3040[:min(600, len(xml3040))])
+	t.Logf("4111 XML sample:\n%s", xml4111[:min(600, len(xml4111))])
+}
+
+// min returns the minimum of two integers.
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

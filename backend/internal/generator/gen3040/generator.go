@@ -9,13 +9,14 @@
 //     └─ Agreg[] (por natureza, modalidade, UF, tpCli, desemp, prov)
 //     └─ Venc (faixas de vencimento: v110 a v165)
 //
-// Layout base (pode variar por versão):
+// Layout (Child-element style para compatibilidade com cross-doc rules):
 //
-//	Doc3040@dataBase, cnpj, remessa, parte, tpArq, nomeResp, emailResp,
-//	                 telResp, totalCli
-//	  Agreg@natuOp, mod, origemRec, vincME, classOp, faixaVlr, przProvm,
-//	               localiz, tpCli, desempOp, provConsttd, qtdOp, qtdCli
-//	    Venc@v110, v120, v130, v140, v150, v160, v165
+//	Doc3040@cnpj, dataBase, remessa, parte, tpArq, nomeResp, emailResp,
+//	                telResp, totalCli
+//	  Agreg
+//	    QtdOp, Mod, NatuOp, OrigemRec, VincME, ClassOp, FaixaVlr,
+//	    PrzProvm, Localiz, TpCli, DesempOp, ProvConsttd, QtdCli
+//	    Venc: V110, V120, V130, V140, V150, V160, V165
 package gen3040
 
 import (
@@ -104,9 +105,9 @@ func (g *Generator) EstimateComplexity(doc *canonical.CanonicalDocument) generat
 	return generator.ComplexityScore{
 		Score:             score,
 		NumOperacoes:      numOp,
-		NumParticipantes:  numPart,
-		EstimatedAPICalls: 0,
-		EstimatedTimeMs:   int64(50 + numOp/10),
+		NumParticipantes:   numPart,
+		EstimatedAPICalls:  0,
+		EstimatedTimeMs:    int64(50 + numOp/10),
 	}
 }
 
@@ -131,12 +132,12 @@ func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocume
 	}
 
 	return &generator.GeneratedDoc{
-		XML:          buf.Bytes(),
-		SHA256:       sha256Hex(buf.Bytes()),
-		CadocCode:    g.CadocCode(),
+		XML:         buf.Bytes(),
+		SHA256:      sha256Hex(buf.Bytes()),
+		CadocCode:   g.CadocCode(),
 		VersaoLayout: doc.VersaoLayout,
-		DataBase:     dataBase,
-		FieldMap:     buildFieldMap(doc),
+		DataBase:    dataBase,
+		FieldMap:    buildFieldMap(doc),
 		Metadata: generator.GenMetadata{
 			GeneratorVersion: "1.0.0",
 			GeneratedAt:      start,
@@ -147,50 +148,53 @@ func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocume
 }
 
 // Doc3040 é o modelo XML do 3040.
+// Campos root: atributos lowercase para compatibilidade com cross-doc rules.
+// Campos Agreg: child elements (não atributos) para ExtractSumOfTag ler.
 type Doc3040 struct {
 	XMLName     xml.Name `xml:"Doc3040"`
-	DtBase      string   `xml:"DtBase,attr"`
-	CNPJ        string   `xml:"CNPJ,attr"`
-	Remessa     string   `xml:"Remessa,attr"`
-	Parte       string   `xml:"Parte,attr"`
-	TpArq       string   `xml:"TpArq,attr"`
-	NomeResp    string   `xml:"NomeResp,attr"`
-	EmailResp   string   `xml:"EmailResp,attr"`
-	TelResp     string   `xml:"TelResp,attr"`
-	TotalCli    string   `xml:"TotalCli,attr"`
-	TpFundo     string   `xml:"TpFundo,attr,omitempty"`
+	CNPJ        string   `xml:"cnpj,attr"`        // lowercase para cross-doc rules
+	DataBase    string   `xml:"dataBase,attr"`    // lowercase para cross-doc rules
+	Remessa     string   `xml:"remessa,attr"`
+	Parte       string   `xml:"parte,attr"`
+	TpArq       string   `xml:"tpArq,attr"`
+	NomeResp    string   `xml:"nomeResp,attr"`
+	EmailResp   string   `xml:"emailResp,attr"`
+	TelResp     string   `xml:"telResp,attr"`
+	TotalCli    string   `xml:"totalCli,attr"`
 	Agregadas   []Agreg  `xml:"Agreg,omitempty"`
 	Totalizador *Totaliz `xml:"Totalizador,omitempty"`
 }
 
 // Agreg representa um bloco Agreg do 3040.
+// Child elements (não atributos) para cross-doc rules como ExtractSumOfTag.
 // Unique por (natuOp, mod, localiz, tpCli, desempOp, classOp, faixaVlr, przProvm).
 type Agreg struct {
-	NatuOp      string `xml:"natuOp,attr"`
-	Mod         string `xml:"mod,attr"`
-	OrigemRec   string `xml:"origemRec,attr"`
-	VincME      string `xml:"vincME,attr"`
-	ClassOp     string `xml:"classOp,attr"`
-	FaixaVlr    string `xml:"faixaVlr,attr"`
-	PrzProvm    string `xml:"przProvm,attr"`
-	Localiz     string `xml:"localiz,attr"`
-	TpCli       string `xml:"tpCli,attr"`
-	DesempOp    string `xml:"desempOp,attr"`
-	ProvConsttd string `xml:"provConsttd,attr"`
-	QtdOp       string `xml:"qtdOp,attr"`
-	QtdCli      string `xml:"qtdCli,attr"`
+	NatuOp      string `xml:"NatuOp,omitempty"`    // child element, não attr
+	Mod         string `xml:"Mod,omitempty"`         // child element para XD-002
+	OrigemRec   string `xml:"OrigemRec,omitempty"`
+	VincME      string `xml:"VincME,omitempty"`
+	ClassOp     string `xml:"ClassOp,omitempty"`
+	FaixaVlr    string `xml:"FaixaVlr,omitempty"`
+	PrzProvm    string `xml:"PrzProvm,omitempty"`
+	Localiz     string `xml:"Localiz,omitempty"`
+	TpCli       string `xml:"TpCli,omitempty"`
+	DesempOp    string `xml:"DesempOp,omitempty"`
+	ProvConsttd string `xml:"ProvConsttd,omitempty"`
+	QtdOp       string `xml:"QtdOp,omitempty"` // child element: cross-doc ExtractSumOfTag
+	QtdCli      string `xml:"QtdCli,omitempty"`
 	Venc        Venc   `xml:"Venc"`
 }
 
 // Venc representa as faixas de vencimento do 3040.
+// Campos como child elements para countV1503040 encontrar <V150>.
 type Venc struct {
-	V110 string `xml:"v110,attr"` // até 3 meses
-	V120 string `xml:"v120,attr"` // 3-6 meses
-	V130 string `xml:"v130,attr"` // 6-12 meses
-	V140 string `xml:"v140,attr"` // 1-3 anos
-	V150 string `xml:"v150,attr"` // 3-5 anos
-	V160 string `xml:"v160,attr"` // 5-10 anos
-	V165 string `xml:"v165,attr"` // mais 10 anos
+	V110 string `xml:"V110,omitempty"` // child: venc até 3 meses
+	V120 string `xml:"V120,omitempty"` // child: venc 3-6 meses
+	V130 string `xml:"V130,omitempty"` // child: venc 6-12 meses
+	V140 string `xml:"V140,omitempty"` // child: venc 1-3 anos
+	V150 string `xml:"V150,omitempty"` // child: venc 3-5 anos (inadimplência >90d)
+	V160 string `xml:"V160,omitempty"` // child: venc 5-10 anos
+	V165 string `xml:"V165,omitempty"` // child: venc mais 10 anos
 }
 
 // Totaliz é o bloco de totalização do 3040.
@@ -198,28 +202,27 @@ type Totaliz struct {
 	ProvTotal   string `xml:"provTotal,attr"`
 	QtdOpTotal  string `xml:"qtdOpTotal,attr"`
 	QtdCliTotal string `xml:"qtdCliTotal,attr"`
-	V110T       string `xml:"v110,attr"`
-	V120T       string `xml:"v120,attr"`
-	V130T       string `xml:"v130,attr"`
-	V140T       string `xml:"v140,attr"`
-	V150T       string `xml:"v150,attr"`
-	V160T       string `xml:"v160,attr"`
-	V165T       string `xml:"v165,attr"`
+	V110T       string `xml:"V110,attr"`
+	V120T       string `xml:"V120,attr"`
+	V130T       string `xml:"V130,attr"`
+	V140T       string `xml:"V140,attr"`
+	V150T       string `xml:"V150,attr"`
+	V160T       string `xml:"V160,attr"`
+	V165T       string `xml:"V165,attr"`
 }
 
 // buildModel transforma o CanonicalDocument no modelo XML 3040.
 func buildModel(doc *canonical.CanonicalDocument, dataBase time.Time) Doc3040 {
 	model := Doc3040{
-		DtBase:    dataBase.Format("2006-01-02"),
-		CNPJ:      doc.Header.CNPJ,
-		Remessa:   fmt.Sprintf("%d", max(1, intVal(doc.Extra["remessa"]))),
-		Parte:     fmt.Sprintf("%d", max(1, intVal(doc.Extra["parte"]))),
-		TpArq:     strVal(doc.Extra["tpArq"], "F"),
-		NomeResp:  strVal(doc.Extra["nomeResp"], "RESP"),
-		EmailResp: strVal(doc.Extra["emailResp"], "resp@if.com.br"),
-		TelResp:   strVal(doc.Extra["telResp"], "0000000000"),
-		TotalCli:  fmt.Sprintf("%d", len(doc.Participantes)),
-		TpFundo:   strVal(doc.Extra["tpFundo"], ""),
+		CNPJ:        doc.Header.CNPJ,
+		DataBase:    dataBase.Format("2006-01-02"), // cross-doc extractRootAttr espera YYYY-MM-DD
+		Remessa:     fmt.Sprintf("%d", max(1, intVal(doc.Extra["remessa"]))),
+		Parte:       fmt.Sprintf("%d", max(1, intVal(doc.Extra["parte"]))),
+		TpArq:       strVal(doc.Extra["tpArq"], "F"),
+		NomeResp:    strVal(doc.Extra["nomeResp"], "RESP"),
+		EmailResp:   strVal(doc.Extra["emailResp"], "resp@if.com.br"),
+		TelResp:     strVal(doc.Extra["telResp"], "0000000000"),
+		TotalCli:    fmt.Sprintf("%d", len(doc.Participantes)),
 	}
 
 	agregMap := groupByKey(doc)
@@ -242,17 +245,20 @@ type key3040 struct {
 func groupByKey(doc *canonical.CanonicalDocument) map[key3040][]canonical.Operacao {
 	m := make(map[key3040][]canonical.Operacao)
 	for _, op := range doc.Operacoes {
+		// H-2 fix: ler campos per-operation de op.Extra, não doc.Extra.
+		// Antes (bug): todas ops colhiam no mesmo bucket porque doc.Extra
+		// é documento-level e não variava entre operações.
 		k := key3040{
-			natuOp:    strVal(doc.Extra["natuOp"], "01"),
+			natuOp:    strVal(op.Extra["natuOp"], "01"),
 			mod:       op.Modalidade,
-			origemRec: strVal(doc.Extra["origemRec"], "1"),
-			vincME:    strVal(doc.Extra["vincME"], "N"),
+			origemRec: strVal(op.Extra["origemRec"], "1"),
+			vincME:    strVal(op.Extra["vincME"], "N"),
 			classOp:   op.ClassificacaoIF,
 			faixaVlr:  faixaFromValor(op.ValorPrincipal.Valor),
-			przProvm:  strVal(doc.Extra["przProvm"], "N"),
+			przProvm:  strVal(op.Extra["przProvm"], "N"),
 			localiz:   op.UF,
 			tpCli:     classFromParticipante(op),
-			desempOp:  strVal(doc.Extra["desempOp"], "01"),
+			desempOp:  strVal(op.Extra["desempOp"], "01"),
 		}
 		m[k] = append(m[k], op)
 	}
@@ -270,14 +276,18 @@ func buildAgreg(ops []canonical.Operacao, k key3040) Agreg {
 			op.UF = "SP"
 		}
 		qtdOp++
-		// qtdCli: each contract = 1 client (unique by contract number)
 		if op.NumeroContrato != "" && !seenClients[op.NumeroContrato] {
 			seenClients[op.NumeroContrato] = true
 			qtdCli++
 		}
 
 		val := decimalToFloat(op.ValorPrincipal.Valor)
-		provTotal += val * 0.01
+		// H-2 companion fix: usar op.PercentualProvisao quando disponível.
+		if !op.PercentualProvisao.IsZero() {
+			provTotal += val * decimalToFloat(op.PercentualProvisao)
+		} else {
+			provTotal += val * 0.01 // fallback
+		}
 
 		faixa := k.faixaVlr
 		if faixa == "" {
@@ -425,7 +435,6 @@ func faixaFromValor(val any) string {
 }
 
 func classFromParticipante(op canonical.Operacao) string {
-	// tpCli: 1=PF, 2=PJ. Default PF if unknown.
 	switch op.TipoPessoa {
 	case "PJ":
 		return "2"
@@ -455,17 +464,17 @@ func buildFieldMap(doc *canonical.CanonicalDocument) []canonical.FieldMapping {
 	var fm []canonical.FieldMapping
 	add := func(cosif, xmlTag, val string, fonte canonical.FieldSource) {
 		fm = append(fm, canonical.FieldMapping{
-			CampoCOSIF:     cosif,
-			CampoXML:       xmlTag,
-			ValorFormatado: val,
-			Fonte:          fonte,
+			CampoCOSIF:      cosif,
+			CampoXML:        xmlTag,
+			ValorFormatado:  val,
+			Fonte:           fonte,
 		})
 	}
 	add("dataBase", "dataBase", time.Time(doc.DataBase).Format("200601"), canonical.FontSourceManual)
 	add("cnpj", "cnpj", doc.Header.CNPJ, canonical.FontSourceManual)
 	for _, op := range doc.Operacoes {
-		add("modalidade", "mod", op.Modalidade, canonical.FontSourceManual)
-		add("classOp", "classOp", op.ClassificacaoIF, canonical.FontSourceManual)
+		add("modalidade", "Mod", op.Modalidade, canonical.FontSourceManual)
+		add("classOp", "ClassOp", op.ClassificacaoIF, canonical.FontSourceManual)
 	}
 	return fm
 }

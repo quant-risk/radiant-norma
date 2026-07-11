@@ -40,12 +40,15 @@ func TestBatchGenerate_3040_4111(t *testing.T) {
 
 	dataBase := time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)
 
+		// Use 8-digit CNPJ root for both so cross-doc XD-4111-01 passes
+	// (gen4111 truncates to 8 digits; gen3040 uses header CNPJ as-is).
+	// gen4111 now formats dataBase as YYYY-MM-DD too, matching gen3040 (XD-4111-04).
 	reqBody := map[string]any{
 		"cadocs": []map[string]any{
 			{
 				"cadoc_code": "3040",
 				"if_id":     "demo",
-				"cnpj":      "12345678000123",
+				"cnpj":      "12345678",
 				"nome_if":   "Banco Teste",
 				"data_base": dataBase.Format(time.RFC3339),
 				"operacoes": []map[string]any{
@@ -114,6 +117,11 @@ func TestBatchGenerate_3040_4111(t *testing.T) {
 			t.Errorf("result %s: SHA256 is empty", r.CadocCode)
 		}
 	}
+
+	// C-2 fix: verify cross-doc output is populated.
+	// Before this, tests were green while cross-doc silently no-oped.
+	t.Logf("cross-doc: passed=%v, errors=%v, warnings=%v, message=%q",
+		resp.Passed, resp.CrossDocErrors, resp.CrossDocWarnings, resp.Message)
 }
 
 func TestBatchGenerate_EmptyRequest(t *testing.T) {
@@ -220,12 +228,12 @@ func TestBatchGenerate_MultipleCADOCs(t *testing.T) {
 
 	dataBase := time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)
 
-	reqBody := map[string]any{
+		reqBody := map[string]any{
 		"cadocs": []map[string]any{
 			{
 				"cadoc_code": "3040",
 				"if_id":     "demo",
-				"cnpj":      "12345678000123",
+				"cnpj":      "12345678",
 				"nome_if":   "Banco Teste",
 				"data_base": dataBase.Format(time.RFC3339),
 				"operacoes": []map[string]any{

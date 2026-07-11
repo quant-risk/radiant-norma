@@ -172,7 +172,7 @@ func buildModel(doc *canonical.CanonicalDocument, dataBase time.Time) Documento4
 
 	model := Documento4111{
 		CNPJ:      cnpj,
-		DataBase:  dataBase.Format("2006-01"),
+		DataBase:  dataBase.Format("2006-01-02"), // YYYY-MM-DD para compatibilidade cross-doc com 3040
 		CodigoDoc: "4111",
 	}
 

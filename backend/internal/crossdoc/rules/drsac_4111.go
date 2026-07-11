@@ -472,9 +472,10 @@ func (XD4111CNPJConsistente) Apply(_ context.Context, docs *crossdoc.DocSet) err
 }
 
 // extractCNPJ3040 extrai o CNPJ do atributo root do 3040.
+// Case-insensitive: aceita cnpj=, CNPJ=, Cnpj= etc.
 func extractCNPJ3040(xml3040 string) string {
-	// <Documento3040 cnpj="12345678" ...
-	re := regexp.MustCompile(`cnpj="(\d{8,14})"`)
+	// <Documento3040 cnpj="12345678" ... — case-insensitive
+	re := regexp.MustCompile(`(?i)cnpj="(\d{8,14})"`)
 	m := re.FindStringSubmatch(xml3040)
 	if len(m) >= 2 {
 		return m[1]
@@ -483,9 +484,11 @@ func extractCNPJ3040(xml3040 string) string {
 }
 
 // extractRootAttr extrai atributo do elemento root de um XML.
-// Use para atributos como cnpj e dataBase no root element.
+// Case-insensitive: aceita dataBase=, DataBase=, DATABASE= etc.
 func extractRootAttr(xmlContent, attrName string) string {
-	re := regexp.MustCompile(`<[\w:]+[^>]*\s` + attrName + `="([^"]*)"`)
+	// Regex case-insensitive: aceita qualquer variante de caixa.
+	// Pattern: <Tag ... attrName="valor" ...>
+	re := regexp.MustCompile(`(?i)<[\w:]+[^>]*\s` + regexp.QuoteMeta(attrName) + `="([^"]*)"`)
 	m := re.FindStringSubmatch(xmlContent)
 	if len(m) >= 2 {
 		return m[1]
