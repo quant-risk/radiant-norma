@@ -58,13 +58,15 @@ func (d *Dispatcher) processJob(job deliveryJob) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Insert delivery record first.
+	// Insert delivery record. Uses INSERT OR REPLACE so retries (which re-enqueue
+	// an existing delivery ID) correctly UPDATE the existing record instead of
+	// failing with UNIQUE constraint violation.
 	_, err := d.db.ExecContext(ctx,
-		`INSERT INTO webhook_deliveries (id, webhook_id, event, payload, status, attempt)
-		 VALUES (?, ?, ?, ?, 'pending', 0)`,
+		`INSERT OR REPLACE INTO webhook_deliveries (id, webhook_id, event, payload, status, attempt, http_status, response_body)
+		 VALUES (?, ?, ?, ?, 'pending', 0, 0, NULL)`,
 		job.ID, job.WebhookID, job.Event, job.Payload)
 	if err != nil {
-		slog.Error("webhook deliver: failed to insert delivery record", "id", job.ID, "err", err)
+		slog.Error("webhook deliver: failed to upsert delivery record", "id", job.ID, "err", err)
 		return
 	}
 

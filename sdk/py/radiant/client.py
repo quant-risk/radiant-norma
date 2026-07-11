@@ -381,7 +381,7 @@ class Client:
 
     def list_webhooks(self) -> Dict[str, Any]:
         """GET /v1/webhooks — lista webhooks registrados."""
-        resp = self._request("GET", "/v1/webhooks")
+        resp = self._request("GET", "/webhooks")
         return resp.json()
 
     def register_webhook(
@@ -394,12 +394,12 @@ class Client:
         body: Dict[str, Any] = {"url": url, "events": events}
         if secret:
             body["secret"] = secret
-        resp = self._request("POST", "/v1/webhooks", json=body)
+        resp = self._request("POST", "/webhooks", json=body)
         return resp.json()
 
     def delete_webhook(self, webhook_id: str) -> None:
         """DELETE /v1/webhooks/{id} — remove um webhook."""
-        path = f"/v1/webhooks/{quote(webhook_id, safe='')}"
+        path = f"/webhooks/{quote(webhook_id, safe='')}"
         self._request("DELETE", path)
 
     def list_deliveries(
@@ -410,7 +410,7 @@ class Client:
         status: Optional[str] = None,
     ) -> Dict[str, Any]:
         """GET /v1/webhooks/{id}/deliveries — lista entregas com paginação."""
-        path = f"/v1/webhooks/{quote(webhook_id, safe='')}/deliveries"
+        path = f"/webhooks/{quote(webhook_id, safe='')}/deliveries"
         params: Dict[str, Any] = {"page": page, "limit": limit}
         if status:
             params["status"] = status
@@ -423,7 +423,7 @@ class Client:
         delivery_id: str,
     ) -> Dict[str, Any]:
         """GET /v1/webhooks/{id}/deliveries/{delivery_id} — retorna uma entrega."""
-        path = f"/v1/webhooks/{quote(webhook_id, safe='')}/deliveries/{quote(delivery_id, safe='')}"
+        path = f"/webhooks/{quote(webhook_id, safe='')}/deliveries/{quote(delivery_id, safe='')}"
         resp = self._request("GET", path)
         return resp.json()
 
@@ -433,7 +433,7 @@ class Client:
         delivery_id: str,
     ) -> Dict[str, Any]:
         """POST /v1/webhooks/{id}/deliveries/{delivery_id}/retry — reenvia uma entrega."""
-        path = f"/v1/webhooks/{quote(webhook_id, safe='')}/deliveries/{quote(delivery_id, safe='')}/retry"
+        path = f"/webhooks/{quote(webhook_id, safe='')}/deliveries/{quote(delivery_id, safe='')}/retry"
         resp = self._request("POST", path)
         return resp.json()
 
