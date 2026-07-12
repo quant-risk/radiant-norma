@@ -1,10 +1,11 @@
 // Package validation implements the L1–L4 validation pipeline for generated CADOCs.
 //
 // Validation levels:
-//   L1 — XSD structural: XML parses and conforms to schema structure
-//   L2 — Required fields: mandatory fields are present and non-empty
-//   L3 — Semantic rules: business rules (e.g. soma parcelas = valor total)
-//   L4 — Cross-doc consistency: consistency across multiple CADOCs in a batch
+//
+//	L1 — XSD structural: XML parses and conforms to schema structure
+//	L2 — Required fields: mandatory fields are present and non-empty
+//	L3 — Semantic rules: business rules (e.g. soma parcelas = valor total)
+//	L4 — Cross-doc consistency: consistency across multiple CADOCs in a batch
 //
 // Each level returns a ValidationResult. Levels are run sequentially; later
 // levels are only executed if earlier levels pass.
@@ -45,7 +46,7 @@ func (l Level) String() string {
 
 // Issue is a single validation issue.
 type Issue struct {
-	Level   Level   `json:"level"`
+	Level   Level  `json:"level"`
 	Code    string `json:"code"`    // e.g. "MISSING_FIELD", "XSD_INVALID"
 	Field   string `json:"field"`   // XML tag path, e.g. "Doc3040.Agreg.Venc.V150"
 	Message string `json:"message"` // human-readable
@@ -53,9 +54,9 @@ type Issue struct {
 
 // ValidationResult holds the result of a validation run.
 type ValidationResult struct {
-	OK     bool     `json:"ok"`
-	Passed []Level  `json:"passed"` // levels that passed
-	Issues []Issue  `json:"issues,omitempty"`
+	OK     bool    `json:"ok"`
+	Passed []Level `json:"passed"` // levels that passed
+	Issues []Issue `json:"issues,omitempty"`
 }
 
 // AddIssue appends a validation issue.
