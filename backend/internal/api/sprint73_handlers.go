@@ -99,6 +99,14 @@ func NewSchemaInfoCache() *SchemaInfoCache {
 	return &SchemaInfoCache{ttl: 5 * time.Minute}
 }
 
+// Invalidate limpa o cache (usado quando um novo schema é inserido).
+func (c *SchemaInfoCache) Invalidate() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.resp = nil
+	c.cachedAt = time.Time{}
+}
+
 // GetOrFetch retorna cache se válido, senão chama fetch() e cacheia.
 // Sempre retorna deep copy do slice Schemas para evitar aliasing com o cache.
 func (c *SchemaInfoCache) GetOrFetch(fetch func() (*schemaListResponse, error)) (*schemaListResponse, error) {

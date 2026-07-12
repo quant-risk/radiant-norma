@@ -171,6 +171,30 @@ func (r *Registry) List(cadocCode string) ([]Version, error) {
 	return versions, rows.Err()
 }
 
+// GetByID retorna uma versão específica pelo ID.
+func (r *Registry) GetByID(id int64) (*Version, error) {
+	var v Version
+	var fieldsJSON string
+	var xsd, changelog sql.NullString
+	err := r.db.QueryRow(`
+		SELECT id, cadoc_code, effective_from, source_uri, fields_json, xsd, changelog, created_at
+		FROM schema_versions WHERE id = ?`, id,
+	).Scan(&v.ID, &v.CadocCode, &v.EffectiveFrom, &v.SourceURI, &fieldsJSON, &xsd, &changelog, &v.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal([]byte(fieldsJSON), &v.Fields); err != nil {
+		return nil, err
+	}
+	if xsd.Valid {
+		v.XSD = xsd.String
+	}
+	if changelog.Valid {
+		v.Changelog = changelog.String
+	}
+	return &v, nil
+}
+
 func nullableString(s string) any {
 	if s == "" {
 		return nil

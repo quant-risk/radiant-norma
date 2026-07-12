@@ -193,6 +193,8 @@ func (s *Server) Router() http.Handler {
 		r.Get("/schemas", s.listSchemas)
 		r.Get("/schemas/{cadoc}", s.getSchema)
 		r.Get("/schemas/{cadoc}/versions", s.listVersions)
+		// Sprint 54 v3.34.37: specific version by ID.
+		r.Get("/schemas/{cadoc}/versions/{versionId}", s.getSchemaVersion)
 		// Sprint 54 v3.34.37: public changelog timeline.
 		r.Get("/schemas/{cadoc}/changelog", s.listSchemaChangelog)
 		// Sprint 73: schema listing with generation metadata.
@@ -315,6 +317,9 @@ func (s *Server) Router() http.Handler {
 			r.Get("/controls", s.listSOC2Controls)
 			r.Get("/controls/{id}/evidence", s.getSOC2ControlEvidence)
 		})
+
+		// Sprint 54 v3.34.37: Admin schema management (insert new version).
+		r.Post("/admin/schemas", s.publishSchema)
 	})
 
 	// Sprint 8a (v2.1.0): dev-token endpoint (FRENTE do middleware JWT).
