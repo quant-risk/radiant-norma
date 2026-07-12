@@ -22,6 +22,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/insights"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/marketplace"
+	"github.com/fortvna/radiant-norma/backend/internal/observability"
 	"github.com/fortvna/radiant-norma/backend/internal/pilot"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/realtime"
@@ -33,6 +34,25 @@ import (
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	slog.SetDefault(logger)
+
+	// Sprint 36 — v3.36.0: Observability foundation.
+	// OTel tracer: exports spans via OTLP (OTEL_EXPORTER_OTLP_ENDPOINT)
+	// or console (dev). W3C trace context propagated via HTTP headers.
+	otelShutdown, err := observability.InitTracer(context.Background(), observability.NewConfig())
+	if err != nil {
+		logger.Error("otel tracer init", "err", err)
+		os.Exit(1)
+	}
+	defer otelShutdown()
+
+	// Sentry: error tracking + release + breadcrumbs.
+	// Disabled if SENTRY_DSN is empty (safe for dev).
+	sentryShutdown, err := observability.InitSentry(observability.NewSentryConfig())
+	if err != nil {
+		logger.Error("sentry init", "err", err)
+		os.Exit(1)
+	}
+	defer sentryShutdown()
 
 	addr := envOr("RADIANT_ADDR", ":8080")
 	// Sprint 6 v1.5.0 (F12.2 fix): DATABASE_URL tem prioridade — Postgres
@@ -281,6 +301,10 @@ func main() {
 	}
 
 	handler := srv.Router()
+
+	// Sprint 36 — OTel + Sentry middleware como outermost layer.
+	// Cria span por request + propaga W3C trace context + reporta panics.
+	handler = observability.SentryMiddleware()(handler)
 
 	httpSrv := &http.Server{
 		Addr:              addr,
