@@ -242,6 +242,8 @@ type LLMConfig struct {
 	RateWindow      time.Duration
 	MaxHistoryPairs int // conversation pairs sent in prompt (default 5)
 	MaxEvents       int // recent events in context (default 50)
+	ConvStore       *ConversationStore // nil → histórico desabilitado
+	RespCache       *ResponseCache     // nil → cache desabilitado
 }
 
 // LLMService handles AI-powered insights.
@@ -280,28 +282,84 @@ func NewLLMService(cfg LLMConfig) *LLMService {
 }
 
 // Ask processes a natural-language question and returns an LLM answer.
+// If ConvStore is configured, conversation history is included in the prompt.
+// If RespCache is configured, duplicate questions within 5min return cached answer.
+// Thread-safe.
 func (s *LLMService) Ask(ctx context.Context, ifID, question string) (*LLMAnswer, error) {
 	if !s.rl.Allow(ifID) {
 		return nil, ErrRateLimited
 	}
 
+	// 1. Check response cache.
+	if s.cfg.RespCache != nil {
+		if answer, model, ok := s.cfg.RespCache.Get(ifID, question); ok {
+			return &LLMAnswer{Answer: answer, Model: model, Cached: true}, nil
+		}
+	}
+
+	// 2. Build messages with conversation history + context.
+	var history []Message
+	if s.cfg.ConvStore != nil {
+		// Fetch last MaxHistoryPairs pairs (user + assistant = 1 pair).
+		n := s.cfg.MaxHistoryPairs * 2
+		convMsgs, _ := s.cfg.ConvStore.GetHistory(ctx, ifID, n)
+		// Convert ConversationMessage → Message.
+		for _, m := range convMsgs {
+			history = append(history, Message{Role: m.Role, Content: m.Content})
+		}
+	}
+
 	events, _ := s.fetchRecentEvents(ctx, ifID)
 	envios, _ := s.fetchRecentEnvios(ctx, ifID)
 
-	messages := s.buildMessages(question, events, envios)
+	messages := s.buildMessages(question, history, events, envios)
 
+	// 3. Call LLM.
 	answer, err := s.llm.Chat(ctx, messages)
 	if err != nil {
 		return nil, fmt.Errorf("llm: %w", err)
 	}
 
+	// 4. Persist conversation messages.
+	if s.cfg.ConvStore != nil {
+		// Save user message.
+		um := ConversationMessage{IfID: ifID, Role: "user", Content: question}
+		_, _ = s.cfg.ConvStore.SaveMessage(ctx, um)
+		// Save assistant answer.
+		am := ConversationMessage{IfID: ifID, Role: "assistant", Content: answer}
+		_, _ = s.cfg.ConvStore.SaveMessage(ctx, am)
+	}
+
+	// 5. Cache the answer.
+	if s.cfg.RespCache != nil {
+		s.cfg.RespCache.Set(ifID, question, answer, s.llm.Model())
+	}
+
 	return &LLMAnswer{Answer: answer, Model: s.llm.Model()}, nil
 }
+
+// GetHistory returns the conversation history for a tenant.
+func (s *LLMService) GetHistory(ctx context.Context, ifID string, limit int) ([]ConversationMessage, error) {
+	if s.cfg.ConvStore == nil {
+		return nil, nil
+	}
+	return s.cfg.ConvStore.GetHistory(ctx, ifID, limit)
+}
+
+// ClearHistory removes all conversation history for a tenant.
+func (s *LLMService) ClearHistory(ctx context.Context, ifID string) error {
+	if s.cfg.ConvStore == nil {
+		return nil
+	}
+	return s.cfg.ConvStore.ClearHistory(ctx, ifID)
+}
+
 
 // LLMAnswer is the response from Ask.
 type LLMAnswer struct {
 	Answer string `json:"answer"`
 	Model  string `json:"model"`
+	Cached bool   `json:"cached,omitempty"` // true if served from cache
 }
 
 // fetchRecentEvents returns recent audit_events for the tenant.
@@ -354,8 +412,8 @@ func (s *LLMService) fetchRecentEnvios(ctx context.Context, ifID string) ([]envi
 	return summaries, rows.Err()
 }
 
-// buildMessages constructs the prompt with system context + user question.
-func (s *LLMService) buildMessages(question string, events []auditEvent, envios []envioSummary) []Message {
+// buildMessages constructs the prompt with system context + optional history + user question.
+func (s *LLMService) buildMessages(question string, history []Message, events []auditEvent, envios []envioSummary) []Message {
 	var sb strings.Builder
 	sb.WriteString("Você é um assistente especializado em compliance regulatório bancário brasileiro (BACEN).\n")
 	sb.WriteString("Responda em português brasileiro. Use apenas os dados fornecidos.\n")
@@ -383,10 +441,14 @@ func (s *LLMService) buildMessages(question string, events []auditEvent, envios 
 		}
 	}
 
-	return []Message{
-		{Role: "system", Content: sb.String()},
-		{Role: "user", Content: question},
-	}
+	systemContent := sb.String()
+
+	// Build final message list: system → history (if any) → user.
+	msgs := make([]Message, 0, 2+len(history))
+	msgs = append(msgs, Message{Role: "system", Content: systemContent})
+	msgs = append(msgs, history...)
+	msgs = append(msgs, Message{Role: "user", Content: question})
+	return msgs
 }
 
 // auditEvent is a row from audit_events.

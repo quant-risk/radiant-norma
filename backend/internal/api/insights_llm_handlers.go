@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
 	"github.com/fortvna/radiant-norma/backend/internal/insights"
@@ -82,6 +83,72 @@ func (s *Server) AskLLM(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"answer": answer.Answer,
 		"model":  answer.Model,
+		"cached": answer.Cached,
+	})
+}
+
+// getInsightsHistory handles GET /v1/insights/history.
+func (s *Server) getInsightsHistory(w http.ResponseWriter, r *http.Request) {
+	if s.InsightsLLM == nil {
+		http.Error(w, "insights not configured", http.StatusServiceUnavailable)
+		return
+	}
+
+	claims, err := auth.ClaimsFromContext(r.Context())
+	if err != nil {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+	ifID := claims.IFID
+	if ifID == "" {
+		http.Error(w, "if_id required in claims", http.StatusBadRequest)
+		return
+	}
+
+	limit := 20
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if n, err := strconv.Atoi(l); err == nil && n > 0 && n <= 100 {
+			limit = n
+		}
+	}
+
+	msgs, err := s.InsightsLLM.GetHistory(r.Context(), ifID, limit)
+	if err != nil {
+		s.internalServerError(w, err, "getInsightsHistory")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"messages": msgs,
+		"count":    len(msgs),
+	})
+}
+
+// deleteInsightsHistory handles DELETE /v1/insights/history.
+func (s *Server) deleteInsightsHistory(w http.ResponseWriter, r *http.Request) {
+	if s.InsightsLLM == nil {
+		http.Error(w, "insights not configured", http.StatusServiceUnavailable)
+		return
+	}
+
+	claims, err := auth.ClaimsFromContext(r.Context())
+	if err != nil {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+	ifID := claims.IFID
+	if ifID == "" {
+		http.Error(w, "if_id required in claims", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.InsightsLLM.ClearHistory(r.Context(), ifID); err != nil {
+		s.internalServerError(w, err, "deleteInsightsHistory")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"status": "cleared",
 	})
 }
 

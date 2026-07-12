@@ -122,6 +122,8 @@ func main() {
 			LLMClient: llmClient,
 			DB:        d,
 			Logger:    logger,
+			ConvStore: insights.NewConversationStore(d),
+			RespCache: insights.NewResponseCache(5*time.Minute, 1000),
 		})
 		logger.Info("insights LLM initialized", "provider", os.Getenv("LLM_PROVIDER"))
 	}
