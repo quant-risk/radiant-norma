@@ -237,6 +237,11 @@ func (s *Server) Router() http.Handler {
 		r.Get("/sta/disponiveis", s.staDisponiveisHandler)
 		r.Post("/sta/situacao", s.staSituacaoHandler)
 
+		// Sprint 31 v3.34.31: RangeUploadAPI — chunked upload via STA §5.6.
+		r.Post("/sta/range/init", s.staRangeInit)
+		r.Put("/sta/range/{protocolo}", s.staRangeUpload)
+		r.Get("/sta/range/{protocolo}", s.staRangeStatus)
+
 		// Radar regulatório (Sprint 4)
 		r.Get("/radar/alerts", s.listRadarAlerts)
 		r.Get("/radar/alerts/{id}", s.getRadarAlert)

@@ -518,6 +518,59 @@ func (c *WSClient) StatusUpload(ctx context.Context, protocolo string) (*UploadS
 	}, nil
 }
 
+// InitRangeSession implementa RangeUploader.InitRangeSession — Sprint 31.
+//
+// POST /arquivos com os metadados do arquivo (não o conteúdo) para obter
+// um protocolo de upload chunkado (Seção 5.6 do manual BACEN).
+//
+// cadocCode: IdentificadorDocumento (ex: "3040").
+// hashHex: SHA-256 hex do arquivo completo (pode ser vazio se desconhecido).
+// totalBytes: tamanho total do arquivo em bytes (pode ser 0 se desconhecido).
+//
+// Retorna o protocolo BACEN em sucesso.
+func (c *WSClient) InitRangeSession(ctx context.Context, cadocCode, hashHex string, totalBytes int64) (string, error) {
+	params := requestProtocolParams{
+		IdentificadorDocumento: cadocCode,
+		Hash:                   hashHex,
+		Tamanho:                totalBytes,
+		NomeArquivo:            fmt.Sprintf("%s.zip", cadocCode),
+	}
+	body, err := xml.Marshal(params)
+	if err != nil {
+		return "", fmt.Errorf("marshal XML: %w", err)
+	}
+	body = []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` + "\n" + string(body))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.cfg.BaseURL+"/arquivos", bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", c.basicAuthHeader())
+	req.Header.Set("Content-Type", "application/xml")
+	req.Header.Set("Accept", "application/xml")
+
+	resp, err := c.cfg.HTTPClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodyBytes))
+
+	if resp.StatusCode != http.StatusCreated {
+		return "", c.parseSTAError(resp.StatusCode, respBody)
+	}
+
+	var rp responseProtocol
+	if err := xml.Unmarshal(respBody, &rp); err != nil {
+		return "", fmt.Errorf("parse XML response: %w", err)
+	}
+	if rp.Protocolo == "" {
+		return "", fmt.Errorf("BACEN retornou 201 mas protocolo vazio")
+	}
+	return rp.Protocolo, nil
+}
+
 // Download baixa o arquivo binário de um protocolo do BACEN (Seção 6.1.1).
 //
 // Endpoint: GET /arquivos/{protocolo}/conteudo (recebimento completo).
@@ -895,6 +948,17 @@ func (c *WSClient) AlterarSituacao(ctx context.Context, req AlterarSituacaoReq) 
 type ChunkedClient interface {
 	SubmitRange(ctx context.Context, protocolo string, inicio, fim, total int64, chunk []byte) error
 	DownloadRange(ctx context.Context, protocolo string, inicio, fim int64, expectedTotalHash, ifMatch, ifUnmodifiedSince string) (*DownloadResult, error)
+}
+
+// RangeUploader é a interface estendida para RangeUploadAPI (Sprint 31).
+// Inclui InitRangeSession + StatusUpload além de SubmitRange.
+type RangeUploader interface {
+	ChunkedClient
+	// InitRangeSession pede um protocolo ao BACEN (POST /arquivos) e retorna
+	// o protocolo gerado. Opcionalmente recebe hash e tamanho total do arquivo.
+	InitRangeSession(ctx context.Context, cadocCode, hashHex string, totalBytes int64) (protocolo string, err error)
+	// StatusUpload retorna o status de upload de um protocolo (RangesRecebidos).
+	StatusUpload(ctx context.Context, protocolo string) (*UploadStatus, error)
 }
 
 // SubmitRange envia 1 chunk de arquivo (parte de upload chunked) — Seção 5.6
