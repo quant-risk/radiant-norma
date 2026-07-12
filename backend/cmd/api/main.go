@@ -19,6 +19,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 	crossrules "github.com/fortvna/radiant-norma/backend/internal/crossdoc/rules"
 	"github.com/fortvna/radiant-norma/backend/internal/db"
+	"github.com/fortvna/radiant-norma/backend/internal/generator/wizard"
 	"github.com/fortvna/radiant-norma/backend/internal/insights"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/marketplace"
@@ -131,7 +132,10 @@ func main() {
 	// Cross-Doc L3 — endpoint /v1/crossdoc/validate and /v1/generate/batch.
 	crossDocEngine := crossdoc.NewEngine(crossrules.BuiltinRegistry())
 
-	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, ruleprefs.NewPreferences(d), ruleprefs.NewToggleLimiter(10, time.Minute), insights.NewAcknowledgments(d), brandingSvc, insightsLLM, marketplaceSvc, pilotSvc, crossDocEngine)
+	// Sprint 57 — v3.34.37: Wizard store de sessões de geração.
+	wizardStore := wizard.NewStore(d)
+
+	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, ruleprefs.NewPreferences(d), ruleprefs.NewToggleLimiter(10, time.Minute), insights.NewAcknowledgments(d), brandingSvc, insightsLLM, marketplaceSvc, pilotSvc, crossDocEngine, wizardStore)
 
 	// Sprint 10 — Hub SSE + wrap audit logger pra publicar eventos em
 	// real-time. Em produção, hub pode ser substituído por Kafka/Redis

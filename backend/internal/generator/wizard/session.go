@@ -3,9 +3,11 @@ package wizard
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -153,6 +155,11 @@ func (s *Store) Advance(ctx context.Context, id string, data map[string]any) (*S
 	if b, err := json.Marshal(data); err == nil {
 		canonicalJSON = string(b)
 	}
+	if fm, ok := data["field_mapping"]; ok {
+		if fmBytes, err := json.Marshal(fm); err == nil {
+			fieldMapping = string(fmBytes)
+		}
+	}
 
 	_, err = s.db.ExecContext(ctx, `
 		UPDATE wizard_sessions SET
@@ -255,9 +262,9 @@ func nullTime(n sql.NullTime) *time.Time {
 
 func generateSessionID() string {
 	b := make([]byte, 8)
-	now := time.Now().UnixNano()
-	for i := range b {
-		b[i] = byte(now >> (i * 8))
+	if _, err := rand.Read(b); err != nil {
+		// Fallback: timestamp + PID (extremely unlikely to collide in practice)
+		return fmt.Sprintf("wiz_%d_%d", time.Now().UnixNano(), 0)
 	}
 	const hex = "0123456789abcdef"
 	r := make([]byte, len(b)*2)

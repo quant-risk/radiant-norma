@@ -40,6 +40,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/branding"
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 	rules "github.com/fortvna/radiant-norma/backend/internal/crossdoc/rules"
+	"github.com/fortvna/radiant-norma/backend/internal/generator/wizard"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
@@ -75,7 +76,7 @@ func newTestServer(t *testing.T) (*api.Server, *sql.DB) {
 	staClient := sta.NewStubClient()
 	radarSvc := radar.New(d, 1) // 1ns (não usado, scan é on-demand)
 
-	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, nil, nil, nil, branding.NewBrandingService(d), nil, nil, nil, nil)
+	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, nil, nil, nil, branding.NewBrandingService(d), nil, nil, nil, nil, wizard.NewStore(d))
 	srv.CrossDoc = crossdoc.NewEngine(crossdocBuiltinRegistry())
 	srv.ScanLimiter = radar.NewScanLimiter(1 * time.Minute)
 	srv.ScanCache = radar.NewScanCache(5 * time.Minute)

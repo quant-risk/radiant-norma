@@ -21,6 +21,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
 	"github.com/fortvna/radiant-norma/backend/internal/branding"
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
+	"github.com/fortvna/radiant-norma/backend/internal/generator/wizard"
 	"github.com/fortvna/radiant-norma/backend/internal/insights"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/marketplace"
@@ -113,6 +114,9 @@ type Server struct {
 
 	// Sprint 55 — Pilot3 ESG-first.
 	Pilot *pilot.Service
+
+	// Sprint 57 — v3.34.37: Wizard de geração de CADOCs.
+	WizardStore *wizard.Store
 }
 
 // auditLogAPI é interface mínima que *auditlog.Logger e *realtime.HubAwareLogger
@@ -123,17 +127,18 @@ type auditLogAPI interface {
 }
 
 // NewServer cria um Server.
-func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences, tl *ruleprefs.ToggleLimiter, ack *insights.Acknowledgments, br *branding.BrandingService, insightsLLM *insights.LLMService, mp *marketplace.Service, pilotSvc *pilot.Service, crossDoc *crossdoc.Engine) *Server {
+func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogAPI, staClient sta.Client, rad *radar.Service, rp *ruleprefs.Preferences, tl *ruleprefs.ToggleLimiter, ack *insights.Acknowledgments, br *branding.BrandingService, insightsLLM *insights.LLMService, mp *marketplace.Service, pilotSvc *pilot.Service, crossDoc *crossdoc.Engine, wizardStore *wizard.Store) *Server {
 	return &Server{
 		DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient,
 		Radar: rad, RulePrefs: rp, ToggleLimiter: tl, Insights: ack,
-		Branding:    br,
-		InsightsLLM: insightsLLM,
-		Marketplace: mp,
-		Pilot:       pilotSvc,
-		CrossDoc:    crossDoc,
-		startedAt:   time.Now(),
-		RateLimiter: newMemoryRateLimiter(),
+		Branding:     br,
+		InsightsLLM:   insightsLLM,
+		Marketplace:  mp,
+		Pilot:        pilotSvc,
+		CrossDoc:     crossDoc,
+		WizardStore:  wizardStore,
+		startedAt:    time.Now(),
+		RateLimiter:  newMemoryRateLimiter(),
 	}
 }
 
@@ -228,6 +233,12 @@ func (s *Server) Router() http.Handler {
 		r.Post("/generate/batch", s.generateBatch)
 		// Sprint 73: generation history.
 		r.Get("/generate/history", s.listGenerateHistory)
+
+		// Sprint 57 — v3.34.37: Wizard de geração.
+		r.Post("/generate/wizard/start", s.startWizard)
+		r.Get("/generate/wizard/{id}", s.getWizard)
+		r.Put("/generate/wizard/{id}", s.advanceWizard)
+		r.Get("/generate/wizard/{id}/xml", s.getWizardXML)
 
 		// Cross-Doc L3 (Sprint 6 v1.5.0) — diferencial proprietário.
 		r.Post("/crossdoc/validate", s.crossdocValidate)
