@@ -107,8 +107,8 @@ func TestEngine_Validate_Basic(t *testing.T) {
 		t.Errorf("Esperado 7 regras run (XD-001, XD-002, XD-4111-01~05), got %d (%v)",
 			len(resp.RulesRun), resp.RulesRun)
 	}
-	if len(resp.RulesSkip) != 9 {
-		t.Errorf("Esperado 9 regras skip (XD-003 + XD-DR01~08), got %d", len(resp.RulesSkip))
+	if len(resp.RulesSkip) != 18 {
+		t.Errorf("Esperado 18 regras skip (XD-003 + XD-DR01~08 + 9 new), got %d", len(resp.RulesSkip))
 	}
 }
 
@@ -130,8 +130,8 @@ func TestEngine_Validate_RequiredDocsMissing(t *testing.T) {
 		t.Errorf("Nenhuma regra deveria rodar (faltam docs obrigatórios), got %d run",
 			len(resp.RulesRun))
 	}
-	if len(resp.RulesSkip) != 16 {
-		t.Errorf("16 regras deveriam ser skipped, got %d", len(resp.RulesSkip))
+	if len(resp.RulesSkip) != 25 {
+		t.Errorf("25 regras deveriam ser skipped, got %d", len(resp.RulesSkip))
 	}
 }
 
@@ -237,13 +237,13 @@ func TestExtractSumOfTag(t *testing.T) {
 func TestBuiltinRegistry(t *testing.T) {
 	r := crossrules.BuiltinRegistry()
 	codes := r.Codes()
-	// Sprint 52 v3.34.33: 3 originais + 8 DRSAC + 5 4111 = 16
-	if len(codes) != 16 {
-		t.Errorf("Builtin deveria ter 16 regras, got %d", len(codes))
+	// Sprint 52 v3.34.33: 3 originais + 8 DRSAC + 5 4111 + 9 XD02/XD03/XD06~XD12 = 25
+	if len(codes) != 25 {
+		t.Errorf("Builtin deveria ter 25 regras, got %d", len(codes))
 	}
 
-	// Confirma que todas as 16 regras estão lá
-	// 3 originais + 8 DRSAC + 5 4111
+	// Confirma que todas as 25 regras estão lá
+	// 3 originais + 8 DRSAC + 5 4111 + 9 new (XD02/XD03/XD06~XD12)
 	expected := map[string]bool{
 		"XD-001": true, "XD-002": true, "XD-003": true, // originais
 		"XD-DR01": true, "XD-DR02": true, "XD-DR03": true, // DRSAC 1-3
@@ -251,6 +251,10 @@ func TestBuiltinRegistry(t *testing.T) {
 		"XD-DR07": true, "XD-DR08": true, // DRSAC 7-8
 		"XD-4111-01": true, "XD-4111-02": true, "XD-4111-03": true, // 4111 1-3
 		"XD-4111-04": true, "XD-4111-05": true, // 4111 4-5
+		// New rules: XD02, XD03, XD06~XD12 (9 rules, skipping XD04/XD05)
+		"XD02": true, "XD03": true,
+		"XD06": true, "XD07": true, "XD08": true, "XD09": true,
+		"XD10": true, "XD11": true, "XD12": true,
 	}
 	for _, c := range codes {
 		if !expected[c] {

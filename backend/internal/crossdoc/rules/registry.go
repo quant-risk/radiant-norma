@@ -12,13 +12,14 @@ import (
 // já populado com as regras iniciais.
 
 // BuiltinRegistry retorna um *crossdoc.Registry pré-populado com
-// todas as regras cross-doc (iniciais + DRSAC + 4111).
+// todas as regras cross-doc (iniciais + DRSAC + 4111 + XD02/XD03/XD06–XD12).
 // Sprint 52 v3.34.33.
 func BuiltinRegistry() *crossdoc.Registry {
 	r := crossdoc.NewRegistry()
 	RegisterInitialRules(r)
 	RegisterDRSACCrossDocRules(r)
 	Register4111CrossDocRules(r)
+	RegisterXDRules(r)
 	return r
 }
 
@@ -52,4 +53,18 @@ func Register4111CrossDocRules(r *crossdoc.Registry) {
 	r.Register(XD4111Inadimplentesvs3040{})
 	r.Register(XD4111DataBaseConsistente{})
 	r.Register(XD4111Zeradovs3040{})
+}
+
+// RegisterXDRules registra as 9 regras XD02, XD03, XD06–XD12.
+// Sprint 52 v3.34.33.
+func RegisterXDRules(r *crossdoc.Registry) {
+	r.Register(XD02TotalOperacoes3040vs3050{})
+	r.Register(XD03LCRvsNSFR{})
+	r.Register(XD06APRemLCR{})
+	r.Register(XD07Triangulacao304041113050{})
+	r.Register(XD08LimitesvsCapital{})
+	r.Register(XD09LiquidezvsRisco{})
+	r.Register(XD10ESGvsInadimplencia{})
+	r.Register(XD11ESGvs4111{})
+	r.Register(XD12DataBaseConsistente{})
 }
