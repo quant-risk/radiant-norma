@@ -593,7 +593,7 @@ func (XD12DataBaseConsistente) Apply(_ context.Context, docs *crossdoc.DocSet) e
 	for _, e := range entries[1:] {
 		if normalizeDate(e.db) != normalizeDate(ref.db) {
 			return crossdoc.NewError("XD12", "E",
-				fmt.Sprintf("dataBase不一致: %s=%s, %s=%s",
+				fmt.Sprintf("dataBase divergente: %s=%s, %s=%s",
 					ref.cadoc, ref.db, e.cadoc, e.db))
 		}
 	}
@@ -612,13 +612,22 @@ func normalizeDate(s string) string {
 	return s
 }
 
-// parseRatio converte string percentual "123.45%" → 1.2345.
+// parseRatio converts a ratio string to a fraction (e.g., "123.45%" → 1.2345).
+// Handles the % suffix when present.
+//
+// BACEN stores ratios as percentages (e.g., <LCR>125</LCR> = 125%).
+// For raw values > 100 (clearly a percentage stored as int), divide by 100.
+// For values ≤ 100, treat as-is: 12.5 stays 12.5 (fraction), 150 becomes 1.5 (fraction).
+// The caller should compare the resulting fraction against the regulatory threshold
+// (e.g., LCR ≥ 1.0 means ≥ 100%).
 func parseRatio(s string) float64 {
 	s = strings.TrimSpace(s)
 	s = strings.TrimSuffix(s, "%")
 	v, _ := strconv.ParseFloat(s, 64)
-	if v > 10 {
-		// Assume it's a percentage value (e.g., "150%" stored as "150")
+	// Only divide if clearly a percentage stored as int (e.g., "150" → 1.5).
+	// Values like "12.5" or "95" are left as-is; the caller must interpret
+	// them correctly based on the regulatory definition of each field.
+	if v > 100 {
 		v = v / 100
 	}
 	return v

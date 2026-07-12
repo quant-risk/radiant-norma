@@ -90,7 +90,7 @@ func (s *Store) Create(ctx context.Context, ifID string) (*Session, error) {
 	}
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO wizard_sessions (id, if_id, step, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES (?, ?, ?, ?, ?)
 	`, id, ifID, string(StepSelectCadoc), now, now)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func (s *Store) Get(ctx context.Context, id string) (*Session, error) {
 		SELECT id, if_id, step, cadoc_code, source_type, canonical_json,
 		       generated_xml, field_mapping, errors,
 		       created_at, updated_at, completed_at
-		FROM wizard_sessions WHERE id = $1
+		FROM wizard_sessions WHERE id = ?
 	`, id).Scan(
 		&id, &gotIfID, &step, &cadocCode, &sourceType,
 		&canonicalJSON, &generatedXML, &fieldMapping, &errorsJSON,
@@ -156,13 +156,13 @@ func (s *Store) Advance(ctx context.Context, id string, data map[string]any) (*S
 
 	_, err = s.db.ExecContext(ctx, `
 		UPDATE wizard_sessions SET
-			step = $1,
-			cadoc_code = COALESCE(NULLIF($2, ''), cadoc_code),
-			source_type = COALESCE(NULLIF($3, ''), source_type),
-			canonical_json = COALESCE(NULLIF($4, ''), canonical_json),
-			field_mapping = COALESCE(NULLIF($5, ''), field_mapping),
-			updated_at = $6
-		WHERE id = $7
+			step = ?,
+			cadoc_code = COALESCE(NULLIF(?, ''), cadoc_code),
+			source_type = COALESCE(NULLIF(?, ''), source_type),
+			canonical_json = COALESCE(NULLIF(?, ''), canonical_json),
+			field_mapping = COALESCE(NULLIF(?, ''), field_mapping),
+			updated_at = ?
+		WHERE id = ?
 	`, string(next), data["cadoc_code"], data["source_type"], canonicalJSON, fieldMapping, now, id)
 	if err != nil {
 		return nil, err
@@ -178,11 +178,11 @@ func (s *Store) SetGeneratedXML(ctx context.Context, id, xml string) error {
 	now := time.Now()
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE wizard_sessions SET
-			generated_xml = $1,
-			step = $2,
-			completed_at = $3,
-			updated_at = $4
-		WHERE id = $5
+			generated_xml = ?,
+			step = ?,
+			completed_at = ?,
+			updated_at = ?
+		WHERE id = ?
 	`, xml, string(StepGenerate), now, now, id)
 	return err
 }
@@ -191,7 +191,7 @@ func (s *Store) SetGeneratedXML(ctx context.Context, id, xml string) error {
 func (s *Store) SetError(ctx context.Context, id string, errs []string) error {
 	b, _ := json.Marshal(errs)
 	_, err := s.db.ExecContext(ctx, `
-		UPDATE wizard_sessions SET errors = $1, updated_at = $2 WHERE id = $3
+		UPDATE wizard_sessions SET errors = ?, updated_at = ? WHERE id = ?
 	`, string(b), time.Now(), id)
 	return err
 }
@@ -201,7 +201,7 @@ func (s *Store) ListActive(ctx context.Context, ifID string) ([]*Session, error)
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, if_id, step, cadoc_code, source_type, created_at, updated_at
 		FROM wizard_sessions
-		WHERE if_id = $1 AND completed_at IS NULL
+		WHERE if_id = ? AND completed_at IS NULL
 		ORDER BY updated_at DESC
 		LIMIT 10
 	`, ifID)
@@ -227,8 +227,8 @@ func (s *Store) Prune(ctx context.Context) (int, error) {
 	cutoffOld := time.Now().Add(-24 * time.Hour)
 	res, err := s.db.ExecContext(ctx, `
 		DELETE FROM wizard_sessions
-		WHERE (completed_at IS NULL AND updated_at < $1)
-		   OR (completed_at IS NOT NULL AND completed_at < $2)
+		WHERE (completed_at IS NULL AND updated_at < ?)
+		   OR (completed_at IS NOT NULL AND completed_at < ?)
 	`, cutoff, cutoffOld)
 	if err != nil {
 		return 0, err

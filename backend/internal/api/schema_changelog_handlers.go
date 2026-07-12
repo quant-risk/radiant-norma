@@ -112,13 +112,13 @@ func (s *Server) writeStructuredChangelog(w http.ResponseWriter, cadoc string, v
 // publishSchema handles POST /v1/admin/schemas (internal, admin-only).
 // Insere nova versão de schema e invalida caches.
 func (s *Server) publishSchema(w http.ResponseWriter, r *http.Request) {
-	if !s.AdminAuth.IsAdmin(r) {
-		http.Error(w, `{"error":"admin required"}`, http.StatusUnauthorized)
+	if s.AdminAuth == nil || !s.AdminAuth.IsAdmin(r) {
+		http.Error(w, `{"error":"admin required"}`, http.StatusForbidden)
 		return
 	}
 	var req schemaInsertRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		s.userError(w, http.StatusBadRequest, "publishSchema.json", err)
 		return
 	}
 	effFrom, err := time.Parse("2006-01-02", req.EffectiveFrom)

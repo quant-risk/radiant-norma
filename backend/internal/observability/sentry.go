@@ -98,12 +98,16 @@ func scrubEvent(e *sentry.Event) {
 func CaptureException(ctx context.Context, err error) {
 	span := trace.SpanFromContext(ctx)
 	sc := span.SpanContext()
-	sentry.GetHubFromContext(ctx).WithScope(func(scope *sentry.Scope) {
+	hub := sentry.GetHubFromContext(ctx)
+	if hub == nil {
+		hub = sentry.CurrentHub()
+	}
+	hub.WithScope(func(scope *sentry.Scope) {
 		scope.SetContext("trace", map[string]any{
 			"trace_id": sc.TraceID().String(),
 			"span_id":  sc.SpanID().String(),
 		})
-		sentry.CurrentHub().CaptureException(err)
+		hub.CaptureException(err)
 	})
 }
 
@@ -138,14 +142,14 @@ func SentryMiddleware() func(http.Handler) http.Handler {
 			sw := &statusRecorder{ResponseWriter: w, code: 200}
 			r = r.WithContext(ctx)
 
-				defer func() {
-					if p := recover(); p != nil {
-						span.AddEvent("panic", trace.WithAttributes(
-							attribute.String("panic_value", fmt.Sprintf("%v", p)),
-						))
-						span.SetStatus(codes.Error, "panic")
-						sentry.CurrentHub().CaptureMessage("panic recovered")
-					panic(p)
+			defer func() {
+				if p := recover(); p != nil {
+					span.AddEvent("panic", trace.WithAttributes(
+						attribute.String("panic_value", fmt.Sprintf("%v", p)),
+					))
+					span.SetStatus(codes.Error, "panic")
+					sentry.CurrentHub().CaptureException(fmt.Errorf("panic recovered: %v", p))
+					panic(p) // re-panic so upstream Recoverer middleware handles it
 				}
 			}()
 

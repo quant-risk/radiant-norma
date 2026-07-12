@@ -52,7 +52,7 @@ func (s *Server) AskLLM(w http.ResponseWriter, r *http.Request) {
 		Question string `json:"question"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+		s.userError(w, http.StatusBadRequest, "AskLLM.json", err)
 		return
 	}
 	if len(body.Question) == 0 {
@@ -156,7 +156,7 @@ func (s *Server) deleteInsightsHistory(w http.ResponseWriter, r *http.Request) {
 func (s *Server) isInsightsEnabled(ctx context.Context, ifID string) (bool, error) {
 	var enabled int
 	err := s.DB.QueryRowContext(ctx,
-		"SELECT llm_insights_enabled FROM ifs WHERE id = $1 AND deleted_at IS NULL",
+		"SELECT llm_insights_enabled FROM ifs WHERE id = ? AND deleted_at IS NULL",
 		ifID,
 	).Scan(&enabled)
 	if err != nil {

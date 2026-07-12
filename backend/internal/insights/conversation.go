@@ -11,10 +11,12 @@ package insights
 
 import (
 	"context"
+	cryptoRand "crypto/rand"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"sort"
 	"sync"
 	"time"
 )
@@ -47,7 +49,7 @@ func (c *ConversationStore) SaveMessage(ctx context.Context, msg ConversationMes
 
 	_, err := c.db.ExecContext(ctx, `
 		INSERT INTO insights_conversations (id, if_id, role, content, created_at)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES (?, ?, ?, ?, ?)
 	`, id, msg.IfID, msg.Role, msg.Content, time.Now())
 	if err != nil {
 		return "", err
@@ -69,9 +71,9 @@ func (c *ConversationStore) GetHistory(ctx context.Context, ifID string, limit i
 	}
 	rows, err := c.db.QueryContext(ctx, `
 		SELECT role, content FROM insights_conversations
-		WHERE if_id = $1 AND created_at > $2
+		WHERE if_id = ? AND created_at > ?
 		ORDER BY created_at DESC
-		LIMIT $3
+		LIMIT ?
 	`, ifID, time.Now().Add(-c.maxAge), limit)
 	if err != nil {
 		return nil, err
@@ -100,7 +102,7 @@ func (c *ConversationStore) ClearHistory(ctx context.Context, ifID string) error
 	defer c.writeMu.Unlock()
 
 	_, err := c.db.ExecContext(ctx,
-		"DELETE FROM insights_conversations WHERE if_id = $1", ifID)
+		"DELETE FROM insights_conversations WHERE if_id = ?", ifID)
 	return err
 }
 
@@ -110,7 +112,7 @@ func (c *ConversationStore) Prune(ctx context.Context) (int, error) {
 	defer c.writeMu.Unlock()
 
 	res, err := c.db.ExecContext(ctx, `
-		DELETE FROM insights_conversations WHERE created_at < $1
+		DELETE FROM insights_conversations WHERE created_at < ?
 	`, time.Now().Add(-c.maxAge))
 	if err != nil {
 		return 0, err
@@ -123,22 +125,26 @@ func (c *ConversationStore) Prune(ctx context.Context) (int, error) {
 func (c *ConversationStore) CountMessages(ctx context.Context, ifID string) (int, error) {
 	var count int
 	err := c.db.QueryRowContext(ctx, `
-		SELECT COUNT(*) FROM insights_conversations WHERE if_id = $1
+		SELECT COUNT(*) FROM insights_conversations WHERE if_id = ?
 	`, ifID).Scan(&count)
 	return count, err
 }
 
-// generateMsgID generates a unique message ID.
+// generateMsgID generates a unique message ID using crypto/rand.
+// Uses time.Now().UnixNano() for uniqueness across calls plus
+// crypto/rand bytes to avoid collision within the same nanosecond.
 func generateMsgID() string {
-	// Simple time-based + entropy ID.
 	h := sha256.New()
 	now := time.Now().UnixNano()
-	h.Write([]byte(string(rune(now))))
 	b := make([]byte, 8)
 	for i := range b {
 		b[i] = byte(now >> (i * 8))
 	}
 	h.Write(b)
+	// Add 8 bytes of crypto/rand to ensure uniqueness.
+	randBytes := make([]byte, 8)
+	cryptoRand.Read(randBytes) // ignoring error — best-effort
+	h.Write(randBytes)
 	return hex.EncodeToString(h.Sum(nil))[:32]
 }
 
@@ -206,18 +212,24 @@ func (c *ResponseCache) Set(ifID, question, answer, model string) {
 	key := c.cacheKey(ifID, question)
 	c.entries[key] = cachedAnswer{answer: answer, model: model, created: time.Now()}
 
-	// Simple eviction: if over capacity, clear oldest half.
+	// Eviction: if over capacity, delete oldest 50% of entries.
 	if len(c.entries) > c.capacity {
-		var toDelete []string
-		for k, v := range c.entries {
-			if time.Since(v.created) < 2*c.maxAge {
-				continue
-			}
-			toDelete = append(toDelete, k)
+		type entryInfo struct {
+			key     string
+			created time.Time
 		}
-		// Delete oldest 50%.
-		for _, k := range toDelete[:len(toDelete)/2] {
-			delete(c.entries, k)
+		entries := make([]entryInfo, 0, len(c.entries))
+		for k, v := range c.entries {
+			entries = append(entries, entryInfo{k, v.created})
+		}
+		// Sort by created ascending (oldest first).
+		sort.Slice(entries, func(i, j int) bool {
+			return entries[i].created.Before(entries[j].created)
+		})
+		// Delete oldest half.
+		half := len(entries) / 2
+		for _, e := range entries[:half] {
+			delete(c.entries, e.key)
 		}
 	}
 }

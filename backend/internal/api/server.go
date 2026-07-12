@@ -11,6 +11,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -417,10 +418,45 @@ func (sc *statusCapturer) WriteHeader(code int) {
 }
 
 // normalizeEndpoint reduces variable path segments to wildcards for
-// stable metric labels (e.g., /v1/envios/123 → /v1/envios/{id}).
+// stable metric labels (e.g., /v1/envios/abc123 → /v1/envios/{id}).
+// This prevents Prometheus high-cardinality label explosion.
 func normalizeEndpoint(path string) string {
-	// Apply the same bucketing logic used by rate limiter for consistency.
+	// Cadoc IDs: alphanumeric IDs (uploaded file keys, envio IDs).
+	// e.g. /v1/envios/abc123 → /v1/envios/{id}
+	if clean := collapseRe(path, `/envios/[^/]+`, `/envios/{id}`); clean != path {
+		return clean
+	}
+	// Schema versions: numeric IDs.
+	// e.g. /v1/schemas/3040/versions/5 → /v1/schemas/{cadoc}/versions/{id}
+	if clean := collapseRe(path, `/versions/[0-9]+`, `/versions/{id}`); clean != path {
+		return clean
+	}
+	// Wizard sessions: alphanumeric session IDs.
+	// e.g. /v1/generate/wizard/abc123xyz → /v1/generate/wizard/{sessionId}
+	if clean := collapseRe(path, `/wizard/[^/]+`, `/wizard/{sessionId}`); clean != path {
+		return clean
+	}
+	// Radar scan IDs: alphanumeric.
+	if clean := collapseRe(path, `/scan/[^/]+`, `/scan/{scanId}`); clean != path {
+		return clean
+	}
+	// Generic numeric ID: catches most remaining patterns.
+	// Apply last to avoid double-collapsing already-normalized segments.
+	if clean := collapseRe(path, `/[0-9]+`, `/{id}`); clean != path {
+		return clean
+	}
 	return path
+}
+
+// collapseRe applies a single regex replacement, returning the original
+// string if no match was made (avoids allocation in the common miss case).
+func collapseRe(path, pattern, replacement string) string {
+	re := regexp.MustCompile(pattern)
+	idx := re.FindStringIndex(path)
+	if idx == nil {
+		return path
+	}
+	return re.ReplaceAllString(path, replacement)
 }
 
 // --- Handlers ---

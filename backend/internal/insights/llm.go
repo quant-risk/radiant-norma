@@ -32,6 +32,18 @@ var ErrInsightsDisabled = errors.New("insights: tenant has not enabled LLM insig
 // ErrRateLimited is returned when the tenant exceeds 5 req/min.
 var ErrRateLimited = errors.New("insights: rate limit exceeded (5 req/min)")
 
+// sanitizeForPrompt removes newlines and truncates to 200 chars to prevent
+// prompt injection from attacker-controlled DB fields (audit_events, envios).
+func sanitizeForPrompt(s string) string {
+	const maxLen = 200
+	if len(s) > maxLen {
+		s = s[:maxLen]
+	}
+	// Replace newlines/tabs to keep prompt structure intact.
+	s = strings.NewReplacer("\n", " ", "\r", " ", "\t", " ").Replace(s)
+	return s
+}
+
 // LLMClient is the interface for LLM providers.
 type LLMClient interface {
 	Chat(ctx context.Context, messages []Message) (string, error)
@@ -367,9 +379,9 @@ func (s *LLMService) fetchRecentEvents(ctx context.Context, ifID string) ([]audi
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT action, description, created_at
 		FROM audit_events
-		WHERE if_id = $1 AND created_at > $2
+		WHERE if_id = ? AND created_at > ?
 		ORDER BY created_at DESC
-		LIMIT $3`,
+		LIMIT ?`,
 		ifID, time.Now().Add(-30*24*time.Hour), s.cfg.MaxEvents)
 	if err != nil {
 		return nil, err
@@ -392,7 +404,7 @@ func (s *LLMService) fetchRecentEnvios(ctx context.Context, ifID string) ([]envi
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT period, rules_passed, rules_failed, status
 		FROM envios
-		WHERE if_id = $1 AND deleted_at IS NULL
+		WHERE if_id = ? AND deleted_at IS NULL
 		ORDER BY created_at DESC
 		LIMIT 12`,
 		ifID)
@@ -428,16 +440,20 @@ func (s *LLMService) buildMessages(question string, history []Message, events []
 			if total > 0 {
 				pct = e.RulesPassed * 100 / total
 			}
+			period := sanitizeForPrompt(e.Period)
+			status := sanitizeForPrompt(e.Status)
 			sb.WriteString(fmt.Sprintf("- %s: %d%% regras passadas (%d/%d), status=%s\n",
-				e.Period, pct, e.RulesPassed, e.RulesFailed, e.Status))
+				period, pct, e.RulesPassed, e.RulesFailed, status))
 		}
 	}
 
 	if len(events) > 0 {
 		sb.WriteString("\n## Eventos Recentes\n")
 		for _, e := range events {
+			action := sanitizeForPrompt(e.Action)
+			desc := sanitizeForPrompt(e.Description)
 			sb.WriteString(fmt.Sprintf("- %s: %s — %s\n",
-				e.CreatedAt.Format("2006-01-02"), e.Action, e.Description))
+				e.CreatedAt.Format("2006-01-02"), action, desc))
 		}
 	}
 

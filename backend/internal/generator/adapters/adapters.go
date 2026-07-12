@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -69,15 +70,28 @@ func NewDBAdapter(db *sql.DB) *DBAdapter {
 // AdapterName implements SourceAdapter.
 func (a *DBAdapter) AdapterName() string { return "db" }
 
-// Fetch consulta o DB para dados do CADOC.
+// Fetch consulta o DB para dados do CADOC mais recente.
+// Se dataBase não for vazio, filtra pela data-base específica.
 func (a *DBAdapter) Fetch(ctx context.Context, cadocCode, dataBase string) (*CanonicalDoc, error) {
-	rows, err := a.db.QueryContext(ctx, `
-		SELECT e.id, e.if_id, e.data_base, e.xml_content, e.status
-		FROM envios e
-		WHERE e.cadoc_code = $1 AND e.deleted_at IS NULL
-		ORDER BY e.created_at DESC
-		LIMIT 1
-	`, cadocCode)
+	var rows *sql.Rows
+	var err error
+	if dataBase != "" {
+		rows, err = a.db.QueryContext(ctx, `
+			SELECT e.id, e.if_id, e.data_base, e.xml_content, e.status
+			FROM envios e
+			WHERE e.cadoc_code = $1 AND e.data_base = $2 AND e.deleted_at IS NULL
+			ORDER BY e.created_at DESC
+			LIMIT 1
+		`, cadocCode, dataBase)
+	} else {
+		rows, err = a.db.QueryContext(ctx, `
+			SELECT e.id, e.if_id, e.data_base, e.xml_content, e.status
+			FROM envios e
+			WHERE e.cadoc_code = $1 AND e.deleted_at IS NULL
+			ORDER BY e.created_at DESC
+			LIMIT 1
+		`, cadocCode)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("DBAdapter.Fetch: %w", err)
 	}
@@ -87,15 +101,15 @@ func (a *DBAdapter) Fetch(ctx context.Context, cadocCode, dataBase string) (*Can
 		return nil, fmt.Errorf("DBAdapter: nenhum envio encontrado para CADOC %s", cadocCode)
 	}
 
-	var id, ifID, xmlContent, status string
-	if err := rows.Scan(&id, &ifID, &dataBase, &xmlContent, &status); err != nil {
+	var id, ifID, dbDataBase, xmlContent, status string
+	if err := rows.Scan(&id, &ifID, &dbDataBase, &xmlContent, &status); err != nil {
 		return nil, fmt.Errorf("DBAdapter.Scan: %w", err)
 	}
 
 	return &CanonicalDoc{
 		IFID:         ifID,
 		CadocCode:    cadocCode,
-		DataBase:     dataBase,
+		DataBase:     dbDataBase,
 		VersaoLayout: "1.0",
 		Extra:        map[string]any{"source_envio_id": id, "status": status},
 	}, nil
@@ -122,9 +136,12 @@ type Response struct {
 	Body       []byte
 }
 
-// NewAPIAdapter cria um APIAdapter.
+// NewAPIAdapter cria um APIAdapter com cliente HTTP default.
 func NewAPIAdapter(baseURL string) *APIAdapter {
-	return &APIAdapter{BaseURL: baseURL}
+	return &APIAdapter{
+		BaseURL:    baseURL,
+		HTTPClient: NewDefaultHTTPClient(),
+	}
 }
 
 // AdapterName implements SourceAdapter.
@@ -133,13 +150,18 @@ func (a *APIAdapter) AdapterName() string { return "api" }
 // Fetch chama a API interna para obter dados do CADOC.
 func (a *APIAdapter) Fetch(ctx context.Context, cadocCode, dataBase string) (*CanonicalDoc, error) {
 	// Stub: GET /internal/cadoc/{cadocCode}/canonical
-	url := fmt.Sprintf("%s/internal/cadoc/%s/canonical?data_base=%s", a.BaseURL, cadocCode, dataBase)
-	resp, err := a.HTTPClient.Do(ctx, http.MethodGet, url, nil, nil)
+	u, _ := url.Parse(a.BaseURL + "/internal/cadoc/" + cadocCode + "/canonical")
+	q := u.Query()
+	if dataBase != "" {
+		q.Set("data_base", dataBase)
+	}
+	u.RawQuery = q.Encode()
+	resp, err := a.HTTPClient.Do(ctx, http.MethodGet, u.String(), nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("APIAdapter.Fetch: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("APIAdapter: %d response from %s", resp.StatusCode, url)
+		return nil, fmt.Errorf("APIAdapter: %d response from %s", resp.StatusCode, u.String())
 	}
 	var doc CanonicalDoc
 	if err := json.Unmarshal(resp.Body, &doc); err != nil {

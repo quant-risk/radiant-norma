@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fortvna/radiant-norma/backend/internal/sta"
@@ -46,7 +47,11 @@ type rangeSession struct {
 
 // activeSessions mantém sessões em memória enquanto o upload está ativo.
 // key: protocolo (único no BACEN).
-var activeSessions = make(map[string]*rangeSession)
+// Protegido por sessionsMu (sync.RWMutex) para acesso concorrente.
+var (
+	activeSessions = make(map[string]*rangeSession)
+	sessionsMu     sync.RWMutex
+)
 
 var logger = slog.Default()
 
@@ -116,7 +121,9 @@ func (s *Server) staRangeInit(w http.ResponseWriter, r *http.Request) {
 		Status:         "pending",
 		CreatedAt:      time.Now(),
 	}
+	sessionsMu.Lock()
 	activeSessions[protocolo] = session
+	sessionsMu.Unlock()
 
 	// Persiste no DB (fire-and-forget).
 	go func() {
@@ -165,7 +172,9 @@ func (s *Server) staRangeUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Recupera sessão: memória → DB.
+	sessionsMu.RLock()
 	session := activeSessions[protocolo]
+	sessionsMu.RUnlock()
 	if session == nil {
 		session = s.loadSessionFromDB(r.Context(), protocolo)
 		if session == nil {
@@ -192,12 +201,19 @@ func (s *Server) staRangeUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Lê chunk.
-	chunk := make([]byte, crParsed.end-crParsed.start+1)
+	// Lê chunk — rejeita ranges absurdamente grandes para evitar DoS via header.
+	const maxChunkSize = 8 * 1024 * 1024 // 8 MiB
+	chunkLen := crParsed.end - crParsed.start + 1
+	if chunkLen > maxChunkSize || chunkLen < 0 {
+		s.userError(w, http.StatusBadRequest, "staRangeUpload.chunkSize",
+			fmt.Errorf("range size %d excede máximo de %d bytes", chunkLen, maxChunkSize))
+		return
+	}
+	chunk := make([]byte, chunkLen)
 	n, err := io.ReadFull(r.Body, chunk)
-	if err != nil || int64(n) != crParsed.end-crParsed.start+1 {
+	if err != nil || int64(n) != chunkLen {
 		s.userError(w, http.StatusBadRequest, "staRangeUpload.readChunk",
-			fmt.Errorf("chunk size mismatch: leu %d, esperava %d", n, crParsed.end-crParsed.start+1))
+			fmt.Errorf("chunk size mismatch: leu %d, esperava %d", n, chunkLen))
 		return
 	}
 
@@ -212,18 +228,18 @@ func (s *Server) staRangeUpload(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Error("staRangeUpload: SubmitRange failed",
 			"err", err, "protocolo", protocolo, "if_id", ifID)
-		writeJSON(w, http.StatusBadGateway, map[string]string{
-			"error": "BACEN rejeitou chunk: " + err.Error(),
-		})
+		s.userError(w, http.StatusBadGateway, "staRangeUpload.bacen", err)
 		return
 	}
 
-	// Atualiza sessão local.
+	// Atualiza sessão local (protegido por write lock).
+	sessionsMu.Lock()
 	session.ReceivedBytes += int64(n)
 	session.Ranges = mergeRanges(session.Ranges, sta.Range{Start: crParsed.start, End: crParsed.end})
 	if session.TotalBytes > 0 && session.ReceivedBytes >= session.TotalBytes {
 		session.Status = "complete"
 	}
+	sessionsMu.Unlock()
 
 	// Persiste progresso no DB (fire-and-forget).
 	go s.persistSession(context.Background(), session)
@@ -303,7 +319,11 @@ func (s *Server) staRangeStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 3. Memória.
-	if sess := activeSessions[protocolo]; sess != nil {
+	sessionsMu.RLock()
+	sess := activeSessions[protocolo]
+	sessionsMu.RUnlock()
+
+	if sess != nil {
 		if sess.IfID != ifID {
 			http.Error(w, `{"error":"acesso negado"}`, http.StatusForbidden)
 			return
@@ -428,8 +448,8 @@ func mergeRanges(existing []sta.Range, newR sta.Range) []sta.Range {
 			}
 		}
 	}
-	// Coalesce overlaps.
-	merged := ranges[:0]
+	// Coalesce overlaps — aloca slice novo para evitar aliasing com ranges.
+	merged := make([]sta.Range, 0, len(ranges))
 	for _, r := range ranges {
 		last := &merged[len(merged)-1]
 		if len(merged) > 0 && r.Start <= last.End+1 {
