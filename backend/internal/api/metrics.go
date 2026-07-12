@@ -44,6 +44,9 @@ type Metrics struct {
 	// Sprint 36 — Enhanced: request duration histogram per endpoint + method.
 	reqDurations sync.Map // key="endpoint|method", value=*histogram
 
+	// Sprint 36 — request total counter (endpoint, method, status_code).
+	requestsTotal sync.Map // key="endpoint|method|status", value=*atomic.Int64
+
 	// Sprint 36 — Enhanced: business counters.
 	enviosTotal     sync.Map // key="cadoc|status"
 	validationTotal sync.Map // key="rule|severity"
@@ -195,13 +198,25 @@ func (m *Metrics) WriteTo(w io.Writer) (int64, error) {
 // ============================================================================
 
 // ObserveRequest records a request's latency in milliseconds.
-func (m *Metrics) ObserveRequest(endpoint, method string, durationMs int64) {
+// Also increments the request_total counter with the given status code.
+func (m *Metrics) ObserveRequest(endpoint, method string, statusCode int, durationMs int64) {
 	key := endpoint + "|" + method
 	h := m.getOrCreateHistogram(&m.reqDurations, key)
 	h.Record(durationMs)
 	m.seenDurBucketsMu.Lock()
 	m.seenDurBuckets[key] = true
 	m.seenDurBucketsMu.Unlock()
+
+	// Sprint 36 — request_total counter.
+	reqKey := fmt.Sprintf("%s|%s|%d", endpoint, method, statusCode)
+	m.getOrCreate(&m.requestsTotal, reqKey).Add(1)
+}
+
+// IncRequest increments the request counter for endpoint + method + status.
+// Call this from HTTP middleware after the response is written.
+func (m *Metrics) IncRequest(endpoint, method string, statusCode int) {
+	reqKey := fmt.Sprintf("%s|%s|%d", endpoint, method, statusCode)
+	m.getOrCreate(&m.requestsTotal, reqKey).Add(1)
 }
 
 func (m *Metrics) getOrCreateHistogram(mp *sync.Map, key string) *histogram {
@@ -270,6 +285,11 @@ func (m *Metrics) renderBusinessMetrics(b *strings.Builder) {
 		fmt.Fprintf(b, "radiant_http_request_duration_ms_count{endpoint=%q,method=%q} %d\n",
 			endpoint, method, h.Count())
 	}
+
+	// Sprint 36 — radiant_http_requests_total{endpoint, method, status_code}.
+	fmt.Fprintf(b, "\n# HELP radiant_http_requests_total Total HTTP requests by endpoint, method and status code\n")
+	fmt.Fprintf(b, "# TYPE radiant_http_requests_total counter\n")
+	m.writeCounter(b, "radiant_http_requests_total", "", &m.requestsTotal, []string{"endpoint", "method", "status"})
 
 	// Envios.
 	fmt.Fprintf(b, "\n# HELP radiant_envios_total Total submissions by CADOC and status\n")

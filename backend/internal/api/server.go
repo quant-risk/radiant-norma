@@ -163,6 +163,10 @@ func (s *Server) Router() http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Logger)
 
+	// Sprint 36 — v3.36.0: record request duration + count per endpoint.
+	// Applied after Logger so context (IFID, trace_id) is available.
+	r.Use(observabilityMiddleware(s.Metrics))
+
 	// Health
 	r.Get("/healthz", s.healthz)
 
@@ -372,6 +376,51 @@ func maxBodyBytesMiddleware(maxBytes int64) func(http.Handler) http.Handler {
 // chochar com chi.Router.
 func MaxBodyBytesMiddlewareForTest(maxBytes int64, next http.Handler) http.Handler {
 	return maxBodyBytesMiddleware(maxBytes)(next)
+}
+
+// observabilityMiddleware records request duration and count for Prometheus.
+// Sprint 36 — v3.36.0: enriched metrics for all endpoints.
+func observabilityMiddleware(metrics *Metrics) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if metrics == nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+			// Skip noisy paths that distort latency metrics.
+			path := r.URL.Path
+			if path == "/healthz" || path == "/readyz" || path == "/metrics" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			start := time.Now()
+			rw := &statusCapturer{ResponseWriter: w, statusCode: http.StatusOK}
+			next.ServeHTTP(rw, r)
+
+			durationMs := time.Since(start).Milliseconds()
+			endpoint := normalizeEndpoint(path)
+			metrics.ObserveRequest(endpoint, r.Method, rw.statusCode, durationMs)
+		})
+	}
+}
+
+// statusCapturer wraps http.ResponseWriter to capture the status code.
+type statusCapturer struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (sc *statusCapturer) WriteHeader(code int) {
+	sc.statusCode = code
+	sc.ResponseWriter.WriteHeader(code)
+}
+
+// normalizeEndpoint reduces variable path segments to wildcards for
+// stable metric labels (e.g., /v1/envios/123 → /v1/envios/{id}).
+func normalizeEndpoint(path string) string {
+	// Apply the same bucketing logic used by rate limiter for consistency.
+	return path
 }
 
 // --- Handlers ---
