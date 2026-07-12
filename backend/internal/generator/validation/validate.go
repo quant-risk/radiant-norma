@@ -413,12 +413,14 @@ func check3040Semantic(xmlBytes []byte) []Issue {
 				total += v
 			}
 		}
-		// V150 (inadimplência > 90d) should not exceed total
-		if vals[4] > total && total > 0 {
+		// V150 (inadimplência > 90d) should not exceed the sum of the other
+		// vencimento values (V110..V140, V160, V165). Compute "others" excluding V150.
+		others := total - vals[4]
+		if vals[4] > others && others > 0 {
 			issues = append(issues, Issue{
 				Code:    "SEMANTIC_V150_EXCEEDS_TOTAL",
 				Field:   fmt.Sprintf("Doc3040.Agreg[%d].Venc.V150", i),
-				Message: fmt.Sprintf("V150 (inadimplência >90d) R$%.2f excede total R$%.2f", vals[4], total),
+				Message: fmt.Sprintf("V150 (inadimplência >90d) R$%.2f excede soma das demais faixas R$%.2f", vals[4], others),
 			})
 		}
 	}

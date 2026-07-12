@@ -131,14 +131,14 @@ func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogA
 	return &Server{
 		DB: d, Schema: sch, Audit: aud, AuditLog: al, STAClient: staClient,
 		Radar: rad, RulePrefs: rp, ToggleLimiter: tl, Insights: ack,
-		Branding:     br,
-		InsightsLLM:   insightsLLM,
-		Marketplace:  mp,
-		Pilot:        pilotSvc,
-		CrossDoc:     crossDoc,
-		WizardStore:  wizardStore,
-		startedAt:    time.Now(),
-		RateLimiter:  newMemoryRateLimiter(),
+		Branding:    br,
+		InsightsLLM: insightsLLM,
+		Marketplace: mp,
+		Pilot:       pilotSvc,
+		CrossDoc:    crossDoc,
+		WizardStore: wizardStore,
+		startedAt:   time.Now(),
+		RateLimiter: newMemoryRateLimiter(),
 	}
 }
 
