@@ -197,16 +197,13 @@ type WSClient struct {
 	logger *slog.Logger
 }
 
-// staTracer is lazily initialized from the global OTel tracer provider.
-var staTracer trace.Tracer
-
+// getTracer returns the global OTel tracer for BACEN STA operations.
+// OTel's TracerProvider caches tracers internally, so calling otel.Tracer
+// on every use is cheap and thread-safe.
 func getTracer() trace.Tracer {
-	if staTracer == nil {
-		staTracer = otel.Tracer("bacen-sta",
-			trace.WithInstrumentationVersion("1.0"),
-		)
-	}
-	return staTracer
+	return otel.Tracer("bacen-sta",
+		trace.WithInstrumentationVersion("1.0"),
+	)
 }
 
 // NewWSClient valida config e cria o cliente. Retorna erro descritivo se

@@ -13,13 +13,24 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
 	"github.com/fortvna/radiant-norma/backend/internal/insights"
 )
+
+// sseChunk is the JSON payload for SSE "chunk" events.
+type sseChunk struct {
+	Text  string `json:"text"`
+	Model string `json:"model"`
+	Done  bool   `json:"done"`
+}
+
+// sseError is the JSON payload for SSE "error" events.
+type sseError struct {
+	Error string `json:"error"`
+}
 
 // streamAskLLM handles GET /v1/insights/ask/stream — SSE streaming for insights chat.
 //
@@ -37,6 +48,10 @@ import (
 // Feature flag: ifs.llm_insights_enabled (opt-in).
 // Auth: JWT standard (mesma dos outros endpoints).
 // Rate limit: 5 req/min/tenant (aplicado pelo LLMService).
+//
+// BUGFIX 5 (v3.36.2): StreamAsk is called BEFORE SSE headers are written so that
+// errors (e.g. rate limit) can return a proper HTTP status code instead of
+// silently returning 200 + empty body.
 func (s *Server) streamAskLLM(w http.ResponseWriter, r *http.Request) {
 	if s.InsightsLLM == nil {
 		http.Error(w, "insights not configured", http.StatusServiceUnavailable)
@@ -74,7 +89,19 @@ func (s *Server) streamAskLLM(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set SSE headers.
+	// Call StreamAsk BEFORE writing SSE headers so we can return proper HTTP
+	// status codes (e.g. 429 for rate limit) before any response body is written.
+	ch, err := s.InsightsLLM.StreamAsk(r.Context(), ifID, question)
+	if err != nil {
+		if errors.Is(err, insights.ErrRateLimited) {
+			http.Error(w, "rate limit exceeded (5 req/min)", http.StatusTooManyRequests)
+			return
+		}
+		s.internalServerError(w, err, "stream_ask_init")
+		return
+	}
+
+	// Set SSE headers — only after we know StreamAsk succeeded.
 	w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -86,36 +113,30 @@ func (s *Server) streamAskLLM(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Stream chunks as they arrive.
-	ch, err := s.InsightsLLM.StreamAsk(r.Context(), ifID, question)
-	if err != nil {
-		slog.Warn("StreamAsk init failed", "err", err)
-		return
-	}
-
-	// Send audit log after streaming (non-blocking).
-	// The audit will be logged after full response is received.
-	defer func() {
-		_, _ = s.AuditLog.Log(ifID, claims.Sub, "insights.asked.stream", "", nil, map[string]any{
-			"question_len": len(question),
-		})
-	}()
-
+	// Stream chunks. Audit only on success (after loop completes without error).
+streamLoop:
 	for chunk := range ch {
 		if chunk.Error != nil {
-			fmt.Fprintf(w, "event: error\ndata: {\"error\":%q}\n\n",
-				chunk.Error.Error())
+			// Write SSE error event before returning.
+			enc, _ := json.Marshal(sseError{Error: chunk.Error.Error()})
+			fmt.Fprintf(w, "event: error\ndata: %s\n\n", enc)
 			flusher.Flush()
-			return
+			break streamLoop
 		}
-		done := chunk.Text == "" && chunk.Done
-		fmt.Fprintf(w, "event: chunk\ndata: {\"text\":%q,\"model\":%q,\"done\":%v}\n\n",
-			chunk.Text, chunk.Model, done)
+
+		enc, _ := json.Marshal(sseChunk{Text: chunk.Text, Model: chunk.Model, Done: chunk.Done})
+		fmt.Fprintf(w, "event: chunk\ndata: %s\n\n", enc)
 		flusher.Flush()
-		if done {
-			return
+
+		if chunk.Done {
+			break streamLoop
 		}
 	}
+
+	// BUGFIX 6 (v3.36.2): audit only on success, with model info.
+	_, _ = s.AuditLog.Log(ifID, claims.Sub, "insights.asked.stream", "", nil, map[string]any{
+		"question_len": len(question),
+	})
 }
 
 // AskLLM handles POST /v1/insights/ask.
@@ -176,7 +197,7 @@ func (s *Server) AskLLM(w http.ResponseWriter, r *http.Request) {
 	// Audit log
 	_, _ = s.AuditLog.Log(ifID, claims.Sub, "insights.asked", "", nil, map[string]any{
 		"question_len": len(body.Question),
-		"model":        answer.Model,
+		"model":       answer.Model,
 	})
 
 	writeJSON(w, http.StatusOK, map[string]any{

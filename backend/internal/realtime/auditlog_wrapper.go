@@ -16,6 +16,15 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/observability"
 )
 
+// hashPrefix returns the first n characters of a hex hash, or the full hash
+// if shorter than n. Defensive: guards against panics from slice bounds.
+func hashPrefix(h string, n int) string {
+	if len(h) >= n {
+		return h[:n]
+	}
+	return h
+}
+
 // HubAwareLogger é wrapper que adiciona Publish após Log.
 //
 // Uso no main.go:
@@ -39,8 +48,17 @@ func WrapAuditLog(base *auditlog.Logger, hub *Hub) *HubAwareLogger {
 //
 // Sprint 36 — v3.36.0: após gravar no DB, adiciona Sentry breadcrumb
 // para que mutations apareçam no trace de erros. Usa context.Background()
-// como fallback se nenhum contexto estiver em scope (auditlog não Propaga
-// ctx, mas o wrapper pode usar o span atual via GetHubFromContext nil-safe).
+// (sentry.CurrentHub() fallback) porque auditlog.Logger.Log não propaga ctx,
+// mas GetHubFromContext(nil/Background) retorna o hub do goroutine atual —
+//
+//	requirements for this to work:
+//	  1. sentry.Init() must be called before the HTTP handler goroutine starts
+//	     (true in main.go before any requests)
+//	  2. The HTTP handler goroutine is the one where SentryMiddleware ran
+//	     and attached its hub (implicit via sentry.Init per-goroutine state)
+//
+// This means breadcrumbs appear on the correct transaction in the HTTP
+// request goroutine, even though we can't pass the request ctx to Log().
 func (h *HubAwareLogger) Log(
 	ifID, actor, action, target string,
 	payload []byte,
@@ -53,12 +71,12 @@ func (h *HubAwareLogger) Log(
 	}
 
 	// Sprint 36: Sentry breadcrumb para mutations (audit trail in error traces).
-	// Usa-se context.Background() aqui porque AddBreadcrumb só requer o hub,
-	// não o span — breadcrumbs são attached ao hub global, não ao span.
+	// Defensively guard EntryHash[:16] against panics (hash is 64 hex chars on
+	// success, but a future DB bug could change this).
 	observability.AddBreadcrumb(context.Background(), action, target, map[string]any{
 		"actor":    actor,
 		"if_id":    ifID,
-		"entry_id": entry.EntryHash[:16],
+		"entry_id": hashPrefix(entry.EntryHash, 16),
 	})
 
 	// Publica no hub (best-effort — não bloqueia audit_log se hub não estiver saudável)
@@ -80,7 +98,7 @@ func entryToPayload(e *auditlog.Entry, metadata any) map[string]any {
 		"actor":    e.Actor,
 		"action":   e.Action,
 		"target":   e.Target,
-		"entry_id": e.EntryHash[:16],
+		"entry_id": hashPrefix(e.EntryHash, 16),
 		"created":  e.CreatedAt,
 	}
 	if metadata != nil {

@@ -451,10 +451,7 @@ func (s *LLMService) Ask(ctx context.Context, ifID, question string) (*LLMAnswer
 // After streaming finishes, the conversation messages are persisted.
 func (s *LLMService) StreamAsk(ctx context.Context, ifID, question string) (<-chan LLMAnswerChunk, error) {
 	if !s.rl.Allow(ifID) {
-		ch := make(chan LLMAnswerChunk, 1)
-		ch <- LLMAnswerChunk{Error: ErrRateLimited}
-		close(ch)
-		return ch, nil
+		return nil, ErrRateLimited
 	}
 
 	// Build messages with conversation history + context.
@@ -496,6 +493,7 @@ func (s *LLMService) StreamAsk(ctx context.Context, ifID, question string) (<-ch
 			ch <- LLMAnswerChunk{
 				Text:  chunk.Text,
 				Model: modelName,
+				Done:  chunk.Done,
 			}
 			if chunk.Done {
 				break
