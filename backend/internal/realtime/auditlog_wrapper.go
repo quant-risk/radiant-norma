@@ -10,7 +10,10 @@
 package realtime
 
 import (
+	"context"
+
 	"github.com/fortvna/radiant-norma/backend/internal/auditlog"
+	"github.com/fortvna/radiant-norma/backend/internal/observability"
 )
 
 // HubAwareLogger é wrapper que adiciona Publish após Log.
@@ -33,15 +36,30 @@ func WrapAuditLog(base *auditlog.Logger, hub *Hub) *HubAwareLogger {
 
 // Log sobrescreve o método Log original (mesmo signature) pra chamar
 // o do base + publicar evento no Hub.
+//
+// Sprint 36 — v3.36.0: após gravar no DB, adiciona Sentry breadcrumb
+// para que mutations apareçam no trace de erros. Usa context.Background()
+// como fallback se nenhum contexto estiver em scope (auditlog não Propaga
+// ctx, mas o wrapper pode usar o span atual via GetHubFromContext nil-safe).
 func (h *HubAwareLogger) Log(
 	ifID, actor, action, target string,
 	payload []byte,
 	metadata any,
 ) (*auditlog.Entry, error) {
+	// Chama o base (sem ctx — auditlog.Logger.Log não aceita ctx).
 	entry, err := h.Logger.Log(ifID, actor, action, target, payload, metadata)
 	if err != nil {
 		return entry, err
 	}
+
+	// Sprint 36: Sentry breadcrumb para mutations (audit trail in error traces).
+	// Usa-se context.Background() aqui porque AddBreadcrumb só requer o hub,
+	// não o span — breadcrumbs são attached ao hub global, não ao span.
+	observability.AddBreadcrumb(context.Background(), action, target, map[string]any{
+		"actor":    actor,
+		"if_id":    ifID,
+		"entry_id": entry.EntryHash[:16],
+	})
 
 	// Publica no hub (best-effort — não bloqueia audit_log se hub não estiver saudável)
 	if h.hub != nil {

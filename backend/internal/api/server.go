@@ -282,6 +282,7 @@ func (s *Server) Router() http.Handler {
 			r.Delete("/recommendations/{id}/acknowledge", s.unacknowledgeRecommendation)
 			// Sprint 53 (v3.34.35) — AI Insights via LLM.
 			r.Post("/ask", s.AskLLM)
+			r.Get("/ask/stream", s.streamAskLLM) // SSE streaming
 			r.Get("/history", s.getInsightsHistory)
 			r.Delete("/history", s.deleteInsightsHistory)
 		})

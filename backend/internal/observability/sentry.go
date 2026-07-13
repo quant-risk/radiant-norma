@@ -114,6 +114,24 @@ func CaptureException(ctx context.Context, err error) {
 // FlushSentry flushes Sentry's queue. Call before shutdown.
 func FlushSentry() { sentry.Flush(5 * time.Second) }
 
+// AddBreadcrumb records a Sentry breadcrumb for an audit event.
+// This links mutation audit events (envios, schema changes, wizard steps, etc.)
+// to the current Sentry transaction so they appear in error reports.
+//
+// Sprint 36 — v3.36.0: breadcrumbs on all mutation audit events.
+func AddBreadcrumb(ctx context.Context, category, message string, data map[string]any) {
+	hub := sentry.GetHubFromContext(ctx)
+	if hub == nil {
+		hub = sentry.CurrentHub()
+	}
+	hub.AddBreadcrumb(&sentry.Breadcrumb{
+		Category:  category,
+		Message:   message,
+		Data:     data,
+		Timestamp: time.Now(),
+	}, nil)
+}
+
 // SentryMiddleware returns an HTTP middleware that creates a span per request,
 // propagates W3C trace context, records panics, and reports errors to Sentry.
 func SentryMiddleware() func(http.Handler) http.Handler {

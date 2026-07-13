@@ -78,6 +78,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // maxResponseBodyBytes limita o tamanho da response BACEN que vamos ler
@@ -185,9 +190,23 @@ type WSConfig struct {
 // Thread-safe: cada Submit usa http.Client.Do() que é thread-safe; conexões
 // são reutilizadas via keep-alive. Sem campos mutáveis no estado do client
 // após construção.
+//
+// Sprint 36 — v3.36.0: OTel tracing instrumentation em todas as operações.
 type WSClient struct {
 	cfg    WSConfig
 	logger *slog.Logger
+}
+
+// staTracer is lazily initialized from the global OTel tracer provider.
+var staTracer trace.Tracer
+
+func getTracer() trace.Tracer {
+	if staTracer == nil {
+		staTracer = otel.Tracer("bacen-sta",
+			trace.WithInstrumentationVersion("1.0"),
+		)
+	}
+	return staTracer
 }
 
 // NewWSClient valida config e cria o cliente. Retorna erro descritivo se
@@ -267,6 +286,14 @@ func (c *WSClient) basicAuthHeader() string {
 // diretamente (single responsibility: cliente só fala com BACEN, handler
 // decide o que auditar).
 func (c *WSClient) Submit(ctx context.Context, sub *Submission) (*Result, error) {
+	ctx, span := getTracer().Start(ctx, "sta.Submit",
+		trace.WithAttributes(
+			attribute.String("sta.cadoc", sub.CadocCode),
+			attribute.String("sta.if_id", sub.CNPJ),
+			attribute.Int64("sta.payload_bytes", int64(len(sub.XML))),
+		))
+	defer span.End()
+
 	if sub.Zip == nil && len(sub.XML) == 0 {
 		return nil, errors.New("STA submission vazia (sem XML nem ZIP)")
 	}
@@ -284,6 +311,8 @@ func (c *WSClient) Submit(ctx context.Context, sub *Submission) (*Result, error)
 	// Phase 1: POST /arquivos → protocolo
 	protocolo, err := c.requestProtocol(ctx, sub, hashHex, int64(len(payload)))
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "POST /arquivos failed")
 		return nil, fmt.Errorf("STA POST /arquivos falhou: %w", err)
 	}
 	if protocolo == "" {
@@ -294,8 +323,12 @@ func (c *WSClient) Submit(ctx context.Context, sub *Submission) (*Result, error)
 		return &Result{ProtocolSTA: "", Accepted: false, Rejection: &Rejection{Code: "INTERNAL", Message: "protocolo vazio"}}, nil
 	}
 
+	span.SetAttributes(attribute.String("sta.protocolo", protocolo))
+
 	// Phase 2: PUT /arquivos/{protocolo}/conteudo (binário).
 	if err := c.uploadContent(ctx, protocolo, payload); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "PUT conteudo failed")
 		// Upload falhou — protocolo existe mas conteúdo não foi aceito.
 		// Mantemos protocolo no result para forensic trail. Rejection
 		// indica causa da falha de upload.
@@ -309,6 +342,7 @@ func (c *WSClient) Submit(ctx context.Context, sub *Submission) (*Result, error)
 		}, nil
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return &Result{
 		ProtocolSTA: protocolo,
 		Accepted:    true,
@@ -480,6 +514,12 @@ func (c *WSClient) parseSTAErrorTyped(status int, body []byte, protocolo string)
 // interrompido — chama StatusUpload pra saber que bytes BACEN já recebeu
 // (RangesRecebidos) antes de fazer PUT só da parte que falta.
 func (c *WSClient) StatusUpload(ctx context.Context, protocolo string) (*UploadStatus, error) {
+	ctx, span := getTracer().Start(ctx, "sta.StatusUpload",
+		trace.WithAttributes(
+			attribute.String("sta.protocolo", protocolo),
+		))
+	defer span.End()
+
 	if protocolo == "" {
 		return nil, errors.New("protocolo requerido")
 	}
@@ -495,6 +535,8 @@ func (c *WSClient) StatusUpload(ctx context.Context, protocolo string) (*UploadS
 
 	resp, err := c.cfg.HTTPClient.Do(req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "HTTP request failed")
 		return nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -502,14 +544,20 @@ func (c *WSClient) StatusUpload(ctx context.Context, protocolo string) (*UploadS
 	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodyBytes))
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, c.parseSTAErrorTyped(resp.StatusCode, respBody, protocolo)
+		err := c.parseSTAErrorTyped(resp.StatusCode, respBody, protocolo)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, http.StatusText(resp.StatusCode))
+		return nil, err
 	}
 
 	var p posicaoUploadResponse
 	if err := xml.Unmarshal(respBody, &p); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "XML parse failed")
 		return nil, fmt.Errorf("parse posicaoupload XML: %w (body=%s)", err, truncate(respBody, 200))
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return &UploadStatus{
 		Protocolo:       p.Protocolo,
 		RangesRecebidos: parseRanges(p.RangesRecebidos),
@@ -529,6 +577,13 @@ func (c *WSClient) StatusUpload(ctx context.Context, protocolo string) (*UploadS
 //
 // Retorna o protocolo BACEN em sucesso.
 func (c *WSClient) InitRangeSession(ctx context.Context, cadocCode, hashHex string, totalBytes int64) (string, error) {
+	ctx, span := getTracer().Start(ctx, "sta.InitRangeSession",
+		trace.WithAttributes(
+			attribute.String("sta.cadoc", cadocCode),
+			attribute.Int64("sta.total_bytes", totalBytes),
+		))
+	defer span.End()
+
 	params := requestProtocolParams{
 		IdentificadorDocumento: cadocCode,
 		Hash:                   hashHex,
@@ -551,6 +606,8 @@ func (c *WSClient) InitRangeSession(ctx context.Context, cadocCode, hashHex stri
 
 	resp, err := c.cfg.HTTPClient.Do(req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "HTTP request failed")
 		return "", err
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -558,16 +615,27 @@ func (c *WSClient) InitRangeSession(ctx context.Context, cadocCode, hashHex stri
 	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodyBytes))
 
 	if resp.StatusCode != http.StatusCreated {
-		return "", c.parseSTAError(resp.StatusCode, respBody)
+		err := c.parseSTAError(resp.StatusCode, respBody)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, http.StatusText(resp.StatusCode))
+		return "", err
 	}
 
 	var rp responseProtocol
 	if err := xml.Unmarshal(respBody, &rp); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "XML parse failed")
 		return "", fmt.Errorf("parse XML response: %w", err)
 	}
 	if rp.Protocolo == "" {
-		return "", fmt.Errorf("BACEN retornou 201 mas protocolo vazio")
+		err := fmt.Errorf("BACEN retornou 201 mas protocolo vazio")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "empty protocolo")
+		return "", err
 	}
+
+	span.SetAttributes(attribute.String("sta.protocolo", rp.Protocolo))
+	span.SetStatus(codes.Ok, "")
 	return rp.Protocolo, nil
 }
 
@@ -590,6 +658,12 @@ func (c *WSClient) InitRangeSession(ctx context.Context, cadocCode, hashHex stri
 //   - (nil, *STAError{StatusCode: 413}) se body excede 100 MiB (cap).
 //   - (nil, err) em erro de transporte (rede, timeout).
 func (c *WSClient) Download(ctx context.Context, protocolo string) (*DownloadResult, error) {
+	ctx, span := getTracer().Start(ctx, "sta.Download",
+		trace.WithAttributes(
+			attribute.String("sta.protocolo", protocolo),
+		))
+	defer span.End()
+
 	if protocolo == "" {
 		return nil, errors.New("protocolo requerido")
 	}
@@ -604,6 +678,8 @@ func (c *WSClient) Download(ctx context.Context, protocolo string) (*DownloadRes
 
 	resp, err := c.cfg.HTTPClient.Do(req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "HTTP request failed")
 		return nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -613,34 +689,48 @@ func (c *WSClient) Download(ctx context.Context, protocolo string) (*DownloadRes
 	limited := io.LimitReader(resp.Body, maxDownloadBodyBytes+1) // +1 pra detectar overflow
 	body, err := io.ReadAll(limited)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "read body failed")
 		return nil, fmt.Errorf("read download body: %w", err)
 	}
 	if int64(len(body)) > maxDownloadBodyBytes {
-		return nil, &STAError{
+		err := &STAError{
 			StatusCode: http.StatusRequestEntityTooLarge,
 			Code:       fmt.Sprintf("HTTP_%d", http.StatusRequestEntityTooLarge),
 			Message:    fmt.Sprintf("body excede %d bytes (cap defensivo)", maxDownloadBodyBytes),
 			Protocolo:  protocolo,
 		}
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "body too large")
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, c.parseSTAErrorTyped(resp.StatusCode, body, protocolo)
+		err := c.parseSTAErrorTyped(resp.StatusCode, body, protocolo)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, http.StatusText(resp.StatusCode))
+		return nil, err
 	}
 
 	// Validação X-Content-Hash — obrigatória conforme manual §6.1.1.
 	hashHeader := resp.Header.Get("X-Content-Hash")
 	if hashHeader == "" {
-		return nil, &STAError{
+		err := &STAError{
 			StatusCode: http.StatusBadGateway,
 			Code:       "MISSING_X_CONTENT_HASH",
 			Message:    "BACEN não retornou header X-Content-Hash (esperado conforme manual §6.1.1)",
 			Protocolo:  protocolo,
 		}
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing X-Content-Hash")
+		return nil, err
 	}
 	wantHash, malformedErr := parseXContentHash(hashHeader)
 	if malformedErr != nil {
-		return nil, fmt.Errorf("%w: %v (header=%q)", ErrContentHashHeaderMalformed, malformedErr, hashHeader)
+		err := fmt.Errorf("%w: %v (header=%q)", ErrContentHashHeaderMalformed, malformedErr, hashHeader)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "malformed X-Content-Hash")
+		return nil, err
 	}
 
 	// SHA-256 do body (Seção 2.4 do manual — mesmo algoritmo do upload).
@@ -648,10 +738,18 @@ func (c *WSClient) Download(ctx context.Context, protocolo string) (*DownloadRes
 	gotHash := hex.EncodeToString(sum[:])
 
 	if gotHash != wantHash {
-		return nil, fmt.Errorf("%w: esperado=%s got=%s (body=%d bytes)",
+		err := fmt.Errorf("%w: esperado=%s got=%s (body=%d bytes)",
 			ErrContentHashMismatch, wantHash, gotHash, len(body))
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "hash mismatch")
+		return nil, err
 	}
 
+	span.SetAttributes(
+		attribute.Int64("sta.content_bytes", int64(len(body))),
+		attribute.String("sta.content_hash", gotHash),
+	)
+	span.SetStatus(codes.Ok, "")
 	return &DownloadResult{
 		Conteudo:          body,
 		ContentHash:       gotHash,
@@ -802,6 +900,13 @@ type ReadClient interface {
 //   - (nil, *STAError) em rejeição formal BACEN (400).
 //   - (nil, err) em erro de transporte (rede, timeout, parse falho).
 func (c *WSClient) ListDisponiveis(ctx context.Context, opts ListDisponiveisOpts) (*ListDisponiveisResult, error) {
+	ctx, span := getTracer().Start(ctx, "sta.ListDisponiveis",
+		trace.WithAttributes(
+			attribute.String("sta.data_hora_inicio", opts.DataHoraInicio),
+			attribute.String("sta.identificador_documento", opts.IdentificadorDocumento),
+		))
+	defer span.End()
+
 	if opts.DataHoraInicio == "" {
 		return nil, errors.New("DataHoraInicio obrigatório (Tabela 4 do manual §8.1.1)")
 	}
@@ -829,6 +934,8 @@ func (c *WSClient) ListDisponiveis(ctx context.Context, opts ListDisponiveisOpts
 
 	resp, err := c.cfg.HTTPClient.Do(req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "HTTP request failed")
 		return nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -836,13 +943,21 @@ func (c *WSClient) ListDisponiveis(ctx context.Context, opts ListDisponiveisOpts
 	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodyBytes))
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, c.parseSTAErrorTyped(resp.StatusCode, respBody, "")
+		err := c.parseSTAErrorTyped(resp.StatusCode, respBody, "")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, http.StatusText(resp.StatusCode))
+		return nil, err
 	}
 
 	var p arquivosDisponiveisResponse
 	if err := xml.Unmarshal(respBody, &p); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "XML parse failed")
 		return nil, fmt.Errorf("parse disponiveis XML: %w (body=%s)", err, truncate(respBody, 200))
 	}
+
+	span.SetAttributes(attribute.Int("sta.arquivos_count", len(p.Arquivos)))
+	span.SetStatus(codes.Ok, "")
 
 	result := &ListDisponiveisResult{
 		DataHoraProximaConsulta: p.DataHoraProximaConsulta,
@@ -886,6 +1001,13 @@ func (c *WSClient) ListDisponiveis(ctx context.Context, opts ListDisponiveisOpts
 //   - (*STAError) em rejeição formal BACEN (400 com XML Listagem 4).
 //   - err opaco em erro de transporte.
 func (c *WSClient) AlterarSituacao(ctx context.Context, req AlterarSituacaoReq) error {
+	ctx, span := getTracer().Start(ctx, "sta.AlterarSituacao",
+		trace.WithAttributes(
+			attribute.Int("sta.protocolos_count", len(req.Protocolos)),
+			attribute.String("sta.situacao", req.Situacao.String()),
+		))
+	defer span.End()
+
 	if len(req.Protocolos) == 0 {
 		return errors.New("Protocolos não pode ser vazio (Seção 7.1)")
 	}
@@ -915,6 +1037,8 @@ func (c *WSClient) AlterarSituacao(ctx context.Context, req AlterarSituacaoReq) 
 
 	resp, err := c.cfg.HTTPClient.Do(httpReq)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "HTTP request failed")
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -922,8 +1046,12 @@ func (c *WSClient) AlterarSituacao(ctx context.Context, req AlterarSituacaoReq) 
 	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodyBytes))
 
 	if resp.StatusCode != http.StatusNoContent {
-		return c.parseSTAErrorTyped(resp.StatusCode, respBody, "")
+		err := c.parseSTAErrorTyped(resp.StatusCode, respBody, "")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, http.StatusText(resp.StatusCode))
+		return err
 	}
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -984,6 +1112,16 @@ type RangeUploader interface {
 //   - total > 0 e total >= fim+1
 //   - len(chunk) == fim-inicio+1 (chunks devem ter tamanho exato)
 func (c *WSClient) SubmitRange(ctx context.Context, protocolo string, inicio, fim, total int64, chunk []byte) error {
+	ctx, span := getTracer().Start(ctx, "sta.SubmitRange",
+		trace.WithAttributes(
+			attribute.String("sta.protocolo", protocolo),
+			attribute.Int64("sta.range_start", inicio),
+			attribute.Int64("sta.range_end", fim),
+			attribute.Int64("sta.total_bytes", total),
+			attribute.Int64("sta.chunk_bytes", int64(len(chunk))),
+		))
+	defer span.End()
+
 	if protocolo == "" {
 		return errors.New("protocolo requerido")
 	}
@@ -1016,6 +1154,8 @@ func (c *WSClient) SubmitRange(ctx context.Context, protocolo string, inicio, fi
 
 	resp, err := c.cfg.HTTPClient.Do(req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "HTTP request failed")
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -1023,8 +1163,12 @@ func (c *WSClient) SubmitRange(ctx context.Context, protocolo string, inicio, fi
 	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodyBytes))
 
 	if resp.StatusCode != http.StatusOK {
-		return c.parseSTAErrorTyped(resp.StatusCode, respBody, protocolo)
+		err := c.parseSTAErrorTyped(resp.StatusCode, respBody, protocolo)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, http.StatusText(resp.StatusCode))
+		return err
 	}
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -1062,6 +1206,14 @@ func (c *WSClient) SubmitRange(ctx context.Context, protocolo string, inicio, fi
 //   - inicio >= 0, fim >= inicio
 //   - (fim-inicio+1) <= maxDownloadBodyBytes (defesa DoS)
 func (c *WSClient) DownloadRange(ctx context.Context, protocolo string, inicio, fim int64, expectedTotalHash, ifMatch, ifUnmodifiedSince string) (*DownloadResult, error) {
+	ctx, span := getTracer().Start(ctx, "sta.DownloadRange",
+		trace.WithAttributes(
+			attribute.String("sta.protocolo", protocolo),
+			attribute.Int64("sta.range_start", inicio),
+			attribute.Int64("sta.range_end", fim),
+		))
+	defer span.End()
+
 	if protocolo == "" {
 		return nil, errors.New("protocolo requerido")
 	}
@@ -1102,6 +1254,8 @@ func (c *WSClient) DownloadRange(ctx context.Context, protocolo string, inicio, 
 
 	resp, err := c.cfg.HTTPClient.Do(req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "HTTP request failed")
 		return nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -1110,20 +1264,28 @@ func (c *WSClient) DownloadRange(ctx context.Context, protocolo string, inicio, 
 	limited := io.LimitReader(resp.Body, maxDownloadBodyBytes+1)
 	body, err := io.ReadAll(limited)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "read body failed")
 		return nil, fmt.Errorf("read download range body: %w", err)
 	}
 	if int64(len(body)) > maxDownloadBodyBytes {
-		return nil, &STAError{
+		err := &STAError{
 			StatusCode: http.StatusRequestEntityTooLarge,
 			Code:       fmt.Sprintf("HTTP_%d", http.StatusRequestEntityTooLarge),
 			Message:    fmt.Sprintf("body excede %d bytes (cap defensivo)", maxDownloadBodyBytes),
 			Protocolo:  protocolo,
 		}
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "body too large")
+		return nil, err
 	}
 
 	// 206 Partial Content esperado em sucesso. Outros 2xx viram erro.
 	if resp.StatusCode != http.StatusPartialContent && resp.StatusCode != http.StatusOK {
-		return nil, c.parseSTAErrorTyped(resp.StatusCode, body, protocolo)
+		err := c.parseSTAErrorTyped(resp.StatusCode, body, protocolo)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, http.StatusText(resp.StatusCode))
+		return nil, err
 	}
 	// 200 OK (em vez de 206) é improvável mas tolerável — BACEN pode
 	// retornar 200 com range respeitado (single-call completo). Caller
@@ -1133,24 +1295,38 @@ func (c *WSClient) DownloadRange(ctx context.Context, protocolo string, inicio, 
 	// Validação X-Content-Hash (Sprint 19 pattern).
 	hashHeader := resp.Header.Get("X-Content-Hash")
 	if hashHeader == "" {
-		return nil, &STAError{
+		err := &STAError{
 			StatusCode: http.StatusBadGateway,
 			Code:       "MISSING_X_CONTENT_HASH",
 			Message:    "BACEN não retornou header X-Content-Hash (esperado conforme manual §6.4)",
 			Protocolo:  protocolo,
 		}
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing X-Content-Hash")
+		return nil, err
 	}
 	gotHash, malformedErr := parseXContentHash(hashHeader)
 	if malformedErr != nil {
-		return nil, fmt.Errorf("%w: %v (header=%q)", ErrContentHashHeaderMalformed, malformedErr, hashHeader)
+		err := fmt.Errorf("%w: %v (header=%q)", ErrContentHashHeaderMalformed, malformedErr, hashHeader)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "malformed X-Content-Hash")
+		return nil, err
 	}
 
 	// Validação contra expectedTotalHash do caller.
 	if expectedTotalHash != "" && gotHash != expectedTotalHash {
-		return nil, fmt.Errorf("%w: esperado=%s got=%s (chunk=%d bytes)",
+		err := fmt.Errorf("%w: esperado=%s got=%s (chunk=%d bytes)",
 			ErrContentHashMismatch, expectedTotalHash, gotHash, len(body))
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "hash mismatch")
+		return nil, err
 	}
 
+	span.SetAttributes(
+		attribute.Int64("sta.chunk_bytes", int64(len(body))),
+		attribute.String("sta.content_hash", gotHash),
+	)
+	span.SetStatus(codes.Ok, "")
 	return &DownloadResult{
 		Conteudo:          body,
 		ContentHash:       gotHash,
