@@ -47,6 +47,34 @@ func (s Step) Next() Step {
 	}
 }
 
+// Prev returns the previous step before s.
+// Sprint 57 v3.36.3 — backward navigation para permitir revisão.
+// No StepSelectCadoc (estado inicial), retorna a si mesmo.
+func (s Step) Prev() Step {
+	switch s {
+	case StepSelectSource:
+		return StepSelectCadoc
+	case StepMapFields:
+		return StepSelectSource
+	case StepPreview:
+		return StepMapFields
+	case StepGenerate:
+		return StepPreview
+	default:
+		// StepSelectCadoc ou inválido: fica onde está.
+		return s
+	}
+}
+
+// IsBackwardTransition reports whether going from `from` to `to` is a
+// backward navigation (Prev direction). Self-transitions are NOT backward.
+func (from Step) IsBackwardTransition(to Step) bool {
+	if from == to {
+		return false
+	}
+	return to == from.Prev()
+}
+
 // Session representa uma sessão ativa do wizard de geração.
 type Session struct {
 	ID            string          `json:"id"`
@@ -176,6 +204,55 @@ func (s *Store) Advance(ctx context.Context, id string, data map[string]any) (*S
 	}
 
 	session.Step = next
+	session.UpdatedAt = now
+	return session, nil
+}
+
+// Revindicate volta a sessão para o step anterior (Sprint 57 v3.36.3).
+// Dados do step atual são preservados no JSON (não apagados), mas o usuário
+// precisa preenchê-los de novo se avançar — o "preview" só muda após novo Advance().
+//
+// Use case: usuário preencheu source errado em StepSelectSource → Revindicate
+// volta para StepSelectCadoc para corrigir a seleção.
+func (s *Store) Revindicate(ctx context.Context, id string, data map[string]any) (*Session, error) {
+	session, err := s.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	prev := session.Step.Prev()
+	if prev == session.Step {
+		// Já no step inicial ou step desconhecido → não há como voltar.
+		return session, ErrInvalidTransition
+	}
+
+	now := time.Now()
+
+	var canonicalJSON, fieldMapping string
+	if b, err := json.Marshal(data); err == nil {
+		canonicalJSON = string(b)
+	}
+	if fm, ok := data["field_mapping"]; ok {
+		if fmBytes, err := json.Marshal(fm); err == nil {
+			fieldMapping = string(fmBytes)
+		}
+	}
+
+	_, err = s.db.ExecContext(ctx, `
+		UPDATE wizard_sessions SET
+			step = ?,
+			cadoc_code = COALESCE(NULLIF(?, ''), cadoc_code),
+			source_type = COALESCE(NULLIF(?, ''), source_type),
+			canonical_json = COALESCE(NULLIF(?, ''), canonical_json),
+			field_mapping = COALESCE(NULLIF(?, ''), field_mapping),
+			updated_at = ?
+		WHERE id = ?
+	`, string(prev), data["cadoc_code"], data["source_type"], canonicalJSON, fieldMapping, now, id)
+	if err != nil {
+		return nil, err
+	}
+
+	session.Step = prev
 	session.UpdatedAt = now
 	return session, nil
 }

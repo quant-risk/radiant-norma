@@ -127,7 +127,20 @@ func (s *Server) advanceWizard(w http.ResponseWriter, r *http.Request) {
 		data["field_mapping"] = body.FieldMapping
 	}
 
-	updated, err := s.WizardStore.Advance(r.Context(), id, data)
+	// Sprint 57 v3.36.3: backward navigation via ?direction=prev.
+	// Usado pelo wizard UI para revisar/corrigir seleção anterior.
+	direction := r.URL.Query().Get("direction")
+	var updated *wizard.Session
+	if direction == "prev" {
+		updated, err = s.WizardStore.Revindicate(r.Context(), id, data)
+		if errors.Is(err, wizard.ErrInvalidTransition) {
+			s.userError(w, http.StatusConflict, "advanceWizard.prev",
+				errors.New("não é possível voltar do step atual"))
+			return
+		}
+	} else {
+		updated, err = s.WizardStore.Advance(r.Context(), id, data)
+	}
 	if err != nil {
 		s.internalServerError(w, err, "advanceWizard.advance")
 		return
