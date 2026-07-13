@@ -26,10 +26,35 @@ import (
 type CadocType string
 
 const (
+	Cadoc2030 CadocType = "2030"
+	Cadoc2060 CadocType = "2060"
+	Cadoc2061 CadocType = "2061"
+	Cadoc2062 CadocType = "2062"
+	Cadoc2070 CadocType = "2070"
+	Cadoc2160 CadocType = "2160"
+	Cadoc2170 CadocType = "2170"
 	Cadoc3040 CadocType = "3040"
 	Cadoc3050 CadocType = "3050"
 	Cadoc4111 CadocType = "4111"
 )
+
+// AllCadocTypes retorna a lista de todos os CADOCs suportados.
+func AllCadocTypes() []CadocType {
+	return []CadocType{
+		Cadoc2030, Cadoc2060, Cadoc2061, Cadoc2062, Cadoc2070,
+		Cadoc2160, Cadoc2170, Cadoc3040, Cadoc3050, Cadoc4111,
+	}
+}
+
+// ValidCadocType verifica se o CadocType é suportado pelo synth-gen.
+func ValidCadocType(c CadocType) bool {
+	for _, v := range AllCadocTypes() {
+		if v == c {
+			return true
+		}
+	}
+	return false
+}
 
 // LLMClient re-exporta a interface do package insights para convenience.
 type LLMClient = insights.LLMClient
@@ -107,6 +132,83 @@ Gere APENAS o XML, sem markdown, sem explicação.`
 		return `Você é um gerador de dados sintéticos para validação de regras regulatórias bancárias brasileiras (BACEN).
 Gera um XML válido para o documento CADOC 3050 (TXB — Taxa de Câmbio).
 Estrutura: <Doc3050 dataBase="YYYY-MM" cnpj="XXXXXXXX" remessa="N" parte="N" tpArq="F">...</Doc3050>
+
+Gere APENAS o XML, sem markdown, sem explicação.`
+	case Cadoc4111:
+		return `Você é um gerador de dados sintéticos para validação de regras regulatórias bancárias brasileiras (BACEN).
+Gere um XML válido para o documento CADOC 4111 (COSIF — Plano Contábil).
+Estrutura: <Documento4111 dataBase="YYYY-MM" cnpj="XXXXXXXX">
+  <Cliente qtdCli="N" cnpj="XXXXXXXX">
+    <Modalidade codigo="XXXX" indicacao="S|N"/>
+  </Cliente>
+  ...
+</Documento4111>
+
+Gere APENAS o XML, sem markdown, sem explicação.`
+	case Cadoc2030:
+		return `Você é um gerador de dados sintéticos para validação de regras regulatórias bancárias brasileiras (BACEN).
+Gere um XML válido para o documento CADOC 2030 (DRSAC — Risco Socioambiental / ESG).
+Estrutura: <DocDRSAC dataBase="YYYY-MM" cnpj="XXXXXXXX" subsegmento="S1|S2|S3|S4|S5">
+  <Concentracao cnpj="XXXXXXXX" faixaRisco="1|2|3|4|5" valor="N" participacao="0.00"/>
+  ...
+</DocDRSAC>
+
+Gere APENAS o XML, sem markdown, sem explicação.`
+	case Cadoc2060:
+		return `Você é um gerador de dados sintéticos para validação de regras regulatórias bancárias brasileiras (BACEN).
+Gere um XML válido para o documento CADOC 2060 (DRM — Risco de Mercado).
+Estrutura: <DocDRM dataBase="YYYY-MM" cnpj="XXXXXXXX">
+  <Posicao moeda="BRL|USD|EUR" valor="N" var="N" svar="N" rwacom="0.00"/>
+  ...
+</DocDRM>
+
+Gere APENAS o XML, sem markdown, sem explicação.`
+	case Cadoc2061:
+		return `Você é um gerador de dados sintéticos para validação de regras regulatórias bancárias brasileiras (BACEN).
+Gere um XML válido para o documento CADOC 2061 (DLO — Limites Operacionais).
+Estrutura: <DocDLO dataBase="YYYY-MM" cnpj="XXXXXXXX">
+  <Conta codigo="XXXX" elem="X" rwacam="0.00" patrimonial="0.00"/>
+  ...
+</DocDLO>
+
+Gere APENAS o XML, sem markdown, sem explicação.`
+	case Cadoc2062:
+		return `Você é um gerador de dados sintéticos para validação de regras regulatórias bancárias brasileiras (BACEN).
+Gere um XML válido para o documento CADOC 2062 (DLI — Limites Individuais).
+Estrutura: <DocDLI dataBase="YYYY-MM" cnpj="XXXXXXXX">
+  <Limite tipo="XXXX" valor="N" parametro="0.0000"/>
+  ...
+</DocDLI>
+
+Gere APENAS o XML, sem markdown, sem explicação.`
+	case Cadoc2070:
+		return `Você é um gerador de dados sintéticos para validação de regras regulatórias bancárias brasileiras (BACEN).
+Gere um XML válido para o documento CADOC 2070 (DDR — Requerimento de Capital Diário).
+Estrutura: <DocDDR dataBase="YYYY-MM" cnpj="XXXXXXXX">
+  <Posicao codigo="XXXX" moeda="BRL|USD" valorExposicao="0.00" requerimento="0.00"/>
+  ...
+</DocDDR>
+
+Gere APENAS o XML, sem markdown, sem explicação.`
+	case Cadoc2160:
+		return `Você é um gerador de dados sintéticos para validação de regras regulatórias bancárias brasileiras (BACEN).
+Gere um XML válido para o documento CADOC 2160 (DRL — Liquidez / LCR).
+Estrutura: <DocDRL dataBase="YYYY-MM" cnpj="XXXXXXXX">
+  <HQLA nivel="1|2A|2B" valor="0.00"/>
+  <Outflows categoria="retail|wholesale" valor="0.00"/>
+  <Inflows categoria="operational|nonoperational" valor="0.00"/>
+  ...
+</DocDRL>
+
+Gere APENAS o XML, sem markdown, sem explicação.`
+	case Cadoc2170:
+		return `Você é um gerador de dados sintéticos para validação de regras regulatórias bancárias brasileiras (BACEN).
+Gere um XML válido para o documento CADOC 2170 (DLP — Liquidez de Longo Prazo / NSFR).
+Estrutura: <DocDLP dataBase="YYYY-MM" cnpj="XXXXXXXX">
+  <ASF categoria="equity|stable|less_stable" valor="0.00"/>
+  <RSF categoria="unencumbered|secured|unsecured" valor="0.00"/>
+  ...
+</DocDLP>
 
 Gere APENAS o XML, sem markdown, sem explicação.`
 	default:
