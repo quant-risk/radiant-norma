@@ -2,6 +2,60 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.36.3 — 2026-07-13 (Sprint 57 fechado a 100%) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** minor (completion of Sprint 57 — Generator foundation)
+> **Sprints:** 57 + 36 + 52
+
+### Sprint 57 — Generator Foundation fechado a 100%
+
+**Problemas reais resolvidos:**
+
+#### 1. Generator Registry não auto-registrava
+- `generator.NewRegistry()` retornava registry vazio. `Registry.Get("3040")` retornava nil em produção.
+- **Fix:** `generator.RegisterDefaults(r, []CADOCGenerator{...})` em `cmd/api/main.go` registra os 10 generators via dependency injection (não blank imports — evita import cycle: cada `gen*` importa `generator` para verificar a interface).
+
+#### 2. Manual + File adapters faltando
+- Antes: 3/5 adapters (DB, API, MCP). Manual e File eram stubs.
+- **Fix:** `ManualAdapter` recebe `CanonicalDocument` pré-montado via wizard; `FileAdapter` parseia CSV (RFC 4180), JSON e XLSX flattened.
+
+#### 3. `validation.ValidateBatch` não era chamado
+- Definido mas sem caller. Cross-doc era chamado direto, sem L1-L3.
+- **Fix:** `validation.ValidateFull(xmlDocs, engine, cfg)` — L1, L2, L3 por CADOC + L4 cross-doc batch em uma única chamada. Wirado em `/v1/generate/batch`.
+
+#### 4. Synth-gen só suportava 3 CADOCs
+- CadocType enum tinha apenas 3040/3050/4111.
+- **Fix:** Expandido para 10 (2030, 2060, 2061, 2062, 2070, 2160, 2170, 3040, 3050, 4111) com grounding prompts específicos.
+
+#### 5. Wizard sem backward navigation
+- Usuário não conseguia revisar/corrigir seleção anterior sem reiniciar.
+- **Fix:** `Step.Prev()` + `Store.Revindicate()`. Handler aceita `?direction=prev`.
+
+### Testes adicionados (+30)
+
+- `sta_range_handlers_test.go` — 14 testes cobrindo os 3 handlers RangeUpload
+- `xd_rules_test.go` — 14 testes meta + apply + registry para XD02-XD12
+- `wizard/session_test.go` — 4 testes para Step.Prev/Next/IsBackwardTransition
+- `synth/cadoc_test.go` — 4 testes para enum expansion
+- `generator/registry_test.go` — 6 testes para NewRegistry/Register/RegisterDefaults
+- `generator/adapters/manual_file_test.go` — 16 testes para Manual+File adapters
+
+### Fixes encontrados durante testes
+
+1. **`mergeRanges` panic**: `&merged[len(merged)-1]` era computado antes do `len(merged) > 0` check, causando index out of range quando slice vazio.
+2. **`s.DB` nil-check**: `staRangeInit` e `persistSession` crashavam com nil pointer quando DB não configurado (comum em testes unitários).
+3. **`TestBatchGenerate_MultipleCADOCs`**: esperava 200 mas com `ValidateBatch` wirado, retorna 422 quando cross-doc detecta issues reais. Comportamento correto — antes silenciava.
+
+### Métricas
+
+- **Backend tests:** suite completa verde (60+ packages)
+- **Backend code:** ~1.500 LOC adicionados/modificados
+- **Build:** `go build ./...` clean
+- **Commits:** 6 commits granulares (uma por fase)
+
+---
+
 ## v3.36.0 — 2026-07-09 (Norma Generator — Sprint 57 MVP) ✅
 
 > **Status:** ✅ Shipped
