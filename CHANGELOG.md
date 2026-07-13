@@ -2,6 +2,36 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## v3.36.4 — 2026-07-13 (Code review fixes — Sprint 57) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** patch (correções de code review)
+
+### Fixes aplicados após deep code review de v3.36.3
+
+#### H1 (HIGH) — Dead registry wiring
+- **Problema:** handlers usavam `genRegistry` package-level global (init()), não `Server.GeneratorRegistry`. Wiring em `cmd/api/main.go` era cosmético.
+- **Fix:** handlers agora usam `s.resolveGenerator(cadoc)` / `s.isGeneratorRegistered(cadoc)`. Fallback ao global só se `Server.GeneratorRegistry == nil`. `newTestServer()` popula o registry igual ao `cmd/api/main.go`.
+
+#### H2 (HIGH) — Data race em staRangeUpload response
+- **Problema:** `session.ReceivedBytes`, `session.Ranges`, `session.Status` lidos FORA do `sessionsMu.Lock` após PUTs concorrentes no mesmo protocolo.
+- **Fix:** snapshot completo da struct (com cópia do slice `Ranges`) sob lock. `writeJSON` e `go s.persistSession()` usam snapshot — zero race.
+
+#### M1 (MEDIUM) — Duplicate L4 cross-doc execution
+- **Problema:** batch handler chamava `ValidateFull` E `engine.Validate` separadamente, executando engine 2x no mesmo payload.
+- **Fix:** apenas `ValidateFull`. Issues L1-L4 populam `CrossDocErrors` com prefixo `[L*]`. Import `crossdoc` removido de `generate.go`. 50% menos CPU em batch.
+
+#### M5 (MEDIUM) — `err.Error()` leak em staRangeInit
+- **Problema:** response body incluía "BACEN rejeitou init: <err.Error>()" expondo URL/hostname/status. Viola F18.1.
+- **Fix:** log detalhado server-side + `s.userError()` retorna mensagem genérica "serviço indisponível".
+
+### Métricas
+- **Tests:** backend suite completa verde (60+ packages).
+- **Build:** `go build ./...` clean.
+- **Files changed:** 4 (generate.go, server_test.go, sprint73_handlers.go, sta_range_handlers.go).
+
+---
+
 ## v3.36.3 — 2026-07-13 (Sprint 57 fechado a 100%) ✅
 
 > **Status:** ✅ Shipped
