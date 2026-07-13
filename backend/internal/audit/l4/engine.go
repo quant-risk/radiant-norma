@@ -251,6 +251,16 @@ func (e *Engine) extractFieldChanges(ctx context.Context, prev, curr *Submission
 		return e.extractDLPChanges(prev, curr)
 	case "3040":
 		return e.extract3040Changes(prev, curr)
+	case "3050":
+		return e.extract3050Changes(prev, curr)
+	case "3044":
+		return e.extract3044Changes(prev, curr)
+	case "2060":
+		return e.extractDRMChanges(prev, curr)
+	case "4111":
+		return e.extract4111Changes(prev, curr)
+	case "2030":
+		return e.extractDRSACChanges(prev, curr)
 	default:
 		return nil, nil // CADOC sem diff implementado
 	}

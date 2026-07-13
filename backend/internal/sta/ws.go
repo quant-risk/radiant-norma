@@ -79,6 +79,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fortvna/radiant-norma/backend/internal/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -340,6 +341,15 @@ func (c *WSClient) Submit(ctx context.Context, sub *Submission) (*Result, error)
 	}
 
 	span.SetStatus(codes.Ok, "")
+
+	observability.AddBreadcrumb(ctx, "sta.submit",
+		fmt.Sprintf("STA submission %s succeeded, protocolo=%s", sub.CadocCode, protocolo),
+		map[string]any{
+			"cadoc":     sub.CadocCode,
+			"protocolo": protocolo,
+			"bytes":     len(payload),
+		})
+
 	return &Result{
 		ProtocolSTA: protocolo,
 		Accepted:    true,

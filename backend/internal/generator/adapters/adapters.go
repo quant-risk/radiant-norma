@@ -2,6 +2,7 @@
 package adapters
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -9,7 +10,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
+
+	"github.com/xuri/excelize/v2"
 )
 
 // SourceAdapter é a interface que todo connector deve implementar.
@@ -461,31 +465,29 @@ func parseCSVHeader(content []byte) ([]string, error) {
 }
 
 // parseXLSXHeader retorna os campos da primeira linha da primeira sheet.
-//
-// Implementação simplificada: procura "<row " no conteúdo bruto.
-// Para XLSX reais (que são ZIP+XML), use github.com/xuri/excelize/v2.
-//
-// Esta versão é útil apenas para testes e arquivos XLSX "pre-flattened"
-// onde o XML interno foi extraído por outro processo.
 func parseXLSXHeader(content []byte) ([]string, error) {
-	rowStart := findSubstring(content, []byte("<row "))
-	if rowStart < 0 {
-		return nil, fmt.Errorf("xlsx: no <row> found (arquivo não é XLSX ou está corrompido)")
+	f, err := excelize.OpenReader(bytes.NewReader(content))
+	if err != nil {
+		return nil, fmt.Errorf("xlsx open: %w", err)
 	}
-	rowEnd := findSubstring(content[rowStart:], []byte("</row>"))
-	if rowEnd < 0 {
-		return nil, fmt.Errorf("xlsx: </row> not found")
-	}
-	// rowEnd é offset relativo; calcular absoluto.
-	rowXML := content[rowStart : rowStart+rowEnd]
+	defer f.Close()
 
-	var headers []string
-	cells := splitCells(rowXML)
-	for _, cell := range cells {
-		val := extractCellValue(cell)
-		if val != "" {
-			headers = append(headers, val)
-		}
+	sheets := f.GetSheetList()
+	if len(sheets) == 0 {
+		return nil, fmt.Errorf("xlsx: arquivo sem sheets")
+	}
+
+	rows, err := f.GetRows(sheets[0])
+	if err != nil {
+		return nil, fmt.Errorf("xlsx get rows: %w", err)
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+
+	headers := make([]string, 0, len(rows[0]))
+	for _, cell := range rows[0] {
+		headers = append(headers, strings.TrimSpace(cell))
 	}
 	return headers, nil
 }

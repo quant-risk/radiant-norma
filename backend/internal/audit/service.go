@@ -15,15 +15,19 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fortvna/radiant-norma/backend/internal/audit/l4"
 	"github.com/fortvna/radiant-norma/backend/internal/audit/rules"
 	"github.com/fortvna/radiant-norma/backend/internal/docdli"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
+	"github.com/fortvna/radiant-norma/backend/internal/observability"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // Critica representa uma regra de validação.
@@ -207,8 +211,255 @@ func (s *Service) LoadCriticas(ctx context.Context, cadocCode string) ([]Critica
 	return out, rows.Err()
 }
 
+// FullValidationRequest é o input para ValidateFull().
+type FullValidationRequest struct {
+	// Documento principal sendo validado.
+	Main *ValidationRequest
+	// Documentos relacionados para validação cross-doc (L3).
+	// Key: código CADOC ("2160", "2170", "3044").
+	RelatedDocs map[string]*ValidationRequest
+	// EnvioID para comparação histórica (L4). Opcional.
+	EnvioID string
+}
+
+// FullValidationResponse é o output consolidado de L1+L2+L3+L4.
+type FullValidationResponse struct {
+	CadocCode  string       `json:"cadoc_code"`
+	DataBase   string       `json:"data_base"`
+	XMLHash    string       `json:"xml_hash"`
+	Passed     bool         `json:"passed"`
+	DurationMs int64        `json:"duration_ms"`
+	L1         *LayerResult `json:"l1"`
+	L2         *LayerResult `json:"l2"`
+	L3         *LayerResult `json:"l3"`
+	L4         *LayerResult `json:"l4"`
+}
+
+// LayerResult representa o resultado de uma camada de validação.
+type LayerResult struct {
+	Status   LayerStatus       `json:"status"` // "passed", "failed", "error"
+	Errors   []ValidationError `json:"errors,omitempty"`
+	Warnings []ValidationError `json:"warnings,omitempty"`
+	Message  string            `json:"message,omitempty"` // erro de sistema (não validation error)
+}
+
+// LayerStatus representa o estado de uma camada de validação.
+type LayerStatus string
+
+const (
+	LayerPassed LayerStatus = "passed"
+	LayerFailed LayerStatus = "failed"
+	LayerError  LayerStatus = "error" // panic ou erro de sistema
+)
+
+// ValidateFull orchestrates L1+L2+L3+L4 in parallel goroutines with panic recovery.
+// Returns a consolidated result. Each layer runs independently;
+// if one panics, the others continue and the error is captured in the LayerResult.
+func (s *Service) ValidateFull(ctx context.Context, req *FullValidationRequest) (*FullValidationResponse, error) {
+	if req == nil || req.Main == nil {
+		return nil, errors.New("FullValidationRequest.Main is required")
+	}
+
+	ctx, span := observability.StartSpan(ctx, "audit.ValidateFull")
+	defer span.End()
+
+	start := time.Now()
+
+	main := req.Main
+	xmlHash := sha256.Sum256([]byte(main.XML))
+	hashStr := hex.EncodeToString(xmlHash[:])
+
+	resp := &FullValidationResponse{
+		CadocCode: main.CadocCode,
+		DataBase:  main.DataBase,
+		XMLHash:   hashStr,
+		Passed:    true,
+		L1:        &LayerResult{Status: LayerPassed},
+		L2:        &LayerResult{Status: LayerPassed},
+		L3:        &LayerResult{Status: LayerPassed},
+		L4:        &LayerResult{Status: LayerPassed},
+	}
+
+	// Parseia documentos relacionados para L3 (cross-doc) antes de iniciar as goroutines.
+	// Os parsed docs são configurados nos globals do pacote rules,
+	// e as regras XD* os acessam via var locais.
+	var parsedDRL *rules.DocDRL
+	var parsedDLP *rules.DocDLP
+	var parsed3044 *rules.Doc3044
+
+	if req.RelatedDocs != nil {
+		if doc, ok := req.RelatedDocs["2160"]; ok {
+			parsedDRL, _ = rules.ParseDocDRL([]byte(doc.XML))
+		}
+		if doc, ok := req.RelatedDocs["2170"]; ok {
+			parsedDLP, _ = rules.ParseDocDLP([]byte(doc.XML))
+		}
+		if doc, ok := req.RelatedDocs["3044"]; ok {
+			parsed3044, _ = rules.ParseDoc3044([]byte(doc.XML))
+		}
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(3) // L1, L2, L4 only. L3 runs after wg.Wait() to avoid data race
+	// on package globals (parsedDRL/parsedDLP/parsed3044) set by L3.
+
+	// L1 — Parse + XSD (nunca panics, mas capturamos caso)
+	go func() {
+		defer wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("L1 panicked", "panic", r)
+				resp.L1.Status = LayerError
+				resp.L1.Message = fmt.Sprintf("panic: %v", r)
+			}
+		}()
+		_, span := observability.StartSpan(ctx, "audit.L1")
+		defer span.End()
+		err := s.validateL1Parse(main)
+		if err != nil {
+			resp.L1.Status = LayerFailed
+			resp.L1.Errors = append(resp.L1.Errors, ValidationError{
+				Critica:  Critica{Codigo: "L1-PARSE", CadocCode: main.CadocCode},
+				Severity: "E",
+				Message:  "documento XML/JSON inválido",
+			})
+		}
+	}()
+
+	// L2 — Regras semânticas
+	go func() {
+		defer wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("L2 panicked", "panic", r)
+				resp.L2.Status = LayerError
+				resp.L2.Message = fmt.Sprintf("panic: %v", r)
+			}
+		}()
+		_, span := observability.StartSpan(ctx, "audit.L2")
+		defer span.End()
+		l2Resp, err := s.Validate(ctx, main)
+		if err != nil {
+			resp.L2.Status = LayerError
+			resp.L2.Message = err.Error()
+			return
+		}
+		resp.L2.Errors = l2Resp.Errors
+		resp.L2.Warnings = l2Resp.Warnings
+		if !l2Resp.Passed {
+			resp.L2.Status = LayerFailed
+		}
+	}()
+
+	// L4 — Comparação histórica
+	go func() {
+		defer wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("L4 panicked", "panic", r)
+				resp.L4.Status = LayerError
+				resp.L4.Message = fmt.Sprintf("panic: %v", r)
+			}
+		}()
+		_, span := observability.StartSpan(ctx, "audit.L4")
+		defer span.End()
+		if req.EnvioID == "" {
+			return
+		}
+		cmp, err := s.CompareWithPrevious(ctx, req.EnvioID)
+		if err != nil {
+			resp.L4.Status = LayerError
+			resp.L4.Message = err.Error()
+			return
+		}
+		if cmp == nil {
+			return
+		}
+		// Traduz Comparison para ValidationErrors do L4.
+		for _, f := range cmp.NewFailures {
+			resp.L4.Errors = append(resp.L4.Errors, ValidationError{
+				Critica:  Critica{Codigo: f.Code, CadocCode: main.CadocCode, Sheet: "Histórico"},
+				Severity: f.Severity,
+				Message:  f.Message,
+			})
+		}
+		for _, w := range cmp.FixedRules {
+			resp.L4.Warnings = append(resp.L4.Warnings, ValidationError{
+				Critica:  Critica{Codigo: w.Code, CadocCode: main.CadocCode, Sheet: "Histórico"},
+				Severity: "A",
+				Message:  w.Message,
+			})
+		}
+		if len(resp.L4.Errors) > 0 {
+			resp.L4.Status = LayerFailed
+		}
+	}()
+
+	wg.Wait()
+
+	// L3 — Cross-doc (XD* rules). Executado serialmente APÓS L1/L2/L4 para
+	// evitar data race nas globals do pacote rules (parsedDRL/parsedDLP/parsed3044).
+	// Sem recover() aqui — se L3 panicar é bug de programação, não dado de input.
+	{
+		_, span := observability.StartSpan(ctx, "audit.L3")
+		defer span.End()
+		if parsedDRL != nil {
+			rules.SetDRL(parsedDRL)
+		}
+		if parsedDLP != nil {
+			rules.SetDLP(parsedDLP)
+		}
+		if parsed3044 != nil {
+			rules.Set3044(parsed3044)
+		}
+		xdCodes := []string{
+			"XD01", "XD02", "XD03", "XD04", "XD05",
+			"XD06", "XD07", "XD08",
+		}
+		for _, code := range xdCodes {
+			rule := s.registry.Get(code)
+			if rule == nil {
+				continue
+			}
+			var doc3040 *rules.Doc3040
+			if main.CadocCode == "3040" && main.ContentType != "application/json" {
+				doc3040, _ = rules.ParseDoc3040([]byte(main.XML))
+			}
+			if err := rule.Apply(ctx, doc3040); err != nil {
+				sev := rule.Severity()
+				ve := ValidationError{
+					Critica:  Critica{Codigo: code, CadocCode: main.CadocCode, Sheet: "Cross-doc"},
+					Severity: sev,
+					Message:  loggerutil.SafeError(err),
+				}
+				if sev == "E" {
+					resp.L3.Errors = append(resp.L3.Errors, ve)
+				} else {
+					resp.L3.Warnings = append(resp.L3.Warnings, ve)
+				}
+			}
+		}
+		if len(resp.L3.Errors) > 0 {
+			resp.L3.Status = LayerFailed
+		}
+	}
+
+	// Determina overall Passed: só falha se L1 ou L2 falhar (bloqueantes).
+	// L3 e L4 são warnings/non-blocking.
+	resp.Passed = resp.L1.Status == LayerPassed &&
+		resp.L2.Status == LayerPassed &&
+		len(resp.L2.Errors) == 0
+
+	resp.DurationMs = time.Since(start).Milliseconds()
+	return resp, nil
+}
+
 // Validate é o entrypoint principal: recebe um XML/JSON, retorna erros.
 func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*ValidationResponse, error) {
+	ctx, span := observability.StartSpan(ctx, "audit.Validate",
+		attribute.String("cadoc", req.CadocCode))
+	defer span.End()
+
 	start := time.Now()
 
 	// Hash do payload
@@ -353,7 +604,10 @@ func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*Valida
 	return resp, nil
 }
 
-// validateL1Parse faz o parse do XML ou JSON. Falha de parse = erro bloqueante.
+// validateL1Parse faz o parse do XML ou JSON + validação XSD real.
+// Falha de parse = erro bloqueante.
+// Para CADOCs com XSD disponível (3040, 3050), valida contra o schema.
+// Para os outros, faz fallback para root-tag check.
 func (s *Service) validateL1Parse(req *ValidationRequest) error {
 	content := string(req.XML)
 	if req.ContentType == "application/json" {
@@ -363,8 +617,14 @@ func (s *Service) validateL1Parse(req *ValidationRequest) error {
 		}
 		return nil
 	}
-	// default: XML
-	// Detecta tag raiz esperada por CADOC
+
+	// Try XSD validation first (real schema validation).
+	xsdErrors, err := ValidateXSD(req.CadocCode, content)
+	if err == nil && len(xsdErrors) > 0 {
+		return fmt.Errorf("XSD validation failed: %s", xsdErrors[0])
+	}
+
+	// Fallback: root-tag check.
 	rootTag := expectedRootTag(req.CadocCode)
 	if rootTag == "" {
 		rootTag = "Documento"

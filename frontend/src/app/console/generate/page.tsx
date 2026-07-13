@@ -332,9 +332,11 @@ export default async function GeneratePage() {
                     </Badge>
 
                     {c.generator === 'ready' ? (
-                      <Button variant="primary" size="sm">
-                        Gerar CADOC
-                      </Button>
+                      <Link href={`/console/generate/wizard?cadoc=${c.cadoc}`} passHref legacyBehavior={false}>
+                        <Button variant="primary" size="sm">
+                          Gerar CADOC
+                        </Button>
+                      </Link>
                     ) : (
                       <Button variant="ghost" size="sm" disabled>
                         Em breve

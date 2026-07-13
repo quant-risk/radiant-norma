@@ -4,6 +4,7 @@
  * Server Component — chama getServerSession (server-only) e renderiza
  * AppShell com WizardClient (client component).
  */
+import { Suspense } from 'react'
 import { getServerSession } from '@/lib/session'
 import { AppShell } from '@/components/layout/app-shell'
 import { WizardClient } from './wizard-client'
@@ -34,7 +35,9 @@ export default async function WizardPage() {
         ],
       }}
     >
-      <WizardClient />
+      <Suspense fallback={<div className="p-8 text-ink-muted text-sm">Carregando wizard…</div>}>
+        <WizardClient />
+      </Suspense>
     </AppShell>
   )
 }
