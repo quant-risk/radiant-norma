@@ -101,11 +101,11 @@ func (s *Server) staRangeInit(w http.ResponseWriter, r *http.Request) {
 
 	protocolo, err := ru.InitRangeSession(r.Context(), req.CadocCode, req.HashHex, req.TotalBytes)
 	if err != nil {
+		// Sprint 57 v3.36.4: log detalhado (com err.Error) + response genérico
+		// (sem leak de URL/hostname/status do BACEN). Consistente com F18.1.
 		logger.Error("staRangeInit: BACEN InitRangeSession failed",
 			"err", err, "cadoc", req.CadocCode, "if_id", ifID)
-		writeJSON(w, http.StatusBadGateway, map[string]string{
-			"error": "BACEN rejeitou init: " + err.Error(),
-		})
+		s.userError(w, http.StatusBadGateway, "staRangeInit.bacen", err)
 		return
 	}
 
@@ -234,28 +234,43 @@ func (s *Server) staRangeUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Atualiza sessão local (protegido por write lock).
+	// Atualiza sessão local (protegido por write lock) + snapshot fields
+	// sob lock para evitar data race com PUTs concorrentes no mesmo protocolo.
+	// v3.36.4: snapshot evita race entre unlock e uso de session.* no JSON/log.
 	sessionsMu.Lock()
 	session.ReceivedBytes += int64(n)
 	session.Ranges = mergeRanges(session.Ranges, sta.Range{Start: crParsed.start, End: crParsed.end})
 	if session.TotalBytes > 0 && session.ReceivedBytes >= session.TotalBytes {
 		session.Status = "complete"
 	}
+	// Snapshot para uso fora do lock (evita data race com PUTs concorrentes).
+	snapshot := rangeSession{
+		ID:            session.ID,
+		IfID:          session.IfID,
+		Protocolo:      session.Protocolo,
+		CadocCode:      session.CadocCode,
+		TotalBytes:     session.TotalBytes,
+		ReceivedBytes:  session.ReceivedBytes,
+		Ranges:         append([]sta.Range(nil), session.Ranges...),
+		Status:         session.Status,
+		CreatedAt:      session.CreatedAt,
+	}
 	sessionsMu.Unlock()
 
-	// Persiste progresso no DB (fire-and-forget).
-	go s.persistSession(context.Background(), session)
+	// Persiste progresso no DB (fire-and-forget). Passa snapshot (read-only)
+	// para a goroutine não acessar session.* sem lock.
+	go s.persistSession(context.Background(), &snapshot)
 
 	logger.Debug("staRangeUpload: chunk registrado",
 		"protocolo", protocolo,
 		"range", fmt.Sprintf("%d-%d/%d", crParsed.start, crParsed.end, crParsed.total),
-		"received", session.ReceivedBytes, "if_id", ifID)
+		"received", snapshot.ReceivedBytes, "if_id", ifID)
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"received_bytes": session.ReceivedBytes,
-		"total_bytes":    session.TotalBytes,
-		"ranges":         session.Ranges,
-		"status":         session.Status,
+		"received_bytes": snapshot.ReceivedBytes,
+		"total_bytes":    snapshot.TotalBytes,
+		"ranges":         snapshot.Ranges,
+		"status":         snapshot.Status,
 	})
 }
 

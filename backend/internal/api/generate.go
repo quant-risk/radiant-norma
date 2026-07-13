@@ -19,7 +19,6 @@ import (
 
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
 	"github.com/fortvna/radiant-norma/backend/internal/canonical"
-	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 	"github.com/fortvna/radiant-norma/backend/internal/generator"
 	gen2030 "github.com/fortvna/radiant-norma/backend/internal/generator/gen2030"
 	gen2060 "github.com/fortvna/radiant-norma/backend/internal/generator/gen2060"
@@ -38,6 +37,8 @@ import (
 )
 
 // GeneratorRegistry é o registry global de generators.
+// Sprint 57 v3.36.4: deprecated — use s.GeneratorRegistry (injetado via main.go).
+// Mantido como fallback para tests que constroem Server sem cmd/api wiring.
 var genRegistry = generator.NewRegistry()
 
 func init() {
@@ -53,6 +54,23 @@ func init() {
 	genRegistry.Register(gen4111.New())
 }
 
+// resolveGenerator retorna o registry do Server se setado, senão o global.
+// Preferência: sempre s.GeneratorRegistry (DI via main.go).
+// O fallback global existe para testes unitários que não passam pelo cmd/api.
+func (s *Server) resolveGenerator(cadoc string) generator.CADOCGenerator {
+	if s.GeneratorRegistry != nil {
+		return s.GeneratorRegistry.Get(cadoc)
+	}
+	return genRegistry.Get(cadoc)
+}
+
+func (s *Server) isGeneratorRegistered(cadoc string) bool {
+	if s.GeneratorRegistry != nil {
+		return s.GeneratorRegistry.IsRegistered(cadoc)
+	}
+	return genRegistry.IsRegistered(cadoc)
+}
+
 // generateCadoc handles POST /v1/generate/{cadoc}.
 func (s *Server) generateCadoc(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -63,7 +81,7 @@ func (s *Server) generateCadoc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	g := genRegistry.Get(cadoc)
+	g := s.resolveGenerator(cadoc)
 	if g == nil {
 		writeError(w, http.StatusNotFound, "GENERATOR_NOT_FOUND",
 			fmt.Sprintf("generator para CADOC %s não encontrado", cadoc))
@@ -179,7 +197,7 @@ func (s *Server) generateBatch(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		g := genRegistry.Get(cadocCode)
+		g := s.resolveGenerator(cadocCode)
 		if g == nil {
 			results = append(results, BatchResult{
 				CadocCode: cadocCode,
@@ -254,7 +272,7 @@ func (s *Server) generateBatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Run validation L1-L4 if requested and 2+ CADOCs succeeded
-	// Sprint 57 v3.36.3: usa validation.ValidateFull (L1-L4 por CADOC + L4 cross-doc batch).
+	// Sprint 57 v3.36.4: usa validation.ValidateFull em chamada única (sem duplicação).
 	if req.RunCrossDoc && len(successfulXMLs) >= 2 && s.CrossDoc != nil {
 		xmlBytes := make(map[string][]byte, len(successfulXMLs))
 		for code, xmlStr := range successfulXMLs {
@@ -264,38 +282,19 @@ func (s *Server) generateBatch(w http.ResponseWriter, r *http.Request) {
 			RunL1: true, RunL2: true, RunL3: true, RunL4: true,
 		})
 
-		// Cross-doc errors via existing path (mantém mensagens específicas).
-		crossResp := s.CrossDoc.Validate(ctx, &crossdoc.ValidationRequest{
-			Cadocs: successfulXMLs,
-		})
-		for _, err := range crossResp.Errors {
-			response.CrossDocErrors = append(response.CrossDocErrors, CrossDocError{
-				Code:     err.Code,
-				Severity: "error",
-				Message:  err.Message,
-			})
-		}
-		for _, warn := range crossResp.Warnings {
-			response.CrossDocWarnings = append(response.CrossDocWarnings, CrossDocError{
-				Code:     warn.Code,
-				Severity: "warning",
-				Message:  warn.Message,
-			})
-		}
-
-		// Adiciona issues L1-L3 por CADOC ao response.
+		// Surface L1-L4 issues no response. Sem segunda chamada ao engine.
 		for _, iss := range fullResult.Issues {
-			if iss.Level == validation.L4CrossDoc {
-				continue // já adicionado acima
+			cde := CrossDocError{
+				Code:    iss.Code,
+				Message: fmt.Sprintf("[%s] %s: %s", iss.Level, iss.Field, iss.Message),
 			}
-			response.CrossDocErrors = append(response.CrossDocErrors, CrossDocError{
-				Code:     iss.Code,
-				Severity: "error",
-				Message:  fmt.Sprintf("[%s] %s: %s", iss.Level, iss.Field, iss.Message),
-			})
+			// L4 cross-doc são "errors" (regras cross-doc falham);
+			// outros níveis também (L1-XSD, L2-Required, L3-Semantic).
+			cde.Severity = "error"
+			response.CrossDocErrors = append(response.CrossDocErrors, cde)
 		}
 
-		response.Passed = fullResult.OK && crossResp.Passed
+		response.Passed = fullResult.OK
 		if !response.Passed {
 			response.Message = "batch generation completed with validation errors"
 		}
@@ -323,7 +322,7 @@ func (s *Server) listGenerateFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	g := genRegistry.Get(cadoc)
+	g := s.resolveGenerator(cadoc)
 	if g == nil {
 		writeError(w, http.StatusNotFound, "GENERATOR_NOT_FOUND",
 			fmt.Sprintf("generator para CADOC %s não encontrado", cadoc))
@@ -437,7 +436,7 @@ func (s *Server) parseUploadedFile(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "INVALID_CADOC", err.Error())
 		return
 	}
-	if genRegistry.Get(cadoc) == nil {
+	if !s.isGeneratorRegistered(cadoc) {
 		writeError(w, http.StatusBadRequest, "UNKNOWN_CADOC",
 			fmt.Sprintf("nenhum generator registrado para CADOC %s", cadoc))
 		return

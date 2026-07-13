@@ -187,7 +187,7 @@ func (s *Server) buildSchemaInfoList() (*schemaListResponse, error) {
 
 	out := make([]schemaInfo, 0, len(cadocs))
 	for _, cadoc := range cadocs {
-		g := genRegistry.Get(cadoc)
+		g := s.resolveGenerator(cadoc)
 		if g == nil {
 			continue
 		}

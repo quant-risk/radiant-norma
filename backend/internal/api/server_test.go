@@ -40,6 +40,17 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/branding"
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 	rules "github.com/fortvna/radiant-norma/backend/internal/crossdoc/rules"
+	"github.com/fortvna/radiant-norma/backend/internal/generator"
+	gen2030pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen2030"
+	gen2060pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen2060"
+	gen2061pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen2061"
+	gen2062pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen2062"
+	gen2070pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen2070"
+	gen2160pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen2160"
+	gen2170pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen2170"
+	gen3040pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen3040"
+	gen3050pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen3050"
+	gen4111pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen4111"
 	"github.com/fortvna/radiant-norma/backend/internal/generator/wizard"
 	"github.com/fortvna/radiant-norma/backend/internal/radar"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
@@ -83,6 +94,16 @@ func newTestServer(t *testing.T) (*api.Server, *sql.DB) {
 	srv.AdminAuth = &radar.AdminAuth{Token: "test-admin-token"}
 	srv.CadocListCache = schema.NewCadocListCache(5 * time.Minute)
 	srv.SchemaInfoCache = api.NewSchemaInfoCache()
+
+	// Sprint 57 v3.36.4: popula GeneratorRegistry (Sprint 57 cmd/api wiring).
+	reg := generator.NewRegistry()
+	generator.RegisterDefaults(reg, []generator.CADOCGenerator{
+		gen2030pkg.New(), gen2060pkg.New(), gen2061pkg.New(),
+		gen2062pkg.New(), gen2070pkg.New(), gen2160pkg.New(),
+		gen2170pkg.New(), gen3040pkg.New(), gen3050pkg.New(),
+		gen4111pkg.New(),
+	})
+	srv.GeneratorRegistry = reg
 
 	// Dev mode habilitado por default nos tests legacy (que usam X-IF-ID).
 	// Tests novos Sprint 7a podem desabilitar via t.Setenv("RADIANT_DEV_AUTH", "")
