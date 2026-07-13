@@ -157,17 +157,50 @@ type Registry struct {
 	generators map[string]CADOCGenerator
 }
 
-// NewRegistry cria um novo registry e registra os generators padrão.
+// NewRegistry cria um novo registry vazio.
+//
+// Sprint 57 v3.36.3: registro dos generators foi separado para evitar
+// import cycle (cada subpacote gen* importa este pacote generator, e
+// este pacote não pode importar os subpacotes sem criar ciclo).
+//
+// O caller deve importar os subpacotes e popular via Register, ou usar
+// o helper RegisterDefaults. Em cmd/api/main.go:
+//
+//	import (
+//	    "github.com/fortvna/radiant-norma/backend/internal/generator"
+//	    "github.com/fortvna/radiant-norma/backend/internal/generator/gen3040"
+//	    ...
+//	)
+//	registry := generator.NewRegistry()
+//	generator.RegisterDefaults(registry, []generator.CADOCGenerator{
+//	    gen3040.New(), gen3050.New(), gen4111.New(),
+//	    gen2030.New(), gen2060.New(), gen2061.New(),
+//	    gen2062.New(), gen2070.New(), gen2160.New(),
+//	    gen2170.New(),
+//	})
 func NewRegistry() *Registry {
-	r := &Registry{
+	return &Registry{
 		generators: make(map[string]CADOCGenerator),
 	}
-	// Registro automático dos generators conhecidos.
-	// Cada novo generator deve se registrar aqui.
-	//
-	// Generators concretos vivem em subpacotes:
-	//   gen3040, gen3050, gen4111, gen2061, etc.
-	return r
+}
+
+// RegisterDefaults popula o registry com a lista de generators passada.
+// Cada generator implementa CADOCGenerator e seu CadocCode() é usado como chave.
+//
+// Esta função existe para evitar import cycle: os subpacotes gen* importam
+// o pacote generator (para verificar a interface), mas generator não pode
+// importar diretamente os subpacotes. O caller (ex: cmd/api/main.go) que
+// já importa ambos age como glue.
+func RegisterDefaults(r *Registry, generators []CADOCGenerator) {
+	if r == nil {
+		return
+	}
+	for _, g := range generators {
+		if g == nil {
+			continue
+		}
+		r.Register(g)
+	}
 }
 
 // Register adiciona um generator ao registry.

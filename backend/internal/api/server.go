@@ -21,6 +21,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/auth"
 	"github.com/fortvna/radiant-norma/backend/internal/branding"
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
+	"github.com/fortvna/radiant-norma/backend/internal/generator"
 	"github.com/fortvna/radiant-norma/backend/internal/generator/wizard"
 	"github.com/fortvna/radiant-norma/backend/internal/insights"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
@@ -117,6 +118,11 @@ type Server struct {
 
 	// Sprint 57 — v3.34.37: Wizard de geração de CADOCs.
 	WizardStore *wizard.Store
+
+	// Sprint 57 — v3.36.3: Registry de CADOC generators.
+	// Populado em cmd/api/main.go via generator.RegisterDefaults().
+	// Se nil, /v1/generate/* retorna 503.
+	GeneratorRegistry *generator.Registry
 }
 
 // auditLogAPI é interface mínima que *auditlog.Logger e *realtime.HubAwareLogger

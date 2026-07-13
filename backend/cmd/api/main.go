@@ -19,6 +19,17 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/crossdoc"
 	crossrules "github.com/fortvna/radiant-norma/backend/internal/crossdoc/rules"
 	"github.com/fortvna/radiant-norma/backend/internal/db"
+	"github.com/fortvna/radiant-norma/backend/internal/generator"
+	gen2030pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen2030"
+	gen2060pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen2060"
+	gen2061pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen2061"
+	gen2062pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen2062"
+	gen2070pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen2070"
+	gen2160pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen2160"
+	gen2170pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen2170"
+	gen3040pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen3040"
+	gen3050pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen3050"
+	gen4111pkg "github.com/fortvna/radiant-norma/backend/internal/generator/gen4111"
 	"github.com/fortvna/radiant-norma/backend/internal/generator/wizard"
 	"github.com/fortvna/radiant-norma/backend/internal/insights"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
@@ -135,7 +146,27 @@ func main() {
 	// Sprint 57 — v3.34.37: Wizard store de sessões de geração.
 	wizardStore := wizard.NewStore(d)
 
+	// Sprint 57 — v3.36.3: Generator registry com todos os 10 CADOCs.
+	// O registry não pode auto-registrar dentro do pacote generator
+	// (import cycle: cada gen* importa generator, e generator não pode
+	// importar os gen*). O glue é feito aqui em main.go que importa ambos.
+	genReg := generator.NewRegistry()
+	generator.RegisterDefaults(genReg, []generator.CADOCGenerator{
+		gen2030pkg.New(),
+		gen2060pkg.New(),
+		gen2061pkg.New(),
+		gen2062pkg.New(),
+		gen2070pkg.New(),
+		gen2160pkg.New(),
+		gen2170pkg.New(),
+		gen3040pkg.New(),
+		gen3050pkg.New(),
+		gen4111pkg.New(),
+	})
+	logger.Info("generator registry inicializado", "cadocs", len(genReg.List()))
+
 	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, ruleprefs.NewPreferences(d), ruleprefs.NewToggleLimiter(10, time.Minute), insights.NewAcknowledgments(d), brandingSvc, insightsLLM, marketplaceSvc, pilotSvc, crossDocEngine, wizardStore)
+	srv.GeneratorRegistry = genReg
 
 	// Sprint 10 — Hub SSE + wrap audit logger pra publicar eventos em
 	// real-time. Em produção, hub pode ser substituído por Kafka/Redis
