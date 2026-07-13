@@ -125,17 +125,19 @@ func (s *Server) staRangeInit(w http.ResponseWriter, r *http.Request) {
 	activeSessions[protocolo] = session
 	sessionsMu.Unlock()
 
-	// Persiste no DB (fire-and-forget).
-	go func() {
-		ctx := context.Background()
-		_, _ = s.DB.ExecContext(ctx, `
-			INSERT INTO range_sessions (id, if_id, protocolo, total_bytes, received_bytes, ranges_json, status)
-			VALUES (?, ?, ?, ?, ?, ?, ?)
-			ON CONFLICT(protocolo) DO UPDATE SET
-				updated_at = CURRENT_TIMESTAMP,
-				status = excluded.status
-		`, session.ID, session.IfID, session.Protocolo, session.TotalBytes, 0, `[]`, "pending")
-	}()
+	// Persiste no DB (fire-and-forget, nil-safe).
+	if s.DB != nil {
+		go func() {
+			ctx := context.Background()
+			_, _ = s.DB.ExecContext(ctx, `
+				INSERT INTO range_sessions (id, if_id, protocolo, total_bytes, received_bytes, ranges_json, status)
+				VALUES (?, ?, ?, ?, ?, ?, ?)
+				ON CONFLICT(protocolo) DO UPDATE SET
+					updated_at = CURRENT_TIMESTAMP,
+					status = excluded.status
+			`, session.ID, session.IfID, session.Protocolo, session.TotalBytes, 0, `[]`, "pending")
+		}()
+	}
 
 	logger.Info("staRangeInit: sessão chunkada iniciada",
 		"protocolo", protocolo, "cadoc", req.CadocCode, "if_id", ifID)
@@ -391,8 +393,11 @@ func parseContentRange(cr string) (*contentRange, error) {
 	return &contentRange{start: start, end: end, total: total}, nil
 }
 
-// loadSessionFromDB carrega uma sessão do DB.
+// loadSessionFromDB carrega uma sessão do DB (nil-safe: retorna nil se DB não setado).
 func (s *Server) loadSessionFromDB(ctx context.Context, protocolo string) *rangeSession {
+	if s.DB == nil {
+		return nil
+	}
 	var id, ifID, status, rangesJSON string
 	var totalBytes, receivedBytes int64
 	err := s.DB.QueryRowContext(ctx, `
@@ -415,8 +420,11 @@ func (s *Server) loadSessionFromDB(ctx context.Context, protocolo string) *range
 	}
 }
 
-// persistSession persiste o progresso no DB (fire-and-forget).
+// persistSession persiste o progresso no DB (fire-and-forget, nil-safe).
 func (s *Server) persistSession(ctx context.Context, session *rangeSession) {
+	if s.DB == nil {
+		return
+	}
 	rangesJSON, _ := json.Marshal(session.Ranges)
 	_, _ = s.DB.ExecContext(ctx, `
 		UPDATE range_sessions SET
@@ -451,10 +459,10 @@ func mergeRanges(existing []sta.Range, newR sta.Range) []sta.Range {
 	// Coalesce overlaps — aloca slice novo para evitar aliasing com ranges.
 	merged := make([]sta.Range, 0, len(ranges))
 	for _, r := range ranges {
-		last := &merged[len(merged)-1]
-		if len(merged) > 0 && r.Start <= last.End+1 {
-			if r.End > last.End {
-				last.End = r.End
+		if len(merged) > 0 && r.Start <= merged[len(merged)-1].End+1 {
+			// Coalesce com o último range.
+			if r.End > merged[len(merged)-1].End {
+				merged[len(merged)-1].End = r.End
 			}
 		} else {
 			merged = append(merged, r)
