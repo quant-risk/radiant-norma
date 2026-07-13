@@ -31,6 +31,7 @@ import (
 	gen3040 "github.com/fortvna/radiant-norma/backend/internal/generator/gen3040"
 	gen3050 "github.com/fortvna/radiant-norma/backend/internal/generator/gen3050"
 	gen4111 "github.com/fortvna/radiant-norma/backend/internal/generator/gen4111"
+	"github.com/fortvna/radiant-norma/backend/internal/generator/validation"
 	"github.com/fortvna/radiant-norma/backend/internal/ingest"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
 	"github.com/go-chi/chi/v5"
@@ -252,12 +253,21 @@ func (s *Server) generateBatch(w http.ResponseWriter, r *http.Request) {
 		Message: "batch generation completed",
 	}
 
-	// Run cross-doc validation if requested and 2+ CADOCs succeeded
+	// Run validation L1-L4 if requested and 2+ CADOCs succeeded
+	// Sprint 57 v3.36.3: usa validation.ValidateFull (L1-L4 por CADOC + L4 cross-doc batch).
 	if req.RunCrossDoc && len(successfulXMLs) >= 2 && s.CrossDoc != nil {
+		xmlBytes := make(map[string][]byte, len(successfulXMLs))
+		for code, xmlStr := range successfulXMLs {
+			xmlBytes[code] = []byte(xmlStr)
+		}
+		fullResult := validation.ValidateFull(ctx, xmlBytes, s.CrossDoc, validation.Config{
+			RunL1: true, RunL2: true, RunL3: true, RunL4: true,
+		})
+
+		// Cross-doc errors via existing path (mantém mensagens específicas).
 		crossResp := s.CrossDoc.Validate(ctx, &crossdoc.ValidationRequest{
 			Cadocs: successfulXMLs,
 		})
-
 		for _, err := range crossResp.Errors {
 			response.CrossDocErrors = append(response.CrossDocErrors, CrossDocError{
 				Code:     err.Code,
@@ -272,9 +282,22 @@ func (s *Server) generateBatch(w http.ResponseWriter, r *http.Request) {
 				Message:  warn.Message,
 			})
 		}
-		response.Passed = crossResp.Passed
-		if !crossResp.Passed {
-			response.Message = "batch generation completed with cross-doc errors"
+
+		// Adiciona issues L1-L3 por CADOC ao response.
+		for _, iss := range fullResult.Issues {
+			if iss.Level == validation.L4CrossDoc {
+				continue // já adicionado acima
+			}
+			response.CrossDocErrors = append(response.CrossDocErrors, CrossDocError{
+				Code:     iss.Code,
+				Severity: "error",
+				Message:  fmt.Sprintf("[%s] %s: %s", iss.Level, iss.Field, iss.Message),
+			})
+		}
+
+		response.Passed = fullResult.OK && crossResp.Passed
+		if !response.Passed {
+			response.Message = "batch generation completed with validation errors"
 		}
 	} else if req.RunCrossDoc && len(successfulXMLs) < 2 {
 		response.Message = "cross-doc validation skipped: less than 2 CADOCs generated successfully"

@@ -185,6 +185,32 @@ func ValidateBatch(ctx context.Context, xmlDocs map[string][]byte, engine *cross
 	return res
 }
 
+// ValidateFull runs L1, L2, L3 (per-doc) and L4 (cross-doc batch).
+// This is the entry point used by /v1/generate/batch — caller passes the
+// map of generated XML docs and the crossdoc engine, and gets back a single
+// ValidationResult covering all levels.
+//
+// Returns:
+//   - res.OK = true if L1-L4 all passed (no errors)
+//   - res.Issues = list of all issues across all CADOCs and all levels
+//   - res.Passed = list of levels that passed (subset of {L1, L2, L3, L4})
+//
+// If engine is nil, only L1-L3 are validated (L4 is skipped — caller can
+// re-run with engine when available).
+func ValidateFull(ctx context.Context, xmlDocs map[string][]byte, engine *crossdoc.Engine, cfg Config) *ValidationResult {
+	batch := ValidateBatch(ctx, xmlDocs, engine)
+	// batch already includes L4 result. Now aggregate per-doc L1-L3.
+	for code, xml := range xmlDocs {
+		perDoc := Validate(ctx, xml, code, cfg)
+		for _, iss := range perDoc.Issues {
+			// Prefix code with cadoc so caller can locate origin.
+			batch.AddIssue(iss.Level, iss.Code, code+":"+iss.Field, iss.Message)
+			batch.OK = false
+		}
+	}
+	return batch
+}
+
 // =======================================================================
 // L1 — XSD Structural Validation
 // =======================================================================
