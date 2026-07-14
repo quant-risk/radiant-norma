@@ -284,7 +284,7 @@ func TestSprint43_XD07_AtrasoConsistente(t *testing.T) {
 
 	t.Run("com_atraso_e_ratios_inconsistentes", func(t *testing.T) {
 		parsed3044 = &Doc3044{Operacoes: []Operacao3044{{IPOC: "12345678", Atraso: "S"}}}
-		parsedDRL = &DocDRL{LCRRatio: 110} // > 100
+		parsedDRL = &DocDRL{LCRRatio: 110}  // > 100
 		parsedDLP = &DocDLP{NSFRRatio: 110} // > 100
 		err := XD07{}.Apply(ctx, &Doc3040{})
 		if err == nil || !strings.Contains(err.Error(), "XD07") {
@@ -299,6 +299,28 @@ func TestSprint43_XD07_AtrasoConsistente(t *testing.T) {
 		err := XD07{}.Apply(ctx, &Doc3040{})
 		if err != nil {
 			t.Errorf("XD07 ratios OK com atraso, got %v", err)
+		}
+	})
+
+	t.Run("apenas_DRL_set_nao_panica", func(t *testing.T) {
+		// Regression: parsedDLP=nil com Atraso="S" não pode panicar.
+		parsed3044 = &Doc3044{Operacoes: []Operacao3044{{IPOC: "12345678", Atraso: "S"}}}
+		parsedDRL = &DocDRL{LCRRatio: 110}
+		parsedDLP = nil
+		err := XD07{}.Apply(ctx, &Doc3040{})
+		if err != nil {
+			t.Errorf("XD07 apenas DRL set, got %v", err)
+		}
+	})
+
+	t.Run("apenas_DLP_set_nao_panica", func(t *testing.T) {
+		// Regression: parsedDRL=nil com Atraso="S" não pode panicar.
+		parsed3044 = &Doc3044{Operacoes: []Operacao3044{{IPOC: "12345678", Atraso: "S"}}}
+		parsedDRL = nil
+		parsedDLP = &DocDLP{NSFRRatio: 110}
+		err := XD07{}.Apply(ctx, &Doc3040{})
+		if err != nil {
+			t.Errorf("XD07 apenas DLP set, got %v", err)
 		}
 	})
 }
@@ -357,6 +379,44 @@ func TestSprint43_XD08_ConcessoesLongoPrazo(t *testing.T) {
 		err := XD08{}.Apply(ctx, &Doc3040{})
 		if err != nil {
 			t.Errorf("XD08 ASF>RSF OK, got %v", err)
+		}
+	})
+
+	t.Run("concessao_futura_nao_conta_como_longo_prazo", func(t *testing.T) {
+		// Future-dated concession: should be ignored (not counted as long-term).
+		parsed3044 = &Doc3044{
+			Operacoes: []Operacao3044{
+				{
+					IPOC: "12345678",
+					Concessoes: []Concessao3044{
+						{Data: time.Date(2027, 6, 1, 0, 0, 0, 0, time.UTC), Valor: 100000}, // future — should be ignored
+					},
+				},
+			},
+		}
+		parsedDLP = &DocDLP{ASFTotal: 0, RSFTotal: 100} // ASF < RSF — should NOT alert (future concession ignored)
+		err := XD08{}.Apply(ctx, &Doc3040{})
+		if err != nil {
+			t.Errorf("XD08 future concession should not trigger, got %v", err)
+		}
+	})
+
+	t.Run("ASF_zero_RSF_positivo_deve_alertar", func(t *testing.T) {
+		// ASF=0 with RSF>0 and long-term concessions should flag inconsistency.
+		parsed3044 = &Doc3044{
+			Operacoes: []Operacao3044{
+				{
+					IPOC: "12345678",
+					Concessoes: []Concessao3044{
+						{Data: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), Valor: 100000}, // ~2.5 anos = longo prazo
+					},
+				},
+			},
+		}
+		parsedDLP = &DocDLP{ASFTotal: 0, RSFTotal: 100} // ASF=0 < RSF=100
+		err := XD08{}.Apply(ctx, &Doc3040{})
+		if err == nil || !strings.Contains(err.Error(), "XD08") {
+			t.Errorf("XD08 ASF=0 RSF>0 should alert, got %v", err)
 		}
 	})
 }

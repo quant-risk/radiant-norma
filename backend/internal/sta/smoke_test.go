@@ -2,9 +2,10 @@
 //
 // Run against sta-h.bcb.gov.br (homologação) with real pilot credentials.
 // Requires environment variables:
-//   STA_HOMOLOG_USER     — BacenHomolog username
-//   STA_HOMOLOG_PASSWORD — BacenHomolog password
-//   STA_HOMOLOG_IF_ID   — IF identifier for the pilot client
+//
+//	STA_HOMOLOG_USER     — BacenHomolog username
+//	STA_HOMOLOG_PASSWORD — BacenHomolog password
+//	STA_HOMOLOG_IF_ID   — IF identifier for the pilot client
 //
 // These tests are ALWAYS skipped unless STA_HOMOLOG_* are set, and
 // are NEVER run in CI (only manually with pilot credentials).
@@ -40,8 +41,8 @@ func TestSmokeHomolog_Submit(t *testing.T) {
 	xmlContent := minimal3040XML()
 
 	client, err := NewWSClient(WSConfig{
-		BaseURL: "https://sta-h.bcb.gov.br/staws",
-		User:    user,
+		BaseURL:  "https://sta-h.bcb.gov.br/staws",
+		User:     user,
 		Password: pass,
 	})
 	if err != nil {
@@ -86,8 +87,8 @@ func TestSmokeHomolog_Status(t *testing.T) {
 	// First submit a document to get a protocolo.
 	xmlContent := minimal3040XML()
 	client, err := NewWSClient(WSConfig{
-		BaseURL: "https://sta-h.bcb.gov.br/staws",
-		User:    user,
+		BaseURL:  "https://sta-h.bcb.gov.br/staws",
+		User:     user,
 		Password: pass,
 	})
 	if err != nil {
@@ -128,8 +129,8 @@ func TestSmokeHomolog_Download(t *testing.T) {
 	// Submit first.
 	xmlContent := minimal3040XML()
 	client, err := NewWSClient(WSConfig{
-		BaseURL: "https://sta-h.bcb.gov.br/staws",
-		User:    user,
+		BaseURL:  "https://sta-h.bcb.gov.br/staws",
+		User:     user,
 		Password: pass,
 	})
 	if err != nil {
@@ -176,8 +177,8 @@ func TestSmokeHomolog_SubmitRange(t *testing.T) {
 
 	xmlContent := minimal3040XML()
 	client, err := NewWSClient(WSConfig{
-		BaseURL: "https://sta-h.bcb.gov.br/staws",
-		User:    user,
+		BaseURL:  "https://sta-h.bcb.gov.br/staws",
+		User:     user,
 		Password: pass,
 	})
 	if err != nil {
@@ -260,8 +261,9 @@ func TestSmokeHomolog_AuthFailure(t *testing.T) {
 	// Requires real pilot credentials set.
 	user := os.Getenv("STA_HOMOLOG_USER")
 	pass := os.Getenv("STA_HOMOLOG_PASSWORD")
-	if user == "" || pass == "" {
-		t.Skip("STA_HOMOLOG_USER or STA_HOMOLOG_PASSWORD not set — skipping BACEN auth test")
+	cnpj := os.Getenv("STA_HOMOLOG_IF_ID")
+	if user == "" || pass == "" || cnpj == "" {
+		t.Skip("STA_HOMOLOG_USER, STA_HOMOLOG_PASSWORD, or STA_HOMOLOG_IF_ID not set — skipping BACEN auth test")
 	}
 
 	// Use correct format but wrong password.
@@ -276,7 +278,7 @@ func TestSmokeHomolog_AuthFailure(t *testing.T) {
 
 	sub := &Submission{
 		CadocCode: "3040",
-		CNPJ:      os.Getenv("STA_HOMOLOG_IF_ID"),
+		CNPJ:      cnpj,
 		XML:       minimal3040XML(),
 	}
 

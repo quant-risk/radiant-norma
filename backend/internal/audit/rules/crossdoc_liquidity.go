@@ -212,12 +212,8 @@ func (XD05) Apply(_ context.Context, _ *Doc3040) error {
 //
 // Valida que todo IPOC em Operacoes3044 é:
 //   - Não-vazio (campo obrigatório)
-//   - Comprimento mínimo (6 chars — formato BACEN: CNPJ +序号)
-//   - Caracteres válidos (alfanumérico)
-//
-// Esta é a verificação de cadastro que é possível sem histórico de IPOCs.
-// A regra "IPOC existe no histórico" requer DB lookup e é marcada como
-// carry-over (XD06-HIST).
+//   - Comprimento entre 6 e 30 caracteres (formato BACEN: CNPJ +序号)
+//   - Caracteres válidos (não validado — depende do cadastro BACEN)
 type XD06 struct{}
 
 func (XD06) Code() string     { return "XD06" }
@@ -278,17 +274,22 @@ func (XD07) Apply(_ context.Context, _ *Doc3040) error {
 		return nil
 	}
 
-	// Se DRL ou DLP não estão disponíveis, não dá para validar.
+	// Se nem DRL nem DLP estão disponíveis, não dá para validar.
 	if parsedDRL == nil && parsedDLP == nil {
 		return nil
 	}
 
-	// Verifica se ratios estão OK quando há operações em atraso.
-	lcr := parsedDRL.LCRRatio
-	nsfr := parsedDLP.NSFRRatio
+	// Lê ratios com nil-guards para evitar panic (X07 critical fix).
+	var lcr, nsfr float64
+	if parsedDRL != nil {
+		lcr = parsedDRL.LCRRatio
+	}
+	if parsedDLP != nil {
+		nsfr = parsedDLP.NSFRRatio
+	}
 
-	// Se LCR >= 100% E NSFR >= 100% com operações em atraso, alerta.
-	// Esperado: se há inadimplência, ratios tendem a se deteriorar.
+	// Alerta apenas se AMBOS ratios estão disponíveis e ambos >= 100%
+	// com operações em atraso (inconsistência — ratios deveriam refletir stress).
 	if lcr > 0 && lcr >= 100 && nsfr > 0 && nsfr >= 100 {
 		return fmt.Errorf("XD07: %d operação(ões) com Atraso='S' mas LCR=%.2f%% >= 100%% e NSFR=%.2f%% >= 100%% (inconsistência — ratios deveriam refletir stress)",
 			comAtraso, lcr, nsfr)
@@ -327,8 +328,8 @@ func (XD08) Apply(_ context.Context, _ *Doc3040) error {
 		for _, c := range op.Concessoes {
 			dias := now.Sub(c.Data).Hours() / 24
 			if dias < 0 {
-				// Data futura — usa valor absoluto (concessão já acordada).
-				dias = -dias
+				// Concessão futura — não conta para análise de prazo.
+				continue
 			}
 			totalConcessoes += c.Valor
 			if dias > 365 {
@@ -344,12 +345,11 @@ func (XD08) Apply(_ context.Context, _ *Doc3040) error {
 	ratio := longoPrazo / totalConcessoes
 
 	// Se >50% das concessões são de longo prazo, espera-se ASF dominante.
-	if ratio > 0.5 && parsedDLP.ASFTotal > 0 && parsedDLP.RSFTotal > 0 {
-		// ASF deveria ser >= RSF para funding predominantemente longo.
-		if parsedDLP.ASFTotal < parsedDLP.RSFTotal {
-			return fmt.Errorf("XD08: %.0f%% das concessões são longo prazo (>1 ano) mas ASF=%.2f < RSF=%.2f (inconsistência — funding longo deveria ter ASF dominante)",
-				ratio*100, parsedDLP.ASFTotal, parsedDLP.RSFTotal)
-		}
+	// Não exigimos ASF>0 nem RSF>0 como pré-condição — a inconsistência
+	// ASF<RSF é válida mesmo quando ASF=0 (funding longo não reportado).
+	if ratio > 0.5 && parsedDLP.ASFTotal < parsedDLP.RSFTotal {
+		return fmt.Errorf("XD08: %.0f%% das concessões são longo prazo (>1 ano) mas ASF=%.2f < RSF=%.2f (inconsistência — funding longo deveria ter ASF dominante)",
+			ratio*100, parsedDLP.ASFTotal, parsedDLP.RSFTotal)
 	}
 
 	return nil
