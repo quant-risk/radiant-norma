@@ -16,7 +16,7 @@ import (
 
 // xsdPaths maps CADOC codes to their XSD file paths (relative to project root).
 var xsdPaths = map[string]string{
-	"3050": "../../_catalogos/3050/3050_Schema_TXB_V4.xsd",
+	"3050": "../../3050/3050_Schema_TXB_V4.xsd",
 	"3045": "../../3040/SCR3045.xsd",
 	"3040": "../../_catalogos/3040_generated.xsd",
 }
@@ -107,11 +107,11 @@ func attr(attrs []xml.Attr, name string) string {
 // xmlSchema is a simplified XSD schema model.
 type xmlSchema struct {
 	rootElements map[string]*xmlElement
-	types       map[string]*xmlSimpleType
+	types        map[string]*xmlSimpleType
 }
 
 type xmlElement struct {
-	Name         string
+	Name        string
 	Type        string
 	MinOccurs   int // 0 = optional
 	MaxOccurs   int // -1 = unbounded
@@ -159,7 +159,7 @@ func validateXML(schema *xmlSchema, xmlContent string) ([]string, error) {
 	decoder := xml.NewDecoder(strings.NewReader(xmlContent))
 	decoder.Strict = false
 
-		// Build element stack for path tracking.
+	// Build element stack for path tracking.
 	var elemStack []string
 	for {
 		tok, err := decoder.Token()

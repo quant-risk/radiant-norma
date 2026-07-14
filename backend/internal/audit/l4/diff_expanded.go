@@ -366,6 +366,75 @@ func drsacCountHighRisk(doc *drsac.DocumentoDRSAC, riscoField string) float64 {
 	return count
 }
 
+// extract2070Changes extrai e compara campos agregados do DDR 2070.
+//
+// Compara: contagem de DDR entries, total por código de exposição,
+// detecção de entradas novas/removidas (por Codigo × Moeda).
+func (e *Engine) extract2070Changes(prev, curr *SubmissionSnapshot) ([]FieldChange, error) {
+	prevDoc, err := rules.ParseDoc2070([]byte(prev.XMLContent))
+	if err != nil {
+		return nil, fmt.Errorf("parse 2070 prev: %w", err)
+	}
+	currDoc, err := rules.ParseDoc2070([]byte(curr.XMLContent))
+	if err != nil {
+		return nil, fmt.Errorf("parse 2070 curr: %w", err)
+	}
+
+	var changes []FieldChange
+
+	// Contagem de entradas DDR.
+	changes = appendFieldChange(changes, "2070", "DDREntryCount",
+		float64(len(prevDoc.DDRs)), float64(len(currDoc.DDRs)))
+
+	// Total por código de exposição (161000, 181000).
+	prevByCode := make(map[string]float64)
+	currByCode := make(map[string]float64)
+	for _, ddr := range prevDoc.DDRs {
+		if ddr.Valor != nil {
+			prevByCode[ddr.Codigo] += *ddr.Valor
+		}
+	}
+	for _, ddr := range currDoc.DDRs {
+		if ddr.Valor != nil {
+			currByCode[ddr.Codigo] += *ddr.Valor
+		}
+	}
+	// Keys vistas em qualquer versão.
+	allCodes := make(map[string]bool)
+	for k := range prevByCode {
+		allCodes[k] = true
+	}
+	for k := range currByCode {
+		allCodes[k] = true
+	}
+	for code := range allCodes {
+		changes = appendFieldChange(changes, "2070", "DDR_"+code+"_Total",
+			prevByCode[code], currByCode[code])
+	}
+
+	// Detecta entradas novas (em curr mas não em prev) e removidas.
+	prevKeys := make(map[string]bool)
+	currKeys := make(map[string]bool)
+	for _, ddr := range prevDoc.DDRs {
+		prevKeys[ddr.Codigo+"|"+ddr.Moeda] = true
+	}
+	for _, ddr := range currDoc.DDRs {
+		currKeys[ddr.Codigo+"|"+ddr.Moeda] = true
+	}
+	for key := range currKeys {
+		if !prevKeys[key] {
+			changes = appendFieldChange(changes, "2070", "DDR_NewEntry_"+key, 0, 1)
+		}
+	}
+	for key := range prevKeys {
+		if !currKeys[key] {
+			changes = appendFieldChange(changes, "2070", "DDR_RemovedEntry_"+key, 1, 0)
+		}
+	}
+
+	return changes, nil
+}
+
 // Verify Engine implements all extractors for the switch in extractFieldChanges.
 // Add new cases here as they are implemented.
 func init() {
@@ -383,6 +452,7 @@ func init() {
 		extractDRMChanges(*SubmissionSnapshot, *SubmissionSnapshot) ([]FieldChange, error)
 		extract4111Changes(*SubmissionSnapshot, *SubmissionSnapshot) ([]FieldChange, error)
 		extractDRSACChanges(*SubmissionSnapshot, *SubmissionSnapshot) ([]FieldChange, error)
+		extract2070Changes(*SubmissionSnapshot, *SubmissionSnapshot) ([]FieldChange, error)
 	}{
 		(*Engine)(nil),
 	}
