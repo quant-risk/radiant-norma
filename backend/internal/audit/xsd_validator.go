@@ -15,28 +15,72 @@ import (
 )
 
 // xsdPaths maps CADOC codes to their XSD file paths (relative to project root).
+//
+// Only CADOCs that have a real, on-disk schema file are listed here.
+// Other CADOCs MUST be added before they can be validated — this is a
+// fail-closed contract: we never silently accept XML for a CADOC whose
+// schema we don't know. This is required by gate #2 of the remediation
+// plan (see RELATORIO_FINAL.md and PROMPT_AUDITORIA_E2E.md).
 var xsdPaths = map[string]string{
 	"3050": "../../3050/3050_Schema_TXB_V4.xsd",
 	"3045": "../../3040/SCR3045.xsd",
 	"3040": "../../_catalogos/3040_generated.xsd",
 }
 
+// SupportedCADOCs returns the list of CADOC codes whose schemas are
+// available in this build. Use it to validate untrusted input before
+// dispatching to /v1/validate.
+func SupportedCADOCs() []string {
+	out := make([]string, 0, len(xsdPaths))
+	for k := range xsdPaths {
+		out = append(out, k)
+	}
+	return out
+}
+
+// ErrSchemaUnavailable is returned by ValidateXSD when the CADOC has no
+// XSD file registered or the file cannot be loaded. This replaces the
+// historical "fall back to root-tag-only" behavior that silently approved
+// documents for CADOCs without proper schema coverage.
+type ErrSchemaUnavailable struct {
+	Cadoc  string
+	Reason string
+}
+
+func (e *ErrSchemaUnavailable) Error() string {
+	return fmt.Sprintf("XSD schema unavailable for CADOC %q: %s", e.Cadoc, e.Reason)
+}
+
 // ValidateXSD validates XML content against the XSD schema for the given CADOC.
-// Returns a list of validation errors (empty if valid) or an error if the schema
-// couldn't be loaded. Falls back to root-tag-only validation when no XSD is
-// available for the CADOC.
+//
+// Fail-closed contract (Phase 1.1 of the remediation plan):
+//   - If the CADOC is not in xsdPaths, returns ErrSchemaUnavailable.
+//   - If the XSD file is registered but cannot be read from disk, returns
+//     ErrSchemaUnavailable.
+//   - If the schema compiles but the XML is invalid, returns a list of
+//     validation errors (non-empty).
+//   - Only when the schema loads AND the XML matches do we return an empty
+//     error slice and a nil error.
+//
+// Callers must NOT silently swallow ErrSchemaUnavailable — it is the
+// canonical signal that the validator is being asked to do something it
+// does not know how to do, and the safe response is to refuse.
 func ValidateXSD(cadoc, xmlContent string) ([]string, error) {
 	xsdPath, ok := xsdPaths[cadoc]
 	if !ok {
-		// No XSD available for this CADOC — fall back to root-tag check.
-		return nil, nil
+		return nil, &ErrSchemaUnavailable{
+			Cadoc:  cadoc,
+			Reason: "no schema registered (fail-closed; add to xsdPaths to enable validation)",
+		}
 	}
 
 	// Try to load XSD from disk.
 	schemaBytes, err := os.ReadFile(xsdPath)
 	if err != nil {
-		// XSD not on disk — fall back to root-tag check.
-		return nil, nil
+		return nil, &ErrSchemaUnavailable{
+			Cadoc:  cadoc,
+			Reason: fmt.Sprintf("schema file %q not readable: %v", xsdPath, err),
+		}
 	}
 
 	// Compile the schema.

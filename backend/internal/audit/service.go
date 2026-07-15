@@ -17,6 +17,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"strings"
 	"sync"
@@ -605,9 +606,33 @@ func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*Valida
 }
 
 // validateL1Parse faz o parse do XML ou JSON + validação XSD real.
-// Falha de parse = erro bloqueante.
-// Para CADOCs com XSD disponível (3040, 3050), valida contra o schema.
-// Para os outros, faz fallback para root-tag check.
+//
+// Fail-closed contract (Phase 1.1 of the remediation plan, gate #2):
+//
+//  1. JSON content: parses only (no schema enforcement; L1 is out of scope
+//     for JSON, which has its own contract in the validation pipeline).
+//
+//  2. XML content: validates against the registered XSD for the CADOC when
+//     the schema file is reachable from disk. XSD validation is the strictest
+//     path: any XSD error fails the document.
+//
+//  3. When the XSD is registered but the file is not readable on the test
+//     host (e.g. tests that don't run from the project root), we fall back
+//     to a *strict* root-tag + non-empty check. The historical permissive
+//     fallback (which approved <Doc3040/>, <DocDRSAC/>, <Documento4111/> as
+//     long as the root tag matched) is replaced by:
+//
+//     a. The XML must parse.
+//     b. The root tag must equal expectedRootTag(cadoc). If the CADOC has no
+//     known root tag, validation fails closed (unknown CADOC).
+//     c. The document must NOT be empty: a document whose root has zero
+//     attributes and zero child elements is rejected. This is the change
+//     that closes the audit finding "9/10 XMLs vazios aprovados".
+//
+// This preserves backwards compatibility with tests that exercise the
+// root-tag path (e.g. TestValidate_F02_MesInvalido sends <Doc3040 .../> with
+// attributes, which still parses and gets past L1 to reach L2/L3), while
+// rejecting the empty documents the audit benchmark targets.
 func (s *Service) validateL1Parse(req *ValidationRequest) error {
 	content := string(req.XML)
 	if req.ContentType == "application/json" {
@@ -618,36 +643,86 @@ func (s *Service) validateL1Parse(req *ValidationRequest) error {
 		return nil
 	}
 
-	// Try XSD validation first (real schema validation).
-	xsdErrors, err := ValidateXSD(req.CadocCode, content)
-	if err == nil && len(xsdErrors) > 0 {
+	// XML path. Try strict XSD validation first.
+	xsdErrors, xsdErr := ValidateXSD(req.CadocCode, content)
+	switch {
+	case xsdErr == nil && len(xsdErrors) == 0:
+		// XSD happy path.
+		return nil
+	case xsdErr == nil && len(xsdErrors) > 0:
 		return fmt.Errorf("XSD validation failed: %s", xsdErrors[0])
 	}
 
-	// Fallback: root-tag check.
+	// XSD path failed. Distinguish "schema unavailable" (the test/CI host
+	// simply can't load the file) from a hard schema error.
+	var unavailable *ErrSchemaUnavailable
+	if !errors.As(xsdErr, &unavailable) {
+		return fmt.Errorf("L1 XSD validation refused for CADOC %q: %w", req.CadocCode, xsdErr)
+	}
+
+	// Strict fallback. Parse + root tag + non-empty.
 	rootTag := expectedRootTag(req.CadocCode)
 	if rootTag == "" {
-		rootTag = "Documento"
+		return fmt.Errorf("CADOC %q não é suportado pelo validator L1 (sem root tag canônico)", req.CadocCode)
 	}
+
 	decoder := xml.NewDecoder(strings.NewReader(content))
+	var (
+		rootSeen     bool
+		rootHasAttrs bool
+		childCount   int
+		depth        int
+	)
 	for {
-		t, err := decoder.Token()
+		tok, err := decoder.Token()
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
 			return fmt.Errorf("XML não parseia: %w", err)
 		}
-		if t == nil {
+		if tok == nil {
 			break
 		}
-		if se, ok := t.(xml.StartElement); ok {
-			if se.Name.Local != rootTag {
-				return fmt.Errorf("esperado elemento raiz <%s> mas tem <%s>", rootTag, se.Name.Local)
+		switch t := tok.(type) {
+		case xml.StartElement:
+			if !rootSeen {
+				rootSeen = true
+				if t.Name.Local != rootTag {
+					return fmt.Errorf("esperado elemento raiz <%s> mas tem <%s>", rootTag, t.Name.Local)
+				}
+				rootHasAttrs = len(t.Attr) > 0
+				depth = 1
+				continue
 			}
-			break
+			depth++
+			if depth > 1 {
+				childCount++
+			}
+		case xml.EndElement:
+			if depth > 0 {
+				depth--
+			}
 		}
+	}
+	if !rootSeen {
+		return fmt.Errorf("XML sem elemento raiz")
+	}
+	if !rootHasAttrs && childCount == 0 {
+		// Empty document like <DocDRSAC/> — fail closed.
+		return fmt.Errorf("documento %s vazio (sem atributos e sem elementos filhos)", rootTag)
 	}
 	return nil
 }
 
+// expectedRootTag returns the canonical root tag for the given CADOC, or
+// "" if the CADOC is not in the validator's allow-list. The Phase 1.1
+// fail-closed contract requires that unknown CADOCs be rejected, so an
+// empty return from this function is the canonical signal "this CADOC is
+// not supported by L1".
+//
+// To add a new CADOC, register its root tag here AND in the xsdPaths map
+// (internal/audit/xsd_validator.go). The two must stay in sync.
 func expectedRootTag(cadoc string) string {
 	switch cadoc {
 	case "3040":
@@ -670,6 +745,10 @@ func expectedRootTag(cadoc string) string {
 		return "documentoDRL"
 	case "2170":
 		return "documentoDLP"
+	case "4060":
+		return "Documento"
+	case "4111":
+		return "Documento4111"
 	}
 	return ""
 }

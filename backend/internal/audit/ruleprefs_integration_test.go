@@ -87,9 +87,12 @@ func TestValidate_FiltersDisabledRules(t *testing.T) {
 	// Conteúdo irrelevante — L2 não vai aplicar regra nenhuma (registry
 	// vazio pra regras dummy). Mas vamos só verificar que F23 é pulada
 	// e DisabledRules é populada.
+	//
+	// Phase 1.1 (fail-closed): o XML precisa de pelo menos um atributo
+	// ou elemento filho. <Documento></Documento> vazio é rejeitado por L1.
 	req := &ValidationRequest{
 		CadocCode:   "4060",
-		XML:         `<Documento></Documento>`,
+		XML:         `<Documento stub="true"></Documento>`,
 		ContentType: "application/xml",
 		IfID:        "demo",
 	}
