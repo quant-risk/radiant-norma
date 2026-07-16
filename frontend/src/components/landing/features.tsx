@@ -1,7 +1,7 @@
 /**
  * Features — grid de features do produto.
  *
- * Layout editorial: eyebrow → 6 cards em grid 3×2. Cada card com glyph,
+ * Layout editorial: eyebrow → 10 cards em grid 5×2. Cada card com glyph,
  * título serif, descrição muted, e (opcional) micro-visual.
  */
 
@@ -14,6 +14,9 @@ import {
   History,
   Wand2,
   Database,
+  Webhook,
+  Store,
+  CheckCircle2,
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -34,7 +37,7 @@ const FEATURES: Feature[] = [
     icon: Wand2,
     title: 'Motor de Geração',
     description:
-      '10 generators de CADOC (3040 pronto, 9 planejados). Recebe CanonicalDocument IF-agnóstico, gera XML validado pelo schema registry. Sem tocar no motor quando você troca de CADOC.',
+      '10 generators de CADOC (3040 pronto, 9 planejados). Recebe CanonicalDocument IF-agnóstico, gera XML validado pelo schema registry.',
     badge: 'v3.36',
     visual: <GeneratorVisual />,
   },
@@ -42,15 +45,39 @@ const FEATURES: Feature[] = [
     icon: Database,
     title: 'Ingest multi-fonte',
     description:
-      '5 conectores (Manual, API, File, DB, MCP) produzem CanonicalDocument. Wizard guiado para configurar cada fonte. Adicione nova sem tocar no motor.',
+      '5 conectores (Manual, API, File, DB, MCP) produzem CanonicalDocument. Wizard guiado para configurar cada fonte.',
     badge: '5 adapters',
     visual: <IngestVisual />,
+  },
+  {
+    icon: Sparkles,
+    title: 'Wizard guiado',
+    description:
+      'Wizard multi-etapas: escolher CADOC → mapear campos → pré-validar → gerar. Onboarding 0 → primeiro envio em 15 min.',
+    badge: 'Novo',
+    visual: <WizardVisual />,
+  },
+  {
+    icon: CheckCircle2,
+    title: 'Validação L1 → L4',
+    description:
+      'XSD (L1) → semântico (L2) → cross-doc (L3) → histórico (L4). 1.099 regras. L4 diff mostra mudanças vs envio anterior.',
+    badge: '1.099 regras',
+    visual: <ValidationVisual />,
+  },
+  {
+    icon: Sparkles,
+    title: 'AI Insights',
+    description:
+      'LLM interpreta audit_log em linguagem natural. Recomendações heurísticas determinísticas. Streaming SSE. Opt-in por tenant.',
+    badge: 'IA',
+    visual: <InsightsVisual />,
   },
   {
     icon: Radar,
     title: 'Radar Regulatório',
     description:
-      'Varredura automática a cada 6h em URLs oficiais do BACEN. Detecta mudanças em leiautes, instruções e prazos antes que afetem seus envios.',
+      'Varredura automática a cada 6h em URLs oficiais do BACEN. Detecta mudanças em leiautes, instruções e prazos.',
     badge: 'Live',
     visual: <RadarVisual />,
   },
@@ -58,8 +85,39 @@ const FEATURES: Feature[] = [
     icon: BookCheck,
     title: 'Catálogo de regras',
     description:
-      'Regras tipadas para CADOCs: estruturais, formato, campos e semânticas. Cobertura 76% no 3040, 100% no 3050. Cada regra com exemplo, severidade e doc inline.',
+      'Regras tipadas: estruturais, formato, campos, semânticas. Cobertura 76% no 3040, 100% no 3050. Toggle individual por IF.',
     visual: <RulesVisual />,
+  },
+  {
+    icon: Send,
+    title: 'Envios STA',
+    description:
+      'Pipeline STA-h/STA-ws nativo. Retry exponencial, DLQ, chunked upload (range API). Protocol STA rastreado.',
+    visual: <EnvioVisual />,
+  },
+  {
+    icon: Webhook,
+    title: 'Webhooks outbound',
+    description:
+      'Registry de callbacks HTTP disparados em eventos. HMAC-SHA256 assinado. Delivery log + retry. Conecta a sistemas da IF sem polling.',
+    badge: 'HMAC',
+    visual: <WebhookVisual />,
+  },
+  {
+    icon: Store,
+    title: 'Marketplace de regras',
+    description:
+      'IFs publicam regras customizadas; outras IFs instalam. Rating por estrela. Versionamento. Catálogo de casos especiais do mercado.',
+    badge: 'Comunidade',
+    visual: <MarketplaceVisual />,
+  },
+  {
+    icon: History,
+    title: 'Auditoria LGPD / SOC 2',
+    description:
+      'Audit log tamper-evident com SHA-256 hash chain. Verificável por SELECT. Pilot3 ESG-first via IN BCB 694/2025.',
+    badge: 'Verifiable',
+    visual: <HistoryVisual />,
   },
   {
     icon: Send,
@@ -103,7 +161,7 @@ export function LandingFeatures() {
           align="between"
         />
 
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {FEATURES.map((feature, i) => {
             const Icon = feature.icon
             return (
@@ -148,6 +206,102 @@ export function LandingFeatures() {
 }
 
 /* ──────────── Micro-visuals (estilo terminal/dashboard) ──────────── */
+
+function WizardVisual() {
+  return (
+    <div className="flex items-center gap-1.5">
+      {['1', '2', '3', '4'].map((n, i) => (
+        <div
+          key={n}
+          className="flex items-center gap-1.5"
+        >
+          <div
+            className={cn(
+              'size-7 rounded-md flex items-center justify-center text-2xs font-mono font-medium',
+              i < 2
+                ? 'bg-accent-50 text-accent-700 dark:bg-accent-950/40 dark:text-accent-300 ring-1 ring-inset ring-accent-200/60 dark:ring-accent-800/40'
+                : 'bg-surface-sunken text-ink-subtle ring-1 ring-inset ring-border-subtle',
+            )}
+          >
+            {n}
+          </div>
+          {i < 3 && (
+            <div className="w-3 h-px bg-border" />
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ValidationVisual() {
+  return (
+    <div className="space-y-1.5">
+      {['L1 XSD', 'L2 Semântico', 'L3 Cross-doc', 'L4 Histórico'].map((layer, i) => (
+        <div key={layer} className="flex items-center gap-2 text-2xs">
+          <span
+            className={cn(
+              'size-3.5 rounded-sm flex items-center justify-center text-2xs font-mono',
+              i < 2
+                ? 'bg-accent-500 text-white'
+                : 'bg-surface-sunken text-ink-muted ring-1 ring-inset ring-border',
+            )}
+          >
+            {i + 1}
+          </span>
+          <span className="text-ink-muted">{layer}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function WebhookVisual() {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2 text-2xs">
+        <div className="size-1.5 rounded-full bg-success-500 animate-pulse-soft" />
+        <span className="text-ink-muted">POST /webhook</span>
+        <span className="text-2xs font-mono text-ink-subtle ml-auto">200</span>
+      </div>
+      <div className="flex items-center gap-2 text-2xs">
+        <div className="size-1.5 rounded-full bg-success-500 animate-pulse-soft" />
+        <span className="text-ink-muted">envio.approved</span>
+        <span className="text-2xs font-mono text-ink-subtle ml-auto">HMAC ✓</span>
+      </div>
+      <div className="flex items-center gap-2 text-2xs">
+        <div className="size-1.5 rounded-full bg-warning-500 animate-pulse-soft" />
+        <span className="text-ink-muted">retry...</span>
+        <span className="text-2xs font-mono text-ink-subtle ml-auto">3×</span>
+      </div>
+    </div>
+  )
+}
+
+function MarketplaceVisual() {
+  return (
+    <div className="space-y-1.5">
+      {['F23 (3050)', 'S05 (3040)', 'C04 (3040)'].map((rule, i) => (
+        <div key={rule} className="flex items-center gap-2 text-2xs">
+          <span className="font-mono text-accent-600 dark:text-accent-400 shrink-0">
+            {rule}
+          </span>
+          <div className="flex gap-0.5 ml-auto">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <span
+                key={s}
+                className={cn(
+                  'size-1.5 rounded-full',
+                  s <= 4 - i ? 'bg-warning-500' : 'bg-ink-subtle/30',
+                )}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 function GeneratorVisual() {
   return (

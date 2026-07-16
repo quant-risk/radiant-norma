@@ -102,13 +102,14 @@ export function LandingHero() {
         <h1 className="font-serif text-5xl sm:text-6xl lg:text-7xl xl:text-display-md font-medium text-ink leading-[0.96] tracking-[-0.035em] mb-8">
           Gera, valida e envia{' '}
           <span className="text-gradient-accent italic">CADOCs</span>
-          {' '}que o BCValidador não cobre.
+          {' '}com L1-L4 + AI + webhooks.
         </h1>
 
         <p className="text-lg lg:text-xl text-ink-muted leading-relaxed max-w-2xl mx-auto mb-10">
-          Motor de geração + 5 conectores (Manual funcional, 4 em stub) +
-          validação L1-L4 + push direto pro STA.
-          {' '}<span className="text-ink">De dados brutos ao CADOC validado em 15 minutos.</span>
+          Motor de geração + 5 conectores + Wizard guiado + validação L1-L4 +
+          diff histórico L4 + AI Insights + push pro STA + webhooks outbound +
+          marketplace de regras.
+          {' '}<span className="text-ink">Em conformidade com BACEN · CMN 4.966 · IFRS 9 · LGPD · SOC 2.</span>
         </p>
 
         <div className="flex items-center justify-center gap-3 flex-wrap mb-8">
@@ -137,7 +138,12 @@ export function LandingHero() {
           <span className="size-1 rounded-full bg-border" />
           <span className="flex items-center gap-1.5">
             <Sparkles className="size-3" strokeWidth={2.25} />
-            BACEN Ready
+            AI Insights
+          </span>
+          <span className="size-1 rounded-full bg-border" />
+          <span className="flex items-center gap-1.5">
+            <Activity className="size-3" strokeWidth={2.25} />
+            L1 → L4
           </span>
         </div>
       </div>
