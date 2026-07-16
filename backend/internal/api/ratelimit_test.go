@@ -103,7 +103,13 @@ func newTestRedisLimiter(t *testing.T, limits map[pathBucket]RateLimit) (*RedisR
 		KeyPrefix:     "rl:",
 		SlidingScript: redis.NewScript(LuaSlidingWindow),
 	}
-	t.Cleanup(func() { _ = rl.Close() })
+	// Sprint 78 fix: fechar tanto o Redis client quanto o servidor miniredis.
+	// Antes, apenas rl.Close() era chamado — o servidor miniredis continuava
+	// rodando com seu cleanupLoop goroutine, causando goroutine leak no CI.
+	t.Cleanup(func() {
+		_ = rl.Close()
+		mr.Close()
+	})
 	return rl, mr
 }
 
@@ -264,6 +270,7 @@ func TestNewRateLimiterFromEnv_RedisWithMiniredis(t *testing.T) {
 		if rrl, ok := rl.(*RedisRateLimiter); ok {
 			_ = rrl.Close()
 		}
+		mr.Close()
 	})
 
 	// Smoke: 1 call deve passar
@@ -294,7 +301,7 @@ func TestRedisRateLimiter_ConcurrentStress(t *testing.T) {
 		KeyPrefix:     "stress:",
 		SlidingScript: redis.NewScript(LuaSlidingWindow),
 	}
-	t.Cleanup(func() { _ = rl.Close() })
+	t.Cleanup(func() { _ = rl.Close(); mr.Close() })
 
 	const (
 		goroutines        = 50
@@ -453,7 +460,7 @@ func TestRedisRateLimiter_SlidingWindow_Allows(t *testing.T) {
 		KeyPrefix:     "sliding:",
 		WindowType:    WindowTypeSliding,
 	}
-	t.Cleanup(func() { _ = rl.Close() })
+	t.Cleanup(func() { _ = rl.Close(); mr.Close() })
 
 	max := DefaultRateLimits[bucketHeavy].Max
 	for i := 0; i < max; i++ {
@@ -476,7 +483,7 @@ func TestRedisRateLimiter_SlidingWindow_BlocksAtMax(t *testing.T) {
 		KeyPrefix:     "sliding:",
 		WindowType:    WindowTypeSliding,
 	}
-	t.Cleanup(func() { _ = rl.Close() })
+	t.Cleanup(func() { _ = rl.Close(); mr.Close() })
 
 	max := DefaultRateLimits[bucketHeavy].Max
 	for i := 0; i < max; i++ {
@@ -510,6 +517,7 @@ func TestNewRateLimiterFromEnv_RedisSlidingWindow(t *testing.T) {
 		if rrl, ok := rl.(*RedisRateLimiter); ok {
 			_ = rrl.Close()
 		}
+		mr.Close()
 	})
 
 	redisRL := rl.(*RedisRateLimiter)
@@ -541,7 +549,7 @@ func TestRedisRateLimiter_SlidingWindow_AllowsAfterExpiry(t *testing.T) {
 		KeyPrefix:     "sliding:",
 		WindowType:    WindowTypeSliding,
 	}
-	t.Cleanup(func() { _ = rl.Close() })
+	t.Cleanup(func() { _ = rl.Close(); mr.Close() })
 
 	// 2 calls OK
 	_, _ = rl.Allow(bucketHeavy, "demo")

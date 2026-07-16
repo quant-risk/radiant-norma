@@ -148,6 +148,26 @@ func NewServer(d *sql.DB, sch *schema.Registry, aud *audit.Service, al auditLogA
 	}
 }
 
+// Shutdown libera recursos do Server (goroutines SSE, conexões Redis).
+//
+// Adicionado na Sprint 78 para corrigir goroutine leaks em tests —
+// goroutines de SSE (Hub subscribe) ficam suspensas se o request context
+// nunca for cancelado (comum em httptest). Shutdown fecha o shutdownCh
+// do Hub, forçando as goroutines a terminarem.
+//
+// Chamado automaticamente por t.Cleanup em newTestServer.
+//
+// Em produção (cmd/api/main.go) o Hub é lifetime do processo — não precisa
+// de Shutdown, o processo morre e as goroutines morrem com ele.
+func (s *Server) Shutdown() {
+	if s.EventsHub != nil {
+		s.EventsHub.Shutdown()
+	}
+	if rl, ok := s.RateLimiter.(*RedisRateLimiter); ok {
+		_ = rl.Close()
+	}
+}
+
 // Router retorna o chi router configurado.
 func (s *Server) Router() http.Handler {
 	r := chi.NewRouter()
@@ -979,9 +999,9 @@ func (s *Server) staSubmit(w http.ResponseWriter, r *http.Request) {
 
 // dedupEnvio é o result minimal de uma checagem de dedup (usado por staSubmit).
 type dedupEnvio struct {
-	ID           string
-	Status       string
-	ProtocolSTA  string
+	ID          string
+	Status      string
+	ProtocolSTA string
 }
 
 // checkIdempotencyKey verifica se já existe envio com mesmo idempotency_key.
@@ -1482,8 +1502,8 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 				http.Error(w, `{"error":"X-IF-ID contains invalid character"}`, http.StatusBadRequest)
 				return
 			}
-	}
-	next.ServeHTTP(w, r)
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 

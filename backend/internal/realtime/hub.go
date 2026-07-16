@@ -64,6 +64,12 @@ type Hub struct {
 	// Sprint 13 — v3.5.2 [S15.2]: contador de subscribers por IF para
 	// aplicar cap. Protege contra DoS-via-SSE (audit S-B/H).
 	subsByIF map[string]int
+
+	// shutdownCh fecha quando Shutdown() é chamado. Goroutines de subscriber
+	// (hub.go:152) ouvem este canal além de ctx.Done() para garantir que
+	// todas terminam quando Shutdown() é invocado (mesmo se ctx nunca
+	// for cancelado — como em tests com httptest).
+	shutdownCh chan struct{}
 }
 
 // MaxSubscribersPerIF limita conexões SSE simultâneas por tenant.
@@ -79,9 +85,10 @@ func NewHub(logger *slog.Logger) *Hub {
 		logger = slog.Default()
 	}
 	return &Hub{
-		subs:     make(map[*subscriber]struct{}),
-		subsByIF: make(map[string]int),
-		logger:   logger,
+		subs:       make(map[*subscriber]struct{}),
+		subsByIF:   make(map[string]int),
+		logger:     logger,
+		shutdownCh: make(chan struct{}),
 	}
 }
 
@@ -149,8 +156,12 @@ func (h *Hub) Subscribe(ctx context.Context, ifID string) (<-chan Event, func(),
 	}
 
 	// Auto-unregister quando context cancelar (client disconnect)
+	// OU quando Hub.Shutdown() for chamado (garante cleanup em tests).
 	go func() {
-		<-ctx.Done()
+		select {
+		case <-ctx.Done():
+		case <-h.shutdownCh:
+		}
 		unregister()
 	}()
 
@@ -206,6 +217,49 @@ func (h *Hub) Stats() (subs int, totalEvents, dropped uint64) {
 	subs = len(h.subs)
 	h.mu.RUnlock()
 	return subs, h.totalEvents.Load(), h.dropped.Load()
+}
+
+// Shutdown fecha todos os subscriber channels e aguarda as goroutines
+// de ctx.Done() terminarem.
+//
+// Fecha shutdownCh → todas as goroutines (hub.go:161-167) saem do select
+// e chamam unregister(). Pollamos Stats() até subs=0 (ou timeout 2s).
+//
+// Em produção o Hub é lifetime do processo — goroutines morrem com o
+// processo. Shutdown existe só pra tests (evita goroutine leaks no CI).
+func (h *Hub) Shutdown() {
+	// Snapshot dos subscribers antes de fechar.
+	h.mu.RLock()
+	subsCount := len(h.subs)
+	h.mu.RUnlock()
+
+	// Fecha shutdownCh — todas as goroutines de subscriber saem do select.
+	// IMPORTANTE: não segura h.mu aqui. As goroutines de subscriber chamam
+	// unregister() que tenta adquirir h.mu (exclusive). Se segurasse h.mu
+	// antes de wg.Wait(), deadlock: Shutdown espera goroutines terminarem,
+	// mas goroutines esperam h.mu que Shutdown segura.
+	close(h.shutdownCh)
+
+	// Poll até todos os subscribers serem removidos (unregister() remove
+	// do map e fecha o canal, depois que shutdownCh fechou).
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		h.mu.RLock()
+		remaining := len(h.subs)
+		h.mu.RUnlock()
+		if remaining == 0 {
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	h.logger.Warn("hub shutdown timeout",
+		"subs_before", subsCount,
+		"subs_after", func() int {
+			h.mu.RLock()
+			defer h.mu.RUnlock()
+			return len(h.subs)
+		}())
 }
 
 // --- HTTP handler ---
