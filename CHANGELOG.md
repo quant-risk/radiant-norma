@@ -2,6 +2,52 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## Unreleased — Phase 1.1: fail-closed L1 validator
+
+> **Status:** ✅ Shipped on branch `remediation/gates-1-14` (commit `e7c7e99`).
+> **Tipo:** security/correctness fix (closes audit gate #2).
+> **Detalhes:** ver [`docs/PHASE_1_1.md`](docs/PHASE_1_1.md).
+
+### Mudanças
+
+- **L1 validator fail-closed.** `audit.ValidateXSD` retorna `ErrSchemaUnavailable`
+  (tipo tipado) em vez de `(nil, nil)` quando o CADOC não tem XSD registrado
+  ou o arquivo está indisponível.
+- **Documentos vazios rejeitados.** `Service.validateL1Parse` recusa qualquer
+  documento cujo elemento raiz tem zero atributos e zero elementos filhos.
+  Comportamento histórico: esses documentos eram aprovados em silêncio pelo
+  fallback permissivo de root-tag.
+- **`expectedRootTag` estendido.** Cobre agora CADOCs `4060` (usado em testes
+  internos) e `4111` (raiz canônica do generator).
+- **`SupportedCADOCs()` adicionado.** Lista os CADOCs cujos schemas estão
+  registrados neste build; pode ser usado em handlers para validação prévia.
+- **Testes Phase 1.1.** Sete novos testes em
+  `internal/audit/phase_1_1_validation_test.go` travam o contrato fail-closed.
+
+### Compatibilidade
+
+- Testes `TestValidate_*` pré-existentes continuam verdes (8/8).
+- Suite completa do backend continua verde, exceto o teste flaky conhecido
+  `internal/auditlog/TestLog_Concurrent` sob contenção pesada (Sprint 6 v1.5.0,
+  F21.5 — não relacionado a esta mudança).
+
+### Breaking changes intencionais
+
+- Clientes que enviavam `<Documento4111/>`, `<DocumentoDRSAC/>`, `<DocTXB/>`,
+  `<documentoDLO/>`, etc., vazios para "validar estrutura" agora recebem
+  HTTP 200 com `passed=false` e `errors[0].codigo = "L1-PARSE"`.
+- Mensagens de erro detalhadas (e.g. `"documento DocumentoDRSAC vazio"`) vão
+  apenas para o log do servidor; a response pública mantém a forma genérica
+  `"documento XML/JSON inválido"` por Validation 19 (F19.11) — não vaza nomes
+  de elementos nem paths internos.
+
+### Próximas fases do plano
+
+Ver `PROMPT_AUDITORIA_E2E.md` e o plano de remediação para a sequência
+completa. Próximas: 1.2 (unificar parser+generator), 1.3 (rota `/v1/validate`
+usa `ValidateFull`), 1.4 (whitelist de versão), 1.5 (required fields),
+1.6 (data_base/versao_layout obrigatórios no body).
+
 ## v3.36.4 — 2026-07-13 (Code review fixes — Sprint 57) ✅
 
 > **Status:** ✅ Shipped
