@@ -27,10 +27,10 @@ var ErrConversationNotFound = errors.New("conversation not found")
 // ConversationStore persiste mensagens de conversa por tenant no DB.
 // Thread-safe via sync.Mutex (WriteMutex apenas — reads diretos no DB).
 type ConversationStore struct {
-	db           *sql.DB
-	writeMu      sync.Mutex // serializa writes, reads são direct DB
-	maxAge       time.Duration
-	maxPairs     int // máximo de pares user/assistant por sessão de prompt
+	db       *sql.DB
+	writeMu  sync.Mutex // serializa writes, reads são direct DB
+	maxAge   time.Duration
+	maxPairs int // máximo de pares user/assistant por sessão de prompt
 }
 
 // NewConversationStore cria um ConversationStore.
@@ -60,7 +60,7 @@ func (c *ConversationStore) SaveMessage(ctx context.Context, msg ConversationMes
 // ConversationMessage é uma mensagem de conversa armazenada no DB.
 type ConversationMessage struct {
 	IfID    string `json:"if_id"`
-	Role    string `json:"role"`    // "user" | "assistant"
+	Role    string `json:"role"` // "user" | "assistant"
 	Content string `json:"content"`
 }
 

@@ -90,6 +90,11 @@ func (g *Generator) EstimateComplexity(doc *canonical.CanonicalDocument) generat
 	}
 }
 
+// RootTag returns the canonical root tag for 4111.
+func (g *Generator) RootTag() string {
+	return "Documento4111"
+}
+
 // Generate produz o XML do 4111 COSIF a partir do CanonicalDocument.
 // Retorna (nil, error) quando o documento não pode ser gerado.
 // Retorna (GeneratedDoc, nil) em sucesso.

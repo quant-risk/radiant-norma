@@ -26,6 +26,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/audit/l4"
 	"github.com/fortvna/radiant-norma/backend/internal/audit/rules"
 	"github.com/fortvna/radiant-norma/backend/internal/docdli"
+	"github.com/fortvna/radiant-norma/backend/internal/generator"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/observability"
 	"go.opentelemetry.io/otel/attribute"
@@ -122,8 +123,9 @@ type RulePrefs interface {
 // Service é o serviço do Norma Audit.
 type Service struct {
 	db       *sql.DB
-	registry *rules.Registry // registry de regras portadas (Sprint 4+)
-	prefs    RulePrefs       // Sprint 12: filter de regras desabilitadas por IF
+	registry *rules.Registry     // registry de regras portadas (Sprint 4+)
+	prefs    RulePrefs           // Sprint 12: filter de regras desabilitadas por IF
+	genReg   *generator.Registry // Sprint 57: generator registry (fonte canônica de root tags)
 }
 
 // New cria um novo Service.
@@ -140,6 +142,13 @@ func (s *Service) SetRegistry(r *rules.Registry) {
 // Se não setado, validação roda sem filtrar disabled rules.
 func (s *Service) SetRulePrefs(p RulePrefs) {
 	s.prefs = p
+}
+
+// SetGeneratorRegistry injeta o generator registry (Sprint 57).
+// Usado pelo Norma Audit para obter root tags canônicas dos generators.
+// Se não setado, usa expectedRootTag() como fallback (comportamento legacy).
+func (s *Service) SetGeneratorRegistry(r *generator.Registry) {
+	s.genReg = r
 }
 
 // CompareWithPrevious compara um envio com seu anteior (L4 Histórico).
@@ -455,6 +464,63 @@ func (s *Service) ValidateFull(ctx context.Context, req *FullValidationRequest) 
 	return resp, nil
 }
 
+// FullToValidationResponse converts a FullValidationResponse (L1-L4) to the
+// legacy ValidationResponse format for backwards compatibility with existing
+// API clients.
+//
+// Phase 1.3: /v1/validate agora usa ValidateFull internamente, mas retorna
+// ValidationResponse para não quebrar callers existentes.
+func FullToValidationResponse(full *FullValidationResponse) *ValidationResponse {
+	if full == nil {
+		return &ValidationResponse{Passed: false, Errors: []ValidationError{{
+			Critica:  Critica{Codigo: "INTERNAL_ERROR"},
+			Severity: "E",
+			Message:  "FullValidationResponse is nil",
+		}}}
+	}
+
+	var allErrors, allWarnings []ValidationError
+
+	for _, layer := range []*LayerResult{full.L1, full.L2, full.L3, full.L4} {
+		if layer == nil {
+			continue
+		}
+		// Only include errors from layers that failed.
+		// L1/L2 failures are always blocking.
+		// L3/L4 failures are included as errors only if severity is "E".
+		if layer.Status == LayerFailed {
+			for _, e := range layer.Errors {
+				if layer == full.L3 || layer == full.L4 {
+					// L3/L4 errors from cross-doc/historical are warnings unless marked E
+					if e.Severity == "E" {
+						allErrors = append(allErrors, e)
+					} else {
+						allWarnings = append(allWarnings, e)
+					}
+				} else {
+					allErrors = append(allErrors, e)
+				}
+			}
+		}
+		allWarnings = append(allWarnings, layer.Warnings...)
+	}
+
+	// Passed = true only if all blocking layers (L1, L2) passed.
+	passed := full.L1 != nil && full.L1.Status == LayerPassed &&
+		full.L2 != nil && full.L2.Status == LayerPassed
+
+	return &ValidationResponse{
+		CadocCode:  full.CadocCode,
+		DataBase:   full.DataBase,
+		XMLHash:    full.XMLHash,
+		Passed:     passed,
+		Errors:     allErrors,
+		Warnings:   allWarnings,
+		ExecutedAt: time.Now(),
+		DurationMs: full.DurationMs,
+	}
+}
+
 // Validate é o entrypoint principal: recebe um XML/JSON, retorna erros.
 func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*ValidationResponse, error) {
 	ctx, span := observability.StartSpan(ctx, "audit.Validate",
@@ -661,7 +727,7 @@ func (s *Service) validateL1Parse(req *ValidationRequest) error {
 	}
 
 	// Strict fallback. Parse + root tag + non-empty.
-	rootTag := expectedRootTag(req.CadocCode)
+	rootTag := s.expectedRootTag(req.CadocCode)
 	if rootTag == "" {
 		return fmt.Errorf("CADOC %q não é suportado pelo validator L1 (sem root tag canônico)", req.CadocCode)
 	}
@@ -721,9 +787,19 @@ func (s *Service) validateL1Parse(req *ValidationRequest) error {
 // empty return from this function is the canonical signal "this CADOC is
 // not supported by L1".
 //
-// To add a new CADOC, register its root tag here AND in the xsdPaths map
-// (internal/audit/xsd_validator.go). The two must stay in sync.
-func expectedRootTag(cadoc string) string {
+// Phase 1.2: quando o generator registry está injetado (s.genReg),
+// este método delega ao generator para obter a root tag canônica.
+// Isso garante que validator e generator nunca divergem.
+func (s *Service) expectedRootTag(cadoc string) string {
+	// Fase 1.2: usa generator como fonte canônica se disponível.
+	if s.genReg != nil {
+		g := s.genReg.Get(cadoc)
+		if g != nil {
+			return g.RootTag()
+		}
+	}
+	// Fallback legacy: mapa hardcoded (manter para CADOCs sem generator
+	// e para backwards compatibility em testes).
 	switch cadoc {
 	case "3040":
 		return "Doc3040"

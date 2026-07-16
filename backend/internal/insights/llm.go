@@ -57,7 +57,7 @@ type LLMClient interface {
 // StreamChunk is a chunk of streamed LLM response.
 type StreamChunk struct {
 	Text  string
-	Done  bool // true when this is the final chunk
+	Done  bool  // true when this is the final chunk
 	Error error // non-nil if streaming failed
 }
 
@@ -346,8 +346,8 @@ type LLMConfig struct {
 	Logger          *slog.Logger
 	RateLimit       int
 	RateWindow      time.Duration
-	MaxHistoryPairs int // conversation pairs sent in prompt (default 5)
-	MaxEvents       int // recent events in context (default 50)
+	MaxHistoryPairs int                // conversation pairs sent in prompt (default 5)
+	MaxEvents       int                // recent events in context (default 50)
 	ConvStore       *ConversationStore // nil → histórico desabilitado
 	RespCache       *ResponseCache     // nil → cache desabilitado
 }
@@ -535,7 +535,6 @@ func (s *LLMService) ClearHistory(ctx context.Context, ifID string) error {
 	}
 	return s.cfg.ConvStore.ClearHistory(ctx, ifID)
 }
-
 
 // LLMAnswer is the response from Ask.
 type LLMAnswer struct {

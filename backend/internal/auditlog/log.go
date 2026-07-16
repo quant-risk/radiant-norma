@@ -55,6 +55,13 @@ func New(db *sql.DB) *Logger {
 // (sem isso, dois goroutines pegariam o mesmo prev_hash e gerariam
 // entradas com mesmo PrevHash — chain quebrada).
 //
+// Phase 7 (Sprint 61): Log agora escreve em AMBAS as tabelas:
+//   1. audit_log   — hash chain (tamper-evident, LGPD/SOC2)
+//   2. audit_events — denormalizado legível (UI, /v1/audit_log)
+//
+// Em caso de falha no INSERT do audit_events, o transaction rollback
+// aborta o audit_log também — atomicidade garantida.
+//
 // Importante: o timestamp usado no entry_hash É O MESMO que vai pro DB
 // (passamos explicitamente pro INSERT). Sem isso, o created_at do SQLite
 // (CURRENT_TIMESTAMP) seria diferente do time.Now() do Go, e o Verify
@@ -129,9 +136,24 @@ func (l *Logger) Log(ifID, actor, action, target string, payload []byte, metadat
 			timestampStr,
 		)
 		if execErr != nil {
-			return fmt.Errorf("insert: %w", execErr)
+			return fmt.Errorf("insert audit_log: %w", execErr)
 		}
 		id, _ = res.LastInsertId()
+
+		// Phase 7: também insere em audit_events (denormalizado legível).
+		// audit_events.payload = payload cru ([]byte); se vazio usa metaJSON.
+		payloadStr := string(payload)
+		if payloadStr == "" {
+			payloadStr = string(metaJSON)
+		}
+		description := extractDescription(metadata)
+		_, execErr = tx.ExecContext(ctx, `
+			INSERT INTO audit_events (audit_log_id, if_id, actor, action, target, description, payload, created_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		`, id, nullable(ifID), actor, action, nullable(target), description, payloadStr, timestampStr)
+		if execErr != nil {
+			return fmt.Errorf("insert audit_events: %w", execErr)
+		}
 		return nil
 	})
 	if err != nil {
@@ -238,4 +260,19 @@ func nullable(s string) any {
 		return nil
 	}
 	return s
+}
+
+// extractDescription tenta extrair "description" de um metadata any.
+// Helper para audit_events.description — prioriza o campo "description" do
+// metadata map quando disponível. Retorna string vazia se não encontrado.
+func extractDescription(metadata any) string {
+	if metadata == nil {
+		return ""
+	}
+	if m, ok := metadata.(map[string]any); ok {
+		if desc, ok := m["description"].(string); ok {
+			return desc
+		}
+	}
+	return ""
 }

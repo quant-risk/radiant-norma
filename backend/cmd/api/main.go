@@ -165,6 +165,10 @@ func main() {
 	})
 	logger.Info("generator registry inicializado", "cadocs", len(genReg.List()))
 
+	// Phase 1.2: injeta generator registry no audit service para que
+	// expectedRootTag() use o generator como fonte canônica de root tags.
+	audSvc.SetGeneratorRegistry(genReg)
+
 	srv := api.NewServer(d, schReg, audSvc, audLog, staClient, radarSvc, ruleprefs.NewPreferences(d), ruleprefs.NewToggleLimiter(10, time.Minute), insights.NewAcknowledgments(d), brandingSvc, insightsLLM, marketplaceSvc, pilotSvc, crossDocEngine, wizardStore)
 	srv.GeneratorRegistry = genReg
 

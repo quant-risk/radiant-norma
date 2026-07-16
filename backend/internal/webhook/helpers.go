@@ -52,18 +52,26 @@ func deliver(ctx context.Context, url, event, payload, secret string) (int, stri
 	return resp.StatusCode, string(body), nil
 }
 
-// isRetryable returns true if the error should trigger a retry.
-func isRetryable(err error) bool {
+// isRetryable returns true if the delivery should be retried.
+// Phase 5: status parameter added — 429 and 5xx are retryable; 4xx (except 429) is not.
+func isRetryable(err error, status int) bool {
 	if err == nil {
 		return false
 	}
-	// Retry on network errors and 5xx (but not 429 Rate Limited).
-	// Note: we don't have access to status code here directly,
-	// so we retry based on error message patterns.
+	// 429 Rate Limited — retry after backoff.
+	if status == 429 {
+		return true
+	}
+	// 5xx BACEN/internal errors — retry.
+	if status >= 500 && status < 600 {
+		return true
+	}
+	// 4xx client errors (except 429) — don't retry, caller must fix input.
+	if status >= 400 && status < 500 {
+		return false
+	}
+	// Network errors — retry.
 	msg := err.Error()
-	// "context deadline exceeded" = timeout → retry
-	// "connection refused" → retry
-	// "no such host" → retry
 	retryable := containsAny(msg, "timeout", "deadline", "refused", "no such host",
 		"connection reset", "temporary failure")
 	return retryable

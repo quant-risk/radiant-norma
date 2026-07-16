@@ -15,8 +15,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/fortvna/radiant-norma/backend/internal/schema"
+	"github.com/go-chi/chi/v5"
 )
 
 // schemaChangelogEntry é uma entrada no timeline de changelog.
@@ -169,9 +169,9 @@ func (s *Server) getSchemaVersion(w http.ResponseWriter, r *http.Request) {
 }
 
 type schemaInsertRequest struct {
-	CadocCode     string          `json:"cadoc_code"`
-	EffectiveFrom string          `json:"effective_from"`
-	SourceURI     string          `json:"source_uri,omitempty"`
-	XSD           string          `json:"xsd,omitempty"`
-	Fields        []schema.Field  `json:"fields"`
+	CadocCode     string         `json:"cadoc_code"`
+	EffectiveFrom string         `json:"effective_from"`
+	SourceURI     string         `json:"source_uri,omitempty"`
+	XSD           string         `json:"xsd,omitempty"`
+	Fields        []schema.Field `json:"fields"`
 }

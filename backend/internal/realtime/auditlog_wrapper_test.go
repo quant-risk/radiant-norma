@@ -45,6 +45,26 @@ func testAuditLog(t *testing.T) (*sql.DB, func()) {
 		t.Fatalf("create table: %v", err)
 	}
 
+	// Phase 7: audit_events denormalized readable table (written by auditlog.Log dual-write).
+	// Schema matches migration 006_sprint8c_envios_audit_insights.sql.
+	_, err = d.Exec(`CREATE TABLE IF NOT EXISTS audit_events (
+		id              INTEGER PRIMARY KEY AUTOINCREMENT,
+		audit_log_id    INTEGER NOT NULL REFERENCES audit_log(id),
+		if_id           TEXT,
+		actor           TEXT NOT NULL,
+		action          TEXT NOT NULL,
+		target          TEXT,
+		description     TEXT,
+		payload         TEXT,
+		created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	)`)
+	if err != nil {
+		t.Fatalf("create audit_events table: %v", err)
+	}
+	if err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+
 	cleanup := func() {
 		_ = d.Close()
 		_ = os.RemoveAll(tmpDir)

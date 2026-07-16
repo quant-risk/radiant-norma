@@ -25,8 +25,8 @@ import (
 type Config struct {
 	ServiceName    string
 	ServiceVersion string
-	OTLPEndpoint  string // e.g. "localhost:4317". Empty = console exporter (dev).
-	Env           string
+	OTLPEndpoint   string // e.g. "localhost:4317". Empty = console exporter (dev).
+	Env            string
 }
 
 // NewConfig builds a Config from environment variables.
@@ -34,8 +34,8 @@ func NewConfig() Config {
 	return Config{
 		ServiceName:    envOr("OTEL_SERVICE_NAME", "radiant-norma"),
 		ServiceVersion: envOr("OTEL_SERVICE_VERSION", "dev"),
-		OTLPEndpoint:  os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
-		Env:           envOr("RADIANT_ENV", "development"),
+		OTLPEndpoint:   os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
+		Env:            envOr("RADIANT_ENV", "development"),
 	}
 }
 
@@ -100,9 +100,9 @@ func InitTracer(ctx context.Context, cfg Config) (func(), error) {
 		"env", cfg.Env,
 		"otlp_endpoint", cfg.OTLPEndpoint)
 
-		return func() {
-			_ = tp.Shutdown(context.Background())
-		}, nil
+	return func() {
+		_ = tp.Shutdown(context.Background())
+	}, nil
 }
 
 var otelTracer trace.Tracer

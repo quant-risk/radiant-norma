@@ -46,6 +46,23 @@ func (d *Dispatcher) Enqueue(id, webhookID, event, payload string) {
 	}
 }
 
+// EnqueueAndInsert creates the delivery record and enqueues it.
+// Phase 5: fixes the missing INSERT that caused processJob to never find records.
+func (d *Dispatcher) EnqueueAndInsert(webhookID, event, payload string) string {
+	id := newID()
+	_, err := d.db.ExecContext(context.Background(),
+		`INSERT INTO webhook_deliveries (id, webhook_id, event, payload, status, attempt, created_at)
+		 VALUES (?, ?, ?, ?, 'pending', 0, CURRENT_TIMESTAMP)`,
+		id, webhookID, event, payload)
+	if err != nil {
+		slog.Error("webhook enqueue: failed to insert delivery record",
+			"webhook_id", webhookID, "event", event, "err", err)
+		return id
+	}
+	d.Enqueue(id, webhookID, event, payload)
+	return id
+}
+
 // worker processes delivery jobs.
 func (d *Dispatcher) worker(idx int) {
 	defer d.wg.Done()
@@ -59,7 +76,7 @@ func (d *Dispatcher) processJob(job deliveryJob) {
 	defer cancel()
 
 	// Ensure delivery record exists with status=pending. Uses UPDATE so the
-	// row (created by Dispatch or RetryDelivery) is preserved — avoiding the
+	// row (created by EnqueueAndInsert) is preserved — avoiding the
 	// DELETE+INSERT cycle of INSERT OR REPLACE which races with concurrent
 	// goroutines on the same SQLite connection in the test environment.
 	res, err := d.db.ExecContext(ctx,
@@ -95,7 +112,8 @@ func (d *Dispatcher) processJob(job deliveryJob) {
 	statusCode, respBody, delErr := deliver(ctx, url, job.Event, job.Payload, secret)
 
 	if delErr != nil {
-		if isRetryable(delErr) {
+		// Phase 5: retryable decision based on error + status code.
+		if isRetryable(delErr, statusCode) {
 			d.scheduleRetry(job, statusCode, respBody)
 			return
 		}

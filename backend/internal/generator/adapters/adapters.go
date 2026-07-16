@@ -24,13 +24,13 @@ type SourceAdapter interface {
 
 // CanonicalDoc é o documento canônico retornado pelo adapter.
 type CanonicalDoc struct {
-	IFID         string         `json:"if_id"`
-	CadocCode    string         `json:"cadoc_code"`
-	DataBase     string         `json:"data_base"`
-	VersaoLayout string         `json:"versao_layout"`
+	IFID          string         `json:"if_id"`
+	CadocCode     string         `json:"cadoc_code"`
+	DataBase      string         `json:"data_base"`
+	VersaoLayout  string         `json:"versao_layout"`
 	Participantes []Participante `json:"participantes,omitempty"`
-	Operacoes    []Operacao     `json:"operacoes,omitempty"`
-	Extra        map[string]any `json:"extra,omitempty"`
+	Operacoes     []Operacao     `json:"operacoes,omitempty"`
+	Extra         map[string]any `json:"extra,omitempty"`
 }
 
 // Participante representa um participante no documento.

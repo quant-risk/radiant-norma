@@ -127,7 +127,7 @@ func AddBreadcrumb(ctx context.Context, category, message string, data map[strin
 	hub.AddBreadcrumb(&sentry.Breadcrumb{
 		Category:  category,
 		Message:   message,
-		Data:     data,
+		Data:      data,
 		Timestamp: time.Now(),
 	}, nil)
 }

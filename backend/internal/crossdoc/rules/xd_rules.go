@@ -1,15 +1,16 @@
 // Sprint 52 v3.34.33: Regras cross-doc XD02, XD03, XD06–XD12.
 //
 // Contexto:
-//   XD02: 3040 ↔ 3050 (total de operações/participantes consistente)
-//   XD03: 2160 ↔ 2170 (LCR ≥ 100% consistência com NSFR)
-//   XD06: 3050 ↔ 2160 (APR em LCR — Operating Credit vs Liquidity)
-//   XD07: 3040 ↔ 4111 ↔ 3050 (triangulação completa)
-//   XD08: 2061 ↔ 2070 (limites operacionais vs requerimento capital)
-//   XD09: 2160 ↔ 3040 (liquidez × risco de crédito)
-//   XD10: DRSAC ↔ 3040 (ESG score × taxa de inadimplência)
-//   XD11: DRSAC ↔ 4111 (operações ESG-classified)
-//   XD12: Consistência de data-base entre todos CADOCs do envío
+//
+//	XD02: 3040 ↔ 3050 (total de operações/participantes consistente)
+//	XD03: 2160 ↔ 2170 (LCR ≥ 100% consistência com NSFR)
+//	XD06: 3050 ↔ 2160 (APR em LCR — Operating Credit vs Liquidity)
+//	XD07: 3040 ↔ 4111 ↔ 3050 (triangulação completa)
+//	XD08: 2061 ↔ 2070 (limites operacionais vs requerimento capital)
+//	XD09: 2160 ↔ 3040 (liquidez × risco de crédito)
+//	XD10: DRSAC ↔ 3040 (ESG score × taxa de inadimplência)
+//	XD11: DRSAC ↔ 4111 (operações ESG-classified)
+//	XD12: Consistência de data-base entre todos CADOCs do envío
 package rules
 
 import (
@@ -36,7 +37,7 @@ import (
 // submodalidades em CRDLivre).
 type XD02TotalOperacoes3040vs3050 struct{}
 
-func (XD02TotalOperacoes3040vs3050) Code() string          { return "XD02" }
+func (XD02TotalOperacoes3040vs3050) Code() string { return "XD02" }
 func (XD02TotalOperacoes3040vs3050) Description() string {
 	return "Total de operações 3040 deve ser consistente (±20%) com 3050"
 }
@@ -66,7 +67,7 @@ func (XD02TotalOperacoes3040vs3050) Apply(_ context.Context, docs *crossdoc.DocS
 	if ops3040 == 0 || ops3050 == 0 {
 		return nil
 	}
-	ratio := math.Abs(ops3040 - ops3050) / math.Max(ops3040, ops3050)
+	ratio := math.Abs(ops3040-ops3050) / math.Max(ops3040, ops3050)
 	if ratio > 0.20 {
 		return crossdoc.NewError("XD02", "A",
 			fmt.Sprintf("discrepância %.0f%% entre ops 3040 (%.0f) e 3050 (%.0f) — tol. 20%%",
@@ -113,7 +114,7 @@ func extract3050TotalOperations(doc *bacen.DocTXB) float64 {
 // Além disso, valida consistência de data-base entre os dois.
 type XD03LCRvsNSFR struct{}
 
-func (XD03LCRvsNSFR) Code() string          { return "XD03" }
+func (XD03LCRvsNSFR) Code() string { return "XD03" }
 func (XD03LCRvsNSFR) Description() string {
 	return "LCR (2160) ≥ 100%% E NSFR (2170) ≥ 100%% — consistência de data-base"
 }
@@ -172,7 +173,7 @@ func (XD03LCRvsNSFR) Apply(_ context.Context, docs *crossdoc.DocSet) error {
 // gerar estoques de liquidez proporcionais.
 type XD06APRemLCR struct{}
 
-func (XD06APRemLCR) Code() string          { return "XD06" }
+func (XD06APRemLCR) Code() string { return "XD06" }
 func (XD06APRemLCR) Description() string {
 	return "Volume de crédito ativo (3050) deve ser consistente com HQLA (2160)"
 }
@@ -218,7 +219,7 @@ func (XD06APRemLCR) Apply(_ context.Context, docs *crossdoc.DocSet) error {
 // v150>0 E 3050 deve reportar variação negativa de saldo.
 type XD07Triangulacao304041113050 struct{}
 
-func (XD07Triangulacao304041113050) Code() string          { return "XD07" }
+func (XD07Triangulacao304041113050) Code() string { return "XD07" }
 func (XD07Triangulacao304041113050) Description() string {
 	return "Triangulação 3040↔4111↔3050: inadimplência consistente"
 }
@@ -301,7 +302,7 @@ func extract3050TotalSaldo(doc *bacen.DocTXB, diario bool) float64 {
 // DDR > 0, limites devem ser reportados (> 0).
 type XD08LimitesvsCapital struct{}
 
-func (XD08LimitesvsCapital) Code() string          { return "XD08" }
+func (XD08LimitesvsCapital) Code() string { return "XD08" }
 func (XD08LimitesvsCapital) Description() string {
 	return "Limite operacional 2061 deve ser consistente com requerimento capital 2070"
 }
@@ -358,7 +359,7 @@ func (XD08LimitesvsCapital) Apply(_ context.Context, docs *crossdoc.DocSet) erro
 // HQLA = 0 → alerta.
 type XD09LiquidezvsRisco struct{}
 
-func (XD09LiquidezvsRisco) Code() string          { return "XD09" }
+func (XD09LiquidezvsRisco) Code() string { return "XD09" }
 func (XD09LiquidezvsRisco) Description() string {
 	return "HQLA (2160) deve ser positivo quando exposição crédito (3040) é significativa"
 }
@@ -415,7 +416,7 @@ func extract3040TotalSaldo(doc *bacen.Doc3040) float64 {
 // presença de saldo como proxy.
 type XD10ESGvsInadimplencia struct{}
 
-func (XD10ESGvsInadimplencia) Code() string          { return "XD10" }
+func (XD10ESGvsInadimplencia) Code() string { return "XD10" }
 func (XD10ESGvsInadimplencia) Description() string {
 	return "Alto risco ESG (DRSAC) deve corresponder a exposição no 3040"
 }
@@ -473,7 +474,7 @@ func (XD10ESGvsInadimplencia) Apply(_ context.Context, docs *crossdoc.DocSet) er
 // risco ambiental/social no DRSAC aparecem no 4111.
 type XD11ESGvs4111 struct{}
 
-func (XD11ESGvs4111) Code() string          { return "XD11" }
+func (XD11ESGvs4111) Code() string { return "XD11" }
 func (XD11ESGvs4111) Description() string {
 	return "Operações com alto risco ESG (DRSAC) devem constar no 4111"
 }
@@ -557,7 +558,7 @@ func extractCNPJs4111(data []byte) []string {
 // data-base são erros regulatórios graves.
 type XD12DataBaseConsistente struct{}
 
-func (XD12DataBaseConsistente) Code() string          { return "XD12" }
+func (XD12DataBaseConsistente) Code() string { return "XD12" }
 func (XD12DataBaseConsistente) Description() string {
 	return "Todos os CADOCs devem ter a mesma data-base no mesmo envío"
 }

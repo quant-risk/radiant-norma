@@ -205,6 +205,10 @@ func (s *Server) Router() http.Handler {
 		// Fallback para X-IF-ID apenas em dev mode.
 		r.Use(auth.Middleware(s.Auth))
 
+		// Phase 3: RBAC readonly middleware — bloqueia POST/PUT/DELETE/PATCH
+		// para tokens com role "readonly".
+		r.Use(readonlyMiddleware)
+
 		// Schemas
 		r.Get("/schemas", s.listSchemas)
 		r.Get("/schemas/{cadoc}", s.getSchema)
@@ -277,6 +281,9 @@ func (s *Server) Router() http.Handler {
 		// o frontend v3.0.0 (estava em empty states por falta de dados).
 		r.Get("/envios", s.listEnvios)
 		r.Get("/envios/stats", s.enviosStats)
+		// Phase 4: DLQ endpoints (admin only).
+		r.Get("/envios/dlq", s.listDLQ)
+		r.Post("/envios/{id}/retry", s.retryDLQ)
 		r.Get("/audit_log", s.listAuditLog)
 		r.Route("/insights", func(r chi.Router) {
 			r.Get("/kpis", s.insightsKPIs)
@@ -749,17 +756,34 @@ func (s *Server) validate(w http.ResponseWriter, r *http.Request) {
 		req.ContentType = "application/xml"
 	}
 
+	// Phase 1.6: data_base é obrigatório no body.
+	if req.DataBase == "" {
+		http.Error(w, "data_base is required (formato: 2026-06 ou 2026-06-30)", http.StatusBadRequest)
+		return
+	}
+
 	// Sprint 12 (v3.5.0): C32.23 — popula IfID a partir do JWT claims
 	// pra que audit.Service possa filtrar regras desabilitadas por IF
 	// (toggle em /v1/rules/{code}/toggle).
 	req.IfID = ifID
 
-	// Executa validação
-	resp, err := s.Audit.Validate(r.Context(), &req)
+	// Phase 1.3: executa ValidateFull (L1→L4) ao invés de Validate (L1→L2).
+	// RelatedDocs e EnvioID ficam nil/"" para requests de documento único
+	// (L3 cross-doc e L4 histórico precisam de contexto que não está
+	// disponível neste endpoint). O generate/batch endpoint fornece RelatedDocs.
+	fullReq := &audit.FullValidationRequest{
+		Main:        &req,
+		RelatedDocs: nil,
+		EnvioID:     "",
+	}
+	fullResp, err := s.Audit.ValidateFull(r.Context(), fullReq)
 	if err != nil {
 		s.internalServerError(w, err, "validate")
 		return
 	}
+
+	// Converte para ValidationResponse (formato da API pública).
+	resp := audit.FullToValidationResponse(fullResp)
 
 	// Audit log
 	_, _ = s.AuditLog.Log(ifID, r.RemoteAddr, "cadoc.validated", req.CadocCode, body, map[string]any{
@@ -786,6 +810,9 @@ func (s *Server) staSubmit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "authentication required", http.StatusUnauthorized)
 		return
 	}
+
+	// Phase 4: idempotency key (X-Idempotency-Key header).
+	idempotencyKey := r.Header.Get("X-Idempotency-Key")
 
 	// Aceita body JSON (preferencial, contrato documentado) OU query params (retrocompat).
 	var sub sta.Submission
@@ -834,29 +861,78 @@ func (s *Server) staSubmit(w http.ResponseWriter, r *http.Request) {
 		sub.Zip = []byte(sub.XML)
 	}
 
+	// Phase 4: deduplication.
+	// Check 1 — idempotency key (explicit client dedup).
+	if idempotencyKey != "" {
+		if dup := s.checkIdempotencyKey(r.Context(), ifID, idempotencyKey); dup != nil {
+			// Idempotent replay — return existing result.
+			_, _ = s.AuditLog.Log(ifID, r.RemoteAddr, "sta.submit.idempotent_replay",
+				sub.CadocCode, body, map[string]any{
+					"envio_id":     dup.ID,
+					"idempotency":  idempotencyKey,
+					"status":       dup.Status,
+					"protocol_sta": dup.ProtocolSTA,
+				})
+			writeJSON(w, http.StatusOK, map[string]any{
+				"protocol_sta": dup.ProtocolSTA,
+				"accepted":     dup.Status == "accepted",
+				"rejection":    nil,
+				"envio_id":     dup.ID,
+				"dedup":        "idempotency_key",
+			})
+			return
+		}
+	}
+
+	// Compute hashes now (needed for both dedup check and persistence).
+	xmlHash := sha256.Sum256([]byte(sub.XML))
+	zipHash := sha256.Sum256(sub.Zip)
+	if len(sub.Zip) == 0 {
+		zipHash = xmlHash
+	}
+	xmlHashHex := hex.EncodeToString(xmlHash[:])
+	zipHashHex := hex.EncodeToString(zipHash[:])
+
+	// Check 2 — xml_hash dedup (same IF + CADOC + data_base + XML content).
+	// Rejects duplicates with status pending/accepted/rejected.
+	if dup := s.checkXmlHashDedup(r.Context(), ifID, sub.CadocCode, sub.DataBase, xmlHashHex); dup != nil {
+		_, _ = s.AuditLog.Log(ifID, r.RemoteAddr, "sta.submit.dedup",
+			sub.CadocCode, body, map[string]any{
+				"envio_id": dup.ID,
+				"xml_hash": xmlHashHex,
+				"status":   dup.Status,
+			})
+		writeJSON(w, http.StatusOK, map[string]any{
+			"protocol_sta": dup.ProtocolSTA,
+			"accepted":     dup.Status == "accepted",
+			"rejection":    nil,
+			"envio_id":     dup.ID,
+			"dedup":        "xml_hash",
+		})
+		return
+	}
+
+	// No duplicate found — submit to STA.
 	result, err := s.STAClient.Submit(r.Context(), &sub)
 	if err != nil {
 		s.internalServerError(w, err, "staSubmit")
 		return
 	}
 
-	// Persiste envio no DB (para o cmd/worker reenviar em caso de falha)
+	// Persiste envio no DB (para o cmd/worker reenviar em caso de falha).
 	envioID := generateEnvioID()
-	xmlHash := sha256.Sum256([]byte(sub.XML))
-	zipHash := sha256.Sum256(sub.Zip)
-	if len(sub.Zip) == 0 {
-		zipHash = xmlHash
-	}
 	_, dbErr := s.DB.ExecContext(r.Context(), `
 		INSERT INTO envios (id, if_id, cadoc_code, data_base, remessa, xml_hash, zip_hash,
-		                    xml_content, zip_content, status, protocol_sta, sent_at, confirmed_at)
-		VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		                    xml_content, zip_content, status, protocol_sta, sent_at, confirmed_at,
+		                    idempotency_key)
+		VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)
 	`, envioID, ifID, sub.CadocCode, sub.DataBase,
-		hex.EncodeToString(xmlHash[:]), hex.EncodeToString(zipHash[:]),
+		xmlHashHex, zipHashHex,
 		sub.XML, sub.Zip,
-		statusFromResult(result), result.ProtocolSTA)
+		statusFromResult(result), result.ProtocolSTA,
+		nullString(idempotencyKey))
 	if dbErr != nil {
-		// Falha em persistir não bloqueia a response (STA já aceitou), mas avisamos
+		// Falha em persistir não bloqueia a response (STA já aceitou), mas avisamos.
 		// Validação 18 (F18.14): sanitizar err.Error() antes do AuditLog.
 		// AuditLog persiste em disco — vetor de disclosure persistente se raw.
 		_, _ = s.AuditLog.Log(ifID, r.RemoteAddr, "sta.submit.persist_failed",
@@ -878,12 +954,75 @@ func (s *Server) staSubmit(w http.ResponseWriter, r *http.Request) {
 		"accepted": result.Accepted,
 	})
 
+	// Phase 5: fire webhook for submission result (fire-and-forget).
+	if s.Webhook != nil {
+		if result.Accepted {
+			s.Webhook.DispatchSubmissionAccepted(r.Context(), ifID, sub.CadocCode,
+				sub.DataBase, result.ProtocolSTA, xmlHashHex)
+		} else {
+			reason := ""
+			if result.Rejection != nil {
+				reason = result.Rejection.Message
+			}
+			s.Webhook.DispatchSubmissionRejected(r.Context(), ifID, sub.CadocCode,
+				sub.DataBase, result.ProtocolSTA, reason)
+		}
+	}
+
 	writeJSON(w, http.StatusOK, map[string]any{
 		"protocol_sta": result.ProtocolSTA,
 		"accepted":     result.Accepted,
 		"rejection":    result.Rejection,
 		"envio_id":     envioID,
 	})
+}
+
+// dedupEnvio é o result minimal de uma checagem de dedup (usado por staSubmit).
+type dedupEnvio struct {
+	ID           string
+	Status       string
+	ProtocolSTA  string
+}
+
+// checkIdempotencyKey verifica se já existe envio com mesmo idempotency_key.
+// Retorna nil se não existe (prossegue com submission).
+func (s *Server) checkIdempotencyKey(ctx context.Context, ifID, key string) *dedupEnvio {
+	if key == "" {
+		return nil
+	}
+	var e dedupEnvio
+	err := s.DB.QueryRowContext(ctx, `
+		SELECT id, status, COALESCE(protocol_sta, '') FROM envios
+		WHERE if_id = ? AND idempotency_key = ?
+		LIMIT 1
+	`, ifID, key).Scan(&e.ID, &e.Status, &e.ProtocolSTA)
+	if err == sql.ErrNoRows {
+		return nil
+	}
+	if err != nil {
+		return nil // não bloqueia submission se query falhar
+	}
+	return &e
+}
+
+// checkXmlHashDedup verifica se já existe envio com mesmo IF + CADOC + data_base + xml_hash
+// e status terminal (accepted/rejected) ou pending.
+// Retorna nil se não existe (prossegue com submission).
+func (s *Server) checkXmlHashDedup(ctx context.Context, ifID, cadocCode, dataBase, xmlHash string) *dedupEnvio {
+	var e dedupEnvio
+	err := s.DB.QueryRowContext(ctx, `
+		SELECT id, status, COALESCE(protocol_sta, '') FROM envios
+		WHERE if_id = ? AND cadoc_code = ? AND data_base = ? AND xml_hash = ?
+		  AND status IN ('pending', 'accepted', 'rejected')
+		LIMIT 1
+	`, ifID, cadocCode, dataBase, xmlHash).Scan(&e.ID, &e.Status, &e.ProtocolSTA)
+	if err == sql.ErrNoRows {
+		return nil
+	}
+	if err != nil {
+		return nil // não bloqueia submission se query falhar
+	}
+	return &e
 }
 
 // generateEnvioID gera UUID v4-like para um envio.
@@ -901,6 +1040,160 @@ func statusFromResult(r *sta.Result) string {
 		return "accepted"
 	}
 	return "rejected"
+}
+
+// nullString returns a sql.NullString from an optional string value.
+// Phase 4: used for idempotency_key column.
+func nullString(v string) sql.NullString {
+	if v == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: v, Valid: true}
+}
+
+// --- DLQ handlers (Phase 4) ---
+
+// dlqEnvioDTO is the response shape for GET /v1/envios/dlq.
+type dlqEnvioDTO struct {
+	ID           string `json:"id"`
+	CadocCode    string `json:"cadoc_code"`
+	DataBase     string `json:"data_base"`
+	Period       string `json:"period"`
+	Status       string `json:"status"` // always "dead_letter"
+	ErrorCode    string `json:"error_code,omitempty"`
+	ErrorMessage string `json:"error_message,omitempty"`
+	Attempts     int    `json:"attempts"`
+	CreatedAt    string `json:"created_at"`
+}
+
+// listDLQ returns dead_letter envios for the authenticated tenant.
+//
+// GET /v1/envios/dlq
+//
+// Admin-only (role admin).
+func (s *Server) listDLQ(w http.ResponseWriter, r *http.Request) {
+	// Phase 4: require admin role for DLQ visibility.
+	claims, _ := auth.ClaimsFromContext(r.Context())
+	if claims == nil || claims.Role != auth.RoleAdmin {
+		http.Error(w, `{"error":"admin only"}`, http.StatusForbidden)
+		return
+	}
+
+	ifID := getIfID(r)
+	if ifID == "" {
+		http.Error(w, "IF não identificada", http.StatusUnauthorized)
+		return
+	}
+
+	limit := 50
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if v, err := strconv.Atoi(l); err == nil && v > 0 && v <= 200 {
+			limit = v
+		}
+	}
+
+	rows, err := s.DB.QueryContext(r.Context(), `
+		SELECT id, cadoc_code, COALESCE(data_base, ''), COALESCE(period, ''),
+		       status, COALESCE(error_code, ''), COALESCE(error_message, ''),
+		       attempts, COALESCE(created_at, '')
+		FROM envios
+		WHERE if_id = ? AND status = 'dead_letter'
+		ORDER BY created_at DESC LIMIT ?
+	`, ifID, limit)
+	if err != nil {
+		s.internalServerError(w, err, "listDLQ")
+		return
+	}
+	defer rows.Close()
+
+	envios := make([]dlqEnvioDTO, 0)
+	for rows.Next() {
+		var e dlqEnvioDTO
+		if err := rows.Scan(&e.ID, &e.CadocCode, &e.DataBase, &e.Period,
+			&e.Status, &e.ErrorCode, &e.ErrorMessage,
+			&e.Attempts, &e.CreatedAt); err != nil {
+			s.internalServerError(w, err, "listDLQ.scan")
+			return
+		}
+		envios = append(envios, e)
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"envios": envios,
+		"total":  len(envios),
+	})
+}
+
+// retryDLQ marks a dead_letter envio as pending for immediate retry.
+//
+// POST /v1/envios/{id}/retry
+//
+// Admin-only (role admin).
+func (s *Server) retryDLQ(w http.ResponseWriter, r *http.Request) {
+	// Phase 4: require admin role for manual DLQ retry.
+	claims, _ := auth.ClaimsFromContext(r.Context())
+	if claims == nil || claims.Role != auth.RoleAdmin {
+		http.Error(w, `{"error":"admin only"}`, http.StatusForbidden)
+		return
+	}
+
+	ifID := getIfID(r)
+	if ifID == "" {
+		http.Error(w, "IF não identificada", http.StatusUnauthorized)
+		return
+	}
+
+	envioID := chi.URLParam(r, "id")
+	if envioID == "" {
+		http.Error(w, "envio id required", http.StatusBadRequest)
+		return
+	}
+
+	// Verify it exists and belongs to the tenant.
+	var existingStatus string
+	if err := s.DB.QueryRowContext(r.Context(),
+		`SELECT status FROM envios WHERE id = ? AND if_id = ?`,
+		envioID, ifID).Scan(&existingStatus); err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "envio not found", http.StatusNotFound)
+			return
+		}
+		s.internalServerError(w, err, "retryDLQ.lookup")
+		return
+	}
+
+	if existingStatus != "dead_letter" {
+		http.Error(w, fmt.Sprintf("cannot retry envios with status %q (only dead_letter)", existingStatus), http.StatusConflict)
+		return
+	}
+
+	// Reset attempts and mark as pending for immediate reprocessing.
+	// Sets next_retry_at = NULL so worker picks it up immediately.
+	_, err := s.DB.ExecContext(r.Context(), `
+		UPDATE envios
+		SET status = 'pending',
+		    attempts = 0,
+		    next_retry_at = NULL,
+		    processing_started_at = NULL,
+		    error_code = NULL,
+		    error_message = NULL
+		WHERE id = ? AND if_id = ?
+	`, envioID, ifID)
+	if err != nil {
+		s.internalServerError(w, err, "retryDLQ.update")
+		return
+	}
+
+	_, _ = s.AuditLog.Log(ifID, r.RemoteAddr, "envio.retry.dlq", "", nil, map[string]any{
+		"envio_id": envioID,
+		"action":   "manual_retry",
+	})
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"envio_id": envioID,
+		"status":   "pending",
+		"message":  "envio requeued for retry",
+	})
 }
 
 // --- Radar handlers ---
@@ -1189,7 +1482,36 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 				http.Error(w, `{"error":"X-IF-ID contains invalid character"}`, http.StatusBadRequest)
 				return
 			}
+	}
+	next.ServeHTTP(w, r)
+	})
+}
+
+// readonlyMiddleware bloqueia requests mutativas (POST/PUT/DELETE/PATCH) para
+// tokens com role "readonly". Phase 3 implementa RBAC coarse-grained.
+//
+// Métodos seguros (GET/HEAD/OPTIONS) passam livremente.
+func readonlyMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Métodos seguros: leitura apenas.
+		if r.Method == "GET" || r.Method == "HEAD" || r.Method == "OPTIONS" {
+			next.ServeHTTP(w, r)
+			return
 		}
+
+		// Verifica role do token.
+		claims, err := auth.ClaimsFromContext(r.Context())
+		if err != nil || claims == nil {
+			// Sem claims = auth middleware já tratou (401).
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if claims.Role == auth.RoleReadOnly {
+			http.Error(w, `{"error":"readonly: mutation not allowed"}`, http.StatusForbidden)
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }

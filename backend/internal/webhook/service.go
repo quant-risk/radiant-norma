@@ -150,24 +150,25 @@ func (s *Service) Dispatch(ctx context.Context, ifID, event string, payload any)
 		if err := rows.Scan(&id, &url, &secret); err != nil {
 			continue
 		}
-		deliveryID := newID()
 		if s.ds != nil {
-			s.ds.Enqueue(deliveryID, id, event, payloadStr)
+			// Phase 5: use EnqueueAndInsert to create delivery record before enqueuing.
+			s.ds.EnqueueAndInsert(id, event, payloadStr)
 		}
 
 		// Fire-and-forget: worker processa a entrega.
 		// Se secret existe, calcula HMAC-SHA256 do payload.
 		_ = secret // used in deliverer
 		_ = url    // used in deliverer
-		_ = deliveryID
 	}
 }
 
 // Deliver enqueues a delivery for processing by the background worker.
+// Phase 5: now uses EnqueueAndInsert to create the delivery record before enqueuing.
 func (s *Service) Deliver(webhookID, event, payload string) string {
-	id := newID()
-	s.ds.Enqueue(id, webhookID, event, payload)
-	return id
+	if s.ds == nil {
+		return ""
+	}
+	return s.ds.EnqueueAndInsert(webhookID, event, payload)
 }
 
 // Delivery represents a webhook delivery attempt.

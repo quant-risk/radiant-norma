@@ -1,14 +1,15 @@
 // Sprint 31 v3.34.31: RangeUploadAPI — chunked upload via STA (manual §5.6).
 //
 // Endpoints:
-//   POST /v1/sta/range/init        — inicia sessão, pede protocolo ao BACEN
-//   PUT  /v1/sta/range/{protocolo} — faz upload de 1 chunk (Content-Range)
-//   GET  /v1/sta/range/{protocolo} — status dos chunks recebidos (resume)
+//
+//	POST /v1/sta/range/init        — inicia sessão, pede protocolo ao BACEN
+//	PUT  /v1/sta/range/{protocolo} — faz upload de 1 chunk (Content-Range)
+//	GET  /v1/sta/range/{protocolo} — status dos chunks recebidos (resume)
 //
 // Fluxo completo (Seção 5.6):
-//   1. POST /v1/sta/range/init → BACEN POST /arquivos → protocolo
-//   2. PUT  /v1/sta/range/{protocolo} com Content-Range: bytes X-Y/TOTAL
-//   3. GET  /v1/sta/range/{protocolo} → UploadStatus (ranges recebidos, situacao)
+//  1. POST /v1/sta/range/init → BACEN POST /arquivos → protocolo
+//  2. PUT  /v1/sta/range/{protocolo} com Content-Range: bytes X-Y/TOTAL
+//  3. GET  /v1/sta/range/{protocolo} → UploadStatus (ranges recebidos, situacao)
 //
 // Auth: JWT (same as other endpoints).
 package api
@@ -34,15 +35,15 @@ import (
 
 // rangeSession representa uma sessão de upload chunkado.
 type rangeSession struct {
-	ID             string      `json:"id"`
-	IfID           string      `json:"if_id"`
-	Protocolo      string      `json:"protocolo"`
-	CadocCode      string      `json:"cadoc_code"`
-	TotalBytes     int64       `json:"total_bytes"`
-	ReceivedBytes  int64       `json:"received_bytes"`
-	Ranges         []sta.Range `json:"ranges"`
-	Status         string      `json:"status"` // pending|complete|failed|abandoned
-	CreatedAt      time.Time   `json:"created_at"`
+	ID            string      `json:"id"`
+	IfID          string      `json:"if_id"`
+	Protocolo     string      `json:"protocolo"`
+	CadocCode     string      `json:"cadoc_code"`
+	TotalBytes    int64       `json:"total_bytes"`
+	ReceivedBytes int64       `json:"received_bytes"`
+	Ranges        []sta.Range `json:"ranges"`
+	Status        string      `json:"status"` // pending|complete|failed|abandoned
+	CreatedAt     time.Time   `json:"created_at"`
 }
 
 // activeSessions mantém sessões em memória enquanto o upload está ativo.
@@ -58,17 +59,19 @@ var logger = slog.Default()
 // staRangeInit — POST /v1/sta/range/init
 //
 // Body JSON:
-//   {
-//     "cadoc_code": "3040",
-//     "hash_hex": "sha256...",     // opcional
-//     "total_bytes": 1048576        // opcional
-//   }
+//
+//	{
+//	  "cadoc_code": "3040",
+//	  "hash_hex": "sha256...",     // opcional
+//	  "total_bytes": 1048576        // opcional
+//	}
 //
 // Retorna:
-//   201 { "protocolo": "12345", "session_id": "uuid", "ranges": [] }
-//   400 invalid request
-//   401 unauthorized
-//   503 STA backend não suporta chunked
+//
+//	201 { "protocolo": "12345", "session_id": "uuid", "ranges": [] }
+//	400 invalid request
+//	401 unauthorized
+//	503 STA backend não suporta chunked
 func (s *Server) staRangeInit(w http.ResponseWriter, r *http.Request) {
 	ifID := getIfID(r)
 	if ifID == "" {
@@ -111,15 +114,15 @@ func (s *Server) staRangeInit(w http.ResponseWriter, r *http.Request) {
 
 	// Cria sessão em memória.
 	session := &rangeSession{
-		ID:             generateID(),
-		IfID:           ifID,
-		Protocolo:      protocolo,
-		CadocCode:      req.CadocCode,
-		TotalBytes:     req.TotalBytes,
-		ReceivedBytes:  0,
-		Ranges:         []sta.Range{},
-		Status:         "pending",
-		CreatedAt:      time.Now(),
+		ID:            generateID(),
+		IfID:          ifID,
+		Protocolo:     protocolo,
+		CadocCode:     req.CadocCode,
+		TotalBytes:    req.TotalBytes,
+		ReceivedBytes: 0,
+		Ranges:        []sta.Range{},
+		Status:        "pending",
+		CreatedAt:     time.Now(),
 	}
 	sessionsMu.Lock()
 	activeSessions[protocolo] = session
@@ -155,11 +158,12 @@ func (s *Server) staRangeInit(w http.ResponseWriter, r *http.Request) {
 // Body: bytes brutos do chunk.
 //
 // Retorna:
-//   200 { "received_bytes": N, "ranges": [...] }
-//   400 invalid range / content-range missing
-//   401 unauthorized
-//   404 sessão não encontrada
-//   503 STA error
+//
+//	200 { "received_bytes": N, "ranges": [...] }
+//	400 invalid range / content-range missing
+//	401 unauthorized
+//	404 sessão não encontrada
+//	503 STA error
 func (s *Server) staRangeUpload(w http.ResponseWriter, r *http.Request) {
 	ifID := getIfID(r)
 	if ifID == "" {
@@ -247,13 +251,13 @@ func (s *Server) staRangeUpload(w http.ResponseWriter, r *http.Request) {
 	snapshot := rangeSession{
 		ID:            session.ID,
 		IfID:          session.IfID,
-		Protocolo:      session.Protocolo,
-		CadocCode:      session.CadocCode,
-		TotalBytes:     session.TotalBytes,
-		ReceivedBytes:  session.ReceivedBytes,
-		Ranges:         append([]sta.Range(nil), session.Ranges...),
-		Status:         session.Status,
-		CreatedAt:      session.CreatedAt,
+		Protocolo:     session.Protocolo,
+		CadocCode:     session.CadocCode,
+		TotalBytes:    session.TotalBytes,
+		ReceivedBytes: session.ReceivedBytes,
+		Ranges:        append([]sta.Range(nil), session.Ranges...),
+		Status:        session.Status,
+		CreatedAt:     session.CreatedAt,
 	}
 	sessionsMu.Unlock()
 
@@ -279,9 +283,10 @@ func (s *Server) staRangeUpload(w http.ResponseWriter, r *http.Request) {
 // Retorna status dos chunks recebidos (para resume de upload interrompido).
 //
 // Retorna:
-//   200 { protocolo, received_bytes, total_bytes, ranges, status }
-//   401 unauthorized
-//   404 não encontrada
+//
+//	200 { protocolo, received_bytes, total_bytes, ranges, status }
+//	401 unauthorized
+//	404 não encontrada
 func (s *Server) staRangeStatus(w http.ResponseWriter, r *http.Request) {
 	ifID := getIfID(r)
 	if ifID == "" {
@@ -301,12 +306,12 @@ func (s *Server) staRangeStatus(w http.ResponseWriter, r *http.Request) {
 		bus, err := ru.StatusUpload(r.Context(), protocolo)
 		if err == nil {
 			writeJSON(w, http.StatusOK, map[string]any{
-				"protocolo":       bus.Protocolo,
-				"received_bytes":  computeReceivedBytes(bus.RangesRecebidos),
-				"total_bytes":     0,
-				"ranges":          bus.RangesRecebidos,
-				"status":          bus.Situacao.String(),
-				"source":          "bacen",
+				"protocolo":      bus.Protocolo,
+				"received_bytes": computeReceivedBytes(bus.RangesRecebidos),
+				"total_bytes":    0,
+				"ranges":         bus.RangesRecebidos,
+				"status":         bus.Situacao.String(),
+				"source":         "bacen",
 			})
 			return
 		}
@@ -425,13 +430,13 @@ func (s *Server) loadSessionFromDB(ctx context.Context, protocolo string) *range
 	var ranges []sta.Range
 	_ = json.Unmarshal([]byte(rangesJSON), &ranges)
 	return &rangeSession{
-		ID:             id,
-		IfID:           ifID,
-		Protocolo:      protocolo,
-		TotalBytes:     totalBytes,
-		ReceivedBytes:  receivedBytes,
-		Ranges:         ranges,
-		Status:         status,
+		ID:            id,
+		IfID:          ifID,
+		Protocolo:     protocolo,
+		TotalBytes:    totalBytes,
+		ReceivedBytes: receivedBytes,
+		Ranges:        ranges,
+		Status:        status,
 	}
 }
 

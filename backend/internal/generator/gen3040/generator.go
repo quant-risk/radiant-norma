@@ -111,6 +111,11 @@ func (g *Generator) EstimateComplexity(doc *canonical.CanonicalDocument) generat
 	}
 }
 
+// RootTag returns the canonical root tag for 3040.
+func (g *Generator) RootTag() string {
+	return "Doc3040"
+}
+
 // Generate produces the XML of 3040 from the CanonicalDocument.
 // Returns (nil, error) when the document cannot be generated at all.
 // Returns (GeneratedDoc, nil) on success (Errors field is only populated

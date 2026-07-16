@@ -197,7 +197,7 @@ func (s *Server) AskLLM(w http.ResponseWriter, r *http.Request) {
 	// Audit log
 	_, _ = s.AuditLog.Log(ifID, claims.Sub, "insights.asked", "", nil, map[string]any{
 		"question_len": len(body.Question),
-		"model":       answer.Model,
+		"model":        answer.Model,
 	})
 
 	writeJSON(w, http.StatusOK, map[string]any{

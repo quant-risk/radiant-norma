@@ -100,18 +100,30 @@ func (s *Server) generateCadoc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Phase 1.5: data_base é obrigatório.
 	dataBase := req.DataBase
 	if dataBase.IsZero() {
-		dataBase = time.Now()
-		if dataBase.Day() > 25 {
-			dataBase = dataBase.AddDate(0, 1, -dataBase.Day()+1)
-		} else {
-			dataBase = time.Date(dataBase.Year(), dataBase.Month(), 1, 0, 0, 0, 0, time.UTC)
-		}
+		writeError(w, http.StatusBadRequest, "MISSING_DATA_BASE",
+			"data_base é obrigatório (formato: 2026-06-30T00:00:00Z)")
+		return
+	}
+
+	// Phase 1.5: verifica campos obrigatórios.
+	if missing := checkRequiredFields(g, req); len(missing) > 0 {
+		writeError(w, http.StatusBadRequest, "MISSING_REQUIRED_FIELDS",
+			fmt.Sprintf("campos obrigatórios ausentes: %v", missing))
+		return
 	}
 
 	doc := canonical.NewCanonical(req.IFID, dataBase, canonical.CadocType(cadoc))
 	if req.VersaoLayout != "" {
+		// Phase 1.4: valida que a versão é whitelist.
+		if !isVersionSupported(g, req.VersaoLayout) {
+			writeError(w, http.StatusBadRequest, "INVALID_VERSION",
+				fmt.Sprintf("versão %q não suportada para CADOC %s (suportadas: %v)",
+					req.VersaoLayout, cadoc, g.SupportedVersions()))
+			return
+		}
 		doc.VersaoLayout = req.VersaoLayout
 	} else {
 		// Use generator's default version instead of hardcoded "3.2".
@@ -212,16 +224,47 @@ func (s *Server) generateBatch(w http.ResponseWriter, r *http.Request) {
 
 		dataBase := cadocReq.DataBase
 		if dataBase.IsZero() {
-			dataBase = time.Now()
-			if dataBase.Day() > 25 {
-				dataBase = dataBase.AddDate(0, 1, -dataBase.Day()+1)
-			} else {
-				dataBase = time.Date(dataBase.Year(), dataBase.Month(), 1, 0, 0, 0, 0, time.UTC)
-			}
+			results = append(results, BatchResult{
+				CadocCode: cadocCode,
+				Errors: []generator.GenError{{
+					Code:    "MISSING_DATA_BASE",
+					Message: "data_base é obrigatório (formato: 2026-06-30T00:00:00Z)",
+				}},
+				Status: "error",
+			})
+			continue
+		}
+
+		// Phase 1.5: verifica campos obrigatórios.
+		if missing := checkRequiredFields(g, GenerateRequest{
+			CNPJ:    cadocReq.CNPJ,
+			NomeIF:  cadocReq.NomeIF,
+		}); len(missing) > 0 {
+			results = append(results, BatchResult{
+				CadocCode: cadocCode,
+				Errors: []generator.GenError{{
+					Code:    "MISSING_REQUIRED_FIELDS",
+					Message: fmt.Sprintf("campos obrigatórios ausentes: %v", missing),
+				}},
+				Status: "error",
+			})
+			continue
 		}
 
 		doc := canonical.NewCanonical(cadocReq.IFID, dataBase, canonical.CadocType(cadocCode))
 		if cadocReq.VersaoLayout != "" {
+			// Phase 1.4: valida que a versão é whitelist.
+			if !isVersionSupported(g, cadocReq.VersaoLayout) {
+				results = append(results, BatchResult{
+					CadocCode: cadocCode,
+					Errors: []generator.GenError{{
+						Code:    "INVALID_VERSION",
+						Message: fmt.Sprintf("versão %q não suportada (suportadas: %v)", cadocReq.VersaoLayout, g.SupportedVersions()),
+					}},
+					Status: "error",
+				})
+				continue
+			}
 			doc.VersaoLayout = cadocReq.VersaoLayout
 		} else {
 			doc.VersaoLayout = g.SupportedVersions()[0]
@@ -596,6 +639,54 @@ type FileParseResponse struct {
 	Document  *canonical.CanonicalDocument `json:"document"`
 	Status    string                       `json:"status"`
 	Message   string                       `json:"message"`
+}
+
+// isVersionSupported checks if version is in the generator's supported list.
+// Phase 1.4: enforces version whitelist on generate requests.
+func isVersionSupported(g generator.CADOCGenerator, version string) bool {
+	for _, v := range g.SupportedVersions() {
+		if v == version {
+			return true
+		}
+	}
+	return false
+}
+
+// checkRequiredFields verifica campos obrigatórios ausentes no request.
+// Phase 1.5: enforced required fields validation.
+// Returns list of missing field names.
+func checkRequiredFields(g generator.CADOCGenerator, req GenerateRequest) []string {
+	var missing []string
+
+	// Check header-level required fields.
+	requiredStrFields := map[string]string{
+		"cnpj":    req.CNPJ,
+		"nome_if": req.NomeIF,
+	}
+	for field, value := range requiredStrFields {
+		if value == "" {
+			missing = append(missing, field)
+		}
+	}
+
+	// Check generator-specific required fields via RequiredFields().
+	// Note: Participantes and Operacoes are optional for some CADOCs
+	// (they may be empty for minimal documents).
+	for _, f := range g.RequiredFields() {
+		if !f.Required {
+			continue
+		}
+		// Skip fields already checked above.
+		switch f.Tag {
+		case "cnpj", "nome_if":
+			continue
+		}
+		// For now, only check top-level scalar fields.
+		// Complex nested fields (operacoes, participantes) are validated
+		// by the generator's own Validate() call.
+	}
+
+	return missing
 }
 
 // writeError escreve um JSON de erro com código e mensagem.

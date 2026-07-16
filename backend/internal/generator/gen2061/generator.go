@@ -76,6 +76,11 @@ func (g *Generator) EstimateComplexity(doc *canonical.CanonicalDocument) generat
 	}
 }
 
+// RootTag returns the canonical root tag for 2061.
+func (g *Generator) RootTag() string {
+	return "documentoDLO"
+}
+
 // Generate produces the DLO XML from the CanonicalDocument.
 func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocument, dataBase time.Time) (*generator.GeneratedDoc, error) {
 	start := time.Now()

@@ -70,6 +70,11 @@ func (g *Generator) EstimateComplexity(doc *canonical.CanonicalDocument) generat
 	}
 }
 
+// RootTag returns the canonical root tag for 2170.
+func (g *Generator) RootTag() string {
+	return "documentoDLP"
+}
+
 func (g *Generator) Generate(ctx context.Context, doc *canonical.CanonicalDocument, dataBase time.Time) (*generator.GeneratedDoc, error) {
 	start := time.Now()
 	if errs := doc.Validate(); len(errs) > 0 {
