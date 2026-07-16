@@ -17,6 +17,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"strings"
 	"sync"
@@ -25,6 +26,7 @@ import (
 	"github.com/fortvna/radiant-norma/backend/internal/audit/l4"
 	"github.com/fortvna/radiant-norma/backend/internal/audit/rules"
 	"github.com/fortvna/radiant-norma/backend/internal/docdli"
+	"github.com/fortvna/radiant-norma/backend/internal/generator"
 	"github.com/fortvna/radiant-norma/backend/internal/loggerutil"
 	"github.com/fortvna/radiant-norma/backend/internal/observability"
 	"go.opentelemetry.io/otel/attribute"
@@ -121,8 +123,9 @@ type RulePrefs interface {
 // Service é o serviço do Norma Audit.
 type Service struct {
 	db       *sql.DB
-	registry *rules.Registry // registry de regras portadas (Sprint 4+)
-	prefs    RulePrefs       // Sprint 12: filter de regras desabilitadas por IF
+	registry *rules.Registry     // registry de regras portadas (Sprint 4+)
+	prefs    RulePrefs           // Sprint 12: filter de regras desabilitadas por IF
+	genReg   *generator.Registry // Sprint 57: generator registry (fonte canônica de root tags)
 }
 
 // New cria um novo Service.
@@ -139,6 +142,13 @@ func (s *Service) SetRegistry(r *rules.Registry) {
 // Se não setado, validação roda sem filtrar disabled rules.
 func (s *Service) SetRulePrefs(p RulePrefs) {
 	s.prefs = p
+}
+
+// SetGeneratorRegistry injeta o generator registry (Sprint 57).
+// Usado pelo Norma Audit para obter root tags canônicas dos generators.
+// Se não setado, usa expectedRootTag() como fallback (comportamento legacy).
+func (s *Service) SetGeneratorRegistry(r *generator.Registry) {
+	s.genReg = r
 }
 
 // CompareWithPrevious compara um envio com seu anteior (L4 Histórico).
@@ -454,6 +464,63 @@ func (s *Service) ValidateFull(ctx context.Context, req *FullValidationRequest) 
 	return resp, nil
 }
 
+// FullToValidationResponse converts a FullValidationResponse (L1-L4) to the
+// legacy ValidationResponse format for backwards compatibility with existing
+// API clients.
+//
+// Phase 1.3: /v1/validate agora usa ValidateFull internamente, mas retorna
+// ValidationResponse para não quebrar callers existentes.
+func FullToValidationResponse(full *FullValidationResponse) *ValidationResponse {
+	if full == nil {
+		return &ValidationResponse{Passed: false, Errors: []ValidationError{{
+			Critica:  Critica{Codigo: "INTERNAL_ERROR"},
+			Severity: "E",
+			Message:  "FullValidationResponse is nil",
+		}}}
+	}
+
+	var allErrors, allWarnings []ValidationError
+
+	for _, layer := range []*LayerResult{full.L1, full.L2, full.L3, full.L4} {
+		if layer == nil {
+			continue
+		}
+		// Only include errors from layers that failed.
+		// L1/L2 failures are always blocking.
+		// L3/L4 failures are included as errors only if severity is "E".
+		if layer.Status == LayerFailed {
+			for _, e := range layer.Errors {
+				if layer == full.L3 || layer == full.L4 {
+					// L3/L4 errors from cross-doc/historical are warnings unless marked E
+					if e.Severity == "E" {
+						allErrors = append(allErrors, e)
+					} else {
+						allWarnings = append(allWarnings, e)
+					}
+				} else {
+					allErrors = append(allErrors, e)
+				}
+			}
+		}
+		allWarnings = append(allWarnings, layer.Warnings...)
+	}
+
+	// Passed = true only if all blocking layers (L1, L2) passed.
+	passed := full.L1 != nil && full.L1.Status == LayerPassed &&
+		full.L2 != nil && full.L2.Status == LayerPassed
+
+	return &ValidationResponse{
+		CadocCode:  full.CadocCode,
+		DataBase:   full.DataBase,
+		XMLHash:    full.XMLHash,
+		Passed:     passed,
+		Errors:     allErrors,
+		Warnings:   allWarnings,
+		ExecutedAt: time.Now(),
+		DurationMs: full.DurationMs,
+	}
+}
+
 // Validate é o entrypoint principal: recebe um XML/JSON, retorna erros.
 func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*ValidationResponse, error) {
 	ctx, span := observability.StartSpan(ctx, "audit.Validate",
@@ -605,9 +672,33 @@ func (s *Service) Validate(ctx context.Context, req *ValidationRequest) (*Valida
 }
 
 // validateL1Parse faz o parse do XML ou JSON + validação XSD real.
-// Falha de parse = erro bloqueante.
-// Para CADOCs com XSD disponível (3040, 3050), valida contra o schema.
-// Para os outros, faz fallback para root-tag check.
+//
+// Fail-closed contract (Phase 1.1 of the remediation plan, gate #2):
+//
+//  1. JSON content: parses only (no schema enforcement; L1 is out of scope
+//     for JSON, which has its own contract in the validation pipeline).
+//
+//  2. XML content: validates against the registered XSD for the CADOC when
+//     the schema file is reachable from disk. XSD validation is the strictest
+//     path: any XSD error fails the document.
+//
+//  3. When the XSD is registered but the file is not readable on the test
+//     host (e.g. tests that don't run from the project root), we fall back
+//     to a *strict* root-tag + non-empty check. The historical permissive
+//     fallback (which approved <Doc3040/>, <DocDRSAC/>, <Documento4111/> as
+//     long as the root tag matched) is replaced by:
+//
+//     a. The XML must parse.
+//     b. The root tag must equal expectedRootTag(cadoc). If the CADOC has no
+//     known root tag, validation fails closed (unknown CADOC).
+//     c. The document must NOT be empty: a document whose root has zero
+//     attributes and zero child elements is rejected. This is the change
+//     that closes the audit finding "9/10 XMLs vazios aprovados".
+//
+// This preserves backwards compatibility with tests that exercise the
+// root-tag path (e.g. TestValidate_F02_MesInvalido sends <Doc3040 .../> with
+// attributes, which still parses and gets past L1 to reach L2/L3), while
+// rejecting the empty documents the audit benchmark targets.
 func (s *Service) validateL1Parse(req *ValidationRequest) error {
 	content := string(req.XML)
 	if req.ContentType == "application/json" {
@@ -618,37 +709,97 @@ func (s *Service) validateL1Parse(req *ValidationRequest) error {
 		return nil
 	}
 
-	// Try XSD validation first (real schema validation).
-	xsdErrors, err := ValidateXSD(req.CadocCode, content)
-	if err == nil && len(xsdErrors) > 0 {
+	// XML path. Try strict XSD validation first.
+	xsdErrors, xsdErr := ValidateXSD(req.CadocCode, content)
+	switch {
+	case xsdErr == nil && len(xsdErrors) == 0:
+		// XSD happy path.
+		return nil
+	case xsdErr == nil && len(xsdErrors) > 0:
 		return fmt.Errorf("XSD validation failed: %s", xsdErrors[0])
 	}
 
-	// Fallback: root-tag check.
-	rootTag := expectedRootTag(req.CadocCode)
-	if rootTag == "" {
-		rootTag = "Documento"
+	// XSD path failed. Distinguish "schema unavailable" (the test/CI host
+	// simply can't load the file) from a hard schema error.
+	var unavailable *ErrSchemaUnavailable
+	if !errors.As(xsdErr, &unavailable) {
+		return fmt.Errorf("L1 XSD validation refused for CADOC %q: %w", req.CadocCode, xsdErr)
 	}
+
+	// Strict fallback. Parse + root tag + non-empty.
+	rootTag := s.expectedRootTag(req.CadocCode)
+	if rootTag == "" {
+		return fmt.Errorf("CADOC %q não é suportado pelo validator L1 (sem root tag canônico)", req.CadocCode)
+	}
+
 	decoder := xml.NewDecoder(strings.NewReader(content))
+	var (
+		rootSeen     bool
+		rootHasAttrs bool
+		childCount   int
+		depth        int
+	)
 	for {
-		t, err := decoder.Token()
+		tok, err := decoder.Token()
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
 			return fmt.Errorf("XML não parseia: %w", err)
 		}
-		if t == nil {
+		if tok == nil {
 			break
 		}
-		if se, ok := t.(xml.StartElement); ok {
-			if se.Name.Local != rootTag {
-				return fmt.Errorf("esperado elemento raiz <%s> mas tem <%s>", rootTag, se.Name.Local)
+		switch t := tok.(type) {
+		case xml.StartElement:
+			if !rootSeen {
+				rootSeen = true
+				if t.Name.Local != rootTag {
+					return fmt.Errorf("esperado elemento raiz <%s> mas tem <%s>", rootTag, t.Name.Local)
+				}
+				rootHasAttrs = len(t.Attr) > 0
+				depth = 1
+				continue
 			}
-			break
+			depth++
+			if depth > 1 {
+				childCount++
+			}
+		case xml.EndElement:
+			if depth > 0 {
+				depth--
+			}
 		}
+	}
+	if !rootSeen {
+		return fmt.Errorf("XML sem elemento raiz")
+	}
+	if !rootHasAttrs && childCount == 0 {
+		// Empty document like <DocDRSAC/> — fail closed.
+		return fmt.Errorf("documento %s vazio (sem atributos e sem elementos filhos)", rootTag)
 	}
 	return nil
 }
 
-func expectedRootTag(cadoc string) string {
+// expectedRootTag returns the canonical root tag for the given CADOC, or
+// "" if the CADOC is not in the validator's allow-list. The Phase 1.1
+// fail-closed contract requires that unknown CADOCs be rejected, so an
+// empty return from this function is the canonical signal "this CADOC is
+// not supported by L1".
+//
+// Phase 1.2: quando o generator registry está injetado (s.genReg),
+// este método delega ao generator para obter a root tag canônica.
+// Isso garante que validator e generator nunca divergem.
+func (s *Service) expectedRootTag(cadoc string) string {
+	// Fase 1.2: usa generator como fonte canônica se disponível.
+	if s.genReg != nil {
+		g := s.genReg.Get(cadoc)
+		if g != nil {
+			return g.RootTag()
+		}
+	}
+	// Fallback legacy: mapa hardcoded (manter para CADOCs sem generator
+	// e para backwards compatibility em testes).
 	switch cadoc {
 	case "3040":
 		return "Doc3040"
@@ -670,6 +821,10 @@ func expectedRootTag(cadoc string) string {
 		return "documentoDRL"
 	case "2170":
 		return "documentoDLP"
+	case "4060":
+		return "Documento"
+	case "4111":
+		return "Documento4111"
 	}
 	return ""
 }

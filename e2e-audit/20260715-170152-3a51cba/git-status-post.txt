@@ -1,0 +1,22 @@
+1 .M N... 100644 100644 100644 5cf82a61229f8f43a8a70e65b0daacf8283e93fa 5cf82a61229f8f43a8a70e65b0daacf8283e93fa backend/internal/api/insights_llm_handlers.go
+1 .M N... 100644 100644 100644 37750d37fe43fd9248d27ed81abd3f026d53025a 37750d37fe43fd9248d27ed81abd3f026d53025a backend/internal/api/metrics.go
+1 .M N... 100644 100644 100644 d9a967f9d54c936b6941e516b92b0ae1a2a976b3 d9a967f9d54c936b6941e516b92b0ae1a2a976b3 backend/internal/api/schema_changelog_handlers.go
+1 .M N... 100644 100644 100644 869ec3196cd9efacee67d59acdcd556deb9ceac7 869ec3196cd9efacee67d59acdcd556deb9ceac7 backend/internal/api/sta_range_handlers.go
+1 .M N... 100644 100644 100644 11b383b68432a3c098e0594578e484bc63eea704 11b383b68432a3c098e0594578e484bc63eea704 backend/internal/crossdoc/rules/xd_rules.go
+1 .M N... 100644 100644 100644 1b73c15a5e42c1467dd4e6e8e9de69b6d477cd79 1b73c15a5e42c1467dd4e6e8e9de69b6d477cd79 backend/internal/generator/adapters/adapters.go
+1 .M N... 100644 100644 100644 e260165c90257fa1d8018fca8710d28a17c799a3 e260165c90257fa1d8018fca8710d28a17c799a3 backend/internal/generator/registry_test.go
+1 .M N... 100644 100644 100644 859ecfaca9780fba957974347560b1c738446893 859ecfaca9780fba957974347560b1c738446893 backend/internal/insights/conversation.go
+1 .M N... 100644 100644 100644 047927b064ec1b3a6e3de8ce41a5bc97f2e1e4b6 047927b064ec1b3a6e3de8ce41a5bc97f2e1e4b6 backend/internal/insights/llm.go
+1 .M N... 100644 100644 100644 0d415ee8dde970fa42f5ccb9fd79a08bc706ad2b 0d415ee8dde970fa42f5ccb9fd79a08bc706ad2b backend/internal/observability/metrics.go
+1 .M N... 100644 100644 100644 e6579f85835d5b4f7340e3e4c552408cf220bc44 e6579f85835d5b4f7340e3e4c552408cf220bc44 backend/internal/observability/sentry.go
+1 .M N... 100644 100644 100644 478598856b006e911c9fc6f0286717145f8323e7 478598856b006e911c9fc6f0286717145f8323e7 backend/internal/observability/tracing.go
+1 .M N... 100644 100644 100644 3e0747a0281a092537afe83c3bebb28bb5f0fffe 3e0747a0281a092537afe83c3bebb28bb5f0fffe backend/internal/schema/changelog.go
+? .audit-git-before.txt
+? .audit-run-id
+? .zcode/plans/plan-sess_839656ca-aad2-4a44-b457-327f5333830f.md
+? PROMPT_AUDITORIA_E2E.md
+? backend/radiant.db.backup-shm
+? backend/radiant.db.backup-wal
+? e2e-audit-worktree/
+? e2e-audit/
+? e2e/

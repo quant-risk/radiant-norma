@@ -57,6 +57,12 @@ type CADOCGenerator interface {
 	// Retorna um score 0.0-1.0 (número de operações, dependências, etc.)
 	// Útil para estimar tempo de geração e custo de API.
 	EstimateComplexity(doc *canonical.CanonicalDocument) ComplexityScore
+
+	// RootTag retorna a tag raiz canônica do XML gerado.
+	// Ex: "Doc3040" para 3040, "Documento4111" para 4111.
+	// O Norma Audit (L1 validator) usa este método como fonte canônica
+	// para evitar divergência entre generator e validator.
+	RootTag() string
 }
 
 // GeneratedDoc é o produto de um CADOCGenerator.

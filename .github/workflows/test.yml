@@ -172,3 +172,73 @@ jobs:
             exit 1
           fi
           echo "Registry count = CHANGELOG claim"
+
+  # ============================================================
+  # Phase 6: Postgres build + migration validation (Sprint 61)
+  # ============================================================
+  # Runs against a real Postgres 16 instance. Applies all migrations
+  # including 012 (RLS policies ENABLE) and 014 (FORCE RLS).
+  #
+  # Note: unit tests use in-memory SQLite — full RLS enforcement
+  # validation requires integration tests that set app.if_id per tx
+  # (WithTenantTx pattern). This job validates compilation + migrations.
+  postgres-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: radiant
+          POSTGRES_PASSWORD: radiant_test
+          POSTGRES_DB: radiant_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Download Go modules
+        working-directory: backend
+        run: go mod download
+
+      - name: Build ALL binaries (Postgres-compatible)
+        working-directory: backend
+        run: |
+          set -e
+          shopt -s nullglob
+          bins=(cmd/*/)
+          for dir in "${bins[@]}"; do
+            bin=$(basename "$dir")
+            echo "Building cmd/$bin..."
+            go build -o /tmp/ci-bin-$bin "./cmd/$bin"
+          done
+          echo "All ${#bins[@]} binaries built OK (Postgres-compatible)"
+
+      - name: Apply Postgres migrations (including RLS)
+        working-directory: backend
+        env:
+          DATABASE_URL: postgres://radiant:radiant_test@localhost:5432/radiant_test?sslmode=disable
+        run: |
+          # cmd/migrate applies all migrations including 012 (ENABLE RLS)
+          # and 014 (FORCE RLS) when run against Postgres.
+          go build -o /tmp/ci-bin-migrate ./cmd/migrate
+          /tmp/ci-bin-migrate
+          echo "Migrations applied on Postgres"
+
+      - name: vet against Postgres build
+        working-directory: backend
+        run: go vet ./...

@@ -220,8 +220,8 @@ func bucketForPath(method, path string, isExport bool) pathBucket {
 func rateLimitMiddleware(limiter RateLimiter, metrics *Metrics) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Ignora health/ready + metrics endpoint (evita ruído).
-			if r.URL.Path == "/healthz" || r.URL.Path == "/readyz" || r.URL.Path == "/metrics" {
+			// Ignora health/ready + metrics + status endpoint (evita ruído).
+			if r.URL.Path == "/healthz" || r.URL.Path == "/readyz" || r.URL.Path == "/metrics" || r.URL.Path == "/status" {
 				next.ServeHTTP(w, r)
 				return
 			}

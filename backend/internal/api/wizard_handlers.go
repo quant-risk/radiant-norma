@@ -11,11 +11,15 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
+	"github.com/fortvna/radiant-norma/backend/internal/canonical"
 	"github.com/fortvna/radiant-norma/backend/internal/generator/wizard"
 	"github.com/go-chi/chi/v5"
 )
@@ -146,7 +150,60 @@ func (s *Server) advanceWizard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Phase 2: quando avança para StepGenerate, executa a geração.
+	if updated.Step == wizard.StepGenerate && session.Step != wizard.StepGenerate {
+		if err := s.executeWizardGeneration(r.Context(), ifID, updated); err != nil {
+			// Registra erro mas não bloqueia — usuário pode ver erro.
+			slog.Error("wizard generation failed", "session", id, "err", err)
+			// Salva erro na sessão.
+			s.WizardStore.SetError(r.Context(), id, []string{err.Error()})
+		}
+		// Recarrega sessão para obter XML gerado.
+		updated, _ = s.WizardStore.Get(r.Context(), id)
+	}
+
 	writeJSON(w, http.StatusOK, updated)
+}
+
+// executeWizardGeneration executa a geração de XML para a sessão do wizard.
+// Phase 2: integra o generator com o wizard step final.
+func (s *Server) executeWizardGeneration(ctx context.Context, ifID string, session *wizard.Session) error {
+	// Se não há CADOC, não pode gerar.
+	if session.CadocCode == "" {
+		return errors.New(" CADOC não selecionado")
+	}
+
+	g := s.resolveGenerator(session.CadocCode)
+	if g == nil {
+		return errors.New("generator não encontrado para " + session.CadocCode)
+	}
+
+	// Reconstrói o CanonicalDocument do JSON salvo.
+	var doc canonical.CanonicalDocument
+	if session.CanonicalJSON != "" {
+		if err := json.Unmarshal([]byte(session.CanonicalJSON), &doc); err != nil {
+			return fmt.Errorf("falha ao reconstruir canonical: %w", err)
+		}
+	}
+
+	// Usa data_base atual ou padrão.
+	dataBase := time.Now()
+	if !time.Time(doc.DataBase).IsZero() {
+		dataBase = time.Time(doc.DataBase)
+	}
+
+	// Gera o XML.
+	generated, err := g.Generate(ctx, &doc, dataBase)
+	if err != nil {
+		return fmt.Errorf("falha na geração: %w", err)
+	}
+
+	// Salva XML gerado na sessão.
+	if err := s.WizardStore.SetGeneratedXML(ctx, session.ID, string(generated.XML)); err != nil {
+		return fmt.Errorf("falha ao salvar XML: %w", err)
+	}
+
+	return nil
 }
 
 // getWizardXML handles GET /v1/generate/wizard/{id}/xml.

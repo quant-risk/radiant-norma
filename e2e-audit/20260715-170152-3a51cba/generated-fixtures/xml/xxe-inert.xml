@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Doc3040 [
+  <!ENTITY xxe SYSTEM "urn:radiant-norma:e2e:entity-that-does-not-exist">
+]>
+<Doc3040 synthetic="true">
+  <CNPJ>12345678</CNPJ>
+  <Observacao>&xxe;</Observacao>
+</Doc3040>

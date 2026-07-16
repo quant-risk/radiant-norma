@@ -106,10 +106,10 @@ func (m *BusinessMetrics) renderCounter(b *strings.Builder, mp *sync.Map, name s
 var GlobalBusinessMetrics = NewBusinessMetrics()
 
 // IncEnvios is a package-level convenience helper.
-func IncEnvios(cadoc, status string)   { GlobalBusinessMetrics.IncEnvios(cadoc, status) }
-func IncValidation(rule, sev string)    { GlobalBusinessMetrics.IncValidation(rule, sev) }
-func IncWebhook(status string)          { GlobalBusinessMetrics.IncWebhook(status) }
-func SetActiveTenants(n int64)          { GlobalBusinessMetrics.SetActiveTenants(n) }
+func IncEnvios(cadoc, status string) { GlobalBusinessMetrics.IncEnvios(cadoc, status) }
+func IncValidation(rule, sev string) { GlobalBusinessMetrics.IncValidation(rule, sev) }
+func IncWebhook(status string)       { GlobalBusinessMetrics.IncWebhook(status) }
+func SetActiveTenants(n int64)       { GlobalBusinessMetrics.SetActiveTenants(n) }
 
 // QuantileHistogram is an approximate quantile histogram using linear interpolation.
 // Tracks request latencies in pre-defined bucket bounds (ms).

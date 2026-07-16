@@ -1,11 +1,10 @@
 /**
- * HowItWorks — pipeline editorial 5 etapas.
+ * HowItWorks — pipeline editorial 7 etapas.
  *
- * Ingest → Canonical → Generator → Validação → STA.
- * Cada etapa com ícone, título, descrição e bullet points.
+ * Ingest → Canonical → Wizard → Generator → Validação → AI/Insights → STA + Webhooks.
  */
 
-import { Database, FileText, Wand2, CheckCircle2, Send } from 'lucide-react'
+import { Database, FileText, Wand2, CheckCircle2, Send, Sparkles, Webhook } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
 
 const STEPS = [
@@ -14,7 +13,7 @@ const STEPS = [
     icon: Database,
     title: 'Conecte uma fonte',
     desc:
-      '5 conectores disponíveis: Manual (formulário), API (REST/webhook), File (PDF/XLSX/DOCX), DB (Postgres/Oracle/MySQL), MCP (LLM tools).',
+      '5 conectores: Manual (formulário), API (REST/webhook), File (PDF/XLSX/DOCX), DB (Postgres/Oracle/MySQL), MCP (LLM tools).',
     detail: [
       'Manual funcional',
       'API + File em stub',
@@ -26,7 +25,7 @@ const STEPS = [
     icon: FileText,
     title: 'Produza o Canonical',
     desc:
-      'Cada conector normaliza dados brutos no CanonicalDocument — JSON tipado, IF-agnóstico. LLM nunca escreve XML direto, sempre passa pelo schema.',
+      'Cada conector normaliza dados brutos no CanonicalDocument — JSON tipado, IF-agnóstico. LLM nunca escreve XML direto.',
     detail: [
       'Schema-first',
       'IF-agnostic',
@@ -36,37 +35,61 @@ const STEPS = [
   {
     n: '03',
     icon: Wand2,
-    title: 'Gere o CADOC',
+    title: 'Wizard guiado',
     desc:
-      'Cada CADOC (3040, 3050, 4111…) tem seu próprio generator que consome o Canonical e emite XML validado. 3040 pronto, 9 planejados.',
+      'Wizard multi-etapas para config guiada (escolher CADOC → mapear campos → validar antes de gerar). Reduz 0 → primeiro envio.',
     detail: [
-      '10 generators planejados',
-      '1 pronto (3040)',
-      'Adapter pattern',
+      'Onboarding 15 min',
+      'Pré-validação',
+      'Templates salvos',
     ],
   },
   {
     n: '04',
-    icon: CheckCircle2,
-    title: 'Valide L1 → L4',
+    icon: Send,
+    title: 'Gere o CADOC',
     desc:
-      'XSD (L1) → semântico (L2) → cross-doc (L3) → histórico (L4). 1.099 regras, 90% coverage. Explica cada falha campo-a-campo.',
+      'Cada CADOC (3040, 3050, 4111…) tem seu próprio generator que consome o Canonical e emite XML validado. 3040 pronto, 9 planejados.',
     detail: [
-      '4 camadas',
-      '1.099 regras',
-      'Explainability',
+      '10 generators',
+      '1 pronto (3040)',
+      'Batch generation',
     ],
   },
   {
     n: '05',
-    icon: Send,
-    title: 'Envie pro STA',
+    icon: CheckCircle2,
+    title: 'Valide L1 → L4',
     desc:
-      'Push nativo pro BACEN via STA-h/STA-ws. Retry exponencial, DLQ em caso de falha, audit chain imutável por envio.',
+      'XSD (L1) → semântico (L2) → cross-doc (L3) → histórico (L4). 1.099 regras, 76% coverage no 3040. Explica cada falha campo-a-campo.',
+    detail: [
+      '4 camadas',
+      'L4 diff histórico',
+      'Explainability',
+    ],
+  },
+  {
+    n: '06',
+    icon: Sparkles,
+    title: 'AI Insights',
+    desc:
+      'LLM interpreta audit_log e responde em linguagem natural. Cross-doc L3 + heurística determinística. Opt-in por tenant.',
+    detail: [
+      'Chat por audit',
+      'Recomendações',
+      'Opt-in por IF',
+    ],
+  },
+  {
+    n: '07',
+    icon: Webhook,
+    title: 'STA + Webhooks',
+    desc:
+      'Push nativo pro BACEN via STA-h/STA-ws. Webhooks outbound HMAC-SHA256 para sistemas da IF. Retry exponencial + DLQ.',
     detail: [
       'STA-h + STA-ws',
-      'Retry exponencial',
-      'Audit chain SHA-256',
+      'Webhooks',
+      'DLQ + retry',
     ],
   },
 ]
@@ -81,14 +104,13 @@ export function LandingHowItWorks() {
       <div className="relative max-w-7xl mx-auto px-6 lg:px-10">
         <SectionHeader
           eyebrow="Como funciona"
-          title="Pipeline 5 etapas. 0 mágica."
+          title="Pipeline 7 etapas. 0 mágica."
           description="Determinístico e auditável. Você sempre sabe o que está rodando, contra qual schema, e por quê."
         />
 
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-5 gap-6 relative">
-          {/* Linha conectora (desktop) */}
+        <div className="mt-14 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 relative">
           <div
-            className="hidden md:block absolute top-12 left-[10%] right-[10%] h-px bg-gradient-to-r from-border via-accent-300 to-border"
+            className="hidden lg:block absolute top-10 left-[7%] right-[7%] h-px bg-gradient-to-r from-border via-accent-300 to-border"
             aria-hidden
           />
 
@@ -98,34 +120,34 @@ export function LandingHowItWorks() {
               <div
                 key={step.n}
                 className="relative animate-fade-up"
-                style={{ animationDelay: `${i * 100}ms` }}
+                style={{ animationDelay: `${i * 80}ms` }}
               >
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="size-12 rounded-lg bg-surface-raised border border-border shadow-xs flex items-center justify-center relative z-10">
+                <div className="flex flex-col gap-3 mb-5">
+                  <div className="size-10 rounded-lg bg-surface-raised border border-border shadow-xs flex items-center justify-center relative z-10">
                     <Icon
-                      className="size-5 text-accent-600 dark:text-accent-400"
+                      className="size-4 text-accent-600 dark:text-accent-400"
                       strokeWidth={1.75}
                     />
                   </div>
-                  <span className="font-serif text-3xl font-medium text-ink-subtle tracking-tight">
+                  <span className="font-serif text-2xl font-medium text-ink-subtle tracking-tight leading-none">
                     {step.n}
                   </span>
                 </div>
 
-                <h3 className="font-serif text-xl font-medium text-ink tracking-tight mb-3">
+                <h3 className="font-serif text-base font-medium text-ink tracking-tight mb-2">
                   {step.title}
                 </h3>
-                <p className="text-sm text-ink-muted leading-relaxed mb-5">
+                <p className="text-xs text-ink-muted leading-relaxed mb-3">
                   {step.desc}
                 </p>
 
-                <ul className="space-y-2">
+                <ul className="space-y-1.5">
                   {step.detail.map((item) => (
                     <li
                       key={item}
-                      className="flex items-center gap-2 text-xs text-ink-muted"
+                      className="flex items-start gap-1.5 text-2xs text-ink-muted"
                     >
-                      <span className="size-1 rounded-full bg-accent-500 shrink-0" />
+                      <span className="size-1 rounded-full bg-accent-500 shrink-0 mt-1.5" />
                       {item}
                     </li>
                   ))}

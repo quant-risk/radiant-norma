@@ -23,11 +23,12 @@ type stubGen struct {
 }
 
 func (s *stubGen) CadocCode() string { return s.code }
+func (s *stubGen) RootTag() string   { return s.code } // Phase 1.2: unified parser+generator
 func (s *stubGen) Generate(_ context.Context, _ *canonical.CanonicalDocument, _ time.Time) (*GeneratedDoc, error) {
 	return &GeneratedDoc{CadocCode: s.code}, nil
 }
-func (s *stubGen) RequiredFields() []schema.Field  { return nil }
-func (s *stubGen) SupportedVersions() []string     { return []string{"1.0"} }
+func (s *stubGen) RequiredFields() []schema.Field { return nil }
+func (s *stubGen) SupportedVersions() []string    { return []string{"1.0"} }
 func (s *stubGen) EstimateComplexity(_ *canonical.CanonicalDocument) ComplexityScore {
 	return ComplexityScore{Score: 0.1}
 }

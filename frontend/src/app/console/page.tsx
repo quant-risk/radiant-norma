@@ -14,6 +14,10 @@ import {
   ArrowUpRight,
   Activity,
   TrendingUp,
+  Wand2,
+  Sparkles,
+  Webhook,
+  Store,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/api-fetch'
 import { getServerSession } from '@/lib/session'
@@ -256,7 +260,7 @@ export default async function ConsolePage() {
       session={session}
       topbar={{
         title: 'Dashboard',
-        subtitle: 'Visão geral da operação regulatória',
+        subtitle: 'Geração · Validação L1-L4 · AI · Webhooks · STA · Audit chain',
         breadcrumbs: [{ label: 'Radiant Norma', href: '/' }, { label: 'Console' }],
         actions: <DashboardLiveRefresh />,
       }}
@@ -312,7 +316,7 @@ export default async function ConsolePage() {
             }
           />
 
-          <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="mt-8 grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             <StatCard
               label="Envios (30d)"
               value={stats?.total ?? 0}
@@ -359,11 +363,42 @@ export default async function ConsolePage() {
               icon={<TrendingUp className="size-4" strokeWidth={2.25} />}
             />
             <StatCard
-              label="CADOCs monitorados"
+              label="CADOCs"
               value={schemas.length || '—'}
               tone="neutral"
               icon={<Database className="size-4" strokeWidth={2.25} />}
               helpText="schemas BACEN ativos"
+            />
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              label="Generators"
+              value="1/10"
+              tone="accent"
+              icon={<Wand2 className="size-4" strokeWidth={2.25} />}
+              helpText="3040 MVP · 9 planejados"
+            />
+            <StatCard
+              label="AI Insights"
+              value="LLM"
+              tone="accent"
+              icon={<Sparkles className="size-4" strokeWidth={2.25} />}
+              helpText="opt-in por tenant"
+            />
+            <StatCard
+              label="Webhooks"
+              value="registry"
+              tone="neutral"
+              icon={<Webhook className="size-4" strokeWidth={2.25} />}
+              helpText="HMAC-SHA256"
+            />
+            <StatCard
+              label="Marketplace"
+              value="rules"
+              tone="neutral"
+              icon={<Store className="size-4" strokeWidth={2.25} />}
+              helpText="compartilhadas entre IFs"
             />
           </div>
         </section>

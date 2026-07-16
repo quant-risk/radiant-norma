@@ -40,22 +40,23 @@ type envioDTO struct {
 	ID           string `json:"id"`
 	CadocCode    string `json:"cadoc_code"`
 	Period       string `json:"period"`
-	Status       string `json:"status"` // pending | accepted | rejected | error
+	Status       string `json:"status"` // pending | accepted | rejected | error | dead_letter
 	RulesPassed  int    `json:"rules_passed"`
 	RulesFailed  int    `json:"rules_failed"`
 	DurationMs   int    `json:"duration_ms"`
 	ProtocolSTA  string `json:"protocol_sta"`
 	ErrorCode    string `json:"error_code,omitempty"`
 	ErrorMessage string `json:"error_message,omitempty"`
-	SentAt       string `json:"sent_at"`      // RFC3339
-	ConfirmedAt  string `json:"confirmed_at"` // RFC3339
+	SentAt       string `json:"sent_at"`            // RFC3339
+	ConfirmedAt  string `json:"confirmed_at"`       // RFC3339
+	Attempts     int    `json:"attempts,omitempty"` // Phase 4: retry count (useful for dead_letter)
 }
 
 // listEnvios retorna envios da IF logada.
 //
 // Query params (todos opcionais):
 //   - cadoc: filtra por CADOC
-//   - status: filtra por status (pending/accepted/rejected/error)
+//   - status: filtra por status (pending/accepted/rejected/error/dead_letter)
 //   - limit: max items (default 50, max 200)
 //   - period: filtra por period (e.g., '05/2026')
 func (s *Server) listEnvios(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +78,8 @@ func (s *Server) listEnvios(w http.ResponseWriter, r *http.Request) {
 	             rules_passed, rules_failed, COALESCE(duration_ms, 0),
 	             COALESCE(protocol_sta, ''), COALESCE(error_code, ''),
 	             COALESCE(error_message, ''),
-	             COALESCE(sent_at, ''), COALESCE(confirmed_at, '')
+	             COALESCE(sent_at, ''), COALESCE(confirmed_at, ''),
+	             COALESCE(attempts, 0)
 	      FROM envios WHERE if_id = ?`
 	args := []any{ifID}
 
@@ -110,7 +112,7 @@ func (s *Server) listEnvios(w http.ResponseWriter, r *http.Request) {
 			&e.ID, &e.CadocCode, &e.Period, &e.Status,
 			&e.RulesPassed, &e.RulesFailed, &e.DurationMs,
 			&e.ProtocolSTA, &e.ErrorCode, &e.ErrorMessage,
-			&e.SentAt, &e.ConfirmedAt,
+			&e.SentAt, &e.ConfirmedAt, &e.Attempts,
 		); err != nil {
 			s.internalServerError(w, err, "listEnvios.scan")
 			return
@@ -157,11 +159,12 @@ func (s *Server) enviosStats(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	stats := map[string]int{
-		"total":    0,
-		"pending":  0,
-		"accepted": 0,
-		"rejected": 0,
-		"error":    0,
+		"total":       0,
+		"pending":     0,
+		"accepted":    0,
+		"rejected":    0,
+		"error":       0,
+		"dead_letter": 0, // Phase 4: DLQ count
 	}
 	for rows.Next() {
 		var status string

@@ -1,0 +1,121 @@
+claim_id,texto_resumido,fonte_arquivo,fonte_linha,categoria,superficie_publica,comportamento_esperado,peso,criticidade,observacao
+CLM-A0-001,Gera 10 CADOCs (SCR/DRSAC/DRM/DLO/DLI/DDR/DRL/DLP/eventos) com leiautes versionados,README.md,34,geracao,API+UI,GET /v1/schema lista 10 CADOCs e cada generator produz XML valido,5,core,
+CLM-A0-002,BCValidador apenas valida; Radiant Norma tambem gera (motor proprietario),README.md,36,geracao,API+marketing,Generator emite XML/JSON a partir de CanonicalDocument,5,core,
+CLM-A0-003,Cobertura 3040: 275 regras Go (B/F/C/S/I/H) ja portadas,README.md,54,validacao,API,GET /v1/rules/3040 retorna >= 275,5,core,contradiz linha 235 (126) e gaps conhecidos (275/361)
+CLM-A0-004,3044 Eventos de Credito (JSON) com 17 regras T01-T19,README.md,55,validacao,API,GET /v1/rules/3044 retorna >= 17,5,core,
+CLM-A0-005,3050 Estatisticas Agregadas com 170 regras TXB,README.md,56,validacao,API,GET /v1/rules/3050 retorna >= 170,5,core,
+CLM-A0-006,2030 DRSAC: 0 regras declaradas na tabela; 35 regras D01-D35 nos gaps conhecidos,README.md,57,validacao,API,GET /v1/rules/2030 retorna >= 35 (contradiz 0 da tabela),5,core,contradicao: tabela diz 0; gaps conhecidos dizem 35
+CLM-A0-007,2060 DRM: 22 regras,README.md,58,validacao,API,GET /v1/rules/2060 retorna >= 22,3,supporting,
+CLM-A0-008,2061 DLO: 24+ regras ELIM,README.md,59,validacao,API,GET /v1/rules/2061 retorna >= 24,3,supporting,
+CLM-A0-009,2062 DLI: 18 regras DLI,README.md,60,validacao,API,GET /v1/rules/2062 retorna >= 18,3,supporting,
+CLM-A0-010,2070 DDR: 11 regras + cross-doc,README.md,61,validacao,API,GET /v1/rules/2070 retorna >= 11,3,supporting,
+CLM-A0-011,2160 DRL LCR: 11 regras LCR,README.md,62,validacao,API,GET /v1/rules/2160 retorna >= 11,3,supporting,
+CLM-A0-012,2170 DLP NSFR: 10 regras,README.md,63,validacao,API,GET /v1/rules/2170 retorna >= 10,3,supporting,
+CLM-A0-013,Catalogo declara 1099 regras de validacao; 275+ portadas em Go,README.md,65,validacao,API,contagem real do banco difere do catalogo bruto,5,core,
+CLM-A0-014,"Generator 3040, 3050, 4111, 2060, 2061, 2062, 2070, 2160, 2170, 2030 entregues (Sprint 57-73)",README.md,66,geracao,API,registry.Get(list) retorna 10 cadocs,5,core,contradiz gaps conhecidos linha 322: apenas 3040 implementado em v3.36.0
+CLM-A0-015,SDK Go oficial: github.com/fortvna/radiant-norma-go,README.md,67,contratos,SDK Go,compila e exemplos rodam contra API local,3,supporting,
+CLM-A0-016,SDK Python oficial: github.com/quant-risk/radiant-norma (sdk/py),README.md,68,contratos,SDK Python,"compila, instala e roda contra API local",3,supporting,existe tambem sdk/python - provavel duplicata
+CLM-A0-017,Backend Go 1.22+ declarado; go.mod exige 1.25.0; instalado 1.26.4,README.md,128,deployment,build,backend compila com Go 1.22 ou superior,1,supporting,inconsistencia de versao Go entre README/ADR/go.mod/instalado
+CLM-A0-018,HTTP router go-chi/chi v5,README.md,129,deployment,build,chi/v5 importavel,1,supporting,
+CLM-A0-019,"DB: SQLite (modernc.org/sqlite) em dev, Postgres em prod",README.md,130,deployment,runtime,SQLite spike rodando e Postgres com RLS ativo,5,core,
+CLM-A0-020,Migrations via embed.FS self-contained binary,README.md,131,deployment,build,binary roda migrations sem dependencia externa,3,supporting,README linha 237 diz 13 migrations; linha 268 diz 2 SQL files - contradicao
+CLM-A0-021,Audit log SHA-256 hash chain tamper-evident,README.md,133,seguranca,API,audit chain detecta adulteracao de qualquer linha,5,core,
+CLM-A0-022,PDF tooling: Pandoc 3.10 + Chromium headless,README.md,134,ui,build,PDFs README/ENG_REVERSA/PRODUTO_TESE_ROADMAP gerados,1,marketing,
+CLM-A0-023,Concorrencia: pgx + Postgres RLS multi-tenant,README.md,135,seguranca,runtime,RLS ativo por conexao,5,core,
+CLM-A0-024,Quickstart: go run ./cmd/seed popula SQLite com 968 criticas + 8 schemas,README.md,149,deployment,build,seed executa e popula DB,3,supporting,contradiz README linha 233 que diz 1099 regras extraidas
+CLM-A0-025,API sobe em :8080; /healthz responde status ok versao 1.2.0,README.md,150,deployment,runtime,curl /healthz retorna status ok e versao,3,supporting,versao 1.2.0 pode estar desatualizada; badge diz v3.36.2
+CLM-A0-026,Endpoint /v1/schemas/3040 retorna schema do 3040,README.md,156,geracao,API,curl retorna schema,3,supporting,
+CLM-A0-027,Endpoint /v1/rules/3040 retorna 320 regras,README.md,158,validacao,API,curl retorna array de tamanho 320,5,core,contradiz tabela linha 54 (275) e linha 235 (126) e linha 328 (275/361)
+CLM-A0-028,"Endpoint POST /v1/validate aceita {cadoc, xml}",README.md,160,validacao,API,validate retorna erros uteis,5,core,
+CLM-A0-029,Endpoint /v1/schema lista schemas com metadata de geracao,README.md,167,geracao,API,endpoint retorna complexidade e versoes,3,supporting,
+CLM-A0-030,Endpoint /v1/crossdoc/rules lista regras cross-doc XD-001 XD-4111-01..05 XD-DR01..08,README.md,170,validacao,API,codigos batem com ADR-0006,3,supporting,ADR-0006 lista XD01-XD12; README menciona nomenclaturas diferentes
+CLM-A0-031,Endpoint /v1/generate/history paginado,README.md,173,geracao,API,paginacao funciona,3,supporting,
+CLM-A0-032,"Backend: 105 arquivos Go, 29.481 LoC, 14.937 LoC testes (razao 2:1)",README.md,229,deployment,build,contagens batem ao rodar find/wc,1,marketing,
+CLM-A0-033,"Testes Go: 516 top-level, 21/21 packages PASS, race clean",README.md,230,deployment,build,go test ./... verde e go test -race verde,5,core,
+CLM-A0-034,"Cobertura: auditlog 90.8%, senhaws 95.6%, loggerutil 96.2%, sta 80%, api 71.6%",README.md,231,deployment,build,go test -cover reproduz percentuais,3,supporting,
+CLM-A0-035,Binarios CLI: 9 (api/worker/radar/seed/seed-sprint8c/jwt-mint/senhaws-rotate/sta-submit/_verify),README.md,232,deployment,build,ls backend/bin lista 9 binarios,3,supporting,README linha 258 lista 4 binarios (api/seed/worker/radar); cmd/* na verdade tem 13
+CLM-A0-036,"Catalogo critico: 1099 regras extraidas; 6 CADOCs (3040, 3044, 3050, 2060, 2061, 2070)",README.md,233,validacao,API,contagem e lista batem no banco,5,core,
+CLM-A0-037,"Catalogo leiaute: 8 CADOCs cadastrados, 24 campos parseados, XSD so 3040 (560 linhas)",README.md,234,validacao,API,XSDs disponiveis localmente,3,supporting,
+CLM-A0-038,Regras portadas Go: 126 de 3040 (34.9%),README.md,235,validacao,API,contagem confere com banco,5,core,contradiz 275 declarado na tabela linha 54
+CLM-A0-039,Cross-doc: 1 regra (3040 <-> 4111) entregue; meta 12 regras (Sprint 43),README.md,236,validacao,API,GET /v1/crossdoc/rules lista >= 1 regra,5,core,contradiz ADR-0006 que lista 12 regras XD01-XD12
+CLM-A0-040,Migrations: 13 SQL files (001 ao 013) via embed.FS,README.md,237,deployment,build,13 migrations no diretorio,3,supporting,contradiz estrutura que diz 2 SQL files
+CLM-A0-041,"Frontend: 56 arquivos TS/TSX, 7.108 LoC, Next.js 14 (App Router) + TanStack Query + Zustand",README.md,238,ui,build,contagens batem; Next 14 detectado,3,supporting,contradiz gaps conhecidos que dizem Next.js 15
+CLM-A0-042,"Audit log entries: hash chain SHA-256 validado, tamper-evident, trigger Postgres imutavel",README.md,239,seguranca,API,trigger impede UPDATE/DELETE em Postgres,5,core,
+CLM-A0-043,"Endpoints REST: 20+ funcionais, JWT + CSRF + RateLimit + CORS",README.md,240,seguranca,API,roteamento exposto bate,5,core,
+CLM-A0-044,"Material BACEN: 137 arquivos, 50 MB capturados",README.md,241,deployment,filesystem,repositorio contem os arquivos,1,marketing,
+CLM-A0-045,CI-Gate: GitHub Actions 11 steps (build 10 binaries + race + 3 coverage gates + 3040 drift check),README.md,245,deployment,CI,workflow existe e dispara,3,supporting,
+CLM-A0-046,Postgres RLS: FORCE ROW LEVEL SECURITY em 6 tabelas tenant-scoped + helper WithTenantTx,README.md,246,seguranca,API,SQL confirma FORCE RLS nas 6 tabelas,5,core,
+CLM-A0-047,Cobertura real 3040: 126/361 regras (34.9%); Sprint 32 Fases 1+2+3+4 entregas 66 regras,README.md,249,validacao,build,contagem reproduzida pelo go test,5,core,confirma contradicao 126 != 275 declarado na tabela de cobertura
+CLM-A0-048,Motor de Geracao 3040 implementado em v3.36.0; outros 9 CADOCs em desenvolvimento/planejamento (Sprint 58+),README.md,322,geracao,API,registry.Get retorna 1 generator (3040) ou 10,5,core,contradiz tabela linha 66 que diz 10 generators entregues
+CLM-A0-049,Conectores: 4 de 5 (File/API/DB/MCP) stubs; apenas Manual funcional,README.md,323,ingestao,API,adapters rodam com mock fiel,5,core,
+CLM-A0-050,2030 DRSAC criticas nao publicamente disponiveis; 35 regras D01-D35 portadas,README.md,325,validacao,API,regra XD04/XD05/XD10/XD11/XD12 usam DRSAC,3,supporting,
+CLM-A0-051,Cobertura 3040: 275/361 portadas (76.2%); Sprint 38-41 cobriu restante via stubs,README.md,328,validacao,build,contagem reproduzida,3,supporting,segundo numero divergente (275) - distinto do 126 anterior
+CLM-A0-052,"4111 COSIF: parser e XSD implementados (Sprint 51), regras iniciais portadas",README.md,330,geracao,API,GET /v1/generate/4111 roda e gera XML,3,supporting,
+CLM-A0-053,"STA real implementado em Sprints 18-22 (WS client, retry, DLQ)",README.md,332,integracao,API,WSClient conecta contra mock fiel do protocolo,5,core,
+CLM-A0-054,"Auth: JWT + cookie implementado (Sprints 8-10, simplificado em v3.35.5)",README.md,333,seguranca,API,JWT verificavel,5,core,
+CLM-A0-055,Postgres RLS ativado em Sprint 30,README.md,334,seguranca,runtime,RLS rodando em Postgres,5,core,
+CLM-A0-056,Frontend Norma Console: Next.js 15 App Router (Sprints 34-37),README.md,335,ui,build,Next 15 detectado em next.config.js,3,supporting,contradiz linha 238 que diz Next 14
+CLM-A0-057,"Radar URLs: algumas retornam 404; sistema e resiliente, baseline gravado mesmo com fetch falha",README.md,336,integracao,runtime,radar cria baseline mesmo quando BACEN 404,3,supporting,
+CLM-A0-058,Norma Console: Next.js + multi-tenant + real-time,README.md,77,ui,build,App roda e SSE conecta,3,supporting,
+CLM-A0-059,Radiant Norma API em Go chi,README.md,81,deployment,build,binario sobe,5,core,
+CLM-A0-060,Schema Registry versionado por data-base,README.md,84,validacao,API,GET /v1/schema retorna schemas com version,3,supporting,
+CLM-A0-061,Norma Audit L1 XSD + L2 Semantico + L3 Cross-doc + L4 Historico,README.md,86,validacao,API,endpoint /v1/validate retorna errors por layer,5,core,
+CLM-A0-062,25 regras 3040 portadas em Go com parser XML tipado (diagrama de arquitetura),README.md,93,validacao,build,contradiz tabela linha 54 (275 regras) e linha 235 (126 regras),5,core,tres numeros diferentes para regras 3040 portadas
+CLM-A0-063,Radar Regulatorio fetch BACEN + SHA-256 diff baseline + alertas,README.md,100,integracao,runtime,Radar detecta mudanca,3,supporting,
+CLM-A0-064,Audit Log hash chain SHA-256(prev || payload || meta),README.md,106,seguranca,runtime,implementacao reproduz formula,5,core,
+CLM-A0-065,"DB: SQLite spike, Postgres prod, modernc.org/sqlite pure-Go",README.md,111,deployment,runtime,driver detectado em runtime,3,supporting,
+CLM-A0-066,"STA Client: stub para real, STA-h/STA-ws, Sisbacen + PSTA",README.md,113,integracao,runtime,WSClient chama protocolo real (com mock fiel),5,core,
+CLM-A0-067,Latencia P95 < 500ms em endpoints de validacao,ADR-0001,11,deployment,runtime,benchmark mede < 500ms,3,supporting,
+CLM-A0-068,Isolamento forte entre IFs (LGPD + auditoria),ADR-0001,12,seguranca,runtime,teste cross-tenant falha,5,core,
+CLM-A0-069,"Stack: Go 1.25+, chi v5, PostgreSQL 16+, Redis 7+, Next.js 15+, shadcn/ui, Keycloak/Clerk, Stripe, OTel, Sentry, Resend, AWS Secrets Manager",ADR-0001,20,deployment,build,todas as dependencias instaladas e operantes,5,core,
+CLM-A0-070,"Sem CGO (CGO_ENABLED=0), single static binary",ADR-0001,66,deployment,build,binary compila sem CGO,3,supporting,
+CLM-A0-071,Postgres: pgx/v5 driver (nao database/sql puro),ADR-0001,67,deployment,build,import pgx/v5 detectado,1,supporting,
+CLM-A0-072,"Redis: go-redis/v9, miniredis em tests",ADR-0001,68,deployment,build,imports detectados,1,supporting,
+CLM-A0-073,shadcn/ui copiado para src/components/ui/,ADR-0001,70,ui,build,diretorio existe,1,supporting,
+CLM-A0-074,ECS Fargate: 0.5 vCPU / 1GB RAM por task inicial,ADR-0001,71,deployment,deploy,config Terraform reproduzida,1,supporting,
+CLM-A0-075,Postgres RLS: SET LOCAL app.current_if_id em toda transacao,ADR-0002,18,seguranca,runtime,codigo Go chama SET LOCAL em tx,5,core,
+CLM-A0-076,ALTER TABLE ... ENABLE + FORCE ROW LEVEL SECURITY,ADR-0002,23,seguranca,runtime,migrations aplicam FORCE RLS,5,core,
+CLM-A0-077,CREATE POLICY envios_tenant_isolation USING (if_id = current_setting(...)),ADR-0002,26,seguranca,runtime,policy criada,5,core,
+CLM-A0-078,Helper withTenantContext obrigatorio,ADR-0002,32,seguranca,runtime,funcao existe e e usada,5,core,
+CLM-A0-079,SET LOCAL somente na transacao (rollback desfaz),ADR-0002,42,seguranca,runtime,tx termina e setting some,5,core,
+CLM-A0-080,Cross-tenant queries via role radiant_admin com BYPASSRLS,ADR-0002,80,seguranca,runtime,role existe e funciona,3,supporting,
+CLM-A0-081,Teste valida RLS em todas as tabelas tenant-scoped,ADR-0002,79,seguranca,build,teste existe e roda,5,core,
+CLM-A0-082,"Tabela plataforma.schemas com version por data-base, xsd BYTEA, changelog, source_url, source_sha256",ADR-0004,55,validacao,runtime,schema/migrations criam tabela,3,supporting,
+CLM-A0-083,"Schema Registry Effective(cadoc, at) retorna schema vigente",ADR-0004,82,geracao,runtime,funcao Go existe e roda,3,supporting,
+CLM-A0-084,Repo radiant-norma-schemas externo com CI e auto-PR,ADR-0004,115,deployment,CI,workflow externo existe (nao testavel aqui),1,marketing,
+CLM-A0-085,STA Client: 3 interfaces (Client / ReadClient / ChunkedClient) com compile-time asserts,ADR-0005,22,integracao,build,codigo expoe as 3 interfaces,5,core,
+CLM-A0-086,StubClient implementa apenas Client (write side),ADR-0005,46,integracao,build,stub so com Submit,5,core,
+CLM-A0-087,Type assertion runtime: ok := s.STAClient.(sta.ReadClient),ADR-0005,55,integracao,runtime,handler checa capability,3,supporting,
+CLM-A0-088,12 regras cross-doc XD01-XD12 planejadas (Sprint 43),ADR-0006,86,validacao,runtime,registry retorna 12 regras,5,core,contradiz README linha 236 que diz 1 entregue
+CLM-A0-089,"Engine cross-doc com goroutine pool, panic recovery por regra",ADR-0006,52,validacao,build,engine implementa parallel+recover,3,supporting,
+CLM-A0-090,Cross-doc paralelo: latencia P95 < 5s pra tripla (3040+4111+DRSAC),ADR-0006,106,deployment,runtime,benchmark reproduz,3,supporting,
+CLM-A0-091,XD06 3050 <-> 2160 APR usados no LCR,ADR-0006,93,validacao,runtime,regra implementada,3,supporting,regras XD07 e XD08 estao em arquivo dirty xd_rules.go
+CLM-A0-092,XD07 3040 <-> 4111 <-> 3050 triangulacao completa,ADR-0006,94,validacao,runtime,regra implementada,3,supporting,
+CLM-A0-093,XD08 2061 <-> 2070 limites operacionais vs requerimento capital,ADR-0006,95,validacao,runtime,regra implementada,3,supporting,
+CLM-A0-094,Generator engine em 5 camadas (Ingest Canonical Mapper Emitter Validator Submitter),ADR-0007,22,geracao,build,codigo implementa as 5 camadas,5,core,
+CLM-A0-095,Interface CADOCGenerator com CadocCode Generate RequiredFields,ADR-0007,40,geracao,build,interface implementada,5,core,
+CLM-A0-096,GeneratedDoc com XML ZIP SHA256 Errors FieldMap,ADR-0007,46,geracao,build,struct inclui explainability,5,core,
+CLM-A0-097,LLM nunca gera XML direto; sempre serializa de structs Go,ADR-0007,57,geracao,build,Emitter e Go-only,5,core,
+CLM-A0-098,CanonicalDocument como contrato estavel entre conectores e generators,ADR-0007,67,geracao,build,tipo existe,5,core,
+CLM-A0-099,Adapter Pattern com SourceAdapter (Name Fetch ValidateConfig HealthCheck),ADR-0008,24,ingestao,build,interface implementada,5,core,
+CLM-A0-100,"5 conectores: Manual, File, API, DB, MCP",ADR-0008,42,ingestao,runtime,5 adapters registrados,5,core,contradiz README linha 323 que diz 4 stubs e 1 funcional (Manual)
+CLM-A0-101,ManualAdapter: Form UI Next.js -> CanonicalDocument,ADR-0008,46,ingestao,runtime,adapter existe,3,supporting,
+CLM-A0-102,FileAdapter: PDF/XLSX/DOCX -> CanonicalDocument via LLM,ADR-0008,47,ingestao,runtime,adapter existe e parseia PDF/XLSX/DOCX,3,supporting,PDF/DOCX parsing e uma das pistas quentes do prompt
+CLM-A0-103,APIAdapter: REST API do cliente -> CanonicalDocument,ADR-0008,48,ingestao,runtime,adapter existe,3,supporting,
+CLM-A0-104,DBAdapter: PostgreSQL/Oracle/MySQL read-only -> CanonicalDocument,ADR-0008,49,ingestao,runtime,adapter existe com read-only enforcement,3,supporting,
+CLM-A0-105,MCPAdapter: MCP server (tools generate/validate/submit) -> CanonicalDocument,ADR-0008,50,ingestao,runtime,adapter existe com handshake MCP,3,supporting,
+CLM-A0-106,Wizard /console/sources CRUD de SourceConfig,ADR-0008,57,ui,runtime,pagina existe e CRUD funciona,3,supporting,
+CLM-A0-107,ADRs 0007 e 0008 status Proposto (Sprint 57 - nao iniciado),ADR-0007/0008,3,deployment,build,status declarado vs implementacao real,5,core,ADRs dizem nao iniciado em 2026-07-08; codigo atual pode ou nao ter
+CLM-A0-108,/console/generate com status de 10 generators + pipeline visual + CTA,REDESIGN.md,22,ui,runtime,pagina existe com 10 status,3,supporting,
+CLM-A0-109,"/console/ingest com 5 conectores (Manual, API, File, DB, MCP)",REDESIGN.md,23,ui,runtime,pagina existe com 5 status,3,supporting,
+CLM-A0-110,Frontend Next.js 15 App Router + shadcn/ui + Radix + Tailwind,REDESIGN+ADR-0001,multi,ui,build,Next 15 detectado em runtime,3,supporting,
+CLM-A0-111,CSP dinamica script-src self nonce-${nonce} em prod,REDESIGN.md,290,seguranca,runtime,middleware injeta nonce,5,core,
+CLM-A0-112,Cookies httpOnly + SameSite=Lax + Secure em prod,REDESIGN.md,291,seguranca,runtime,Set-Cookie contem flags,5,core,
+CLM-A0-113,HSTS 1 ano com includeSubDomains; preload em prod,REDESIGN.md,292,seguranca,runtime,header Strict-Transport-Security presente,3,supporting,
+CLM-A0-114,frame-ancestors none (anti clickjacking),REDESIGN.md,293,seguranca,runtime,CSP contem frame-ancestors none,3,supporting,
+CLM-A0-115,Permissions-Policy nega mic/camera/geo/interest-cohort,REDESIGN.md,294,seguranca,runtime,header presente,3,supporting,
+CLM-A0-116,/console/generate e /console/ingest como paginas completas (nao placeholder),REDESIGN.md,22,ui,runtime,rota retorna 200 com conteudo,3,supporting,
+CLM-A0-117,"4 camadas de Audit: L1 (XSD), L2 (Semantico), L3 (cross-doc), L4 (Historico)",README+ADR-0006,multi,validacao,runtime,4 layers implementados e expostos,5,core,
+CLM-A0-118,DRSAC ESG first-mover (janela IN BCB 694/2025),README.md,219,geracao,API,generator 2030 produz XML valido,5,core,
+CLM-A0-119,Planos Lite/Pro/Scale: R$1500 / R$4500 / R$12000,README.md,313,negocio,billing,billing operacional,1,marketing,Stripe presente conforme ADR-0001 mas billing real e claim separado
+CLM-A0-120,"Sub-produtos: Norma ESG, Norma Radar, Norma Connect, Norma Audit",README.md,217,negocio,marketing,4 sub-produtos identificaveis,3,supporting,

@@ -54,8 +54,8 @@ type Metrics struct {
 	activeTenants   atomic.Int64
 
 	// Stable bucket key list for histogram rendering.
-	seenDurBuckets    map[string]bool
-	seenDurBucketsMu  sync.Mutex
+	seenDurBuckets   map[string]bool
+	seenDurBucketsMu sync.Mutex
 }
 
 // NewMetrics cria instância zerada.
@@ -377,4 +377,3 @@ func (h *histogram) Quantile(phi float64) int64 {
 	}
 	return bounds[len(bounds)-1]
 }
-

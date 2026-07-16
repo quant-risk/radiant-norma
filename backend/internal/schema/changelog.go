@@ -142,30 +142,30 @@ type ChangeKind string
 
 const (
 	ChangeAdded    ChangeKind = "added"
-	ChangeRemoved ChangeKind = "removed"
+	ChangeRemoved  ChangeKind = "removed"
 	ChangeModified ChangeKind = "modified"
 )
 
 // FieldChange represents a single field that was added, removed, or modified.
 type FieldChange struct {
-	Kind     ChangeKind `json:"kind"`
-	Tag      string     `json:"tag"`
-	Attr     string     `json:"attr,omitempty"`
-	Before   *Field     `json:"before,omitempty"`   // nil for added
-	After    *Field     `json:"after,omitempty"`    // nil for removed
-	Changes  []string   `json:"changes,omitempty"` // e.g. ["type N13,2 → N15,2"]
+	Kind    ChangeKind `json:"kind"`
+	Tag     string     `json:"tag"`
+	Attr    string     `json:"attr,omitempty"`
+	Before  *Field     `json:"before,omitempty"`  // nil for added
+	After   *Field     `json:"after,omitempty"`   // nil for removed
+	Changes []string   `json:"changes,omitempty"` // e.g. ["type N13,2 → N15,2"]
 }
 
 // StructuredChangelog holds a machine-parseable diff between two schema versions.
 type StructuredChangelog struct {
-	CadocCode     string         `json:"cadoc_code"`
-	PrevVersion   string         `json:"prev_version,omitempty"`   // empty for initial version
-	CurrVersion   string         `json:"curr_version"`
-	EffectiveFrom string         `json:"effective_from"`
-	Added        []FieldChange   `json:"added,omitempty"`
-	Removed      []FieldChange   `json:"removed,omitempty"`
-	Modified     []FieldChange   `json:"modified,omitempty"`
-	TotalChanges int             `json:"total_changes"`
+	CadocCode     string        `json:"cadoc_code"`
+	PrevVersion   string        `json:"prev_version,omitempty"` // empty for initial version
+	CurrVersion   string        `json:"curr_version"`
+	EffectiveFrom string        `json:"effective_from"`
+	Added         []FieldChange `json:"added,omitempty"`
+	Removed       []FieldChange `json:"removed,omitempty"`
+	Modified      []FieldChange `json:"modified,omitempty"`
+	TotalChanges  int           `json:"total_changes"`
 }
 
 // ComputeStructuredChangelog returns a structured diff between prev and curr fields.
@@ -190,9 +190,9 @@ func ComputeStructuredChangelog(cadocCode string, prev, curr []Field, prevVersio
 		k := fieldKey(f)
 		if _, inCurr := currMap[k]; !inCurr {
 			sc.Removed = append(sc.Removed, FieldChange{
-				Kind:  ChangeRemoved,
-				Tag:   f.Tag,
-				Attr:  f.Attr,
+				Kind:   ChangeRemoved,
+				Tag:    f.Tag,
+				Attr:   f.Attr,
 				Before: &f,
 			})
 		}

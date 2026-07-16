@@ -2,6 +2,131 @@
 
 > **Histórico de todas as alterações no projeto.** Cada entrada é uma sprint fechada.
 
+## Unreleased — Phase 1.1: fail-closed L1 validator
+
+> **Status:** ✅ Shipped on branch `remediation/gates-1-14` (commit `e7c7e99`).
+> **Tipo:** security/correctness fix (closes audit gate #2).
+> **Detalhes:** ver [`docs/PHASE_1_1.md`](docs/PHASE_1_1.md).
+
+### Mudanças
+
+- **L1 validator fail-closed.** `audit.ValidateXSD` retorna `ErrSchemaUnavailable`
+  (tipo tipado) em vez de `(nil, nil)` quando o CADOC não tem XSD registrado
+  ou o arquivo está indisponível.
+- **Documentos vazios rejeitados.** `Service.validateL1Parse` recusa qualquer
+  documento cujo elemento raiz tem zero atributos e zero elementos filhos.
+  Comportamento histórico: esses documentos eram aprovados em silêncio pelo
+  fallback permissivo de root-tag.
+- **`expectedRootTag` estendido.** Cobre agora CADOCs `4060` (usado em testes
+  internos) e `4111` (raiz canônica do generator).
+- **`SupportedCADOCs()` adicionado.** Lista os CADOCs cujos schemas estão
+  registrados neste build; pode ser usado em handlers para validação prévia.
+- **Testes Phase 1.1.** Sete novos testes em
+  `internal/audit/phase_1_1_validation_test.go` travam o contrato fail-closed.
+
+### Compatibilidade
+
+- Testes `TestValidate_*` pré-existentes continuam verdes (8/8).
+- Suite completa do backend continua verde, exceto o teste flaky conhecido
+  `internal/auditlog/TestLog_Concurrent` sob contenção pesada (Sprint 6 v1.5.0,
+  F21.5 — não relacionado a esta mudança).
+
+### Breaking changes intencionais
+
+- Clientes que enviavam `<Documento4111/>`, `<DocumentoDRSAC/>`, `<DocTXB/>`,
+  `<documentoDLO/>`, etc., vazios para "validar estrutura" agora recebem
+  HTTP 200 com `passed=false` e `errors[0].codigo = "L1-PARSE"`.
+- Mensagens de erro detalhadas (e.g. `"documento DocumentoDRSAC vazio"`) vão
+  apenas para o log do servidor; a response pública mantém a forma genérica
+  `"documento XML/JSON inválido"` por Validation 19 (F19.11) — não vaza nomes
+  de elementos nem paths internos.
+
+### Próximas fases do plano
+
+Ver `PROMPT_AUDITORIA_E2E.md` e o plano de remediação para a sequência
+completa. Próximas: 1.2 (unificar parser+generator), 1.3 (rota `/v1/validate`
+usa `ValidateFull`), 1.4 (whitelist de versão), 1.5 (required fields),
+1.6 (data_base/versao_layout obrigatórios no body).
+
+---
+
+## v3.36.5 — 2026-07-14 (Landing + dashboard alinhados com v3.36.4) ✅
+
+> **Status:** ✅ Shipped
+> **Tipo:** minor (frontend: marketing + dashboard alinhados com produtos reals)
+
+### Contexto
+
+Levantamento profundo do código identificou 14 categorias de features
+no backend que a landing/dashboard ainda não refletiam:
+- Wizard de geração (`/v1/generate/wizard/*`)
+- Batch generation (`/v1/generate/batch`)
+- History de geração (`/v1/generate/history`)
+- AI Insights / LLM chat (`/v1/insights/ask`)
+- L4 diff histórico (`/v1/l4/compare`)
+- DLQ de envios (`/v1/envios/dlq`)
+- Webhooks outbound (`/v1/webhooks/*`, HMAC-SHA256)
+- Marketplace de regras (`/v1/marketplace/*`)
+- Pilot ESG-first (`/v1/pilot/*`)
+- WhiteLabel branding (`/v1/tenant/branding/*`)
+- SOC 2 readiness (`/v1/admin/soc2/*`)
+- Status page pública (`/status`)
+- Observability (Sentry + tracing)
+- L4 (diff histórico) em validação
+
+### Landing (`frontend/src/components/landing/`)
+
+**Hero** (`hero.tsx`):
+- Headline: "Gera, valida e envia CADOCs com L1-L4 + AI + webhooks"
+- Sub-headline menciona: motor + conectores + Wizard + L1-L4 + L4 diff +
+  AI Insights + push STA + webhooks + marketplace + LGPD/SOC 2
+- Trust badges reorganizados: SOC 2 · LGPD · AI Insights · L1→L4
+
+**HowItWorks** (`how-it-works.tsx`):
+- 5 → **7 etapas** (Wizard + AI adicionadas)
+- Etapas: Conectar fonte → Canonical → Wizard guiado → Gerar CADOC →
+  Validar L1-L4 → AI Insights → STA + Webhooks
+
+**Features grid** (`features.tsx`):
+- 8 → **10 cards** em grid 5×2 (XL)
+- Novos: Wizard guiado, Validação L1-L4 (destaque), AI Insights,
+  Webhooks outbound, Marketplace de regras
+- Micro-visuals novos: WizardVisual, ValidationVisual, WebhookVisual,
+  MarketplaceVisual
+
+### Dashboard (`/console`)
+
+**Topbar** (`console/page.tsx`):
+- Subtitle: "Geração · Validação L1-L4 · AI · Webhooks · STA · Audit chain"
+
+**KPIs**: grid de 4 → **4 + 4** (2 rows).
+- Row 1 (existentes): Envios, Alertas, Aprovação, CADOCs
+- Row 2 (novos): **Generators** (1/10), **AI Insights** (LLM opt-in),
+  **Webhooks** (HMAC), **Marketplace** (community rules)
+
+### Version bumps
+
+- Footer: v3.36.0 → **v3.36.4**
+- Login: v3.36.0 → **v3.36.4**
+
+### Validação
+
+- `tsc -p tsconfig.json --noEmit` → 0 erros
+- Landing 200 com 10 features + 7 etapas
+- `/console` 200 com 8 KPIs em 2 rows
+- 8 páginas do console continuam funcionando
+
+### Próximos passos (não cobertos neste commit, próximos sprints)
+
+- `/console/webhooks` — UI de registry + delivery log
+- `/console/marketplace` — Catálogo de regras + rating
+- `/console/branding` — WhiteLabel (logo, cores, domínio)
+- `/console/pilot` — Onboarding ESG-first
+- `/console/soc2` — Readiness + evidence collector
+- `/console/admin` — Painel admin geral (DLQ retry, schemas v2, radar scan manual)
+
+---
+
 ## v3.36.4 — 2026-07-13 (Code review fixes — Sprint 57) ✅
 
 > **Status:** ✅ Shipped

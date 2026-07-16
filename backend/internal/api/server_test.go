@@ -109,6 +109,14 @@ func newTestServer(t *testing.T) (*api.Server, *sql.DB) {
 	// Tests novos Sprint 7a podem desabilitar via t.Setenv("RADIANT_DEV_AUTH", "")
 	// ANTES de chamar newTestServer — escopo do t.Setenv deve envolver handler.ServeHTTP.
 	t.Setenv("RADIANT_DEV_AUTH", "1")
+
+	// Sprint 78: Shutdown do Hub SSE após cada teste.
+	// Sem isto, goroutines de SSE (ctx.Done() nunca cancelado em httptest)
+	// vazam e fazem o test suite completo travar no timeout do CI.
+	t.Cleanup(func() {
+		srv.Shutdown()
+	})
+
 	return srv, d
 }
 

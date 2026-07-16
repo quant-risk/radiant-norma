@@ -1,0 +1,20 @@
+{
+  "data_base": "2026-06-01",
+  "instituicao": {
+    "cnpj_raiz": "12345678",
+    "nome": "Banco Aurora Sintético S.A. 🏦"
+  },
+  "operacoes": [
+    {
+      "contrato": "E2E-226083",
+      "observacao": "Crédito à indústria — cenário nominal ✅",
+      "valor_saldo": "887.25"
+    },
+    {
+      "contrato": "E2E-345455",
+      "observacao": "Acentos: áéíóú, ç, ã, ê; emoji: 🧪",
+      "valor_saldo": "366.15"
+    }
+  ],
+  "synthetic": true
+}

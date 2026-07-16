@@ -57,23 +57,33 @@ func TestSignPayload(t *testing.T) {
 func TestIsRetryable(t *testing.T) {
 	tests := []struct {
 		errMsg string
+		status int
 		expect bool
 	}{
-		{"context deadline exceeded", true},
-		{"connection refused", true},
-		{"no such host", true},
-		{"connection reset", true},
-		{"temporary failure", true},
-		{"bad status 400", false},
-		{"unauthorized", false},
-		{"not found", false},
+		// Network errors (status=0, no HTTP response) — retryable.
+		{"context deadline exceeded", 0, true},
+		{"connection refused", 0, true},
+		{"no such host", 0, true},
+		{"connection reset", 0, true},
+		{"temporary failure", 0, true},
+		// HTTP 429 — retryable.
+		{"rate limited", 429, true},
+		// HTTP 5xx — retryable.
+		{"internal error", 500, true},
+		{"bad gateway", 502, true},
+		{"service unavailable", 503, true},
+		// HTTP 4xx (non-429) — not retryable.
+		{"unauthorized", 401, false},
+		{"forbidden", 403, false},
+		{"not found", 404, false},
+		{"bad request", 400, false},
 	}
 
 	for _, tt := range tests {
 		err := &testError{msg: tt.errMsg}
-		got := isRetryable(err)
+		got := isRetryable(err, tt.status)
 		if got != tt.expect {
-			t.Errorf("isRetryable(%q): got %v, want %v", tt.errMsg, got, tt.expect)
+			t.Errorf("isRetryable(%q, %d): got %v, want %v", tt.errMsg, tt.status, got, tt.expect)
 		}
 	}
 }

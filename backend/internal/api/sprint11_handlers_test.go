@@ -86,6 +86,9 @@ func setupRuleToggleTest(t *testing.T) (*Server, *sql.DB, *realtime.Hub, func())
 	}
 
 	cleanup := func() {
+		// Sprint 78: Shutdown do Hub SSE antes de fechar DB.
+		// Sem isto, goroutines de SSE (ctx nunca cancelado em httptest) vazam.
+		hub.Shutdown()
 		_ = d.Close()
 		_ = os.RemoveAll(tmpDir)
 	}

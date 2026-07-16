@@ -1,0 +1,13 @@
+backend/internal/api/insights_llm_handlers.go
+backend/internal/api/metrics.go
+backend/internal/api/schema_changelog_handlers.go
+backend/internal/api/sta_range_handlers.go
+backend/internal/crossdoc/rules/xd_rules.go
+backend/internal/generator/adapters/adapters.go
+backend/internal/generator/registry_test.go
+backend/internal/insights/conversation.go
+backend/internal/insights/llm.go
+backend/internal/observability/metrics.go
+backend/internal/observability/sentry.go
+backend/internal/observability/tracing.go
+backend/internal/schema/changelog.go

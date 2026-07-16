@@ -338,6 +338,57 @@ Estes são **deliberadamente públicos** — não escondemos o que falta:
 
 ---
 
+## ✦ Auditoria e remediação
+
+Em 15 de julho de 2026 foi executada uma auditoria independente
+black-box (85 testes, score 41,76%, 48 FAIL) que identificou
+problemas críticos no caminho regulatório ponta-a-ponta. O relatório
+completo está em [`PROMPT_AUDITORIA_E2E.md`](PROMPT_AUDITORIA_E2E.md);
+os artefatos da execução original estão em
+`e2e-audit/20260715-170152-3a51cba/`.
+
+A remediação é feita em fases na branch
+[`remediation/gates-1-14`](../../tree/remediation/gates-1-14). O
+plano completo está no relatório; cada fase é um commit isolado com
+critério de saída verificável.
+
+### Status por fase
+
+| Fase | Escopo | Status | Detalhes |
+|---|---|---|---|
+| **1.1** | Fail-closed L1 validator | ✅ Shipped (commit `e7c7e99`) | [`docs/PHASE_1_1.md`](docs/PHASE_1_1.md) |
+| 1.2 | Unificar parser+generator por CADOC | ⏳ Pendente | — |
+| 1.3 | `/v1/validate` usa `ValidateFull` | ⏳ Pendente | — |
+| 1.4 | Whitelist de versão no generator | ⏳ Pendente | — |
+| 1.5 | Required fields enforced + data_base exigido | ⏳ Pendente | — |
+| 1.6 | `/v1/validate` exige data_base e versao_layout | ⏳ Pendente | — |
+| 2 | Wizard funcional ponta a ponta | ⏳ Pendente | — |
+| 3 | RBAC readonly middleware | ⏳ Pendente | — |
+| 4 | STA: persist + dedupe + retry + DLQ | ⏳ Pendente | — |
+| 5 | Webhook inicializar + assinatura + idempotência | ⏳ Pendente | — |
+| 6 | Postgres com RLS real + CI | ⏳ Pendente | — |
+| 7 | Auditoria + Insights em fonte única | ⏳ Pendente | — |
+| 8 | SDKs + OpenAPI + docs alinhados | ⏳ Pendente | — |
+
+**Importante:** Itens fora do controle deste repo (XSD oficial BACEN,
+homologação STA real, SOC 2 Type II, SLA 99,95%, LGPD formal, CMN
+4.966, IFRS 9) **não estão cobertos** pelo plano acima. Eles exigem
+evidência externa e ficam marcados como `EXTERNAL` em código. O
+veredito final da auditoria foi **NO-GO** até que essas evidências
+sejam apresentadas.
+
+### Correção de números antigos
+
+A tabela "Cobertura atual" acima e a linha "Validação: 1.099 regras"
+ainda usam os números pré-auditoria. A auditoria encontrou que o seed
+anuncia 1.099 regras mas só 968 são persistidas (colisões de chave
+única em `criticas.UNIQUE(cadoc_code, sheet, codigo)` descartam 131).
+Esse gap será fechado nas Fases 7 e 8. Por ora, ambos os números
+convivem no README; o `cmd/seed` loga `✓ criticas importadas` com
+a contagem real.
+
+---
+
 ## ✦ Stack do agente
 
 Esse repositório foi construído com uma stack de agentes IA:
