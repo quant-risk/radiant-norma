@@ -1,0 +1,23 @@
+{
+  "_template": "fixture-manifest-schema",
+  "_version": "1.0",
+  "_description": "Schema para o manifesto de fixtures da auditoria E2E. Cada fixture deve ter: id, cadoc, scenario, source_format, seed, contains_real_pii (sempre false), oracle_type, expected, sha256.",
+  "schema": {
+    "id": "FIX-<cadoc>-<scenario>-<seq>",
+    "cadoc": "3040|3050|3044|2030|2060|2061|2062|2070|2160|2170|4111|crossdoc|historical",
+    "scenario": "minimal_valid|realistic_small|realistic_large|boundary_values|adversarial|mutation_<field>|crossdoc_<pass|fail>",
+    "source_format": "canonical-json|xml-sta|json-event|api-payload|csv|xlsx|docx|pdf",
+    "seed": 20260715,
+    "contains_real_pii": false,
+    "oracle_type": "official-xsd|independent-assertion|byte-compare-bcvalidador|hash-comparison|schema-validate",
+    "expected": {
+      "generation": "success|fail",
+      "validation": "pass|fail",
+      "validation_layer": "L1|L2|L3|L4",
+      "rule_codes_triggered": ["B04", "F02", "..."]
+    },
+    "sha256": "<hex>",
+    "size_bytes": 0,
+    "files": ["<relative path inside fixtures/>"]
+  }
+}

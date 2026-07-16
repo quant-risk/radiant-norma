@@ -1,0 +1,65 @@
+	github.com/fortvna/radiant-norma/backend/cmd/api		coverage: 0.0% of statements
+	github.com/fortvna/radiant-norma/backend/cmd/generator-server		coverage: 0.0% of statements
+	github.com/fortvna/radiant-norma/backend/cmd/jwt-mint		coverage: 0.0% of statements
+	github.com/fortvna/radiant-norma/backend/cmd/radar		coverage: 0.0% of statements
+ok  	github.com/fortvna/radiant-norma/backend/cmd/secret-migrate	0.662s	coverage: 57.1% of statements
+	github.com/fortvna/radiant-norma/backend/cmd/seed		coverage: 0.0% of statements
+	github.com/fortvna/radiant-norma/backend/cmd/seed-demo		coverage: 0.0% of statements
+	github.com/fortvna/radiant-norma/backend/cmd/seed-sprint8c		coverage: 0.0% of statements
+ok  	github.com/fortvna/radiant-norma/backend/cmd/senhaws-rotate	0.828s	coverage: 69.7% of statements
+ok  	github.com/fortvna/radiant-norma/backend/cmd/sta-submit	0.410s	coverage: 78.1% of statements
+	github.com/fortvna/radiant-norma/backend/cmd/synth-gen		coverage: 0.0% of statements
+	github.com/fortvna/radiant-norma/backend/cmd/worker		coverage: 0.0% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/api	10.456s	coverage: 58.0% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/audit	1.219s	coverage: 25.1% of statements
+	github.com/fortvna/radiant-norma/backend/internal/audit/l4		coverage: 0.0% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/audit/rules	0.393s	coverage: 61.6% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/auditlog	0.818s	coverage: 92.5% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/auth	1.770s	coverage: 71.8% of statements
+	github.com/fortvna/radiant-norma/backend/internal/bacen		coverage: 0.0% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/billing	0.372s	coverage: 10.8% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/branding	0.839s	coverage: 92.6% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/canonical	0.307s	coverage: 72.2% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/crossdoc	0.311s	coverage: 83.2% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/crossdoc/rules	0.302s	coverage: 23.4% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/db	0.719s	coverage: 62.7% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/doc4111	0.552s	coverage: 55.4% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/docdli	0.311s	coverage: 92.2% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/drsac	0.400s	coverage: 43.5% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/generator	0.484s	coverage: 100.0% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/generator/adapters	0.369s	coverage: 35.0% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/generator/gen2030	0.531s	coverage: 75.0% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/generator/gen2060	0.370s	coverage: 73.5% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/generator/gen2061	0.394s	coverage: 79.3% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/generator/gen2062	0.396s	coverage: 74.4% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/generator/gen2070	0.408s	coverage: 75.3% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/generator/gen2160	0.371s	coverage: 72.3% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/generator/gen2170	0.401s	coverage: 71.4% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/generator/gen3040	0.402s	coverage: 77.3% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/generator/gen3050	0.386s	coverage: 91.7% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/generator/gen4111	0.410s	coverage: 82.9% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/generator/validation	0.358s	coverage: 0.0% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/generator/wizard	0.408s	coverage: 16.1% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/ingest	0.386s	coverage: 25.6% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/insights	0.509s	coverage: 8.3% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/loggerutil	0.427s	coverage: 96.2% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/marketplace	0.406s	coverage: 14.6% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/multiregion	0.416s	coverage: 29.1% of statements
+	github.com/fortvna/radiant-norma/backend/internal/observability		coverage: 0.0% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/pilot	0.310s	coverage: 3.3% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/radar	1.100s	coverage: 78.4% of statements
+	github.com/fortvna/radiant-norma/backend/internal/radar/autopr		coverage: 0.0% of statements
+	github.com/fortvna/radiant-norma/backend/internal/radar/diff		coverage: 0.0% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/realtime	2.549s	coverage: 78.9% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/ruleprefs	0.523s	coverage: 63.3% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/schema	1.177s	coverage: 64.0% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/secrets	0.376s	coverage: 58.3% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/senhaws	0.634s	coverage: 95.6% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/soc2	0.575s	coverage: 0.8% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/sta	0.665s	coverage: 73.6% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/synth	0.610s	coverage: 11.3% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/tenant	0.818s	coverage: 90.2% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/testutil	0.642s	coverage: 14.3% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/version	0.320s	coverage: [no statements]
+ok  	github.com/fortvna/radiant-norma/backend/internal/webhook	0.459s	coverage: 10.3% of statements
+ok  	github.com/fortvna/radiant-norma/backend/internal/worker	0.695s	coverage: 86.1% of statements

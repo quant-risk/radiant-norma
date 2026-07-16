@@ -1,0 +1,8 @@
+{
+  "CNPJ da IF": "cnpj_raiz",
+  "Código Externo": "contrato",
+  "Data de Referência": "data_base",
+  "Descrição Livre": "observacao",
+  "Documento do Cliente": "cnpj_contraparte",
+  "Saldo em Reais": "valor_saldo"
+}

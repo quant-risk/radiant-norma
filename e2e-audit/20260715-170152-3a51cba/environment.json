@@ -1,0 +1,33 @@
+{
+  "timestamp_utc": "2026-07-15T17:06:21.042156Z",
+  "timezone_local": "-03",
+  "so": "macOS-26.5.2-arm64-arm-64bit",
+  "cpu_count": 8,
+  "arch": "arm64",
+  "python_version": "3.9.6",
+  "go_version_module_required": "1.25.0",
+  "go_version_installed": "go version go1.26.4 darwin/arm64",
+  "node_version": "v22.23.1",
+  "npm_version": "10.9.8",
+  "psql_version": "psql (PostgreSQL) 16.14 (Homebrew)",
+  "sqlite_version": "3.51.0 2025-06-12 13:14:41 f0ca7bba1c5e232e5d279fad6338121ab55af0c8c68c84cdfb18ba5114dcaapl (64-bit)",
+  "branch": "main",
+  "head": "3a51cba4ce1945c4e554915131617089c9d061bb",
+  "dirty_files_pre": [
+    "backend/internal/api/insights_llm_handlers.go",
+    "backend/internal/api/metrics.go",
+    "backend/internal/api/schema_changelog_handlers.go",
+    "backend/internal/api/sta_range_handlers.go",
+    "backend/internal/crossdoc/rules/xd_rules.go",
+    "backend/internal/generator/adapters/adapters.go",
+    "backend/internal/generator/registry_test.go",
+    "backend/internal/insights/conversation.go",
+    "backend/internal/insights/llm.go",
+    "backend/internal/observability/metrics.go",
+    "backend/internal/observability/sentry.go",
+    "backend/internal/observability/tracing.go",
+    "backend/internal/schema/changelog.go"
+  ],
+  "feature_flags_env": [],
+  "ports_in_use_at_probe": []
+}

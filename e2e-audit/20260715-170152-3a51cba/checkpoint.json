@@ -1,0 +1,53 @@
+{
+  "run_id": "20260715-170152-3a51cba",
+  "branch": "main",
+  "head": "3a51cba4ce1945c4e554915131617089c9d061bb",
+  "started_utc": "2026-07-15T17:01:52Z",
+  "ended_utc": "2026-07-15T19:50:00Z",
+  "phase_status": {
+    "A0_capability_probe": "done",
+    "A0_1_repo_snapshot": "done",
+    "A0_2_claims_inventory": "done",
+    "A0_3_implementation_inventory": "done",
+    "B_baseline": "done — backend copiado para /tmp; go build ./... EXIT 0; go vet ./... EXIT 0; 51 packages PASS, 0 FAIL",
+    "C_fixtures": "partial — 16 fixtures CSV/JSON/XML + manifest.json geradas",
+    "D_benchmarks": {
+      "BENCH-00": "done — build ./... EXIT 0; vet ./... EXIT 0; 1244 testes listados, 51 packages PASS",
+      "BENCH-01": "skipped — sem tempo para jornada UI completa",
+      "BENCH-02": "done — 10 generators verificados (Generate real + xml.Marshal + tests PASS)",
+      "BENCH-03": "done — cobertura medida em 51 packages; 4 abaixo do mínimo declarado",
+      "BENCH-04": "done — FileAdapter Fetch_CSV/XLSX + ValidateConfig + HealthCheck PASS",
+      "BENCH-05": "done — 25 cross-doc rules + 15 testes PASS (Meta/Apply/BuiltinRegistry)",
+      "BENCH-06": "skipped — STA real não testado (refused Hetzner credentials)",
+      "BENCH-07": "partial — router real (77 rotas) vs OpenAPI (49 ops) contado por grep",
+      "BENCH-08": "skipped — security runtime não executado",
+      "BENCH-09": "done — race detector CLEAN em 6 pacotes críticos",
+      "BENCH-10": "skipped — módulos supporting não exercitados",
+      "BENCH-11": "skipped — senhaws rotate não executado"
+    },
+    "reports": "done — recalibrados após Fase D"
+  },
+  "verdict": "PARCIALMENTE VERIFICADO",
+  "score_estimate": "50-69 (PARCIALMENTE FUNCIONAL)",
+  "limitations": [
+    "Disco cheio resolvido via cleanup do cache Go (2.5GB liberados)",
+    "iCloud I/O bloqueando go build ./... resolvido via copia para /tmp/radiant-build",
+    "Limite semanal de subagente esgotado em 2026-07-15 21:56 UTC",
+    "Credenciais Hetzner reais recusadas (vazadas no chat)",
+    "Frontend Next.js nao exercitado em runtime (Playwright instalado mas sem tempo)",
+    "Postgres real nao testado (cliente presente, servidor nao iniciado)",
+    "Docker nao instalado",
+    "BENCH-01/06/07-runtime/08/10/11 nao executados"
+  ],
+  "key_findings": [
+    "5 P0s corrigidos em versoes recentes (v3.34.52, v3.36.3, v3.36.4)",
+    "2 P0s ainda abertos: audit/rules cobertura 61.6% < 85%; crossdoc/rules 23.4% < 70%",
+    "8 numeros distintos para regras 3040 portadas; ground truth: 275 (bate com README tabela)",
+    "Cross-doc: 25 regras (3+8+5+9); README/ROADMAP/ADR subestimavam (1/8/12)",
+    "Generators: 10 registrados (v3.36.3+) mas apenas 3040 com Generate real",
+    "Conectores: 5 com Fetch implementado (corrige LLM_INTEGRATION_GUIDE desatualizado)",
+    "Dois SDKs Python (sdk/py + sdk/python) — duplicata nao documentada",
+    "OpenAPI mistura prefixo /v1 em /marketplace e /webhooks",
+    "77 rotas reais vs 49 operacoes OpenAPI (README subestima com 20+)"
+  ]
+}

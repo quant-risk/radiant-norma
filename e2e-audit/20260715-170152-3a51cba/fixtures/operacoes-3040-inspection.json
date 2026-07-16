@@ -1,0 +1,29 @@
+{
+  "ndjson": "{\"kind\":\"table\",\"sheet\":\"Operacoes\",\"address\":\"A1:K3\",\"rows\":3,\"cols\":11,\"values\":[[\"cnpj\",\"nome_if\",\"modalidade\",\"valor\",\"uf\",\"tipo_pessoa\",\"classificacao_if\",\"contrato\",\"indice\",\"taxa\",\"data_vencimento\"],[\"12345678\",\"Banco Aurora Sintético S.A.\",\"1000\",50000,\"SP\",\"PF\",\"A\",\"E2E-SCR-XLSX-001\",\"CDI\",0.015,\"2026-12-31\"],[\"12345678\",\"Banco Aurora Sintético S.A.\",\"1000\",75000.25,\"RJ\",\"PJ\",\"B\",\"E2E-SCR-XLSX-002\",\"PRE\",0.021,\"2027-06-30\"]]}",
+  "truncated": false,
+  "metadata": {
+    "revision": "a6flwj",
+    "target": {
+      "id": "wb/qztxva",
+      "beforeLines": 0,
+      "afterLines": 0
+    },
+    "kind": {
+      "requested": "table",
+      "tokens": [
+        "table"
+      ]
+    },
+    "include": {
+      "requested": "values,formulas",
+      "tokens": [
+        "values",
+        "formulas"
+      ]
+    },
+    "exclude": {
+      "tokens": []
+    },
+    "notices": []
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "run_id": "20260715-170152-3a51cba",
+  "pass": 1,
+  "source_documents": [
+    "README.md",
+    "REDESIGN.md",
+    "docs/adr/0001-stack-definitiva.md",
+    "docs/adr/0002-multi-tenancy-rls.md",
+    "docs/adr/0003-audit-log-hash-chain.md",
+    "docs/adr/0004-schema-registry-versionado.md",
+    "docs/adr/0005-sta-client-interface-segregation.md",
+    "docs/adr/0006-cross-doc-engine.md",
+    "docs/adr/0007-generator-engine-architecture.md",
+    "docs/adr/0008-adapter-pattern-connectors.md"
+  ],
+  "total_claims": 120,
+  "by_weight": {
+    "5": 54,
+    "3": 55,
+    "1": 11
+  },
+  "by_criticidade": {
+    "core": 54,
+    "supporting": 61,
+    "marketing": 5
+  },
+  "by_category": {
+    "geracao": 15,
+    "validacao": 31,
+    "contratos": 2,
+    "deployment": 24,
+    "seguranca": 21,
+    "ui": 10,
+    "ingestao": 8,
+    "integracao": 7,
+    "negocio": 2
+  },
+  "weight5_by_category": {
+    "geracao": 10,
+    "validacao": 15,
+    "deployment": 5,
+    "seguranca": 17,
+    "ingestao": 3,
+    "integracao": 4
+  },
+  "contradicoes_detectadas": [
+    "CLM-A0-006: README linha 57 declara 0 regras 2030 DRSAC; gaps conhecidos linha 325 dizem 35 regras D01-D35",
+    "CLM-A0-014: tabela linha 66 diz 10 generators entregues; gaps conhecidos linha 322 dizem apenas 3040 implementado",
+    "CLM-A0-020: README linha 237 diz 13 migrations; linha 268 da Estrutura diz 2 SQL files",
+    "CLM-A0-024: README linha 149 diz 968 criticas no seed; linha 233 diz 1099 regras extraidas",
+    "CLM-A0-025: README linha 150 espera versao 1.2.0 em /healthz; badge diz v3.36.2",
+    "CLM-A0-027: curl /v1/rules/3040 retorna 320 (linha 158); tabela linha 54 diz 275; linha 235 diz 126; linha 328 diz 275/361",
+    "CLM-A0-035: README linha 232 lista 9 binarios CLI; linha 258 lista 4; cmd/* na verdade tem 13",
+    "CLM-A0-038/047: README linha 235 diz 126 regras portadas; linha 54/328 dizem 275; linha 249 confirma 126",
+    "CLM-A0-039/088: README linha 236 diz 1 regra cross-doc entregue; ADR-0006 lista 12",
+    "CLM-A0-041/056: README linha 238 diz Next.js 14; gaps conhecidos linha 335 dizem Next.js 15",
+    "CLM-A0-062: Diagrama arquitetura (linha 93) diz 25 regras 3040 portadas; tabela linha 54 diz 275; linha 235 diz 126",
+    "CLM-A0-100: ADR-0008 lista 5 conectores; README linha 323 diz 4 stubs e 1 funcional (Manual)",
+    "CLM-A0-107: ADR-0007/0008 status 'Proposto (Sprint 57 - nao iniciado)' em 2026-07-08",
+    "CLM-A0-017/069: README linha 128 diz Go 1.22+; ADR-0001 linha 20 diz 1.25+; go.mod declara 1.25.0; instalado 1.26.4"
+  ]
+}

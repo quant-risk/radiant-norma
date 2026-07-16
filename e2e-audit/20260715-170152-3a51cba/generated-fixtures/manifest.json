@@ -1,0 +1,337 @@
+{
+  "content_policy": {
+    "contains_active_formulas": false,
+    "contains_production_data": false,
+    "contains_reachable_external_entities": false,
+    "synthetic_only": true
+  },
+  "factory": "e2e/generate_fixtures.py",
+  "fixture_count": 16,
+  "fixtures": [
+    {
+      "assertions": [
+        "all source headers must map to canonical field names"
+      ],
+      "bytes": 221,
+      "expected_http_statuses": [],
+      "expected_status": "supporting_config",
+      "media_type": "application/json; charset=utf-8",
+      "parser_options": {},
+      "path": "config/custom-header-map.json",
+      "scenario": "custom_header_mapping",
+      "sha256": "16db21a5c33a3c23902d6152b162d16be81d88860626ebb82a2c10d69f99de85"
+    },
+    {
+      "assertions": [
+        "return a structured error; never panic"
+      ],
+      "bytes": 0,
+      "expected_http_statuses": [
+        400,
+        422
+      ],
+      "expected_status": "rejected_empty",
+      "media_type": "text/csv; charset=utf-8",
+      "parser_options": {},
+      "path": "csv/blank.csv",
+      "scenario": "blank_file",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "assertions": [
+        "apply the supplied mapping before business validation"
+      ],
+      "bytes": 209,
+      "expected_http_statuses": [
+        200,
+        201,
+        202
+      ],
+      "expected_status": "accepted_with_mapping",
+      "media_type": "text/csv; charset=utf-8",
+      "parser_options": {
+        "delimiter": ";",
+        "has_header": true,
+        "mapping_file": "config/custom-header-map.json"
+      },
+      "path": "csv/custom-headers.csv",
+      "scenario": "custom_headers",
+      "sha256": "1da34b7bd5885c6ae83badefed73058943f37d7dab7768dd24468ff84f409d05"
+    },
+    {
+      "assertions": [
+        "every formula-like value starts with an ASCII apostrophe",
+        "do not evaluate, strip, or execute formula-like text"
+      ],
+      "bytes": 298,
+      "expected_http_statuses": [
+        200,
+        201,
+        202
+      ],
+      "expected_status": "accepted_literal",
+      "media_type": "text/csv; charset=utf-8",
+      "parser_options": {
+        "delimiter": ";",
+        "has_header": true
+      },
+      "path": "csv/formula-injection-as-text.csv",
+      "scenario": "formula_injection_literal_text",
+      "sha256": "64e753672b922add927e366afd472b1fde18efb9a297b8760d40853fb5c4fd9e"
+    },
+    {
+      "assertions": [
+        "produce zero records and preserve the header schema"
+      ],
+      "bytes": 162,
+      "expected_http_statuses": [
+        200,
+        201,
+        202
+      ],
+      "expected_status": "accepted_empty_dataset",
+      "media_type": "text/csv; charset=utf-8",
+      "parser_options": {
+        "delimiter": ";",
+        "has_header": true
+      },
+      "path": "csv/header-only.csv",
+      "scenario": "header_only",
+      "sha256": "94ae52a10fc1dfbd10c979b1990791d98f26977f6293940c24d6a240825f95f2"
+    },
+    {
+      "assertions": [
+        "the first data row must not be consumed as a header"
+      ],
+      "bytes": 259,
+      "expected_http_statuses": [
+        200,
+        201,
+        202
+      ],
+      "expected_status": "accepted_with_explicit_schema",
+      "media_type": "text/csv; charset=utf-8",
+      "parser_options": {
+        "columns": [
+          "cnpj_raiz",
+          "cnpj_contraparte",
+          "contrato",
+          "modalidade",
+          "origem_recursos",
+          "indexador",
+          "valor_contratado",
+          "valor_saldo",
+          "taxa_juros",
+          "dias_atraso",
+          "data_vencimento",
+          "provisao",
+          "observacao"
+        ],
+        "delimiter": ";",
+        "has_header": false
+      },
+      "path": "csv/no-header.csv",
+      "scenario": "no_header",
+      "sha256": "36445f33ca9d5ba51b7f5907461c431b072cb700585f8cf193ff0e9588658719"
+    },
+    {
+      "assertions": [
+        "strip exactly one UTF-8 BOM",
+        "parse Brazilian dates and decimal commas without data loss",
+        "preserve accents and emoji"
+      ],
+      "bytes": 424,
+      "expected_http_statuses": [
+        200,
+        201,
+        202
+      ],
+      "expected_status": "accepted",
+      "media_type": "text/csv; charset=utf-8",
+      "parser_options": {
+        "decimal_separator": ",",
+        "delimiter": ";",
+        "encoding": "utf-8-sig",
+        "has_header": true,
+        "line_ending": "CRLF"
+      },
+      "path": "csv/nominal-semicolon-ptbr-bom.csv",
+      "scenario": "nominal_bom_crlf_semicolon_ptbr",
+      "sha256": "10f800a1ec9f8c053f5d37f5df0ad5a009b392f8ea023ec28e98d187f83bf66b"
+    },
+    {
+      "assertions": [
+        "identify the offending row numbers; never shift values silently"
+      ],
+      "bytes": 128,
+      "expected_http_statuses": [
+        400,
+        422
+      ],
+      "expected_status": "rejected_shape",
+      "media_type": "text/csv; charset=utf-8",
+      "parser_options": {
+        "delimiter": ";",
+        "has_header": true
+      },
+      "path": "csv/variable-columns.csv",
+      "scenario": "variable_column_count",
+      "sha256": "8eb0c14ff7da5af11ecfe7c4f5b6e73b14fe71c5d31697f3ea66b515d0d2eba4"
+    },
+    {
+      "assertions": [
+        "return a structured syntax error; never accept a prefix"
+      ],
+      "bytes": 94,
+      "expected_http_statuses": [
+        400,
+        422
+      ],
+      "expected_status": "rejected_syntax",
+      "media_type": "application/json; charset=utf-8",
+      "parser_options": {},
+      "path": "json/malformed.json",
+      "scenario": "malformed_json",
+      "sha256": "1d2ebdced9b070b11decdcd2d447bacefdf395dd5e8ec0073fdf0fb9d2b5cebb"
+    },
+    {
+      "assertions": [
+        "decode as strict JSON and preserve Unicode"
+      ],
+      "bytes": 464,
+      "expected_http_statuses": [
+        200,
+        201,
+        202
+      ],
+      "expected_status": "accepted",
+      "media_type": "application/json; charset=utf-8",
+      "parser_options": {},
+      "path": "json/nominal.json",
+      "scenario": "nominal_json_utf8",
+      "sha256": "51e26ce5a364dbfbbe21437f0148af87943e98b74960f8fd5ad31c985b007bd2"
+    },
+    {
+      "assertions": [
+        "decode as strict UTF-8",
+        "preserve accents and emoji byte-for-byte"
+      ],
+      "bytes": 88,
+      "expected_http_statuses": [
+        200,
+        201,
+        202
+      ],
+      "expected_status": "accepted_utf8",
+      "media_type": "text/plain; charset=utf-8",
+      "parser_options": {},
+      "path": "text/utf8-accent-emoji.txt",
+      "scenario": "utf8_accent_emoji",
+      "sha256": "f28590d63244ad538e9ba40e40f22ea913da2a6c1d7fcf2d6bdfacd6e0525c8f"
+    },
+    {
+      "assertions": [
+        "return a structured syntax error; never repair silently"
+      ],
+      "bytes": 152,
+      "expected_http_statuses": [
+        400,
+        422
+      ],
+      "expected_status": "rejected_syntax",
+      "media_type": "application/xml; charset=utf-8",
+      "parser_options": {},
+      "path": "xml/malformed.xml",
+      "scenario": "malformed_xml",
+      "sha256": "82c1a8422d0b25bafdfd3823907e6af8340bb1e43b24c0bb7d076a1b504ddb38"
+    },
+    {
+      "assertions": [
+        "accept Doc3040 as the document root and preserve Unicode"
+      ],
+      "bytes": 197,
+      "expected_http_statuses": [
+        200,
+        201,
+        202
+      ],
+      "expected_status": "accepted",
+      "media_type": "application/xml; charset=utf-8",
+      "parser_options": {},
+      "path": "xml/nominal.xml",
+      "scenario": "nominal_xml_utf8",
+      "sha256": "f97e7cb09ca07a4a0a70d61bdb501155efe178b0bf80e9aedf20a5976e73ac1a"
+    },
+    {
+      "assertions": [
+        "reject non-whitespace content after the root element"
+      ],
+      "bytes": 119,
+      "expected_http_statuses": [
+        400,
+        422
+      ],
+      "expected_status": "rejected_syntax",
+      "media_type": "application/xml; charset=utf-8",
+      "parser_options": {},
+      "path": "xml/trailing-content.xml",
+      "scenario": "xml_trailing_content",
+      "sha256": "9fb5aedd2e49831f5b63a0064d523d3d9763040bbc84431ba887f3b3d10d32da"
+    },
+    {
+      "assertions": [
+        "reject Doc9999 when Doc3040 is requested"
+      ],
+      "bytes": 156,
+      "expected_http_statuses": [
+        400,
+        422
+      ],
+      "expected_status": "rejected_root",
+      "media_type": "application/xml; charset=utf-8",
+      "parser_options": {},
+      "path": "xml/wrong-root.xml",
+      "scenario": "wrong_xml_root",
+      "sha256": "f1c2736be086f7e0b5f7e8e933d33196c87565acdf94fa6372333e77e02fa668"
+    },
+    {
+      "assertions": [
+        "reject DOCTYPE/external entities before entity resolution",
+        "perform no filesystem or network access",
+        "the SYSTEM identifier is an unreachable URN by construction"
+      ],
+      "bytes": 231,
+      "expected_http_statuses": [
+        400,
+        415,
+        422
+      ],
+      "expected_status": "rejected_security",
+      "media_type": "application/xml; charset=utf-8",
+      "parser_options": {},
+      "path": "xml/xxe-inert.xml",
+      "scenario": "inert_external_entity",
+      "sha256": "c3c669a46cb2e0c920ccca29ed8db57ef38f44f4ceb4967104c064f56d13f48d"
+    }
+  ],
+  "include_large": false,
+  "schema_version": "1.0",
+  "seed": 20260715,
+  "size_boundary_bytes": 10485760,
+  "status_contract": {
+    "accepted": "parse the nominal fixture and continue to business validation",
+    "accepted_at_size_gate": "any non-413 response is acceptable; downstream validation may still reject",
+    "accepted_empty_dataset": "parse successfully and yield zero records",
+    "accepted_literal": "ingest without evaluating formula-like text",
+    "accepted_utf8": "decode and preserve strict UTF-8",
+    "accepted_with_explicit_schema": "accept only when the listed column schema is supplied",
+    "accepted_with_mapping": "accept only when the listed header mapping is supplied",
+    "rejected_empty": "reject the empty input with a structured client error",
+    "rejected_root": "reject a valid XML document with the wrong business root",
+    "rejected_security": "reject before resolving the external entity",
+    "rejected_shape": "reject inconsistent records without silently shifting data",
+    "rejected_syntax": "reject malformed serialization with a structured client error",
+    "rejected_too_large": "return HTTP 413 before parsing",
+    "supporting_config": "use as configuration; do not upload as business data"
+  }
+}

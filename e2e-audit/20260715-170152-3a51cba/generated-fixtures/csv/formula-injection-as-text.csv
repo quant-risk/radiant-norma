@@ -1,0 +1,6 @@
+campo;valor_literal;controle
+igual;'=1+1;deve começar com apóstrofo
+mais;'+10;deve começar com apóstrofo
+menos;'-10;deve começar com apóstrofo
+arroba;'@SUM(1,2);deve começar com apóstrofo
+link;"'=HYPERLINK(""https://example.test/e2e"",""seguro"")";"domínio reservado; não executar"

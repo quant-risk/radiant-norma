@@ -1,0 +1,64 @@
+{
+  "run_id": "20260715-170152-3a51cba",
+  "passes": [1, 2, 3],
+  "total_claims": 279,
+  "by_pass": {
+    "pass1_README_REDESIGN_8ADRs": 120,
+    "pass2_OpenAPI_LLM_Postgres_Catalogo": 77,
+    "pass3_ROADMAP_MASTER_PLAN_CHANGELOG": 82
+  },
+  "by_categoria": {
+    "geracao": 51,
+    "validacao": 52,
+    "contratos": 8,
+    "deployment": 52,
+    "seguranca": 40,
+    "ui": 26,
+    "ingestao": 15,
+    "integracao": 21,
+    "negocio": 6,
+    "compliance": 7,
+    "observabilidade": 1
+  },
+  "by_criticidade": {
+    "core": 116,
+    "supporting": 149,
+    "marketing": 14
+  },
+  "by_weight": {
+    "5": 116,
+    "3": 136,
+    "1": 27
+  },
+  "id_range": "CLM-A0-001 to CLM-A0-279",
+  "id_gaps": [],
+  "duplicate_ids": [],
+  "sources": {
+    "pass1": ["README.md", "REDESIGN.md", "docs/adr/0001-stack-definitiva.md", "docs/adr/0002-multi-tenancy-rls.md", "docs/adr/0003-audit-log-hash-chain.md", "docs/adr/0004-schema-registry-versionado.md", "docs/adr/0005-sta-client-interface-segregation.md", "docs/adr/0006-cross-doc-engine.md", "docs/adr/0007-generator-engine-architecture.md", "docs/adr/0008-adapter-pattern-connectors.md"],
+    "pass2": ["docs/openapi/v1.yaml", "docs/postgres-setup.md", "docs/rules-3040-catalog.md", "docs/LLM_INTEGRATION_GUIDE.md", "docs/ON_PREMISE_LLM_SPEC.md"],
+    "pass3": ["ROADMAP.md", "MASTER_PLAN.md", "CHANGELOG.md (v3.34.44 a v3.36.4)"]
+  },
+  "ground_truth_metrics": {
+    "go_files": 287,
+    "sql_migrations": 26,
+    "cmd_binaries": 13,
+    "internal_packages": 35,
+    "generators_registered": 10,
+    "adapters_with_Fetch": 5,
+    "crossdoc_rules": 25,
+    "rules_3040_go": 275,
+    "rules_3050_go": 171,
+    "rules_2070_go": 20,
+    "rules_3026_go": 4,
+    "rules_4111_go": 0,
+    "openapi_paths": 46,
+    "openapi_operations": 49,
+    "real_routes_chi": 77,
+    "go_test_list_total": 1244,
+    "go_packages_with_tests": 51,
+    "go_packages_passing": 51,
+    "go_packages_failing": 0
+  },
+  "verdict": "PARCIALMENTE VERIFICADO",
+  "score": "50-69 (PARCIALMENTE FUNCIONAL)"
+}

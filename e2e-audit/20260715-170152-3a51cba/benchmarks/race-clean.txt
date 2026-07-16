@@ -1,0 +1,7 @@
+ok  	github.com/fortvna/radiant-norma/backend/internal/sta	2.273s
+ok  	github.com/fortvna/radiant-norma/backend/internal/auditlog	5.576s
+ok  	github.com/fortvna/radiant-norma/backend/internal/crossdoc	1.333s
+ok  	github.com/fortvna/radiant-norma/backend/internal/crossdoc/rules	1.324s
+ok  	github.com/fortvna/radiant-norma/backend/internal/audit	5.461s
+?   	github.com/fortvna/radiant-norma/backend/internal/audit/l4	[no test files]
+ok  	github.com/fortvna/radiant-norma/backend/internal/audit/rules	1.383s
