@@ -237,8 +237,8 @@ func (s *Server) generateBatch(w http.ResponseWriter, r *http.Request) {
 
 		// Phase 1.5: verifica campos obrigatórios.
 		if missing := checkRequiredFields(g, GenerateRequest{
-			CNPJ:    cadocReq.CNPJ,
-			NomeIF:  cadocReq.NomeIF,
+			CNPJ:   cadocReq.CNPJ,
+			NomeIF: cadocReq.NomeIF,
 		}); len(missing) > 0 {
 			results = append(results, BatchResult{
 				CadocCode: cadocCode,

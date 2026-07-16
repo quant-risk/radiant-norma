@@ -56,9 +56,9 @@ func TestSignPayload(t *testing.T) {
 
 func TestIsRetryable(t *testing.T) {
 	tests := []struct {
-		errMsg  string
-		status  int
-		expect  bool
+		errMsg string
+		status int
+		expect bool
 	}{
 		// Network errors (status=0, no HTTP response) — retryable.
 		{"context deadline exceeded", 0, true},

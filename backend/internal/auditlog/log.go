@@ -56,8 +56,8 @@ func New(db *sql.DB) *Logger {
 // entradas com mesmo PrevHash — chain quebrada).
 //
 // Phase 7 (Sprint 61): Log agora escreve em AMBAS as tabelas:
-//   1. audit_log   — hash chain (tamper-evident, LGPD/SOC2)
-//   2. audit_events — denormalizado legível (UI, /v1/audit_log)
+//  1. audit_log   — hash chain (tamper-evident, LGPD/SOC2)
+//  2. audit_events — denormalizado legível (UI, /v1/audit_log)
 //
 // Em caso de falha no INSERT do audit_events, o transaction rollback
 // aborta o audit_log também — atomicidade garantida.

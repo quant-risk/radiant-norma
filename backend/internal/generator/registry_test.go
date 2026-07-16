@@ -23,7 +23,7 @@ type stubGen struct {
 }
 
 func (s *stubGen) CadocCode() string { return s.code }
-func (s *stubGen) RootTag() string    { return s.code } // Phase 1.2: unified parser+generator
+func (s *stubGen) RootTag() string   { return s.code } // Phase 1.2: unified parser+generator
 func (s *stubGen) Generate(_ context.Context, _ *canonical.CanonicalDocument, _ time.Time) (*GeneratedDoc, error) {
 	return &GeneratedDoc{CadocCode: s.code}, nil
 }

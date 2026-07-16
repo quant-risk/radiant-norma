@@ -2,8 +2,9 @@
 // Supports both SQLite and PostgreSQL backends.
 //
 // Usage:
-//   ./migrate                    # uses DATABASE_URL or radiant.db
-//   ./migrate -db postgres://... # explicit DSN
+//
+//	./migrate                    # uses DATABASE_URL or radiant.db
+//	./migrate -db postgres://... # explicit DSN
 package main
 
 import (

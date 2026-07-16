@@ -47,8 +47,8 @@ type envioDTO struct {
 	ProtocolSTA  string `json:"protocol_sta"`
 	ErrorCode    string `json:"error_code,omitempty"`
 	ErrorMessage string `json:"error_message,omitempty"`
-	SentAt       string `json:"sent_at"`      // RFC3339
-	ConfirmedAt  string `json:"confirmed_at"` // RFC3339
+	SentAt       string `json:"sent_at"`            // RFC3339
+	ConfirmedAt  string `json:"confirmed_at"`       // RFC3339
 	Attempts     int    `json:"attempts,omitempty"` // Phase 4: retry count (useful for dead_letter)
 }
 

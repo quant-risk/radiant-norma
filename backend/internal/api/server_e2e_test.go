@@ -129,9 +129,9 @@ func TestValidate_ValidCadocEmitsAudit(t *testing.T) {
 
 	w := reqJSON(handler, "POST", "/v1/validate",
 		map[string]any{
-			"cadoc":    "3040",
+			"cadoc":     "3040",
 			"data_base": "2026-06",
-			"xml":      `<?xml version="1.0"?><Doc3040></Doc3040>`,
+			"xml":       `<?xml version="1.0"?><Doc3040></Doc3040>`,
 		},
 		map[string]string{"X-IF-ID": "audit-if"})
 

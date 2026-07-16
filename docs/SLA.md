@@ -33,7 +33,7 @@ do cliente, e sistemas externos do BACEN (SCA, STA).
 | Métrica | Starter | Professional | Enterprise |
 |---|---|---|---|
 | **Uptime mensal garantido** | 99,0% | 99,5% | 99,9% |
-| **Downtime máximo mensal** | 7h 18min | 3h 39min | 43min 49seg |
+| **Downtime máximo mensal** | 7h 18min | 3h 39min | 43min 12seg |
 | **MTTR (tempo de recuperação)** | 8h úteis | 4h úteis | 1h útil |
 | **Periodicidade de backups** | Diário | A cada 6h | Contínuo (WAL) |
 | **Janela de manutenção programada** | Não garantida | Até 4h/mês | Até 2h/mês |
@@ -70,13 +70,13 @@ Uptime mensal (%) = [(Total minutos no mês − Downtime real) / Total minutos n
 
 | | Starter | Professional | Enterprise |
 |---|---|---|---|
-| **SEV-1** — Primeiro 응답 | 24h úteis | 8h úteis | 1h útil |
+| **SEV-1** — Primeiro Resposta | 24h úteis | 8h úteis | 1h útil |
 | **SEV-1** — Resolução | 48h úteis | 16h úteis | 4h úteis |
-| **SEV-2** — Primeiro 응답 | 48h úteis | 16h úteis | 4h úteis |
+| **SEV-2** — Primeiro Resposta | 48h úteis | 16h úteis | 4h úteis |
 | **SEV-2** — Resolução | 5 dias úteis | 3 dias úteis | 1 dia útil |
-| **SEV-3** — Primeiro 응답 | 5 dias úteis | 3 dias úteis | 1 dia útil |
+| **SEV-3** — Primeiro Resposta | 5 dias úteis | 3 dias úteis | 1 dia útil |
 | **SEV-3** — Resolução | 10 dias úteis | 7 dias úteis | 3 dias úteis |
-| **SEV-4** — Primeiro 응답 | 10 dias úteis | 5 dias úteis | 2 dias úteis |
+| **SEV-4** — Primeiro Resposta | 10 dias úteis | 5 dias úteis | 2 dias úteis |
 | **SEV-4** — Resolução | Próxima release | Próxima release | Próxima release |
 
 ---
@@ -153,6 +153,9 @@ a **30% do valor mensal** da assinatura.
 
 | Uptime real | Crédito (% da mensalidade) |
 |---|---|
+| 98,0% – 98,9% (Starter) | 10% |
+| 97,0% – 97,9% (Starter) | 20% |
+| < 97,0% (Starter) | 30% |
 | 98,0% – 98,9% (Professional) | 10% |
 | 97,0% – 97,9% (Professional) | 20% |
 | < 97,0% (Professional) | 30% |
