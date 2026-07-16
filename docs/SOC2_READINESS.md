@@ -278,23 +278,130 @@ INCIDENTE DETECTADO
 
 | Gap | Severidade | Ação | Prazo | Responsável |
 |---|---|---|---|---|
-| SOC 2 Type II audit externo | Alta | Contratar auditor | 6-12 meses | CTO |
-| Pentest externo | Alta | Contratar firma especializada | 3 meses | CISO |
-| Business continuity plan (formal) | Média | Documentar BIA | 3 meses | CTO |
+| Pentest externo independente | Alta | Selecionar vendor + executar (ver Seção 9.1) | Q3 2026 | CISO |
+| SOC 2 Type I audit externo | Alta | RFQ + contratar auditor (ver Seção 9.2) | Q4 2026 | CTO |
+| SOC 2 Type II audit externo | Alta | Operar controles 6-12 meses + auditor | Q2-Q3 2027 | CTO |
+| Status page pública | ✅ | Implementado (Sprint 78) | Done | Backend |
+| COMPLIANCE_PACKAGE.pdf | ✅ | Regenerado com SLA corrigido | Done | Backend |
 | Vulnerability scanning automatizado | Média | Integrar trivy/owasp-zap na CI | 2 meses | DevOps |
-| SIEM (Security Information Event Management) | Média | Avaliar e implementar | 6 meses | DevOps |
-| Disaster recovery drill | Média | Executar DR drill | 3 meses | SRE |
+| SIEM (Security Information Event Management) | Média | Ver plano de implementação abaixo | 6 meses | DevOps |
+| Disaster recovery drill | Média | Executar DR drill (ver BACKUP_DR_POLICY.md) | 3 meses | SRE |
 
 ---
 
-## 9. Próximos Passos
+## 9. Vendor Selection — Pentest & SOC 2
+
+### 9.1 Pentest Externo (Q3 2026)
+
+Firmas brasileiras especializadas com equipe e certificações reconhecidas:
+
+| Firma | Localização | Certificações | Diferencial |
+|---|---|---|---|
+| **Clavis Segurança da Informação** | São Paulo, SP | OSCP, CISSP, CISM | Líder em pentest para mercado financeiro; experiência BACEN |
+| **Compugraf** | São Paulo, SP | CREST, OSCP | Pentest de APIs e cloud; relatórios em formato auditor-friendly |
+| ** Tempest Security Intelligence** | Recife, PE | CREST, ISO 27001 LA | Foco em instituições financeiras; presença em fintechs |
+| **Vantech4** | São Paulo, SP | OSCP, GPEN | Equipe Go; experiência com APIs REST e arquiteturas cloud-native |
+| **SysSec** | São Paulo, SP | OSCP, CEH | Pentest de redes e aplicações; compliance LGPD |
+
+**Critérios de seleção:**
+- Experiência com APIs REST/Go e PostgreSQL
+- Conhecimento do regulatório brasileiro (BACEN, LGPD)
+- Capacidade de emitir relatório em formato aceito por SOC 2 auditor
+- NDA e termos de confidencialidade
+- Tempo de resposta a incidentes (suporte durante remediação)
+
+**Escopo mínimo:** API REST, PostgreSQL, Redis, STA Integration, Webhooks
+
+### 9.2 SOC 2 Type I — Auditor Externo
+
+Auditors com registro no Brasil e experiência em tecnologia:
+
+| Auditor | Localização | Presença Internacional | Notas |
+|---|---|---|---|
+| **Deloitte** | São Paulo | Global | Prática de cybersecurity madura; aceita Readiness package existente |
+| **KPMG** | Sãophens, SP | Global | Cybersecurity assessments; experiência com fintechs e IFs |
+| **PwC** | São Paulo | Global | SOC 2 assessments; integrada com data privacy |
+| **Grant Thornton (Brasil)** | São Paulo | Global | Flexibilidade para PMEs/fintechs; custos mais acessíveis |
+| **Baker Tilly (Brasil)** | São Paulo | Global | Foco em tecnologia; experiência com APIs SaaS |
+
+**Critérios:**
+- Registro no CRC/CFC ou equivalente
+- Experiência com SOC 2 Type I para SaaS B2B
+- Familiaridade com LGPD e regulatório brasileiro (diferencial)
+- Capacidade de emitir relatório em Q4 2026
+
+**Estimativa de custos (2026, mercado brasileiro):**
+- Pentest: R$ 25.000 – R$ 60.000 (escopo API + infra)
+- SOC 2 Type I: USD 25.000 – USD 60.000 (depende do auditor)
+
+---
+
+## 10. SIEM Implementation Plan
+
+### 10.1 Opções Recomendadas (2026)
+
+| Solução | Tipo | Custo Estimado | Adequação |
+|---|---|---|---|
+| **Elastic Stack** (Elastic Cloud) | Cloud-native / self-hosted | R$ 8.000–20.000/mês | Alta — flexível, Go agent leve |
+| **Microsoft Sentinel** | Cloud-native (Azure) | R$ 3.000–15.000/mês | Alta — se já usa Azure/AWS |
+| **Datadog SIEM** | Cloud-native | R$ 15.000–40.000/mês | Média — bom se já usa Datadog |
+| **Splunk Enterprise** | Self-hosted | USD 2.000–10.000/mês | Média — enterprise-only |
+| **Wazuh** (open source) | Self-hosted | R$ 0 + infra | Alta — para PMEs com time DevOps maduro |
+
+**Recomendação para Radiant:** Elastic Cloud (padrão) ou Wazuh (se team DevOps quer open source).
+
+### 10.2 Fontes de Eventos a Integrar
+
+| Fonte | Tipo de Log | Prioridade |
+|---|---|---|
+| API `/v1/*` (auth events, errors 5xx) | Application | Crítica |
+| PostgreSQL (RLS violations, connections) | Database | Crítica |
+| Redis (rate limit drops, fail-open) | Cache | Alta |
+| Audit log (hash chain events) | Application | Crítica |
+| STA webhook delivery failures | Integration | Alta |
+| `/metrics` Prometheus endpoint | Metrics | Média |
+| Cloudflare WAF logs | Network | Alta |
+| AWS CloudTrail / VPC Flow Logs | Network | Média |
+
+### 10.3 Roadmap de Implementação
+
+```
+Mês 1-2: Avaliação + escolha de vendor
+  - Definir budget (R$ 8.000–20.000/mês cloud, ou open source)
+  - Prova de conceito: Elastic Cloud trial 14 dias
+  - Conectar API logs via Fluent Bit ou OTel Collector
+
+Mês 3: Ingestão de logs
+  - Ship logs: API auth, DB auth failures, rate limit events
+  - Dashboards: failed logins, 5xx error rate, RLS violations
+
+Mês 4: Alertas (Alerting)
+  - Brute-force detection (rate limit bypass attempts)
+  - RLS violation spike (> 5 em 1 min = alerta)
+  - STA submission failure rate > 20% em 15 min
+  - Audit log chain break (Verify() = false)
+
+Mês 5-6: Automação + SOAR básico
+  - Runbook automation: auto-bloquear IP após 10 auth failures
+  - Notificação PagerDuty para SEV-1 events
+  - Correlation rules: detect data exfiltration patterns
+
+Mês 6+: SOC 2 Type II evidence collection
+  - Exportar logs de acesso trimestralmente
+  - Retenção: 12 meses em hot storage, 7 anos em cold
+```
+
+---
+
+## 11. Próximos Passos
 
 ### Para obter SOC 2 Type I (curto prazo)
 
 1. [x] Readiness package completo (este documento)
-2. [ ] Pentest externo independente (agendado)
-3. [ ] Auditor externo contratados ( RFQ em andamento)
-4. [ ] Auditoria SOC 2 Type I (prevista: Q4 2026)
+2. [ ] Pentest externo independente — selecionar vendor (prazo: 30 dias)
+3. [ ] SOC 2 Type I auditor — RFQ e contratação (prazo: 45 dias)
+4. [ ] Pentest executado + remediação de achados (Q3 2026)
+5. [ ] Auditoria SOC 2 Type I (prevista: Q4 2026)
 
 ### Para obter SOC 2 Type II (longo prazo)
 

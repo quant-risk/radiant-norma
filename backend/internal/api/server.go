@@ -211,6 +211,10 @@ func (s *Server) Router() http.Handler {
 	}
 	r.Get("/readyz", s.readyz) // Validação 23 (F23.1): separado de /healthz
 
+	// Status page pública — Sprint 78 — status.radiant.digital.
+	// Sem auth: endpoint público para clientes consultarem SLA.
+	r.Get("/status", s.statusPageHandler)
+
 	// API v1
 	r.Route("/v1", func(r chi.Router) {
 		// Validação 20 (F20.3): MaxBytesReader middleware — limita payload
@@ -435,7 +439,7 @@ func observabilityMiddleware(metrics *Metrics) func(http.Handler) http.Handler {
 			}
 			// Skip noisy paths that distort latency metrics.
 			path := r.URL.Path
-			if path == "/healthz" || path == "/readyz" || path == "/metrics" {
+			if path == "/healthz" || path == "/readyz" || path == "/metrics" || path == "/status" {
 				next.ServeHTTP(w, r)
 				return
 			}
